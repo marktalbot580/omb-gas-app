@@ -190,3 +190,7 @@ body.locked.gated{overflow:hidden}
 @keyframes instUp{from{transform:translateY(100%);opacity:0}to{transform:none;opacity:1}}
 
 #mailBox{position:fixed;left:0;right:0;bottom:0;z-index:95;padding:12px 12px calc(12px + env(safe-area-inset-bottom));animation:instUp .35s ease both}
+
+header.bar .bar-logo,header.bar .bar-title{cursor:pointer;-webkit-tap-highlight-color:transparent}
+
+.item.crow .callb{flex:none;width:56px;display:flex;align-items:center;justify-content:center;border-left:1px solid var(--line);font-size:22px;text-decoration:none;color:var(--gold)}

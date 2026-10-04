@@ -566,6 +566,7 @@ function custSort() { try { return localStorage.getItem('omb_custsort') || 'az';
 const custUses = c => records.filter(r => r.customerId === c.id).length;
 /* favourites first, then alphabetical – used by the customer drop-downs */
 const custAlpha = (a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || a.name.localeCompare(b.name);
+const telHref = p => 'tel:' + String(p || '').replace(/[^\d+]/g, '');
 function paintCustList() {
   const q = ui.search.toLowerCase(), mode = custSort();
   const uses = {}; customers.forEach(c => { uses[c.id] = custUses(c); });
@@ -577,6 +578,7 @@ function paintCustList() {
         <div class="t">${esc(c.name)}</div>
         <div class="s">${esc([c.phone, c.email].filter(Boolean).join(' · ') || 'No contact details')}${mode === 'used' ? ` · ${uses[c.id]} form${uses[c.id] === 1 ? '' : 's'}` : ''}</div>
       </button>
+      ${String(c.phone || '').replace(/\D/g, '').length >= 5 ? `<a class="callb" href="${telHref(c.phone)}" aria-label="Call ${esc(c.name)}">&#128222;</a>` : ''}
       <button type="button" class="heart ${c.fav ? 'on' : ''}" data-act="favCust" data-id="${c.id}" aria-label="${c.fav ? 'Remove from favourites' : 'Add to favourites'}">${c.fav ? '♥' : '♡'}</button>
     </div>`).join('') : `<div class="empty">${!customers.length ? 'No customers yet. Add one here, or they are saved automatically when you complete a form.' : mode === 'fav' && !q ? 'No favourites yet. Tap the ♡ beside a customer to add one.' : 'No matches.'}</div>`;
 }
@@ -598,6 +600,7 @@ function renderCustEdit(v) {
     <div class="card">
       <label class="f"><span>Name <b>*</b></span><input data-c="name" value="${esc(c.name)}" autocomplete="off"></label>
       <label class="f"><span>Phone</span><input data-c="phone" type="tel" inputmode="tel" value="${esc(c.phone)}"></label>
+      ${!c._new && String(c.phone || '').replace(/\D/g, '').length >= 5 ? `<a class="btn block" style="text-align:center;text-decoration:none;margin:-4px 0 12px" href="${telHref(c.phone)}">&#128222; Call ${esc(c.phone)}</a>` : ''}
       <label class="f"><span>Email</span><input data-c="email" type="email" inputmode="email" autocapitalize="none" value="${esc(c.email)}"></label>
       <label class="f"><span>Billing address</span><textarea data-c="billing" rows="3">${esc(c.billing)}</textarea></label>
       <label class="f"><span>Property addresses (one per line)</span><textarea data-c="props" rows="3" placeholder="Properties you inspect for this customer">${esc((c.properties || []).join('\n'))}</textarea></label>
@@ -609,7 +612,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v27';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v29';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1559,6 +1562,12 @@ function initSigs() {
 const LOCKED_WRITES = new Set(['newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod']);
 const lockedMsg = () => toast('Your subscription has ended. Subscribe to create or change records.');
 document.addEventListener('click', async e => {
+  /* tap the logo / name at the top to go back to the home screen – a form you are part way through is kept as a draft */
+  if (e.target.closest('header.bar .bar-logo, header.bar .bar-title')) {
+    if (ui.view === 'form' && ui.rec) { const was = ui.rec.status; exitForm(); if (was === 'draft') toast('Saved as a draft'); }
+    else if (ui.view !== 'home' && !document.getElementById('gate')) { ui.view = 'home'; ui.search = ''; ui.job = null; render(); }
+    return;
+  }
   const nav = e.target.closest('[data-nav]');
   if (nav) { e.preventDefault(); ui.view = nav.dataset.nav; ui.search = ''; render(); return; }
   const kv = e.target.closest('button[data-k][data-v]');
