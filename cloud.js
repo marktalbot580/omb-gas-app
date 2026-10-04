@@ -52,7 +52,8 @@ const CLOUD = (() => {
 
   /* ---------- sign in / up ---------- */
   async function signUp(email, password) {
-    const j = await req('/auth/v1/signup', { method: 'POST', auth: false, body: { email, password } });
+    const back = location.origin + location.pathname.replace(/[^/]*$/, '') + 'welcome.html';
+    const j = await req('/auth/v1/signup?redirect_to=' + encodeURIComponent(back), { method: 'POST', auth: false, body: { email, password } });
     if (j && j.access_token) { setSession(j); return 'in'; }
     return 'confirm';
   }
@@ -67,6 +68,10 @@ const CLOUD = (() => {
   /* a link from the confirmation / reset email lands here with the session in the URL hash */
   function takeHash() {
     const h = new URLSearchParams(location.hash.replace(/^#/, ''));
+    if (h.get('error_code') || h.get('error')) {      // e.g. the confirm link was already used
+      note = /expired|invalid/i.test(h.get('error_description') || h.get('error_code') || '') ? 'That link has already been used or has expired. If you have already confirmed your email, just log in below.' : '';
+      history.replaceState(null, '', location.pathname + location.search); return;
+    }
     if (!h.get('access_token')) return;
     session = { access_token: h.get('access_token'), refresh_token: h.get('refresh_token'), expires_at: +h.get('expires_at') || Math.floor(Date.now() / 1000) + (+h.get('expires_in') || 3600), user: null };
     recovering = h.get('type') === 'recovery';
