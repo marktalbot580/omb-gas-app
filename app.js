@@ -470,6 +470,7 @@ const ageUnknown = r => String(r.age || '').trim().toLowerCase() === 'unknown';
 function render() {
   const v = $('#view'), nav = $('#nav');
   window.scrollTo(0, 0);
+  if (ui.view !== 'home' && typeof instPopClose === 'function') instPopClose();   // the install pop-up must never cover the Next / Back buttons
   if (ui.view === 'form') { renderForm(v, nav); }
   else {
     ({ home: renderHome, pick: renderPick, customers: renderCustomers, custEdit: renderCustEdit, settings: renderSettings, invoices: renderInvoices, invEdit: renderInvEdit, admin: renderAdmin }[ui.view])(v);
@@ -595,7 +596,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v19';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v22';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -639,6 +640,7 @@ function _instEvt0() { return !!_installEvt; }
 function instPopShow() {
   if (isStandalone() || LS.get('omb_noinstall', false) || +LS.get('omb_instsnooze', 0) > Date.now()) return;
   if (document.getElementById('gate')) return;                 // wait until they are past the log-in screen
+  if (ui.view !== 'home') return;                              // only on the Records screen, never over a form
   let p = document.getElementById('instPop');
   if (!p) { p = document.createElement('div'); p.id = 'instPop'; document.body.appendChild(p); }
   p.innerHTML = instPopHtml();
@@ -797,7 +799,7 @@ function renderForm(v, nav) {
   else if (t === 'aircon') body = [null, acSystem, acRefrig][s]();
   else if (t === 'service') body = [null, svcBoiler, svcChecks, svcSafety, svcOperating, svcFinish][s]();
   else body = [null, stepAppliances, stepInstall, stepAlarms, stepDefects, stepNext][s]();
-  const delBtn = r.status === 'draft' && s !== last ? `<div style="height:22px"></div><button class="btn danger block" data-act="delRec">${job && job.length > 1 ? 'Delete this draft visit (' + job.length + ' forms)' : 'Delete this draft'}</button>` : '';
+  const delBtn = r.status === 'draft' && s === 0 ? `<div style="height:22px"></div><button class="btn danger block" data-act="delRec">${job && job.length > 1 ? 'Delete this draft visit (' + job.length + ' forms)' : 'Delete this draft'}</button>` : '';
   v.innerHTML = prog + body + delBtn;
   if (s === last - 1) initSigs();
   nav.className = 'tabs wiz';
@@ -1083,7 +1085,7 @@ function stepReview() {
     <details class="adv"><summary>More options</summary>
       ${made ? `<button class="btn block" data-act="dlSel">Download selected</button><div style="height:8px"></div>
       <button class="btn block" data-act="makePdf" ${issues.length || needWarn.length ? 'disabled' : ''}>Re-create documents</button><div style="height:8px"></div>` : ''}
-      <button class="btn danger block" data-act="delRec">${multi ? 'Delete all ' + m.length + ' forms in this visit' : r.status === 'draft' ? 'Delete this draft' : 'Delete this record'}</button>
+      ${ui.rec.status === 'draft' ? '' : `<button class="btn danger block" data-act="delRec">${multi ? 'Delete all ' + m.length + ' forms in this visit' : 'Delete this record'}</button>`}
     </details>`;
 }
 /* ---------- Legionella risk assessment steps ---------- */
