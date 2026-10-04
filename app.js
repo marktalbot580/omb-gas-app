@@ -109,20 +109,20 @@ const cleanPrefix = p => String(p || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
 function placeholderLogo(name) {
   const w = String(name || '').trim().split(/\s+/).filter(Boolean), t = w.length ? ((w[0][0] || '') + ((w[1] || '')[0] || '')).toUpperCase().replace(/[^A-Z0-9&]/g, '') : 'OMB';
   const cv = document.createElement('canvas'); cv.width = cv.height = 200; const c = cv.getContext('2d');
-  c.fillStyle = '#111'; c.fillRect(0, 0, 200, 200); c.fillStyle = settings.accent || '#c9a24b';
+  c.fillStyle = '#111'; c.fillRect(0, 0, 200, 200); c.fillStyle = '#c9a24b';
   c.font = 'bold 96px Helvetica,Arial,sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(t, 100, 106);
   return cv.toDataURL('image/png');
 }
 function mixHex(h, to, k) { const n = x => parseInt(h.slice(x, x + 2), 16); return '#' + [1, 3, 5].map(i => Math.round(n(i) + (to - n(i)) * k).toString(16).padStart(2, '0')).join(''); }
 let _brandKey = '';
 function applyBrand() {
-  const key = [settings.logo && settings.logo.length, settings.businessName, settings.accent].join('|');
+  const key = [settings.logo && settings.logo.length, settings.businessName].join('|');
   if (key === _brandKey) return; _brandKey = key;
   const name = settings.businessName || 'OMB Gas Service', img = document.querySelector('.bar-logo'), st = document.querySelector('.bar-title strong');
   if (img) img.src = settings.logo || placeholderLogo(settings.businessName);
   if (st) st.textContent = name;
   document.title = name;
-  const a = /^#[0-9a-f]{6}$/i.test(settings.accent || '') ? settings.accent : '#c9a24b';
+  const a = '#c9a24b';   // the gold theme is fixed
   document.documentElement.style.setProperty('--gold', a); document.documentElement.style.setProperty('--gold2', mixHex(a, 255, 0.3));
 }
 
@@ -497,6 +497,7 @@ function invBadge(r) {
 function trialBanner() {
   if (!CLOUD.on) return '';
   const a = CLOUD.access();
+  if (CLOUD.locked()) return `<div class="notice err">Your subscription has ended. You can still view, download and export your records, but not create or change them.<div style="height:8px"></div><button class="btn gold block" data-act="billing">Subscribe to continue</button></div>`;
   if (a.trial && a.days <= 5) return `<div class="notice">Your free trial ends in ${a.days} day${a.days === 1 ? '' : 's'}. <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Subscribe in Settings</a> to keep going.</div>`;
   if (a.pastDue) return `<div class="notice err">Your last payment failed. Update your card in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a>.</div>`;
   return '';
@@ -588,7 +589,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v7';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v9';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -621,7 +622,6 @@ function renderSettings(v) {
       <label class="btn block" style="text-align:center">${settings.logo ? 'Change company logo' : 'Upload company logo'}<input id="coLogo" type="file" accept="image/*" hidden></label>
       ${settings.logo ? '<div style="height:8px"></div><button class="btn block" data-act="rmCoLogo">Remove logo</button>' : ''}
       <div class="hint" style="margin:10px 0 4px">Your logo appears at the top of the app and on every PDF.</div>
-      <label class="f"><span>Accent colour (app buttons and highlights)</span><input type="color" id="accent" value="${/^#[0-9a-f]{6}$/i.test(settings.accent) ? settings.accent : '#c9a24b'}" style="width:100%;height:44px;border:0;background:none"></label>
       ${f('refPrefix', 'Record number prefix', { cap: 'characters', hint: 'Up to 5 letters, for example ABC gives ABC-20261004-01.' })}
     </div>
     <h2>Gas Safe logo</h2>
@@ -1433,13 +1433,17 @@ function initSigs() {
 }
 
 /* ---------- events ---------- */
+/* when the subscription has ended the app is read-only: look, download and export, but no new or changed records */
+const LOCKED_WRITES = new Set(['newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'pickProp', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod']);
+const lockedMsg = () => toast('Your subscription has ended. Subscribe to create or change records.');
 document.addEventListener('click', async e => {
   const nav = e.target.closest('[data-nav]');
   if (nav) { e.preventDefault(); ui.view = nav.dataset.nav; ui.search = ''; render(); return; }
   const kv = e.target.closest('button[data-k][data-v]');
-  if (kv) { onChoice(kv.dataset.k, kv.dataset.v); return; }
+  if (kv) { if (CLOUD.locked()) { lockedMsg(); return; } onChoice(kv.dataset.k, kv.dataset.v); return; }
   const b = e.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act, r = ui.rec;
+  if (CLOUD.locked() && (LOCKED_WRITES.has(a) || (a === 'makePdf' && r && r.status !== 'complete'))) { lockedMsg(); return; }
   switch (a) {
     case 'newRec': ui.pick = { types: { [b.dataset.type]: true }, customer: null }; ui.view = 'pick'; render(); break;
     case 'pickToggle': ui.pick.types[b.dataset.t] = !ui.pick.types[b.dataset.t]; render(); break;
@@ -1593,6 +1597,7 @@ document.addEventListener('click', async e => {
 });
 document.addEventListener('input', e => {
   const t = e.target;
+  if (CLOUD.locked() && ui.view !== 'settings' && t.id !== 'custSearch') { lockedMsg(); render(); return; }
   if (t.dataset.s === 'sortCode') t.value = fmtSort(t.value);
   if (t.id === 'custSearch') { ui.search = t.value; paintCustList(); return; }
   if (t.dataset.tm) {
@@ -1643,6 +1648,7 @@ document.addEventListener('input', e => {
   if (t.dataset.c) { ui.cust[t.dataset.c] = t.value; }
 });
 document.addEventListener('change', async e => {
+  if (CLOUD.locked() && ui.view !== 'settings' && e.target.id !== 'custSearch') { lockedMsg(); render(); return; }
   const t = e.target;
   if (t.dataset.photo && t.files && t.files.length) {
     const r = ui.rec, path = t.dataset.photo, files = Array.from(t.files); t.value = '';
@@ -1656,7 +1662,6 @@ document.addEventListener('change', async e => {
     ui.pdf = null; persistRec(r); const y = window.scrollY; render(); window.scrollTo(0, y); return;
   }
   if (t.id === 'restoreFile' && t.files[0]) { restoreBackup(t.files[0]); t.value = ''; return; }
-  if (t.id === 'accent') { settings.accent = t.value; saveSettings(); return; }
   if (t.id === 'coLogo' && t.files[0]) {
     const img = new Image(), url = URL.createObjectURL(t.files[0]);
     img.onload = () => {   // fit the logo inside a square white tile so it sits cleanly on every PDF header

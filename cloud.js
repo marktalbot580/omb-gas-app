@@ -97,6 +97,7 @@ const CLOUD = (() => {
     }
     return { ok: false, why: 'canceled' };
   }
+  const locked = () => on && !!session && !!sub && !access().ok;   // signed in but subscription over: read-only
   const stale = () => !sub || Date.now() - (sub.checked || 0) > 14 * 864e5;   // must have talked to the server within two weeks
   async function fn(name) {
     const j = await req('/functions/v1/' + name, { method: 'POST', body: { returnUrl: location.origin + location.pathname } });
@@ -185,9 +186,9 @@ const CLOUD = (() => {
     try {
       await loadSub();
       const a = access();
-      if (!a.ok) { st.state = 'error'; st.msg = 'Subscription needed to sync'; st.busy = false; paint(); gate(); return; }
-      const pulled = await pull(), pushed = await push();
-      await pushFiles(); const files = await pullFiles();
+      gate();
+      const pulled = await pull(), pushed = a.ok ? await push() : 0;
+      if (a.ok) await pushFiles(); const files = await pullFiles();
       st.state = 'ok'; st.msg = 'Synced ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       if (pulled || files) { applyBrand(); if (ui.view === 'home' || ui.view === 'customers' || ui.view === 'invoices' || ui.view === 'settings') render(); }
       if (manual) toast(pushed || pulled ? 'Synced' : 'Everything is up to date');
@@ -238,7 +239,10 @@ const CLOUD = (() => {
     if (!on) return false;
     let html = '';
     if (!session || recovering) html = authHtml();
-    else if (!access().ok || (stale() && navigator.onLine === false)) html = payHtml();
+    else if (!sub || (stale() && navigator.onLine === false)) html = payHtml();   // never checked yet, or not checked for two weeks while offline
+    const was = document.body.classList.contains('locked'), now = locked();
+    document.body.classList.toggle('locked', now);
+    if (was !== now && typeof render === 'function') try { render(); } catch (e) {}
     if (!html) { hideGate(); return false; }
     const g = gateEl(); document.body.classList.add('gated');
     const keep = g.querySelector('input:focus'), vals = {}; g.querySelectorAll('input').forEach(i => vals[i.name] = i.value);
@@ -280,7 +284,7 @@ const CLOUD = (() => {
   }
 
   return {
-    on, cfg, st, start, sync, del, paint, gate, access, fn,
+    on, cfg, st, start, sync, del, paint, gate, access, fn, locked,
     email: () => (session && session.user ? session.user.email : ''),
     signedIn: () => !!session,
     sub: () => sub,

@@ -169,3 +169,7 @@ body.gated{overflow:hidden}
 .gate-small{margin:0;font-size:13px;color:var(--mut)}
 .gate-err{margin:0;color:var(--bad);font-size:14px}.gate-ok{margin:0;color:var(--ok);font-size:14px}
 .gate-price{text-align:center;font-size:26px;margin:4px 0}.gate-price span{font-size:13px;color:var(--mut)}
+
+/* read-only mode when the subscription has ended */
+body.locked [data-act=newRec],body.locked [data-act=newCust],body.locked [data-act=newInvBlank],body.locked [data-act=editCust],body.locked [data-act=saveCust],body.locked [data-act=delRec],body.locked [data-act=invFromVisit],body.locked [data-act=pickGo],body.locked [data-act=addWarn],body.locked [data-act=favCust],body.locked #view button[data-k][data-v],body.locked #view input:not(#custSearch):not([data-s]),body.locked #view textarea:not([data-s]){opacity:.35;filter:grayscale(1)}
+body.locked.gated{overflow:hidden}
