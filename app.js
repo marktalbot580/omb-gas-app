@@ -472,7 +472,7 @@ function render() {
   window.scrollTo(0, 0);
   if (ui.view === 'form') { renderForm(v, nav); }
   else {
-    ({ home: renderHome, pick: renderPick, customers: renderCustomers, custEdit: renderCustEdit, settings: renderSettings, invoices: renderInvoices, invEdit: renderInvEdit }[ui.view])(v);
+    ({ home: renderHome, pick: renderPick, customers: renderCustomers, custEdit: renderCustEdit, settings: renderSettings, invoices: renderInvoices, invEdit: renderInvEdit, admin: renderAdmin }[ui.view])(v);
     renderTabs(nav);
   }
   paintSync();
@@ -489,7 +489,7 @@ const ICON = {
 function renderTabs(nav) {
   nav.className = 'tabs';
   const t = (id, label, ic, on) => `<button data-nav="${id}" class="${on ? 'on' : ''}">${ic}${label}</button>`;
-  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit') + t('settings', 'Settings', ICON.set, ui.view === 'settings');
+  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'admin');
   $('#barSub').textContent = ui.view === 'invoices' || ui.view === 'invEdit' ? 'Invoices' : 'Gas & Legionella records';
 }
 
@@ -596,7 +596,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v14';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v15';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -712,15 +712,43 @@ function renderSettings(v) {
 }
 function accountCard() {
   const a = CLOUD.access(), sub = CLOUD.sub();
-  const plan = !sub ? 'Checking…' : a.paid ? (a.pastDue ? 'Subscribed – last payment failed, please update your card' : 'Subscribed') : a.trial ? `Free trial – ${a.days} day${a.days === 1 ? '' : 's'} left` : 'Not subscribed';
+  const plan = !sub ? 'Checking…' : a.comped ? 'Free pass – full access' : a.paid ? (a.pastDue ? 'Subscribed – last payment failed, please update your card' : 'Subscribed') : a.trial ? `Free trial – ${a.days} day${a.days === 1 ? '' : 's'} left` : 'Not subscribed';
   return `<h2>Account</h2><div class="card">
       <p class="small" style="margin-top:0">Signed in as <b>${esc(CLOUD.email())}</b><br><span class="muted">${esc(plan)}</span></p>
       <button class="btn block" data-act="syncNow">Sync now</button>
       <p class="small muted" id="syncMsg">${esc(CLOUD.st.msg)}</p>
-      <button class="btn block" data-act="billing">${a.paid ? 'Manage subscription' : 'Subscribe'}</button>
+      ${a.comped ? '' : `<button class="btn block" data-act="billing">${a.paid ? 'Manage subscription' : 'Subscribe'}</button>`}
+      ${CLOUD.isAdmin() ? '<div style="height:8px"></div><button class="btn block" data-act="openAdmin">Admin – sign-ups and free passes</button>' : ''}
       <div style="height:8px"></div><button class="btn block ghost" data-act="logout">Log out</button>
       <p class="small muted" style="margin-bottom:0">Everything you enter is saved on this phone first, so it works with no signal, and syncs to your account whenever you are online.</p>
     </div>`;
+}
+
+/* ---------- owner's admin page: who has signed up, and free passes ---------- */
+function renderAdmin(v) {
+  const A = ui.admin || {}, rows = A.rows;
+  const state = r => r.comped ? 'free pass' : r.status === 'trialing' ? (Date.parse(r.trial_end) > Date.now() ? 'on trial' : 'trial ended') : r.status === 'active' ? 'paying' : r.status === 'past_due' ? 'payment failed' : 'cancelled';
+  const cnt = k => rows.filter(r => state(r) === k).length;
+  v.innerHTML = `<h1>Admin</h1>
+    <a href="#" data-nav="settings" style="color:var(--gold2)">← Back to settings</a>
+    ${A.err ? `<div class="notice err">${esc(A.err)}</div>` : ''}
+    ${!rows ? '<p class="muted">Loading…</p>' : `
+    <div class="card"><dl class="kv">
+      <dt>Sign-ups</dt><dd>${rows.length}</dd><dt>On free trial</dt><dd>${cnt('on trial')}</dd><dt>Paying</dt><dd>${cnt('paying')}</dd>
+      <dt>Free passes</dt><dd>${cnt('free pass')}</dd><dt>Trial ended</dt><dd>${cnt('trial ended')}</dd><dt>Payment failed / cancelled</dt><dd>${cnt('payment failed') + cnt('cancelled')}</dd>
+    </dl><button class="btn block" data-act="adminReload" style="margin-top:10px">Refresh</button></div>
+    <h2>Give someone a free pass</h2>
+    <div class="card"><label class="f"><span>Their email address</span><input id="adminEmail" type="email" inputmode="email" autocapitalize="none" autocomplete="off" placeholder="kyle@example.com"><small>Works before or after they sign up. They get full access with no payment.</small></label>
+      <button class="btn gold block" data-act="adminCompEmail">Give free pass</button></div>
+    <h2>Everyone</h2>
+    ${rows.map(r => `<div class="card"><div class="t" style="font-weight:700">${esc(r.email)}</div>
+      <div class="small muted">${esc(state(r))}${r.confirmed ? '' : ' · email not confirmed'} · joined ${ukDate((r.created_at || '').slice(0, 10))}${r.last_sign_in ? ' · last in ' + ukDate(r.last_sign_in.slice(0, 10)) : ''}${r.status === 'trialing' && !r.comped ? ' · trial ends ' + ukDate((r.trial_end || '').slice(0, 10)) : ''}</div>
+      <button class="btn block ${r.comped ? 'ghost' : ''}" style="margin-top:8px" data-act="adminComp" data-id="${r.user_id}" data-v="${r.comped ? '' : '1'}">${r.comped ? 'Remove free pass' : 'Give free pass'}</button></div>`).join('') || '<p class="muted">Nobody yet.</p>'}`}`;
+}
+async function adminLoad() {
+  ui.admin = ui.admin || {}; ui.admin.err = '';
+  try { ui.admin.rows = await CLOUD.rpc('admin_overview'); } catch (e) { ui.admin.err = /not allowed/i.test(e.message) ? 'This account is not an admin.' : 'Could not load: ' + e.message; ui.admin.rows = ui.admin.rows || []; }
+  if (ui.view === 'admin') render();
 }
 
 /* ---------- the form wizard ---------- */
@@ -1586,6 +1614,10 @@ document.addEventListener('click', async e => {
     case 'expAll': exportBackup(); break;
     case 'installApp': if (_installEvt) { _installEvt.prompt(); try { await _installEvt.userChoice; } catch (e) { } _installEvt = null; render(); } break;
     case 'hideInstall': LS.set('omb_noinstall', true); render(); break;
+    case 'openAdmin': ui.view = 'admin'; ui.admin = { rows: null, err: '' }; render(); adminLoad(); break;
+    case 'adminReload': ui.admin.rows = null; render(); adminLoad(); break;
+    case 'adminComp': try { await CLOUD.rpc('admin_set_comped', { target: b.dataset.id, val: !!b.dataset.v }); toast(b.dataset.v ? 'Free pass given' : 'Free pass removed'); } catch (e) { toast(e.message); } adminLoad(); break;
+    case 'adminCompEmail': { const em = (document.getElementById('adminEmail').value || '').trim(); if (!/^\S+@\S+\.\S+$/.test(em)) { toast('Enter a valid email address'); break; } try { await CLOUD.rpc('admin_comp_email', { addr: em, val: true }); toast('Free pass saved for ' + em); document.getElementById('adminEmail').value = ''; } catch (e) { toast(e.message); } adminLoad(); break; }
     case 'syncNow': await syncAll(true); break;
     case 'billing': try { if (CLOUD.access().paid) await CLOUD.fn('portal'); else await CLOUD.fn('checkout'); } catch (e) { toast(e.message); } break;
     case 'logout':

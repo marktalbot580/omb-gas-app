@@ -103,13 +103,14 @@ const CLOUD = (() => {
   /* ---------- subscription ---------- */
   async function loadSub() {
     try {
-      const rows = await req('/rest/v1/subscriptions?select=status,trial_end,period_end&limit=1');
+      const rows = await req('/rest/v1/subscriptions?select=status,trial_end,period_end,comped&limit=1');
       if (rows && rows[0]) { sub = Object.assign({}, rows[0], { checked: Date.now() }); ls.set(KB, sub); }
       return true;
     } catch (e) { return false; }
   }
   function access() {
     if (!sub) return { ok: false, why: 'unknown' };
+    if (sub.comped) return { ok: true, comped: true };   // free pass
     const now = Date.now();
     if (sub.status === 'trialing') { const end = Date.parse(sub.trial_end); return end > now ? { ok: true, trial: true, days: Math.max(0, Math.ceil((end - now) / 864e5)) } : { ok: false, why: 'trial' }; }
     if (sub.status === 'active' || sub.status === 'past_due') {
@@ -271,8 +272,12 @@ const CLOUD = (() => {
     g.innerHTML = html; g.querySelectorAll('input').forEach(i => { if (vals[i.name] && i.type !== 'password') i.value = vals[i.name]; });
     return true;
   }
+  let admin = ls.get('omb_adm', false);
+  async function checkAdmin() {      // is this the owner? (the answer comes from the server, never from the app)
+    try { const v = await req('/rest/v1/rpc/is_admin', { method: 'POST', body: {} }); if (!!v !== admin) { admin = !!v; ls.set('omb_adm', admin); if (typeof ui !== 'undefined' && ui.view === 'settings') render(); } } catch (e) { }
+  }
   async function enter() {      // signed in: check the subscription, then open the app
-    await loadSub();
+    await loadSub(); checkAdmin();
     if (gate()) return;
     sync();
   }
@@ -311,6 +316,8 @@ const CLOUD = (() => {
     email: () => (session && session.user ? session.user.email : ''),
     signedIn: () => !!session,
     sub: () => sub,
+    isAdmin: () => admin && !!session,
+    rpc: (name, args) => req('/rest/v1/rpc/' + name, { method: 'POST', body: args || {} }),
     signOut: async wipe => { await signOut(); if (wipe) wipeLocal(); gate(); }
   };
 })();
