@@ -595,7 +595,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v16';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v17';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -767,7 +767,7 @@ function renderAdmin(v) {
     <h2>Everyone</h2>
     ${rows.map(r => `<div class="card"><div class="t" style="font-weight:700">${esc(r.email)}</div>
       <div class="small muted">${esc(state(r))}${r.confirmed ? '' : ' · email not confirmed'} · joined ${ukDate((r.created_at || '').slice(0, 10))}${r.last_sign_in ? ' · last in ' + ukDate(r.last_sign_in.slice(0, 10)) : ''}${r.status === 'trialing' && !r.comped ? ' · trial ends ' + ukDate((r.trial_end || '').slice(0, 10)) : ''}</div>
-      <button class="btn block ${r.comped ? 'ghost' : ''}" style="margin-top:8px" data-act="adminComp" data-id="${r.user_id}" data-v="${r.comped ? '' : '1'}">${r.comped ? 'Remove free pass' : 'Give free pass'}</button></div>`).join('') || '<p class="muted">Nobody yet.</p>'}`}`;
+      <button class="btn block ${r.comped ? 'ghost' : ''}" style="margin-top:8px" data-act="adminComp" data-id="${r.user_id}" data-v="${r.comped ? '' : '1'}">${r.comped ? 'Remove free pass' : 'Give free pass'}</button>${r.comped || r.status === 'active' ? '' : `<button class="btn block" style="margin-top:8px" data-act="adminExtend" data-id="${r.user_id}">Extend trial by 14 days</button>`}</div>`).join('') || '<p class="muted">Nobody yet.</p>'}`}`;
 }
 async function adminLoad() {
   ui.admin = ui.admin || {}; ui.admin.err = '';
@@ -1643,6 +1643,7 @@ document.addEventListener('click', async e => {
     case 'openAdmin': ui.view = 'admin'; ui.admin = { rows: null, err: '' }; render(); adminLoad(); break;
     case 'adminReload': ui.admin.rows = null; render(); adminLoad(); break;
     case 'adminComp': try { await CLOUD.rpc('admin_set_comped', { target: b.dataset.id, val: !!b.dataset.v }); toast(b.dataset.v ? 'Free pass given' : 'Free pass removed'); } catch (e) { toast(e.message); } adminLoad(); break;
+    case 'adminExtend': try { await CLOUD.rpc('admin_extend_trial', { target: b.dataset.id, days: 14 }); toast('Trial extended by 14 days'); } catch (e) { toast(e.message); } adminLoad(); break;
     case 'adminCompEmail': { const em = (document.getElementById('adminEmail').value || '').trim(); if (!/^\S+@\S+\.\S+$/.test(em)) { toast('Enter a valid email address'); break; } try { await CLOUD.rpc('admin_comp_email', { addr: em, val: true }); toast('Free pass saved for ' + em); document.getElementById('adminEmail').value = ''; } catch (e) { toast(e.message); } adminLoad(); break; }
     case 'syncNow': await syncAll(true); break;
     case 'billing': try { if (CLOUD.access().paid) await CLOUD.fn('portal'); else await CLOUD.fn('checkout'); } catch (e) { toast(e.message); } break;
