@@ -119,5 +119,15 @@ end $$;
 revoke all on function public.admin_overview(), public.admin_set_comped(uuid, boolean), public.admin_comp_email(text, boolean), public.is_admin() from public, anon;
 grant execute on function public.admin_overview(), public.admin_set_comped(uuid, boolean), public.admin_comp_email(text, boolean), public.is_admin() to authenticated;
 
+-- admin: give someone more free-trial days (not for people who are currently paying)
+create or replace function public.admin_extend_trial(target uuid, days int default 14) returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_admin() then raise exception 'not allowed'; end if;
+  update public.subscriptions set status = 'trialing', trial_end = greatest(trial_end, now()) + make_interval(days => days), updated_at = now()
+    where user_id = target and status <> 'active';
+end $$;
+revoke all on function public.admin_extend_trial(uuid, int) from public, anon;
+grant execute on function public.admin_extend_trial(uuid, int) to authenticated;
+
 -- make yourself the admin (change the email if yours is different)
 insert into public.admins (user_id) select id from auth.users where lower(email) = 'marktalbot2000@hotmail.com' on conflict do nothing;
