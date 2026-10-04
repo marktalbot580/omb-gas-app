@@ -23,7 +23,7 @@ const OPT = {
   location: ['Kitchen', 'Bathroom', 'Airing cupboard', 'Utility', 'Bedroom', 'Garage', 'Loft', 'Compartment', 'Other'],
   type: ['Combi boiler', 'Regular boiler', 'System boiler', 'Cooker', 'Hob', 'Fire', 'Oven', 'Other'],
   ownership: ['Landlord', 'Homeowner', 'Tenant'],
-  flue: ['Room Sealed', 'Open Flue', 'Flueless', 'Vertex'],
+  flue: ['Room Sealed FF (fanned flue)', 'Room Sealed BF (balanced flue)', 'Open Flue', 'Flueless', 'Vertex'],
   test: ['Operating Pressure', 'Gas Rate', 'Both'],
   pfn: ['Pass', 'Fail', 'NA'],
   pf: ['Pass', 'Fail'],
@@ -596,7 +596,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v11';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v12';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -839,7 +839,7 @@ function stepAppliances() {
       ${a.type === 'Other' ? txt(P('typeOther'), 'Describe the appliance', { req: 1 }) : ''}
       ${makeField(P('manufacturer'), i, a.type)}
       ${txt(P('model'), 'Model', { req: 1 })}
-      ${txt(P('gc'), 'Gas Council number', { cap: 'characters' })}
+      ${/^(cooker|hob|oven|range cooker)$/i.test(a.type || '') ? '' : txt(P('gc'), 'Gas Council number', { cap: 'characters' })}
       ${choice(P('ownership'), 'Who owns the appliance?', OPT.ownership, { req: 1, wrap: 1 })}
       ${choice(P('flue'), 'Flue type', OPT.flue, { req: 1, wrap: 1 })}
       ${choice(P('serviced'), 'Serviced at the same time?', OPT.yn, { req: 1 })}
@@ -1757,6 +1757,7 @@ function onChoice(path, val) {
     const ap = getP(r, path.replace(/\.type$/, '')), mk = String(ap.manufacturer || '').trim().toLowerCase();
     if (mk && !makesFor(val).some(x => x.toLowerCase() === mk)) { ap.manufacturer = ''; if (ui.mfrOther) delete ui.mfrOther[r.id + '.' + path.split('.')[1]]; }
     if (val !== 'Other') ap.typeOther = '';
+    if (/^(cooker|hob|oven)$/i.test(val)) ap.gc = '';
   }
   if (path === 'applianceCount') { const n = +val; while (r.appliances.length < n) r.appliances.push(blankAppliance()); if (ui.appTab >= n) ui.appTab = n - 1; }
   if (path === 'defectCount') { const n = +val; while (r.defects.length < n) r.defects.push(blankDefect()); }

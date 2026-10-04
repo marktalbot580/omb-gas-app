@@ -32,7 +32,7 @@ const SVC = (() => {
   const LOCATION = ['Kitchen', 'Bathroom', 'Airing cupboard', 'Utility', 'Bedroom', 'Garage', 'Loft', 'Compartment', 'Other'];
   const MAKE = ['Ideal', 'Worcester Bosch', 'Baxi', 'Ferroli', 'Vokera', 'Vaillant', 'Alpha', 'Viessmann', 'Biasi', 'Glow Worm', 'Other'];
   const SYSTEM = ['Combi', 'System', 'Heat only', 'Other'];
-  const FLUE = ['Open Flue', 'Room Sealed', 'Flueless', 'Vertex'];
+  const FLUE = ['Open Flue', 'Room Sealed FF (fanned flue)', 'Room Sealed BF (balanced flue)', 'Flueless', 'Vertex'];
   const REASON = ['Service', 'Repair'];
   const PFN = ['PASS', 'FAIL', 'NA'];
   const PF = ['PASS', 'FAIL'];
