@@ -513,7 +513,6 @@ function renderHome(v) {
   const list = [...records].sort((a, b) => b.updated - a.updated);
   v.innerHTML = `
     <h1>Records</h1>
-    ${installCard()}
     ${trialBanner()}
     ${missing ? `<div class="notice">Add the business address, Gas Safe register number and engineer details in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a> before issuing certificates.</div>` : ''}
     <button class="btn gold block" data-act="newRec" data-type="gas">+ New gas safety record</button>
@@ -596,7 +595,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v15';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v16';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -625,6 +624,31 @@ function installCard(force) {
     : '<p class="small" style="margin:6px 0 0">Open your browser menu (the three dots) and tap <b>Install app</b> or <b>Add to Home screen</b>.</p>';
   return `<div class="notice">Put this app on your home screen so it opens like a normal app and works with no signal.${how}${force ? '' : '<div style="margin-top:8px"><a href="#" data-act="hideInstall" style="color:inherit;opacity:.7">Not now</a></div>'}</div>`;
 }
+
+/* ---------- "Install this app" pop-up (bottom sheet) ---------- */
+let _instTries = 0;
+function instPopClose() { const p = document.getElementById('instPop'); if (p) p.remove(); }
+function instPopHtml() {
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const how = _instEvt0() ? '<button class="btn gold block" data-act="installApp">Install app</button>'
+    : ios ? '<p class="small">In <b>Safari</b> tap the <b>Share</b> button (square with an arrow), then <b>Add to Home Screen</b>.</p>'
+    : '<p class="small">Tap your browser menu (the three dots), then <b>Install app</b> or <b>Add to Home screen</b>.</p>';
+  return `<div class="instbox"><div class="insthead"><img src="icon-192.png" alt="" onerror="this.style.display='none'"><div><b>Install this app</b><span>Opens like a normal app and works with no signal</span></div></div>${how}<div class="instrow"><button class="btn ghost" data-act="laterInstall">${_instEvt0() ? 'Not now' : 'Got it'}</button><button class="btn ghost" data-act="neverInstall">Don’t ask again</button></div></div>`;
+}
+function _instEvt0() { return !!_installEvt; }
+function instPopShow() {
+  if (isStandalone() || LS.get('omb_noinstall', false) || +LS.get('omb_instsnooze', 0) > Date.now()) return;
+  if (document.getElementById('gate')) return;                 // wait until they are past the log-in screen
+  let p = document.getElementById('instPop');
+  if (!p) { p = document.createElement('div'); p.id = 'instPop'; document.body.appendChild(p); }
+  p.innerHTML = instPopHtml();
+}
+(function instPopStart() {
+  const tick = () => { if (_instTries++ > 20 || isStandalone()) return; if (!document.getElementById('instPop')) instPopShow(); if (!document.getElementById('instPop')) setTimeout(tick, 4000); };
+  setTimeout(tick, 2500);
+  window.addEventListener('beforeinstallprompt', () => setTimeout(() => { if (document.getElementById('instPop')) instPopShow(); else { _instTries = 0; tick(); } }, 400));
+  window.addEventListener('appinstalled', instPopClose);
+})();
 function renderSettings(v) {
   const f = (k, l, o = {}) => `<label class="f"><span>${l}</span>${o.area ? `<textarea data-s="${k}" rows="3">${esc(settings[k])}</textarea>` : `<input data-s="${k}" value="${esc(k === 'sortCode' ? fmtSort(settings[k]) : settings[k])}" ${o.type ? `type="${o.type}"` : ''} ${o.mode ? `inputmode="${o.mode}"` : ''} autocomplete="off" ${o.maxlen ? `maxlength="${o.maxlen}"` : ''} ${o.cap ? `autocapitalize="${o.cap}"` : ''}>`}${o.hint ? `<small>${o.hint}</small>` : ''}</label>`;
   v.innerHTML = `
@@ -1612,7 +1636,9 @@ document.addEventListener('click', async e => {
     case 'mailSel': await mailSel(); break;
     case 'forceUpdate': forceUpdate(); break;
     case 'expAll': exportBackup(); break;
-    case 'installApp': if (_installEvt) { _installEvt.prompt(); try { await _installEvt.userChoice; } catch (e) { } _installEvt = null; render(); } break;
+    case 'installApp': if (_installEvt) { _installEvt.prompt(); try { await _installEvt.userChoice; } catch (e) { } _installEvt = null; render(); } instPopClose(); break;
+    case 'laterInstall': LS.set('omb_instsnooze', Date.now() + 3 * 864e5); instPopClose(); break;
+    case 'neverInstall': LS.set('omb_noinstall', true); instPopClose(); render(); break;
     case 'hideInstall': LS.set('omb_noinstall', true); render(); break;
     case 'openAdmin': ui.view = 'admin'; ui.admin = { rows: null, err: '' }; render(); adminLoad(); break;
     case 'adminReload': ui.admin.rows = null; render(); adminLoad(); break;
