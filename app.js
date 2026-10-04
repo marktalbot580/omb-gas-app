@@ -595,7 +595,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v18';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v19';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -743,6 +743,8 @@ function accountCard() {
       <p class="small muted" id="syncMsg">${esc(CLOUD.st.msg)}</p>
       ${a.comped ? '' : `<button class="btn block" data-act="billing">${a.paid ? 'Manage subscription' : 'Subscribe'}</button>`}
       ${CLOUD.isAdmin() ? '<div style="height:8px"></div><button class="btn block" data-act="openAdmin">Admin – sign-ups and free passes</button>' : ''}
+      <div style="height:8px"></div><button class="btn block ghost" data-act="secCheck">Check connection security</button>
+      <pre id="secOut" class="small muted" style="white-space:pre-wrap;word-break:break-all;margin:8px 0 0"></pre>
       <div style="height:8px"></div><button class="btn block ghost" data-act="logout">Log out</button>
       <p class="small muted" style="margin-bottom:0">Everything you enter is saved on this phone first, so it works with no signal, and syncs to your account whenever you are online.</p>
     </div>`;
@@ -1647,6 +1649,17 @@ document.addEventListener('click', async e => {
     case 'adminCompEmail': { const em = (document.getElementById('adminEmail').value || '').trim(); if (!/^\S+@\S+\.\S+$/.test(em)) { toast('Enter a valid email address'); break; } try { await CLOUD.rpc('admin_comp_email', { addr: em, val: true }); toast('Free pass saved for ' + em); document.getElementById('adminEmail').value = ''; } catch (e) { toast(e.message); } adminLoad(); break; }
     case 'syncNow': await syncAll(true); break;
     case 'billing': try { if (CLOUD.access().paid) await CLOUD.fn('portal'); else await CLOUD.fn('checkout'); } catch (e) { toast(e.message); } break;
+    case 'secCheck': {
+      const o = document.getElementById('secOut'); if (!o) break;
+      const res = performance.getEntriesByType('resource').map(e => e.name);
+      const bad = res.filter(n => /^http:/i.test(n));
+      const imgs = [...document.querySelectorAll('[src],[href]')].map(e => e.src || e.href).filter(u => typeof u === 'string' && /^http:/i.test(u));
+      o.textContent = 'Page: ' + location.href + '\nSecure context: ' + window.isSecureContext + '\nFiles loaded: ' + res.length +
+        '\nInsecure files: ' + (bad.length ? bad.join('\n') : 'none') + '\nInsecure links on page: ' + (imgs.length ? imgs.join('\n') : 'none') +
+        '\nService worker: ' + (navigator.serviceWorker && navigator.serviceWorker.controller ? 'active' : 'none') +
+        '\nOnline: ' + navigator.onLine + '\nStandalone: ' + isStandalone();
+      break;
+    }
     case 'logout':
       if (!confirm('Log out? Your records stay safe in your account and come back when you log in. The copy on this phone is removed.')) break;
       toast('Syncing before you go…'); await CLOUD.sync();
