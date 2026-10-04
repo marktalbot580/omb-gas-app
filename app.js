@@ -105,7 +105,7 @@ const saveInvoices = () => LS.set('cph_invoices', invoices);
 /* ---------- branding: each business's own logo, name and accent colour ---------- */
 const cleanPrefix = p => String(p || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
 function placeholderLogo(name) {
-  const w = String(name || '').trim().split(/\s+/).filter(Boolean), t = ((w[0] || 'O')[0] + (w[1] || '')[0]).toUpperCase().replace(/[^A-Z0-9&]/g, '') || 'O';
+  const w = String(name || '').trim().split(/\s+/).filter(Boolean), t = w.length ? ((w[0][0] || '') + ((w[1] || '')[0] || '')).toUpperCase().replace(/[^A-Z0-9&]/g, '') : 'OMB';
   const cv = document.createElement('canvas'); cv.width = cv.height = 200; const c = cv.getContext('2d');
   c.fillStyle = '#111'; c.fillRect(0, 0, 200, 200); c.fillStyle = settings.accent || '#c9a24b';
   c.font = 'bold 96px Helvetica,Arial,sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(t, 100, 106);
@@ -578,7 +578,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v1';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v2';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
