@@ -498,7 +498,8 @@ function renderTabs(nav) {
 function invBadge(r) {
   if (r.status !== 'complete' || typeOf(r) === 'warning') return '';
   const inv = invoices.find(i => (i.recIds || []).includes(r.id));
-  if (inv && (inv.sent || inv.paid)) return '<span class="badge invd">Invoiced</span>';
+  if (inv && inv.paid) return '<span class="badge paid">Paid</span>';
+  if (inv && inv.sent) return '<span class="badge invd">Invoiced</span>';
   return inv ? '<span class="badge reqinv">Invoice not sent</span>' : '<span class="badge reqinv">Requires invoice</span>';
 }
 function trialBanner() {
@@ -524,12 +525,13 @@ function renderHome(v) {
     <div style="height:10px"></div>
     <button class="btn gold block" data-act="newRec" data-type="aircon">+ New air conditioning commissioning</button>
     <h2>Recent</h2>
-    ${list.length ? list.map(r => `${r.status === 'draft' ? '<div class="itemw">' : ''}
+    ${list.length ? list.slice(0, 5).map(r => `${r.status === 'draft' ? '<div class="itemw">' : ''}
       <button class="item" data-act="openRec" data-id="${r.id}">
         <div class="row sp"><span class="t">${esc(r.customer.name || 'No customer yet')}</span><span class="badges"><span class="badge ${r.status}">${r.status}</span>${invBadge(r)}</span></div>
         <div class="s">${esc((r.jobAddress || '').split('\n')[0] || 'No address yet')}</div>
         <div class="s">${FORM_SHORT[typeOf(r)]} · ${esc(r.ref)} · ${ukDate(r.inspectionDate)}${r._dirty ? ' · not synced' : ''}</div>
-      </button>${r.status === 'draft' ? `<button class="draftdel" data-act="delDraft" data-id="${r.id}">Delete draft</button></div>` : ''}`).join('') : `<div class="empty">No records yet.<br>Tap one of the buttons above to start.<br>You can do several forms for one customer in a single visit.</div>`}`;
+      </button>${r.status === 'draft' ? `<button class="draftdel" data-act="delDraft" data-id="${r.id}">Delete draft</button></div>` : ''}`).join('') : `<div class="empty">No records yet.<br>Tap one of the buttons above to start.<br>You can do several forms for one customer in a single visit.</div>`}
+    ${list.length > 5 ? `<p class="small muted" style="text-align:center">Showing the last 5 jobs. Older ones are under <a href="#" data-nav="customers" style="color:inherit;font-weight:700">Customers</a> – tap a customer to see all their jobs.</p>` : ''}`;
 }
 
 function renderPick(v) {
@@ -579,6 +581,16 @@ function paintCustList() {
     </div>`).join('') : `<div class="empty">${!customers.length ? 'No customers yet. Add one here, or they are saved automatically when you complete a form.' : mode === 'fav' && !q ? 'No favourites yet. Tap the ♡ beside a customer to add one.' : 'No matches.'}</div>`;
 }
 
+/* every job done for a customer, newest first – shown when you open the customer */
+function custJobs(c) {
+  const nm = String(c.name || '').trim().toLowerCase();
+  const list = records.filter(r => r.customerId === c.id || (!r.customerId && nm && String(r.customer.name || '').trim().toLowerCase() === nm))
+    .sort((a, b) => String(b.inspectionDate).localeCompare(String(a.inspectionDate)) || (b.updated || 0) - (a.updated || 0));
+  return `<h2>Previous jobs${list.length ? ' (' + list.length + ')' : ''}</h2>` + (list.length ? list.map(r => `<button class="item" data-act="openRec" data-id="${r.id}">
+      <div class="row sp"><span class="t">${FORM_SHORT[typeOf(r)]}</span><span class="badges"><span class="badge ${r.status}">${r.status}</span>${invBadge(r)}</span></div>
+      <div class="s">${esc((r.jobAddress || '').split('\n')[0] || 'No address')}</div>
+      <div class="s">${esc(r.ref)} · ${ukDate(r.inspectionDate)}</div></button>`).join('') : '<p class="small muted">No jobs yet for this customer.</p>');
+}
 function renderCustEdit(v) {
   const c = ui.cust;
   v.innerHTML = `
@@ -592,11 +604,12 @@ function renderCustEdit(v) {
     </div>
     <button class="btn gold block" data-act="saveCust">Save customer</button>
     ${c._new ? '' : `<div style="height:10px"></div><button class="btn block" data-act="recForCust">Start forms for this customer</button>
+    ${custJobs(c)}
     <div style="height:10px"></div><button class="btn danger block" data-act="delCust">Delete customer</button>`}
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v26';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v27';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
