@@ -33,7 +33,8 @@ const CLOUD = (() => {
   }
   async function req(path, o = {}) {
     const s = o.auth === false ? null : await fresh();
-    const h = Object.assign({ apikey: cfg.key, Authorization: 'Bearer ' + (s ? s.access_token : cfg.key) }, o.headers || {});
+    const h = Object.assign({ apikey: cfg.key }, o.headers || {});
+    if (s) h.Authorization = 'Bearer ' + s.access_token; else if (/^eyJ/.test(cfg.key)) h.Authorization = 'Bearer ' + cfg.key;   // new-style publishable keys go in apikey only
     let body = o.body;
     if (body !== undefined && typeof body !== 'string') { h['Content-Type'] = 'application/json'; body = JSON.stringify(body); }
     const r = await fetch(cfg.url + path, { method: o.method || 'GET', headers: h, body });
