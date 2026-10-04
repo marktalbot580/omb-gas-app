@@ -119,7 +119,7 @@ const SVC = (() => {
      so anything typed on the service form is never overwritten. Returns true if anything changed. */
   function prefill(s, g) {
     const n = Math.max(1, Math.min(4, +g.applianceCount || 1));
-    const a = (g.appliances || []).slice(0, n).find(x => x.type === 'Boiler');
+    const a = (g.appliances || []).slice(0, n).find(x => /boiler/i.test(x.type || ''));
     if (!a) return false;
     const up = v => (v === 'Pass' ? 'PASS' : v === 'Fail' ? 'FAIL' : v === 'NA' ? 'NA' : '');
     const m = [];

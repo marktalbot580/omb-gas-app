@@ -69,7 +69,7 @@ const WARN = (() => {
     gasProblems(g).forEach(x => {
       if (x.kind === 'app') {
         const a = x.a, f = blankFault();
-        f.location = a.location || ''; f.locationOther = a.locationOther || ''; f.type = TYPES.includes(a.type) ? a.type : '';
+        f.location = a.location || ''; f.locationOther = a.locationOther || ''; f.type = /boiler/i.test(a.type || '') ? 'Boiler' : TYPES.includes(a.type) ? a.type : '';
         f.make = a.manufacturer || ''; f.model = a.model || ''; f.notes = 'Gas safety check: ' + x.p.join(', ') + '.';
         drafts.push(f);
       } else if (x.kind === 'inst') {

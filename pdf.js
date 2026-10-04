@@ -186,7 +186,7 @@ async function drawPdf(rec, s, lv) {
     { h: 'OP (mbar)', w: 13, a: 'c' }, { h: 'HI (kW)', w: 12, a: 'c' }, ...(showFan ? [{ h: 'Fan pressure (mbar)', w: 15, a: 'c' }] : []), { h: 'Vent.', w: 12, a: 'c' }, { h: 'Flue visual', w: 14, a: 'c' },
     { h: 'Flue op.', w: 12, a: 'c' }, { h: 'Safety devices', w: 16, a: 'c' }, { h: 'Safe to use', w: 14, a: 'c' }
   ];
-  table('APPLIANCE DETAILS AND INSPECTION', cols, apps.map((a, i) => [{ t: String(i + 1), b: 1 }, loc(a), a.type, a.manufacturer, a.model + (a.gc ? '\nGC: ' + a.gc : ''), a.ownership, a.flue, a.serviced,
+  table('APPLIANCE DETAILS AND INSPECTION', cols, apps.map((a, i) => [{ t: String(i + 1), b: 1 }, loc(a), typeText(a), a.manufacturer, a.model + (a.gc ? '\nGC: ' + a.gc : ''), a.ownership, a.flue, a.serviced,
     a.op, a.hi, ...(showFan ? [fanOf(a)] : []), res(a.vent), res(a.terminal), res(a.flueOp), res(a.safety), safe(a.safe)]));
   /* key to the abbreviations used in the table above */
   {

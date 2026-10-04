@@ -21,7 +21,7 @@ function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.ad
 const OPT = {
   count: ['1', '2', '3', '4'],
   location: ['Kitchen', 'Bathroom', 'Airing cupboard', 'Utility', 'Bedroom', 'Garage', 'Loft', 'Compartment', 'Other'],
-  type: ['Boiler', 'Fire', 'Range Cooker', 'Water Heater', 'Gas Meter', 'Cooker', 'Hob', 'Oven', 'Gas Pipework', 'Warm Air Unit'],
+  type: ['Combi boiler', 'Regular boiler', 'System boiler', 'Cooker', 'Hob', 'Fire', 'Oven', 'Other'],
   ownership: ['Landlord', 'Homeowner', 'Tenant'],
   flue: ['Room Sealed', 'Open Flue', 'Flueless', 'Vertex'],
   test: ['Operating Pressure', 'Gas Rate', 'Both'],
@@ -77,8 +77,14 @@ const FORM_DOC = {
 const docLine = r => (FORM_DOC[typeOf(r)][1] ? `${FORM_DOC[typeOf(r)][0]} (${FORM_DOC[typeOf(r)][1].replace(/^Your /, '').replace(/ is due by$/, '')} due ${ukDate(r.renewal)})` : FORM_DOC[typeOf(r)][0]);
 const billable = m => (m ? m.filter(r => typeOf(r) !== 'warning') : m);
 
+/* appliance type on the gas safety record: "Other" has its own text box (typeOther); older records may hold older type names, which still display */
+const COOK_MAKES = ['Indesit', 'Whirlpool', 'Hotpoint', 'AEG', 'Lamona', 'Bosch', 'Beko'];
+const FIRE_MAKES = ['Valor', 'Flavel', 'Focal Point', 'Robinson Willey'];
+const typeText = a => (a.type === 'Other' ? (String(a.typeOther || '').trim() || 'Other') : (a.type || ''));
+const isBoilerType = t => /boiler/i.test(String(t || ''));
+const makesFor = t => (isBoilerType(t) || !t ? SVC.MAKE.filter(x => x !== 'Other') : /^(cooker|hob|oven|range cooker)$/i.test(t) ? COOK_MAKES : /^fire$/i.test(t) ? FIRE_MAKES : t === 'Other' ? [] : SVC.MAKE.filter(x => x !== 'Other'));
 const blankAppliance = () => ({
-  location: '', locationOther: '', type: '', manufacturer: '', model: '', gc: '', ownership: 'Landlord', flue: '', serviced: '',
+  location: '', locationOther: '', type: '', typeOther: '', manufacturer: '', model: '', gc: '', ownership: 'Landlord', flue: '', serviced: '',
   test: '', op: '', hi: '', safety: '', vent: '', terminal: '', flueOp: '',
   ratioMin: '', coMin: '', co2Min: '', ratioMax: '', coMax: '', co2Max: '', safe: ''
 });
@@ -300,7 +306,7 @@ function validate(rec) {
     const A = { app: i };
     need(1, P('location'), n + 'location', A);
     if (a.location === 'Other') need(1, P('locationOther'), n + 'location (other)', A);
-    need(1, P('type'), n + 'type', A); need(1, P('manufacturer'), n + 'manufacturer', A); need(1, P('model'), n + 'model', A);
+    need(1, P('type'), n + 'type', A); if (a.type === 'Other') need(1, P('typeOther'), n + 'type (other)', A); need(1, P('manufacturer'), n + 'manufacturer', A); need(1, P('model'), n + 'model', A);
     need(1, P('ownership'), n + 'ownership', A); need(1, P('flue'), n + 'flue type', A); need(1, P('serviced'), n + 'serviced', A);
     need(1, P('test'), n + 'which tests can be performed', A);
     if (a.test && a.test !== 'Gas Rate') need(1, P('op'), n + 'operating pressure', A);
@@ -444,8 +450,8 @@ function choice(path, label, opts, o = {}) {
 
 /* Manufacturer on the gas safety record: the same brand buttons as the boiler service, plus Other (free text).
    The value is still stored as plain text in "manufacturer", so the PDF and warning notice are unchanged. */
-function makeField(path, i) {
-  const brands = SVC.MAKE.filter(x => x !== 'Other');
+function makeField(path, i, type) {
+  const brands = makesFor(type);
   const v = String(getP(ui.rec, path) ?? '').trim();
   const hit = brands.find(x => x.toLowerCase() === v.toLowerCase());
   const key = ui.rec.id + '.' + i;
@@ -453,8 +459,8 @@ function makeField(path, i) {
   const bd = ui.showErr && !v;
   return `<div class="f ${bd ? 'bad' : ''}" data-f="${path}"><span>Manufacturer <b>*</b></span><div class="seg wrap">` +
     brands.map(x => `<button type="button" class="${hit === x ? 'on' : ''}" data-k="${path}" data-v="${esc(x)}">${esc(x)}</button>`).join('') +
-    `<button type="button" class="${other ? 'on' : ''}" data-act="mfrOther" data-path="${path}" data-i="${i}">Other</button></div></div>` +
-    (other ? txt(path, 'Manufacturer (other)', { req: 1 }) : '');
+    (brands.length ? `<button type="button" class="${other ? 'on' : ''}" data-act="mfrOther" data-path="${path}" data-i="${i}">Other</button>` : '') + `</div></div>` +
+    (other || !brands.length ? txt(path, brands.length ? 'Manufacturer (other)' : 'Manufacturer', { req: 1 }) : '');
 }
 
 /* "Age unknown" tick on the boiler service: stored as the text "Unknown" so the PDF and sheet show it as is */
@@ -589,7 +595,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v9';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v10';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -814,7 +820,8 @@ function stepAppliances() {
       ${choice(P('location'), 'Location of appliance', OPT.location, { req: 1, wrap: 1 })}
       ${a.location === 'Other' ? txt(P('locationOther'), 'Describe location', { req: 1 }) : ''}
       ${choice(P('type'), 'Appliance type', OPT.type, { req: 1, wrap: 1 })}
-      ${makeField(P('manufacturer'), i)}
+      ${a.type === 'Other' ? txt(P('typeOther'), 'Describe the appliance', { req: 1 }) : ''}
+      ${makeField(P('manufacturer'), i, a.type)}
       ${txt(P('model'), 'Model', { req: 1 })}
       ${txt(P('gc'), 'Gas Council number', { cap: 'characters' })}
       ${choice(P('ownership'), 'Who owns the appliance?', OPT.ownership, { req: 1, wrap: 1 })}
@@ -915,7 +922,7 @@ function recSummary(r) {
   else if (t === 'aircon') rows += dl('System', [AC.makeText(r), r.indoorModel].filter(Boolean).join(' ')) + dl('Gas', [AC.gasText(r), r.charge ? r.charge + ' g' : ''].filter(Boolean).join(' · ')) + dl('Pressure / vacuum', [r.pressure ? r.pressure + ' bar' : '', r.vacuum ? r.vacuum + ' hrs' : ''].filter(Boolean).join(' · ')) + dl('Drain / electrical', `${r.drain || '?'} / ${r.electrical || '?'}`);
   else if (t === 'warning') rows += dl('Faults', r.faults.slice(0, +r.faultCount || 1).map((f, i) => `${i + 1}. ${f.type || '?'} – ${f.cls || '?'}${f.riddor === 'YES' ? ' (RIDDOR)' : ''}`).join('\n'));
   else if (t === 'service') rows += dl('Boiler', [SVC.makeText(r), r.model].filter(Boolean).join(' ')) + dl('Visit', r.reason) + dl('Checks failed', String(SVC.failCount(r))) + dl('Safe to use', r.safe) + dl('Warning notice', r.warning) + dl('Next service', ukDate(r.renewal));
-  else rows += dl('Appliances', r.appliances.slice(0, n).map((a, i) => `${i + 1}. ${a.type || '?'} – ${a.safe === 'Yes' ? 'safe' : a.safe === 'No' ? 'NOT SAFE' : '?'}`).join('\n')) + dl('Defects', r.defectCount) + dl('Next check', ukDate(r.renewal));
+  else rows += dl('Appliances', r.appliances.slice(0, n).map((a, i) => `${i + 1}. ${typeText(a) || '?'} – ${a.safe === 'Yes' ? 'safe' : a.safe === 'No' ? 'NOT SAFE' : '?'}`).join('\n')) + dl('Defects', r.defectCount) + dl('Next check', ukDate(r.renewal));
   return rows;
 }
 /* ---- "Ready to send" card: tick the documents to send, then one button ---- */
@@ -1728,6 +1735,11 @@ function onChoice(path, val) {
   setP(r, path, val); ui.pdf = null;
   if (r._auto) delete r._auto[path];
   autoPass(r);
+  if (/^appliances\.\d+\.type$/.test(path)) {   // changing the type: drop a manufacturer that belongs to a different list
+    const ap = getP(r, path.replace(/\.type$/, '')), mk = String(ap.manufacturer || '').trim().toLowerCase();
+    if (mk && !makesFor(val).some(x => x.toLowerCase() === mk)) { ap.manufacturer = ''; if (ui.mfrOther) delete ui.mfrOther[r.id + '.' + path.split('.')[1]]; }
+    if (val !== 'Other') ap.typeOther = '';
+  }
   if (path === 'applianceCount') { const n = +val; while (r.appliances.length < n) r.appliances.push(blankAppliance()); if (ui.appTab >= n) ui.appTab = n - 1; }
   if (path === 'defectCount') { const n = +val; while (r.defects.length < n) r.defects.push(blankDefect()); }
   persistRec(r);
