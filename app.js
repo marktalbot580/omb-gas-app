@@ -524,12 +524,12 @@ function renderHome(v) {
     <div style="height:10px"></div>
     <button class="btn gold block" data-act="newRec" data-type="aircon">+ New air conditioning commissioning</button>
     <h2>Recent</h2>
-    ${list.length ? list.map(r => `
+    ${list.length ? list.map(r => `${r.status === 'draft' ? '<div class="itemw">' : ''}
       <button class="item" data-act="openRec" data-id="${r.id}">
         <div class="row sp"><span class="t">${esc(r.customer.name || 'No customer yet')}</span><span class="badges"><span class="badge ${r.status}">${r.status}</span>${invBadge(r)}</span></div>
         <div class="s">${esc((r.jobAddress || '').split('\n')[0] || 'No address yet')}</div>
         <div class="s">${FORM_SHORT[typeOf(r)]} · ${esc(r.ref)} · ${ukDate(r.inspectionDate)}${r._dirty ? ' · not synced' : ''}</div>
-      </button>`).join('') : `<div class="empty">No records yet.<br>Tap one of the buttons above to start.<br>You can do several forms for one customer in a single visit.</div>`}`;
+      </button>${r.status === 'draft' ? `<button class="draftdel" data-act="delDraft" data-id="${r.id}">Delete draft</button></div>` : ''}`).join('') : `<div class="empty">No records yet.<br>Tap one of the buttons above to start.<br>You can do several forms for one customer in a single visit.</div>`}`;
 }
 
 function renderPick(v) {
@@ -596,7 +596,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v12';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v13';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -743,7 +743,8 @@ function renderForm(v, nav) {
   else if (t === 'aircon') body = [null, acSystem, acRefrig][s]();
   else if (t === 'service') body = [null, svcBoiler, svcChecks, svcSafety, svcOperating, svcFinish][s]();
   else body = [null, stepAppliances, stepInstall, stepAlarms, stepDefects, stepNext][s]();
-  v.innerHTML = prog + body;
+  const delBtn = r.status === 'draft' && s !== last ? `<div style="height:22px"></div><button class="btn danger block" data-act="delRec">${job && job.length > 1 ? 'Delete this draft visit (' + job.length + ' forms)' : 'Delete this draft'}</button>` : '';
+  v.innerHTML = prog + body + delBtn;
   if (s === last - 1) initSigs();
   nav.className = 'tabs wiz';
   const more = t === 'gas' && s === 1 && ui.appTab < (+r.applianceCount || 1) - 1;
@@ -1028,7 +1029,7 @@ function stepReview() {
     <details class="adv"><summary>More options</summary>
       ${made ? `<button class="btn block" data-act="dlSel">Download selected</button><div style="height:8px"></div>
       <button class="btn block" data-act="makePdf" ${issues.length || needWarn.length ? 'disabled' : ''}>Re-create documents</button><div style="height:8px"></div>` : ''}
-      <button class="btn danger block" data-act="delRec">${multi ? 'Delete all ' + m.length + ' forms in this visit' : 'Delete this record'}</button>
+      <button class="btn danger block" data-act="delRec">${multi ? 'Delete all ' + m.length + ' forms in this visit' : r.status === 'draft' ? 'Delete this draft' : 'Delete this record'}</button>
     </details>`;
 }
 /* ---------- Legionella risk assessment steps ---------- */
@@ -1457,7 +1458,7 @@ function initSigs() {
 
 /* ---------- events ---------- */
 /* when the subscription has ended the app is read-only: look, download and export, but no new or changed records */
-const LOCKED_WRITES = new Set(['newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'pickProp', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod']);
+const LOCKED_WRITES = new Set(['newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'pickProp', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod']);
 const lockedMsg = () => toast('Your subscription has ended. Subscribe to create or change records.');
 document.addEventListener('click', async e => {
   const nav = e.target.closest('[data-nav]');
@@ -1553,6 +1554,13 @@ document.addEventListener('click', async e => {
     case 'sharePdfAll': await sharePdfAll(); break;
     case 'dlPdf': downloadPdf(records.find(x => x.id === b.dataset.id) || r); break;
     case 'viewPdf': window.open(URL.createObjectURL(ui.pdfs[b.dataset.id].blob), '_blank'); break;
+    case 'delDraft': {
+      const x = records.find(q => q.id === b.dataset.id);
+      if (x && confirm('Delete this draft' + (x.customer && x.customer.name ? ' for ' + x.customer.name : '') + '? This cannot be undone.')) {
+        PH.dropAll(PH.recIds(x)); records = records.filter(q => q.id !== x.id); delete ui.pdfs[x.id]; saveRecords(); deleteRemote('record', x.id); render();
+      }
+      break;
+    }
     case 'delRec': {
       const m = jobRecs() || [r];
       if (confirm(m.length > 1 ? `Delete all ${m.length} forms in this visit from this phone? This cannot be undone.` : 'Delete this record from this phone? This cannot be undone.')) {

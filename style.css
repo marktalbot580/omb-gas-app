@@ -171,5 +171,7 @@ body.gated{overflow:hidden}
 .gate-price{text-align:center;font-size:26px;margin:4px 0}.gate-price span{font-size:13px;color:var(--mut)}
 
 /* read-only mode when the subscription has ended */
-body.locked [data-act=newRec],body.locked [data-act=newCust],body.locked [data-act=newInvBlank],body.locked [data-act=editCust],body.locked [data-act=saveCust],body.locked [data-act=delRec],body.locked [data-act=invFromVisit],body.locked [data-act=pickGo],body.locked [data-act=addWarn],body.locked [data-act=favCust],body.locked #view button[data-k][data-v],body.locked #view input:not(#custSearch):not([data-s]),body.locked #view textarea:not([data-s]){opacity:.35;filter:grayscale(1)}
+body.locked [data-act=newRec],body.locked [data-act=newCust],body.locked [data-act=newInvBlank],body.locked [data-act=editCust],body.locked [data-act=saveCust],body.locked [data-act=delRec],body.locked [data-act=delDraft],body.locked [data-act=invFromVisit],body.locked [data-act=pickGo],body.locked [data-act=addWarn],body.locked [data-act=favCust],body.locked #view button[data-k][data-v],body.locked #view input:not(#custSearch):not([data-s]),body.locked #view textarea:not([data-s]){opacity:.35;filter:grayscale(1)}
 body.locked.gated{overflow:hidden}
+
+.itemw{position:relative;margin-bottom:10px}.itemw .item{margin-bottom:0;padding-bottom:40px}.draftdel{position:absolute;right:10px;bottom:6px;background:none;border:0;color:var(--bad);font:inherit;font-size:13px;padding:6px 8px;border-radius:8px}
