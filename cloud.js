@@ -43,8 +43,8 @@ const CLOUD = (() => {
   }
   /* remove this phone's copy so the next person to log in never sees it */
   function wipeLocal() {
-    try { Object.keys(localStorage).filter(k => /^(cph_|omb_)/.test(k)).forEach(k => localStorage.removeItem(k)); } catch (e) { }
-    try { indexedDB.deleteDatabase('cph_photos'); } catch (e) { }
+    try { Object.keys(localStorage).filter(k => /^omb_/.test(k)).forEach(k => localStorage.removeItem(k)); } catch (e) { }
+    try { indexedDB.deleteDatabase('omb_photos'); } catch (e) { }
     setTimeout(() => location.reload(), 400);
   }
   function signOutLocal() { session = null; sub = null; [KS, KB, KM, KP, KU, KT].forEach(ls.del); }
@@ -117,7 +117,7 @@ const CLOUD = (() => {
     const k = key(d.kind, d.id);
     const find = a => a.find(x => x.id === d.id);
     if (d.kind === 'settings') {
-      if ((d.updated || 0) > (settings.updated || 0)) { Object.assign(settings, d.data, { syncUrl: '', syncToken: '' }); LS.set('cph_settings', settings); }
+      if ((d.updated || 0) > (settings.updated || 0)) { Object.assign(settings, d.data, { syncUrl: '', syncToken: '' }); LS.set('omb_settings', settings); }
     } else if (d.deleted) {
       if (d.kind === 'customer') customers = customers.filter(x => x.id !== d.id);
       if (d.kind === 'record') records = records.filter(x => x.id !== d.id);

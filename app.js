@@ -92,17 +92,17 @@ const DEFAULT_SETTINGS = {
   invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '',
   bankName: '', accName: '', sortCode: '', accNo: '', invFooter: 'Thank you for your business.'
 };
-let settings = Object.assign({}, DEFAULT_SETTINGS, LS.get('cph_settings', {}));
-let customers = LS.get('cph_customers', []);
-let records = LS.get('cph_records', []);
-let invoices = LS.get('cph_invoices', []);
+let settings = Object.assign({}, DEFAULT_SETTINGS, LS.get('omb_settings', {}));
+let customers = LS.get('omb_customers', []);
+let records = LS.get('omb_records', []);
+let invoices = LS.get('omb_invoices', []);
 records.forEach(r => (r.appliances || []).forEach(a => { if (a.test === 'Burner Pressure') a.test = 'Operating Pressure'; }));
 /* 200109 or 20 01 09 -> 20-01-09 */
 const fmtSort = v => (String(v || '').replace(/\D/g, '').slice(0, 6).match(/.{1,2}/g) || []).join('-');
-const saveSettings = () => { settings.updated = Date.now(); LS.set('cph_settings', settings); applyBrand(); };
-const saveCustomers = () => LS.set('cph_customers', customers);
-const saveRecords = () => LS.set('cph_records', records);
-const saveInvoices = () => LS.set('cph_invoices', invoices);
+const saveSettings = () => { settings.updated = Date.now(); LS.set('omb_settings', settings); applyBrand(); };
+const saveCustomers = () => LS.set('omb_customers', customers);
+const saveRecords = () => LS.set('omb_records', records);
+const saveInvoices = () => LS.set('omb_invoices', invoices);
 
 /* ---------- branding: each business's own logo, name and accent colour ---------- */
 const cleanPrefix = p => String(p || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
@@ -552,7 +552,7 @@ function renderCustomers(v) {
     <button class="btn gold fab" data-act="newCust">+ Customer</button>`;
   paintCustList();
 }
-function custSort() { try { return localStorage.getItem('cph_custsort') || 'az'; } catch (e) { return 'az'; } }
+function custSort() { try { return localStorage.getItem('omb_custsort') || 'az'; } catch (e) { return 'az'; } }
 const custUses = c => records.filter(r => r.customerId === c.id).length;
 /* favourites first, then alphabetical – used by the customer drop-downs */
 const custAlpha = (a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || a.name.localeCompare(b.name);
@@ -588,7 +588,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v4';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v5';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1536,7 +1536,7 @@ document.addEventListener('click', async e => {
     }
     case 'custTab': ui.custTab = b.dataset.t; { const y = window.scrollY; render(); window.scrollTo(0, y); } break;
     case 'pickCustId': applyCust(b.dataset.id); break;
-    case 'custSort': try { localStorage.setItem('cph_custsort', b.dataset.s); } catch (e) { } render(); break;
+    case 'custSort': try { localStorage.setItem('omb_custsort', b.dataset.s); } catch (e) { } render(); break;
     case 'favCust': { const c = customers.find(x => x.id === b.dataset.id); if (c) { c.fav = !c.fav; c.updated = Date.now(); c._dirty = true; saveCustomers(); paintCustList(); } break; }
     case 'newCust': ui.cust = { _new: true, id: uid(), name: '', phone: '', email: '', billing: '', properties: [] }; ui.view = 'custEdit'; render(); break;
     case 'editCust': ui.cust = JSON.parse(JSON.stringify(customers.find(c => c.id === b.dataset.id))); ui.view = 'custEdit'; render(); break;

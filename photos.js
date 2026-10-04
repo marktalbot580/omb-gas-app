@@ -14,7 +14,7 @@ const PH = (() => {
     if (dbp) return dbp;
     dbp = new Promise((res, rej) => {
       try {
-        const q = indexedDB.open('cph_photos', 1);
+        const q = indexedDB.open('omb_photos', 1);
         q.onupgradeneeded = () => q.result.createObjectStore('p', { keyPath: 'id' });
         q.onsuccess = () => res(q.result);
         q.onerror = () => rej(q.error);
