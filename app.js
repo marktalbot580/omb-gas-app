@@ -596,7 +596,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v22';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v23';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1039,6 +1039,12 @@ async function sendSel() {
   if (recs.length === 1) return sharePdf(recs[0]);
   return sharePdfAll(recs);
 }
+/* open the email app without leaving the page (a plain location change leaves a blank screen in some browsers, e.g. Firefox with no mail app set) */
+const mailAddr = a => encodeURIComponent(String(a || '').trim()).replace(/%40/g, '@').replace(/%2C/g, ',');
+function openMail(url) {
+  try { const a = document.createElement('a'); a.href = url; a.rel = 'noopener'; a.style.display = 'none'; document.body.appendChild(a); a.click(); setTimeout(() => a.remove(), 1500); }
+  catch (e) { toast('Could not open your email app – attach the saved PDFs to an email yourself.'); }
+}
 async function mailSel() {
   const m = jobRecs() || [ui.rec], inv = invForVisit(m);
   const recs = m.filter(x => ui.pdfs[x.id] && selOn(x.id)), withInv = !!inv && selOn(inv.id);
@@ -1052,7 +1058,7 @@ async function mailSel() {
   await dlSel();
   await new Promise(r => setTimeout(r, 2200));   // give the phone time to save them before the email app opens
   if (withInv) markSent(inv);
-  location.href = `mailto:${encodeURIComponent(r0.customer.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
+  openMail(`mailto:${mailAddr(r0.customer.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`);
 }
 async function dlSel() {
   const m = jobRecs() || [ui.rec], inv = invForVisit(m);
@@ -1351,7 +1357,7 @@ async function sharePack(sel) {
   try { if (navigator.canShare && navigator.canShare({ files })) { await navigator.share({ files, title: subject, text }); markSent(inv); return; } }
   catch (err) { if (err.name === 'AbortError') return; console.warn(err); }
   parts.forEach(p => { const el = document.createElement('a'); el.href = URL.createObjectURL(p.blob); el.download = p.name; document.body.appendChild(el); el.click(); el.remove(); });
-  location.href = `mailto:${encodeURIComponent(r0.customer.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text + '\n\n(Attach the downloaded PDFs)')}`;
+  openMail(`mailto:${mailAddr(r0.customer.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text + '\n\n(Attach the downloaded PDFs)')}`);
   markSent(inv);
 }
 function invCardForVisit(m0) {
@@ -1477,7 +1483,7 @@ async function invShare() {
   try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: subject, text }); markSent(i); return; } }
   catch (err) { if (err.name === 'AbortError') return; console.warn(err); }
   invDownload();
-  location.href = `mailto:${encodeURIComponent(i.customer.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text + '\n\n(Attach the downloaded PDF)')}`;
+  openMail(`mailto:${mailAddr(i.customer.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text + '\n\n(Attach the downloaded PDF)')}`);
   markSent(i);
 }
 function invDownload() {
@@ -1899,7 +1905,7 @@ async function sharePdf(r) {
     if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: subject, text }); return; }
   } catch (err) { if (err.name === 'AbortError') return; console.warn(err); }
   downloadPdf(r);
-  location.href = `mailto:${encodeURIComponent(r.customer.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text + '\n\n(Attach the downloaded PDF)')}`;
+  openMail(`mailto:${mailAddr(r.customer.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text + '\n\n(Attach the downloaded PDF)')}`);
 }
 async function sharePdfAll(sel) {
   const m = sel || jobRecs() || [ui.rec], r0 = m[0];
@@ -1911,7 +1917,7 @@ async function sharePdfAll(sel) {
     if (navigator.canShare && navigator.canShare({ files })) { await navigator.share({ files, title: subject, text }); return; }
   } catch (err) { if (err.name === 'AbortError') return; console.warn(err); }
   m.forEach(r => downloadPdf(r));
-  location.href = `mailto:${encodeURIComponent(r0.customer.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text + '\n\n(Attach the downloaded PDFs)')}`;
+  openMail(`mailto:${mailAddr(r0.customer.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text + '\n\n(Attach the downloaded PDFs)')}`);
 }
 function downloadPdf(r) {
   r = r || ui.rec; const p = ui.pdfs[r.id];
