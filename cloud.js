@@ -11,7 +11,17 @@ const CLOUD = (() => {
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } },
     del(k) { try { localStorage.removeItem(k); } catch (e) { } }
   };
-  let session = ls.get(KS, null), sub = ls.get(KB, null), recovering = false;
+  /* "Remember this device": ticked keeps the login on this phone; unticked keeps it only until the app/browser is closed */
+  const ss = {
+    get(k, d) { try { const v = sessionStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+    set(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch (e) { } },
+    del(k) { try { sessionStorage.removeItem(k); } catch (e) { } }
+  };
+  const KID = 'omb_uid';
+  let remember = true, session = ls.get(KS, null);
+  if (!session) { session = ss.get(KS, null); if (session) remember = false; }
+  let sub = ls.get(KB, null), recovering = false;
+  function saveSession() { if (remember) { ls.set(KS, session); ss.del(KS); } else { ss.set(KS, session); ls.del(KS); } }
   const st = { busy: false, state: '', msg: '' };
 
   /* ---------- low level ---------- */
@@ -24,7 +34,7 @@ const CLOUD = (() => {
   }
   function setSession(j) {
     session = { access_token: j.access_token, refresh_token: j.refresh_token, expires_at: j.expires_at || Math.floor(Date.now() / 1000) + (j.expires_in || 3600), user: j.user ? { id: j.user.id, email: j.user.email } : (session && session.user) };
-    ls.set(KS, session);
+    saveSession();
   }
   async function fresh() {
     if (!session) return null;
@@ -48,7 +58,18 @@ const CLOUD = (() => {
     try { indexedDB.deleteDatabase('omb_photos'); } catch (e) { }
     setTimeout(() => location.reload(), 400);
   }
-  function signOutLocal() { session = null; sub = null; [KS, KB, KM, KP, KU, KT].forEach(ls.del); }
+  function signOutLocal() { session = null; sub = null; [KS, KB, KM, KP, KU, KT].forEach(ls.del); ss.del(KS); }
+  /* a different person logging in on a phone that still holds someone else's records: clear them first, so they never mix */
+  function userChanged() {
+    const id = session && session.user && session.user.id; if (!id) return false;
+    const last = ls.get(KID, null);
+    if (last && last !== id) {
+      try { Object.keys(localStorage).filter(k => /^omb_/.test(k) && k !== KS && k !== KID).forEach(k => localStorage.removeItem(k)); } catch (e) { }
+      try { indexedDB.deleteDatabase('omb_photos'); } catch (e) { }
+      ls.set(KID, id); saveSession(); setTimeout(() => location.reload(), 400); return true;
+    }
+    ls.set(KID, id); return false;
+  }
 
   /* ---------- sign in / up ---------- */
   async function signUp(email, password) {
@@ -76,7 +97,7 @@ const CLOUD = (() => {
     session = { access_token: h.get('access_token'), refresh_token: h.get('refresh_token'), expires_at: +h.get('expires_at') || Math.floor(Date.now() / 1000) + (+h.get('expires_in') || 3600), user: null };
     recovering = h.get('type') === 'recovery';
     history.replaceState(null, '', location.pathname + location.search);
-    fresh().then(() => req('/auth/v1/user')).then(u => { session.user = { id: u.id, email: u.email }; ls.set(KS, session); }).catch(() => { });
+    fresh().then(() => req('/auth/v1/user')).then(u => { session.user = { id: u.id, email: u.email }; saveSession(); }).catch(() => { });
   }
 
   /* ---------- subscription ---------- */
@@ -220,6 +241,7 @@ const CLOUD = (() => {
         <label>Email<input name="email" type="email" autocomplete="email" required></label>
         <label>Password<input name="pw" type="password" minlength="${up ? 8 : 1}" autocomplete="${up ? 'new-password' : 'current-password'}" required></label>
         ${up ? `<p class="gate-small">At least 8 characters. No card needed to start your free trial; after ${+cfg.trialDays || 14} days it is ${E(cfg.price || '£15/month')}.</p>` : ''}
+        <label class="rem"><input type="checkbox" name="rem" ${remember ? 'checked' : ''}> <span>Remember this device</span></label>
         <button class="btn gold block" ${working ? 'disabled' : ''}>${working ? 'Please wait…' : up ? 'Start free trial' : 'Log in'}</button>
         ${up ? '' : '<button type="button" class="link" data-g="mode-forgot">Forgot your password?</button>'}
         ${note ? `<p class="gate-ok">${E(note)}</p>` : ''}${err ? `<p class="gate-err">${E(err)}</p>` : ''}
@@ -258,8 +280,9 @@ const CLOUD = (() => {
     e.preventDefault(); const f = e.target.dataset.f, fd = new FormData(e.target), email = (fd.get('email') || '').trim(), pw = fd.get('pw') || '';
     err = ''; note = ''; working = true; gate();
     try {
-      if (f === 'signin') { await signIn(email, pw); }
-      else if (f === 'signup') { const r = await signUp(email, pw); if (r === 'confirm') { mode = 'in'; note = 'Check your email and tap the link to confirm, then log in here.'; working = false; gate(); return; } }
+      if (f === 'signin' || f === 'signup') remember = fd.get('rem') === 'on';
+      if (f === 'signin') { await signIn(email, pw); if (userChanged()) return; }
+      else if (f === 'signup') { const r = await signUp(email, pw); if (r === 'confirm') { mode = 'in'; note = 'Check your email and tap the link to confirm, then log in here.'; working = false; gate(); return; } if (userChanged()) return; }
       else if (f === 'forgot') { await recover(email); note = 'If that email has an account, a reset link is on its way.'; working = false; gate(); return; }
       else if (f === 'newpw') { await setPassword(pw); recovering = false; }
       working = false; await enter();

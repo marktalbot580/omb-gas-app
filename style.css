@@ -175,3 +175,5 @@ body.locked [data-act=newRec],body.locked [data-act=newCust],body.locked [data-a
 body.locked.gated{overflow:hidden}
 
 .itemw{position:relative;margin-bottom:10px}.itemw .item{margin-bottom:0;padding-bottom:40px}.draftdel{position:absolute;right:10px;bottom:6px;background:none;border:0;color:var(--bad);font:inherit;font-size:13px;padding:6px 8px;border-radius:8px}
+
+.gate-card label.rem{flex-direction:row;align-items:center;gap:10px;color:var(--txt)}.gate-card label.rem input{width:22px;height:22px;padding:0;accent-color:var(--gold)}
