@@ -86,7 +86,7 @@ const blankDefect = () => ({ text: '', cls: '', action: '' });
 
 /* ---------- persistent state ---------- */
 const DEFAULT_SETTINGS = {
-  businessName: '', logo: '', accent: '#c9a24b', refPrefix: 'REC', address: '', phone: '', email: '',
+  businessName: '', logo: '', accent: '#c9a24b', refPrefix: 'REC', updated: 0, address: '', phone: '', email: '',
   gasSafeReg: '', engineerName: '', gasSafeId: '', syncUrl: '', syncToken: '', gasSafeLogo: '', gasSafeLogoAR: 1,
   priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', discType: '£', discValue: '',
   invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '',
@@ -97,7 +97,7 @@ let customers = LS.get('cph_customers', []);
 let records = LS.get('cph_records', []);
 let invoices = LS.get('cph_invoices', []);
 records.forEach(r => (r.appliances || []).forEach(a => { if (a.test === 'Burner Pressure') a.test = 'Operating Pressure'; }));
-const saveSettings = () => { LS.set('cph_settings', settings); applyBrand(); };
+const saveSettings = () => { settings.updated = Date.now(); LS.set('cph_settings', settings); applyBrand(); };
 const saveCustomers = () => LS.set('cph_customers', customers);
 const saveRecords = () => LS.set('cph_records', records);
 const saveInvoices = () => LS.set('cph_invoices', invoices);
@@ -492,11 +492,19 @@ function invBadge(r) {
   if (inv && (inv.sent || inv.paid)) return '<span class="badge invd">Invoiced</span>';
   return inv ? '<span class="badge reqinv">Invoice not sent</span>' : '<span class="badge reqinv">Requires invoice</span>';
 }
+function trialBanner() {
+  if (!CLOUD.on) return '';
+  const a = CLOUD.access();
+  if (a.trial && a.days <= 5) return `<div class="notice">Your free trial ends in ${a.days} day${a.days === 1 ? '' : 's'}. <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Subscribe in Settings</a> to keep going.</div>`;
+  if (a.pastDue) return `<div class="notice err">Your last payment failed. Update your card in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a>.</div>`;
+  return '';
+}
 function renderHome(v) {
   const missing = !settings.address || !settings.gasSafeReg || !settings.engineerName || !settings.gasSafeId;
   const list = [...records].sort((a, b) => b.updated - a.updated);
   v.innerHTML = `
     <h1>Records</h1>
+    ${trialBanner()}
     ${missing ? `<div class="notice">Add the business address, Gas Safe register number and engineer details in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a> before issuing certificates.</div>` : ''}
     <button class="btn gold block" data-act="newRec" data-type="gas">+ New gas safety record</button>
     <div style="height:10px"></div>
@@ -578,7 +586,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v2';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v3';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -676,14 +684,19 @@ function renderSettings(v) {
       <button class="btn block" data-act="forceUpdate">Update app now</button>
       <p class="small muted" style="margin-bottom:0">Clears the saved copy of the app and reloads the newest version. Your records, customers and photos are not touched.</p>
     </div>
-    <details class="adv"><summary>Advanced: Google Sheets (optional)</summary>
-    <div class="card" style="margin-top:10px">
-      ${f('syncUrl', 'Web app URL', { cap: 'none', hint: 'From the Apps Script deployment (see SETUP.md). Leave blank to keep everything on this phone only.' })}
-      ${f('syncToken', 'Secret token', { cap: 'none', hint: 'Must match TOKEN in the Apps Script.' })}
+    ${CLOUD.on ? accountCard() : ''}`;
+}
+function accountCard() {
+  const a = CLOUD.access(), sub = CLOUD.sub();
+  const plan = !sub ? 'Checking…' : a.paid ? (a.pastDue ? 'Subscribed – last payment failed, please update your card' : 'Subscribed') : a.trial ? `Free trial – ${a.days} day${a.days === 1 ? '' : 's'} left` : 'Not subscribed';
+  return `<h2>Account</h2><div class="card">
+      <p class="small" style="margin-top:0">Signed in as <b>${esc(CLOUD.email())}</b><br><span class="muted">${esc(plan)}</span></p>
       <button class="btn block" data-act="syncNow">Sync now</button>
-      <p class="small muted" id="syncMsg">${esc(ui.syncState)}</p>
-    </div></details>
-    <p class="small muted">Records and customers are always saved on this phone first, so the form works with no signal. They upload to the Sheet whenever there is a connection.</p>`;
+      <p class="small muted" id="syncMsg">${esc(CLOUD.st.msg)}</p>
+      <button class="btn block" data-act="billing">${a.paid ? 'Manage subscription' : 'Subscribe'}</button>
+      <div style="height:8px"></div><button class="btn block ghost" data-act="logout">Log out</button>
+      <p class="small muted" style="margin-bottom:0">Everything you enter is saved on this phone first, so it works with no signal, and syncs to your account whenever you are online.</p>
+    </div>`;
 }
 
 /* ---------- the form wizard ---------- */
@@ -1535,6 +1548,12 @@ document.addEventListener('click', async e => {
     case 'forceUpdate': forceUpdate(); break;
     case 'expAll': exportBackup(); break;
     case 'syncNow': await syncAll(true); break;
+    case 'billing': try { if (CLOUD.access().paid) await CLOUD.fn('portal'); else await CLOUD.fn('checkout'); } catch (e) { toast(e.message); } break;
+    case 'logout':
+      if (!confirm('Log out? Your records stay safe in your account and come back when you log in. The copy on this phone is removed.')) break;
+      toast('Syncing before you go…'); await CLOUD.sync();
+      if (CLOUD.st.state === 'error' && !confirm('The last sync did not finish, so recent changes could be lost. Log out anyway?')) break;
+      await CLOUD.signOut(true); break;
     case 'expInv': exportInvoices(); break;
     case 'discType': { const y = window.scrollY; settings.discType = b.dataset.t; saveSettings(); render(); window.scrollTo(0, y); break; }
     case 'vatReg': { const y = window.scrollY; settings.vatReg = settings.vatReg === 'Yes' ? 'No' : 'Yes'; saveSettings(); render(); window.scrollTo(0, y); break; }
@@ -1567,7 +1586,7 @@ document.addEventListener('click', async e => {
     case 'invShare': await invShare(); break;
     case 'invDl': invDownload(); break;
     case 'invView': window.open(URL.createObjectURL(ui.invPdf.blob), '_blank'); break;
-    case 'invDel': if (confirm('Delete this invoice from this phone? This cannot be undone.')) { invoices = invoices.filter(x => x.id !== ui.inv.id); saveInvoices(); ui.view = ui.invFrom === 'visit' ? 'form' : 'invoices'; ui.inv = null; render(); } break;
+    case 'invDel': if (confirm('Delete this invoice from this phone? This cannot be undone.')) { invoices = invoices.filter(x => x.id !== ui.inv.id); saveInvoices(); deleteRemote('invoice', ui.inv.id); ui.view = ui.invFrom === 'visit' ? 'form' : 'invoices'; ui.inv = null; render(); } break;
   }
 });
 document.addEventListener('input', e => {
@@ -1815,42 +1834,10 @@ async function restoreBackup(file) {
   } catch (err) { toast('That file is not a valid backup'); }
 }
 
-/* ---------- Google Sheets sync (via the Apps Script web app in /apps-script) ---------- */
-const slim = r => { const c = { ...r }; delete c._dirty; c.customerSig = c.customerSig ? 'signed' : ''; c.engineerSig = c.engineerSig ? 'signed' : ''; return c; }; // keep cells small; signatures live in the PDF
-function paintSync() {
-  const d = $('#syncDot'); d.className = 'dot ' + (!settings.syncUrl ? '' : ui.syncState === 'busy' ? 'busy' : ui.syncState === 'error' ? 'err' : 'ok');
-  const m = $('#syncMsg'); if (m) m.textContent = ui.syncMsg || '';
-}
-async function post(payload) {
-  const res = await fetch(settings.syncUrl, { method: 'POST', body: JSON.stringify({ token: settings.syncToken, ...payload }) });
-  const j = await res.json(); if (j.error) throw new Error(j.error); return j;
-}
-async function syncAll(manual) {
-  if (!settings.syncUrl) { if (manual) { ui.syncMsg = 'Add the web app URL first.'; paintSync(); } return; }
-  if (syncAll.busy) return; syncAll.busy = true; ui.syncState = 'busy'; paintSync();
-  try {
-    for (const c of customers.filter(c => c._dirty)) { await post({ action: 'saveCustomer', customer: { ...c, _dirty: undefined } }); c._dirty = false; }
-    saveCustomers();
-    for (const r of records.filter(r => r._dirty)) {
-      const payload = { action: 'saveRecord', record: slim(r) };
-      if (r.status === 'complete') { const blob = await buildPdf(r, settings); payload.pdf = await blobB64(blob); payload.pdfName = pdfName(r); }
-      const j = await post(payload); r.pdfUrl = j.pdfUrl || r.pdfUrl; r._dirty = false;
-    }
-    saveRecords();
-    const j = await (await fetch(`${settings.syncUrl}?action=list&token=${encodeURIComponent(settings.syncToken)}`)).json();
-    if (j.error) throw new Error(j.error);
-    mergeRemote(j);
-    ui.syncState = 'ok'; ui.syncMsg = 'Synced ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    if (ui.view === 'home' || ui.view === 'customers') render();
-  } catch (err) { console.warn(err); ui.syncState = 'error'; ui.syncMsg = 'Sync failed: ' + err.message; }
-  syncAll.busy = false; paintSync();
-}
-function mergeRemote(j) {
-  (j.customers || []).forEach(rc => { const l = customers.find(c => c.id === rc.id); if (!l) customers.push({ ...rc, _dirty: false }); else if (!l._dirty && (+rc.updated || 0) > (l.updated || 0)) Object.assign(l, rc, { _dirty: false }); });
-  (j.records || []).forEach(rr => { const l = records.find(r => r.id === rr.id); if (!l) records.push({ ...rr, _dirty: false }); else if (!l._dirty && (+rr.updated || 0) > (l.updated || 0)) { const keep = { customerSig: l.customerSig, engineerSig: l.engineerSig }; Object.assign(l, rr, keep, { _dirty: false }); } });
-  saveCustomers(); saveRecords();
-}
-async function deleteRemote(kind, id) { if (!settings.syncUrl) return; try { await post({ action: kind === 'record' ? 'deleteRecord' : 'deleteCustomer', id }); } catch (e) { console.warn(e); } }
+/* ---------- cloud sync (see cloud.js) ---------- */
+const paintSync = () => CLOUD.paint();
+const syncAll = manual => CLOUD.sync(manual);
+const deleteRemote = (kind, id) => CLOUD.del(kind, id);
 const blobB64 = blob => new Promise(res => { const f = new FileReader(); f.onload = () => res(f.result.split(',')[1]); f.readAsDataURL(blob); });
 
 /* ---------- keep the focused field visible when the phone keyboard opens ---------- */
@@ -1875,4 +1862,4 @@ window.addEventListener('online', () => syncAll());
 window.__app = { invoices: () => invoices, newInvoice, invTotals, buildInvPdf, ui, get settings() { return settings; }, get records() { return records; }, get customers() { return customers; }, render, validate, buildPdf, newRecord, blankAppliance, blankDefect, mates, jobRecs, jobSeq, startJob, goTo, SVC, LEG };
 applyBrand();
 render();
-syncAll();
+CLOUD.start();

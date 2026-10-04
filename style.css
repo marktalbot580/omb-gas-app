@@ -149,3 +149,23 @@ body.kb .tabs,body.kb .fab{display:none}
 .item.crow .heart.on{color:var(--bad)}
 .ph-btns{gap:8px}.ph-btns .btn{padding:13px 8px}
 .item.cpick{margin-bottom:8px}.item.cpick.on{border-color:var(--gold);background:#251f10}
+
+/* ---- sign-in / subscribe screen ---- */
+body.gated{overflow:hidden}
+#gate{position:fixed;inset:0;z-index:100;background:var(--bg);overflow-y:auto;padding:calc(24px + env(safe-area-inset-top)) 16px 40px}
+.gate-in{max-width:420px;margin:0 auto}
+.gate-brand{text-align:center;margin-bottom:18px}
+.gate-brand img{width:72px;height:72px;border-radius:16px;background:#fff;object-fit:contain}
+.gate-brand h1{font-size:22px;margin:10px 0 2px}
+.gate-brand p{margin:0;color:var(--mut);font-size:14px}
+.gate-tabs{display:flex;gap:6px;margin-bottom:12px}
+.gate-tabs button{flex:1;padding:11px 8px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--mut);font:inherit;font-weight:600}
+.gate-tabs button.on{background:var(--gold);color:#111;border-color:var(--gold)}
+.gate-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px}
+.gate-card h2{margin:0;font-size:18px}
+.gate-card label{display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--mut)}
+.gate-card input{font:inherit;font-size:16px;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--txt)}
+.gate-card .link{background:none;border:0;color:var(--gold2);font:inherit;padding:6px;text-decoration:underline}
+.gate-small{margin:0;font-size:13px;color:var(--mut)}
+.gate-err{margin:0;color:var(--bad);font-size:14px}.gate-ok{margin:0;color:var(--ok);font-size:14px}
+.gate-price{text-align:center;font-size:26px;margin:4px 0}.gate-price span{font-size:13px;color:var(--mut)}
