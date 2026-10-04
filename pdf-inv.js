@@ -164,7 +164,7 @@ async function buildInvPdf(inv, s) {
     if (s.accName || s.sortCode || s.accNo) {
       if (s.bankName) pay.push({ t: 'Bank: ' + s.bankName });
       if (s.accName) pay.push({ t: 'Account name: ' + s.accName });
-      if (s.sortCode) pay.push({ t: 'Sort code: ' + s.sortCode });
+      if (s.sortCode) pay.push({ t: 'Sort code: ' + fmtSort(s.sortCode) });
       if (s.accNo) pay.push({ t: 'Account number: ' + s.accNo });
     }
   } else {

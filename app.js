@@ -97,6 +97,8 @@ let customers = LS.get('cph_customers', []);
 let records = LS.get('cph_records', []);
 let invoices = LS.get('cph_invoices', []);
 records.forEach(r => (r.appliances || []).forEach(a => { if (a.test === 'Burner Pressure') a.test = 'Operating Pressure'; }));
+/* 200109 or 20 01 09 -> 20-01-09 */
+const fmtSort = v => (String(v || '').replace(/\D/g, '').slice(0, 6).match(/.{1,2}/g) || []).join('-');
 const saveSettings = () => { settings.updated = Date.now(); LS.set('cph_settings', settings); applyBrand(); };
 const saveCustomers = () => LS.set('cph_customers', customers);
 const saveRecords = () => LS.set('cph_records', records);
@@ -586,7 +588,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v3';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v4';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -602,7 +604,7 @@ async function forceUpdate() {
   location.replace(location.pathname + '?u=' + Date.now());
 }
 function renderSettings(v) {
-  const f = (k, l, o = {}) => `<label class="f"><span>${l}</span>${o.area ? `<textarea data-s="${k}" rows="3">${esc(settings[k])}</textarea>` : `<input data-s="${k}" value="${esc(settings[k])}" ${o.type ? `type="${o.type}"` : ''} ${o.mode ? `inputmode="${o.mode}"` : ''} autocomplete="off" ${o.cap ? `autocapitalize="${o.cap}"` : ''}>`}${o.hint ? `<small>${o.hint}</small>` : ''}</label>`;
+  const f = (k, l, o = {}) => `<label class="f"><span>${l}</span>${o.area ? `<textarea data-s="${k}" rows="3">${esc(settings[k])}</textarea>` : `<input data-s="${k}" value="${esc(k === 'sortCode' ? fmtSort(settings[k]) : settings[k])}" ${o.type ? `type="${o.type}"` : ''} ${o.mode ? `inputmode="${o.mode}"` : ''} autocomplete="off" ${o.maxlen ? `maxlength="${o.maxlen}"` : ''} ${o.cap ? `autocapitalize="${o.cap}"` : ''}>`}${o.hint ? `<small>${o.hint}</small>` : ''}</label>`;
   v.innerHTML = `
     <h1>Settings</h1>
     <h2>Business (printed on every certificate)</h2>
@@ -664,7 +666,7 @@ function renderSettings(v) {
       <p class="small muted" style="margin-top:0">Anything filled in here is printed on unpaid invoices so the customer can pay by bank transfer, using the invoice number as the payment reference. Leave blank to print nothing.</p>
       ${f('bankName', 'Bank')}
       ${f('accName', 'Account name')}
-      ${f('sortCode', 'Sort code', { mode: 'numeric' })}
+      ${f('sortCode', 'Sort code', { mode: 'numeric', maxlen: 8, hint: 'Six digits, for example 20-01-09' })}
       ${f('accNo', 'Account number', { mode: 'numeric' })}
     </div>
     <h2>Backup</h2>
@@ -1591,6 +1593,7 @@ document.addEventListener('click', async e => {
 });
 document.addEventListener('input', e => {
   const t = e.target;
+  if (t.dataset.s === 'sortCode') t.value = fmtSort(t.value);
   if (t.id === 'custSearch') { ui.search = t.value; paintCustList(); return; }
   if (t.dataset.tm) {
     const r = ui.rec, box = t.parentNode.parentNode;
