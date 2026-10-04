@@ -596,7 +596,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v25';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v26';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1055,7 +1055,7 @@ function sendCard(m) {
   return `<div class="card pdfok" style="margin-top:12px"><div style="font-weight:700;margin-bottom:10px">Ready to send</div>
     ${recRows}${invRow}${paid}
     <button class="btn gold block" data-act="sendSel" ${n ? '' : 'disabled'}>${n ? `Email / share ${n} document${n > 1 ? 's' : ''}` : 'Tick something to send'}</button>
-    <p class="small muted" style="margin-bottom:0">Opens your phone’s share sheet with the ticked PDFs attached – pick Outlook, Gmail or Mail.${m[0].customer.email ? ' The customer’s email address (' + esc(m[0].customer.email) + ') is copied for you – long-press the To box and paste it.' : ''}</p></div>`;
+    <p class="small muted" style="margin-bottom:0">Opens your phone’s share sheet with the ticked PDFs attached – pick any app – Outlook, Gmail, WhatsApp…${m[0].customer.email ? ' The customer’s email address (' + esc(m[0].customer.email) + ') is copied for you – long-press the To box and paste it.' : ''}</p></div>`;
 }
 async function sendSel() {
   const m = jobRecs() || [ui.rec], inv = invForVisit(m);
@@ -1073,8 +1073,15 @@ async function sendSel() {
 /* open the email app without leaving the page (a plain location change leaves a blank screen in some browsers, e.g. Firefox with no mail app set) */
 const mailAddr = a => encodeURIComponent(String(a || '').trim()).replace(/%40/g, '@').replace(/%2C/g, ',');
 function openMail(url) {
-  try { const a = document.createElement('a'); a.href = url; a.rel = 'noopener'; a.style.display = 'none'; document.body.appendChild(a); a.click(); setTimeout(() => a.remove(), 1500); }
-  catch (e) { toast('Could not open your email app – attach the saved PDFs to an email yourself.'); }
+  /* this browser could not hand the PDFs to the share sheet, so say so clearly instead of jumping straight into an email with nothing attached */
+  const old = document.getElementById('mailBox'); if (old) old.remove();
+  const d = document.createElement('div'); d.id = 'mailBox';
+  d.innerHTML = `<div class="instbox"><div class="insthead"><div><b>PDFs saved to your phone</b><span>This browser can’t attach them for you</span></div></div>
+    <p class="small">They are in your <b>Downloads</b> folder. Open the email, then tap the paperclip and choose them. For one-tap sharing with the PDFs attached (WhatsApp, Outlook, Gmail…), open this app in <b>Chrome</b>.</p>
+    <a class="btn gold block" style="text-align:center;text-decoration:none" href="${url.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}" rel="noopener" id="mailGo">Open the email</a>
+    <div class="instrow"><button class="btn ghost" id="mailX">Close</button></div></div>`;
+  document.body.appendChild(d);
+  d.querySelector('#mailX').onclick = () => d.remove(); d.querySelector('#mailGo').onclick = () => setTimeout(() => d.remove(), 600);
 }
 async function dlSel() {
   const m = jobRecs() || [ui.rec], inv = invForVisit(m);
