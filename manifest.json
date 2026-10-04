@@ -2,6 +2,7 @@
   "name": "OMB Gas Service",
   "short_name": "OMB Gas",
   "description": "Gas Safe, Legionella and air-con records for tradespeople",
+  "id": "./",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

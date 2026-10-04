@@ -513,6 +513,7 @@ function renderHome(v) {
   const list = [...records].sort((a, b) => b.updated - a.updated);
   v.innerHTML = `
     <h1>Records</h1>
+    ${installCard()}
     ${trialBanner()}
     ${missing ? `<div class="notice">Add the business address, Gas Safe register number and engineer details in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a> before issuing certificates.</div>` : ''}
     <button class="btn gold block" data-act="newRec" data-type="gas">+ New gas safety record</button>
@@ -595,7 +596,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v10';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v11';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -610,10 +611,25 @@ async function forceUpdate() {
   try { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); } catch (e) { }
   location.replace(location.pathname + '?u=' + Date.now());
 }
+
+/* ---------- install to the home screen ---------- */
+let _installEvt = null;
+const isStandalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); _installEvt = e; if (ui.view === 'home' || ui.view === 'settings') render(); });
+window.addEventListener('appinstalled', () => { _installEvt = null; if (ui.view === 'home' || ui.view === 'settings') render(); });
+function installCard(force) {
+  if (isStandalone() || (!force && LS.get('omb_noinstall', false))) return '';
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const how = _installEvt ? '<button class="btn gold block" data-act="installApp">Install on this phone</button>'
+    : ios ? '<p class="small" style="margin:6px 0 0">In Safari tap the <b>Share</b> button (square with an arrow), then <b>Add to Home Screen</b>.</p>'
+    : '<p class="small" style="margin:6px 0 0">Open your browser menu (the three dots) and tap <b>Install app</b> or <b>Add to Home screen</b>.</p>';
+  return `<div class="notice">Put this app on your home screen so it opens like a normal app and works with no signal.${how}${force ? '' : '<div style="margin-top:8px"><a href="#" data-act="hideInstall" style="color:inherit;opacity:.7">Not now</a></div>'}</div>`;
+}
 function renderSettings(v) {
   const f = (k, l, o = {}) => `<label class="f"><span>${l}</span>${o.area ? `<textarea data-s="${k}" rows="3">${esc(settings[k])}</textarea>` : `<input data-s="${k}" value="${esc(k === 'sortCode' ? fmtSort(settings[k]) : settings[k])}" ${o.type ? `type="${o.type}"` : ''} ${o.mode ? `inputmode="${o.mode}"` : ''} autocomplete="off" ${o.maxlen ? `maxlength="${o.maxlen}"` : ''} ${o.cap ? `autocapitalize="${o.cap}"` : ''}>`}${o.hint ? `<small>${o.hint}</small>` : ''}</label>`;
   v.innerHTML = `
     <h1>Settings</h1>
+    ${installCard(true)}
     <h2>Business (printed on every certificate)</h2>
     <div class="card">
       ${f('businessName', 'Business name')}
@@ -1560,6 +1576,8 @@ document.addEventListener('click', async e => {
     case 'mailSel': await mailSel(); break;
     case 'forceUpdate': forceUpdate(); break;
     case 'expAll': exportBackup(); break;
+    case 'installApp': if (_installEvt) { _installEvt.prompt(); try { await _installEvt.userChoice; } catch (e) { } _installEvt = null; render(); } break;
+    case 'hideInstall': LS.set('omb_noinstall', true); render(); break;
     case 'syncNow': await syncAll(true); break;
     case 'billing': try { if (CLOUD.access().paid) await CLOUD.fn('portal'); else await CLOUD.fn('checkout'); } catch (e) { toast(e.message); } break;
     case 'logout':
