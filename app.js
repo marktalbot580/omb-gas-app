@@ -596,7 +596,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v23';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v25';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -858,6 +858,38 @@ function custPicker(r) {
     ${body}
     ${r.customerId ? `<button type="button" class="btn ghost block" data-act="pickCustId" data-id="" style="margin-top:4px">Clear – enter a new customer instead</button>` : ''}</div>`;
 }
+/* ---------- repeat visit: copy the appliance details (make, model, GC number…) from the last visit to the same property ---------- */
+const PREV_GAS = ['location', 'locationOther', 'type', 'typeOther', 'manufacturer', 'model', 'gc', 'ownership', 'flue'];
+const PREV_SVC = ['location', 'locationOther', 'make', 'makeOther', 'model', 'systemType', 'systemOther', 'serial', 'gc', 'flue'];
+const pickKeys = (o, keys) => Object.fromEntries(keys.map(k => [k, (o && o[k]) || '']));
+function prevVisit(r) {
+  const t = typeOf(r); if (t !== 'gas' && t !== 'service') return null;
+  const addr = String(r.jobAddress || '').trim().toLowerCase(), nm = String(r.customer.name || '').trim().toLowerCase();
+  if (!addr || (!r.customerId && !nm)) return null;
+  const hasData = x => t === 'gas' ? (x.appliances || []).some(a => a.model || a.manufacturer) : !!(x.model || x.make);
+  return records.filter(x => x.id !== r.id && typeOf(x) === t && String(x.jobAddress || '').trim().toLowerCase() === addr
+    && ((r.customerId && x.customerId === r.customerId) || String(x.customer.name || '').trim().toLowerCase() === nm) && hasData(x))
+    .sort((a, b) => String(b.inspectionDate).localeCompare(String(a.inspectionDate)) || (b.updated || 0) - (a.updated || 0))[0] || null;
+}
+function prevCard(r) {
+  const p = prevVisit(r); if (!p) return '';
+  const t = typeOf(r), blank = t === 'gas' ? !r.appliances.some(a => a.model || a.manufacturer) : !(r.model || r.make);
+  if (!blank) return '';
+  const list = t === 'gas' ? (p.appliances || []).slice(0, +p.applianceCount || 1).map(a => [a.manufacturer, a.model].filter(Boolean).join(' ')).filter(Boolean) : [[p.make === 'Other' ? p.makeOther : p.make, p.model].filter(Boolean).join(' ')];
+  return `<div class="card"><p class="small" style="margin-top:0"><b>You were here before</b> (${esc(ukDate(p.inspectionDate))}): ${esc(list.join(' · ') || 'appliance details saved')}</p>
+    <button class="btn gold block" data-act="copyPrev">Copy the appliance details from last time</button>
+    <p class="small muted" style="margin-bottom:0">Fills in the make, model, Gas Council number, location and type. Test readings and signatures are left blank for you to do again.</p></div>`;
+}
+function applyPrev(r) {
+  const p = prevVisit(r); if (!p) return;
+  if (typeOf(r) === 'gas') {
+    const n = Math.min(+p.applianceCount || 1, 4);
+    r.applianceCount = String(n);
+    r.appliances = Array.from({ length: n }, (_, i) => ({ ...blankAppliance(), ...pickKeys(p.appliances[i], PREV_GAS) }));
+    r.appliances.forEach(a => { if (!a.ownership) a.ownership = 'Landlord'; });
+  } else Object.assign(r, pickKeys(p, PREV_SVC));
+  persistRec(r); toast('Appliance details copied – check they are still right');
+}
 function stepCustomer() {
   const r = ui.rec, cu = customers.find(c => c.id === r.customerId);
   return `
@@ -875,6 +907,7 @@ function stepCustomer() {
       ${txt('jobAddress', 'Job address', { area: 1, rows: 3, req: 1 })}
       <button class="btn block" data-act="sameAddr">Same as billing address</button>
     </div>
+    ${prevCard(r)}
     <div class="card">${txt('inspectionDate', isLeg(r) ? 'Date of assessment' : isAc(r) ? 'Date of commissioning' : 'Date of inspection', { type: 'date' })}</div>`;
 }
 
@@ -1022,9 +1055,7 @@ function sendCard(m) {
   return `<div class="card pdfok" style="margin-top:12px"><div style="font-weight:700;margin-bottom:10px">Ready to send</div>
     ${recRows}${invRow}${paid}
     <button class="btn gold block" data-act="sendSel" ${n ? '' : 'disabled'}>${n ? `Email / share ${n} document${n > 1 ? 's' : ''}` : 'Tick something to send'}</button>
-    <button class="btn block" style="margin-top:10px" data-act="mailSel" ${n ? '' : 'disabled'}>Email with address &amp; subject filled in</button>
-    <p class="small muted" style="margin:6px 0 0">Opens your email app with the customer's address, subject and message ready. The PDFs are saved to your phone first – tap the paperclip in the email to attach them.</p>
-    <p class="small muted" style="margin-bottom:0">Opens your phone’s share sheet with the ticked PDFs attached – pick Mail or Gmail${m[0].customer.email ? ' and it is ready to send to ' + esc(m[0].customer.email) : ''}.</p></div>`;
+    <p class="small muted" style="margin-bottom:0">Opens your phone’s share sheet with the ticked PDFs attached – pick Outlook, Gmail or Mail.${m[0].customer.email ? ' The customer’s email address (' + esc(m[0].customer.email) + ') is copied for you – long-press the To box and paste it.' : ''}</p></div>`;
 }
 async function sendSel() {
   const m = jobRecs() || [ui.rec], inv = invForVisit(m);
@@ -1044,21 +1075,6 @@ const mailAddr = a => encodeURIComponent(String(a || '').trim()).replace(/%40/g,
 function openMail(url) {
   try { const a = document.createElement('a'); a.href = url; a.rel = 'noopener'; a.style.display = 'none'; document.body.appendChild(a); a.click(); setTimeout(() => a.remove(), 1500); }
   catch (e) { toast('Could not open your email app – attach the saved PDFs to an email yourself.'); }
-}
-async function mailSel() {
-  const m = jobRecs() || [ui.rec], inv = invForVisit(m);
-  const recs = m.filter(x => ui.pdfs[x.id] && selOn(x.id)), withInv = !!inv && selOn(inv.id);
-  if (!recs.length && !withInv) { toast('Tick at least one document'); return; }
-  const r0 = recs[0] || m[0], first = greetName(r0.customer.name), addr = (r0.jobAddress || '').replace(/\n/g, ', ');
-  const T = withInv ? invTotals(inv) : null;
-  const subject = `${[...recs.map(r => SUBJ[typeOf(r)]), ...(withInv ? ['invoice ' + inv.number] : [])].join(recs.length && withInv ? ' and ' : ', ').replace(/^invoice/, 'Invoice')} – ${(r0.jobAddress || '').split('\n')[0]}`;
-  const lines = [...recs.map(r => `- ${docLine(r)}`), ...(withInv ? [`- Invoice ${inv.number}: ${money(T.total)}${inv.paid ? ' (paid – thank you)' : ', payment due by ' + ukDate(inv.due)}`] : [])];
-  const text = `Hi ${first},\n\nPlease find attached your ${withInv && !recs.length ? 'invoice' : 'records' + (withInv ? ' and invoice' : '')} for ${addr}, carried out on ${ukDate(r0.inspectionDate)}:\n${lines.join('\n')}\n\nKind regards,\n${signOff()}`;
-  toast('Saving the PDFs to your phone…');
-  await dlSel();
-  await new Promise(r => setTimeout(r, 2200));   // give the phone time to save them before the email app opens
-  if (withInv) markSent(inv);
-  openMail(`mailto:${mailAddr(r0.customer.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`);
 }
 async function dlSel() {
   const m = jobRecs() || [ui.rec], inv = invForVisit(m);
@@ -1520,7 +1536,7 @@ function initSigs() {
 
 /* ---------- events ---------- */
 /* when the subscription has ended the app is read-only: look, download and export, but no new or changed records */
-const LOCKED_WRITES = new Set(['newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'pickProp', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod']);
+const LOCKED_WRITES = new Set(['newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod']);
 const lockedMsg = () => toast('Your subscription has ended. Subscribe to create or change records.');
 document.addEventListener('click', async e => {
   const nav = e.target.closest('[data-nav]');
@@ -1598,6 +1614,7 @@ document.addEventListener('click', async e => {
       setP(r, b.dataset.path, b.dataset.val); ui.pdf = null; persistRec(r);
       toast('Gas rate filled in'); const y = window.scrollY; render(); window.scrollTo(0, y); break;
     }
+    case 'copyPrev': applyPrev(r); { const y = window.scrollY; render(); window.scrollTo(0, y); } break;
     case 'sameAddr': r.jobAddress = r.customer.billing; persistRec(r); render(); break;
     case 'pickProp': r.jobAddress = customers.find(c => c.id === r.customerId).properties[+b.dataset.i]; persistRec(r); render(); break;
     case 'goIssue': { const tgt = records.find(x => x.id === b.dataset.id) || r; ui.showErr = true; goTo(tgt, +b.dataset.step); ui.appTab = b.dataset.app === '' ? 0 : +b.dataset.app; render(); break; }
@@ -1643,7 +1660,6 @@ document.addEventListener('click', async e => {
     case 'rmCoLogo': settings.logo = ''; saveSettings(); render(); break;
     case 'rmLogo': settings.gasSafeLogo = ''; saveSettings(); render(); break;
     case 'expCust': exportCustomers(); break;
-    case 'mailSel': await mailSel(); break;
     case 'forceUpdate': forceUpdate(); break;
     case 'expAll': exportBackup(); break;
     case 'installApp': if (_installEvt) { _installEvt.prompt(); try { await _installEvt.userChoice; } catch (e) { } _installEvt = null; render(); } instPopClose(); break;
