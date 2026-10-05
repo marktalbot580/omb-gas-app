@@ -76,8 +76,10 @@ const CLOUD = (() => {
     const back = location.origin + location.pathname.replace(/[^/]*$/, '') + 'welcome.html';
     const j = await req('/auth/v1/signup?redirect_to=' + encodeURIComponent(back), { method: 'POST', auth: false, body: { email, password } });
     if (j && j.access_token) { setSession(j); return 'in'; }
+    if (j && Array.isArray(j.identities) && j.identities.length === 0) return 'exists';   // Supabase hides existing accounts this way; it sends no email
     return 'confirm';
   }
+  const resendConfirm = email => req('/auth/v1/resend?redirect_to=' + encodeURIComponent(location.origin + location.pathname.replace(/[^/]*$/, '') + 'welcome.html'), { method: 'POST', auth: false, body: { type: 'signup', email } });
   async function signIn(email, password) {
     const j = await req('/auth/v1/token?grant_type=password', { method: 'POST', auth: false, body: { email, password } });
     setSession(j);
@@ -225,7 +227,7 @@ const CLOUD = (() => {
   }
 
   /* ---------- the sign-in / paywall screen ---------- */
-  let mode = 'in', note = '', err = '', working = false;
+  let mode = 'in', note = '', err = '', working = false, pendingEmail = '', resendAt = 0, resendTimer = null;
   const E = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   function gateEl() { let g = document.getElementById('gate'); if (!g) { g = document.createElement('div'); g.id = 'gate'; document.body.appendChild(g); g.addEventListener('click', onClick); g.addEventListener('submit', onSubmit); } return g; }
   function hideGate() { const g = document.getElementById('gate'); if (g) g.remove(); document.body.classList.remove('gated'); }
@@ -236,6 +238,14 @@ const CLOUD = (() => {
   function authHtml() {
     if (recovering) return shell(`<form class="gate-card" data-f="newpw"><h2>Choose a new password</h2><label>New password<input name="pw" type="password" minlength="8" autocomplete="new-password" required></label><button class="btn gold block" ${working ? 'disabled' : ''}>Save password</button>${err ? `<p class="gate-err">${E(err)}</p>` : ''}</form>`);
     if (mode === 'forgot') return shell(`<form class="gate-card" data-f="forgot"><h2>Reset your password</h2><label>Email<input name="email" type="email" autocomplete="email" required></label><button class="btn gold block" ${working ? 'disabled' : ''}>Send reset link</button><button type="button" class="link" data-g="mode-in">Back to log in</button>${note ? `<p class="gate-ok">${E(note)}</p>` : ''}${err ? `<p class="gate-err">${E(err)}</p>` : ''}</form>`);
+    if (mode === 'sent') {
+      const wait = Math.max(0, Math.ceil((resendAt - Date.now()) / 1000));
+      return shell(`<div class="gate-card"><h2>Check your email</h2><p>We have sent a confirmation link to <b>${E(pendingEmail)}</b>. Tap the link in that email, then come back here and log in.</p><p class="gate-small">It can take a few minutes. If you cannot see it, look in your <b>junk or spam</b> folder, and mark it as "not spam".</p>
+        <button class="btn gold block" data-g="resend" ${working || wait ? 'disabled' : ''}>${working ? 'Sending…' : wait ? `Send it again (wait ${wait}s)` : 'Send it again'}</button>
+        <button class="btn block ghost" data-g="mode-in">I have confirmed – log in</button>
+        <button type="button" class="link" data-g="mode-up">Wrong email? Start again</button>
+        ${note ? `<p class="gate-ok">${E(note)}</p>` : ''}${err ? `<p class="gate-err">${E(err)}</p>` : ''}</div>`);
+    }
     const up = mode === 'up';
     return shell(`<div class="gate-tabs"><button class="${up ? '' : 'on'}" data-g="mode-in">Log in</button><button class="${up ? 'on' : ''}" data-g="mode-up">Free ${+cfg.trialDays || 14}-day trial</button></div>
       <form class="gate-card" data-f="${up ? 'signup' : 'signin'}">
@@ -287,15 +297,21 @@ const CLOUD = (() => {
     try {
       if (f === 'signin' || f === 'signup') remember = fd.get('rem') === 'on';
       if (f === 'signin') { await signIn(email, pw); if (userChanged()) return; }
-      else if (f === 'signup') { const r = await signUp(email, pw); if (r === 'confirm') { mode = 'in'; note = 'Check your email and tap the link to confirm, then log in here.'; working = false; gate(); return; } if (userChanged()) return; }
+      else if (f === 'signup') { const r = await signUp(email, pw); if (r === 'exists') { mode = 'in'; note = 'That email already has an account. Log in below, or tap "Forgot your password?" if you cannot remember it.'; working = false; gate(); return; } if (r === 'confirm') { pendingEmail = email; startWait(); mode = 'sent'; working = false; gate(); return; } if (userChanged()) return; }
       else if (f === 'forgot') { await recover(email); note = 'If that email has an account, a reset link is on its way.'; working = false; gate(); return; }
       else if (f === 'newpw') { await setPassword(pw); recovering = false; }
       working = false; await enter();
-    } catch (x) { working = false; err = /invalid login/i.test(x.message) ? 'That email or password is not right.' : x.message; gate(); }
+    } catch (x) {
+      working = false;
+      if (/not confirmed/i.test(x.message) && email) { pendingEmail = email; mode = 'sent'; note = 'This email has not been confirmed yet. Tap the link we sent, or send it again below.'; gate(); return; }
+      err = /invalid login/i.test(x.message) ? 'That email or password is not right.' : x.message; gate();
+    }
   }
+  function startWait() { resendAt = Date.now() + 60000; clearInterval(resendTimer); resendTimer = setInterval(() => { if (mode !== 'sent' || Date.now() >= resendAt) { clearInterval(resendTimer); } if (mode === 'sent') gate(); }, 1000); }
   async function onClick(e) {
     const b = e.target.closest('[data-g]'); if (!b) return; const a = b.dataset.g; err = ''; note = '';
     if (a === 'mode-in') { mode = 'in'; gate(); } else if (a === 'mode-up') { mode = 'up'; gate(); } else if (a === 'mode-forgot') { mode = 'forgot'; gate(); }
+    else if (a === 'resend') { if (Date.now() < resendAt) return; working = true; gate(); try { await resendConfirm(pendingEmail); note = 'Sent again to ' + pendingEmail + '. Check your junk folder too.'; startWait(); } catch (x) { err = /rate|seconds|too many/i.test(x.message) ? 'Please wait a minute before asking again.' : x.message; } working = false; gate(); }
     else if (a === 'logout') { if (!confirm('Log out? The copy on this phone will be removed. Your records stay safe in your account.')) return; await signOut(); wipeLocal(); }
     else if (a === 'recheck') { working = true; gate(); const ok = await loadSub(); working = false; if (!ok) err = 'Could not reach the server.'; else if (!access().ok) err = 'No active subscription found yet. If you have just paid, wait a minute and try again.'; if (!gate()) sync(); }
     else if (a === 'subscribe') { working = true; gate(); try { await fn('checkout'); } catch (x) { working = false; err = x.message; gate(); } }
