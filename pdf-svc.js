@@ -164,7 +164,7 @@ async function drawSvcPdf(rec, s, lv) {
     { h: 'Serial number', w: 60 }, { h: 'Reason for visit', w: 40 }, { h: 'Flue type', w: 50 }, { h: 'Boiler age', w: 44 }
   ], [[rec.serial, rec.reason, rec.flue, rec.age]]);
 
-  const colsChk = [{ h: 'Check', w: 56 }, { h: 'PASS', w: 12, a: 'c' }, { h: 'FAIL', w: 12, a: 'c' }, { h: 'N/A', w: 12, a: 'c' }, { h: 'Failure details', w: 102 }];
+  const colsChk = [{ h: 'Check', w: 56 }, { h: 'PASS', w: 12, a: 'c' }, { h: 'FAIL', w: 12, a: 'c' }, { h: 'N/A', w: 12, a: 'c' }, { h: 'Further information', w: 102 }];
   table('APPLIANCE CHECKS', colsChk, SVC.APP.map(c => chkRow(c.label, rec.chk[c.k], rec.chk[c.k] === 'FAIL' ? rec.fault[c.k] : '')));
 
   const tight = rec.tightDone === 'YES' ? rec.tightResult : (rec.tightDone === 'N/A' ? 'NA' : '');
