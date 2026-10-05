@@ -419,14 +419,14 @@ function calcPanel(id, target) {
   const unitBtn = (u, label) => `<button type="button" class="${s.unit === u ? 'on' : ''}" data-act="calcSet" data-id="${id}" data-key="unit" data-val="${u}">${label}</button>`;
   return btn + `<div class="calc">
     <div class="f"><span>Meter type</span><div class="seg">${unitBtn('m³', 'Metric (m³)')}${unitBtn('ft³', 'Imperial (ft³)')}</div></div>
+    <div class="row"><div class="grow f"><span>First reading (${s.unit})</span><input data-calc="${id}.start" type="text" inputmode="decimal" value="${esc(s.start)}" placeholder="e.g. 4.478" autocomplete="off"></div>
+      <div class="grow f"><span>Second reading (${s.unit})</span><input data-calc="${id}.end" type="text" inputmode="decimal" value="${esc(s.end)}" placeholder="e.g. 4.562" autocomplete="off"></div></div>
     <div class="row" style="align-items:center;margin-bottom:12px">
       <button type="button" id="calcGo-${id}" class="btn ${s.t0 ? 'gold' : ''}" style="flex:0 0 42%;height:64px;font-size:20px;font-weight:700" data-act="calcTimer" data-id="${id}" ${calcNeedsStart(s) ? 'disabled' : ''}>${s.t0 ? 'Stop' : 'Start'}</button>
       <div class="grow" style="text-align:right"><div class="clock" style="font-size:34px;margin:0" data-clock="${esc(id)}">${fmtClock(clockMs(s))}</div></div></div>
     <div class="small" id="calcHint-${id}" style="color:var(--warn);margin:-4px 0 12px">${calcNeedsStart(s) ? 'Enter the first meter reading before you start the timer.' : ''}</div>
     <div class="f"><span>Time taken (min:sec.ms) – filled in when you stop the timer</span>
       <input data-calc="${id}.secs" type="text" inputmode="decimal" value="${esc(s.secs)}" placeholder="00:00.000" autocomplete="off"></div>
-    <div class="row"><div class="grow f"><span>First reading (${s.unit})</span><input data-calc="${id}.start" type="text" inputmode="decimal" value="${esc(s.start)}" placeholder="e.g. 4.478" autocomplete="off"></div>
-      <div class="grow f"><span>Second reading (${s.unit})</span><input data-calc="${id}.end" type="text" inputmode="decimal" value="${esc(s.end)}" placeholder="e.g. 4.562" autocomplete="off"></div></div>
     <div class="small muted" id="calcVol-${id}" style="margin:-4px 0 12px">${calcVolHtml(s)}</div>
     <div class="calcres" id="calcRes-${id}">${calcResHtml(id)}</div>
     <div class="f" style="margin:12px 0 0"><span>CV value (MJ/m³)</span>
@@ -626,7 +626,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v32';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v34';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -937,6 +937,15 @@ function sugHtml(r, q) {
   if (!hits.length) return '<p class="small muted" style="margin:6px 0">No saved address matches – just carry on typing the new one.</p>';
   return hits.slice(0, 8).map(x => { const ls = x.a.split('\n'); return `<button type="button" class="item cpick" data-act="pickSug" data-c="${x.c.id}" data-a="${esc(x.a)}"><div class="t">${esc(ls[0])}</div><div class="s">${esc([...ls.slice(1), ...(cu ? [] : [x.c.name])].join(', '))}</div></button>`; }).join('') + (hits.length > 8 ? `<p class="small muted" style="margin:4px 0">${hits.length - 8} more – keep typing to narrow it down.</p>` : '');
 }
+/* type-ahead for the client name: the more you type, the fewer customers are suggested */
+function nameSugHtml(r, q) {
+  const toks = addrKey(q).split(' ').filter(Boolean); if (!toks.length) return '';
+  const sel = customers.find(c => c.id === r.customerId);
+  const hits = customers.filter(c => !(sel && sel.id === c.id && addrKey(c.name) === addrKey(q)) && toks.every(t => addrKey([c.name, c.phone, c.email].join(' ')).includes(t)))
+    .sort((a, b) => (addrKey(b.name).startsWith(toks[0]) ? 1 : 0) - (addrKey(a.name).startsWith(toks[0]) ? 1 : 0) || (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || a.name.localeCompare(b.name));
+  if (!hits.length) return '';
+  return `<div class="small muted" style="margin:6px 0 4px">Existing customers – tap one to fill in their details:</div>` + hits.slice(0, 6).map(c => `<button type="button" class="item cpick" data-act="pickCustId" data-id="${c.id}"><div class="t">${c.fav ? '<span style="color:var(--bad)">♥</span> ' : ''}${esc(c.name)}</div><div class="s">${esc([c.phone, ((c.properties || [])[0] || c.billing || '').split('\n')[0]].filter(Boolean).join(' · ') || 'No details saved')}</div></button>`).join('') + (hits.length > 6 ? `<p class="small muted" style="margin:4px 0">${hits.length - 6} more – keep typing to narrow it down.</p>` : '');
+}
 function stepCustomer() {
   const r = ui.rec, cu = customers.find(c => c.id === r.customerId);
   return `
@@ -944,6 +953,7 @@ function stepCustomer() {
     ${custPicker(r)}
     <div class="card">
       ${txt('customer.name', 'Client name', { req: 1 })}
+      <div id="nameSug"></div>
       ${txt('customer.phone', 'Telephone', { type: 'tel', mode: 'tel' })}
       ${txt('customer.email', 'Email (to send the PDF)', { type: 'email', mode: 'email', cap: 'none' })}
       ${txt('customer.billing', 'Client / billing address', { area: 1, rows: 3 })}
@@ -1819,6 +1829,7 @@ document.addEventListener('input', e => {
   }
   if (t.dataset.k) {
     setP(ui.rec, t.dataset.k, t.value); ui.pdf = null; persistRecSoon();
+    if (t.dataset.k === 'customer.name') { const el = document.getElementById('nameSug'); if (el) el.innerHTML = nameSugHtml(ui.rec, t.value); }
     if (t.dataset.k === 'jobAddress') { const el = document.getElementById('addrSug'); if (el) el.innerHTML = t.value.trim().length >= 2 ? sugHtml(ui.rec, t.value) : ''; }
     if (/^tight(Start|End|Mins)$/.test(t.dataset.k)) {
       if (!isSvc(ui.rec)) ui.rec.tightnessResult = tightText(ui.rec.tightStart, ui.rec.tightEnd, ui.rec.tightMins);
