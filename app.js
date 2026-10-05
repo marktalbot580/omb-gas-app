@@ -621,12 +621,13 @@ function renderCustEdit(v) {
     </div>
     <button class="btn gold block" data-act="saveCust">Save customer</button>
     ${c._new ? '' : `<div style="height:10px"></div><button class="btn block" data-act="recForCust">Start forms for this customer</button>
+    ${(c.properties || []).length && (c.properties || []).length <= 8 ? `<h2>Navigate</h2>` + c.properties.map(p => `<a class="item" style="display:block;text-decoration:none;color:inherit" href="${esc(mapsUrl(p))}" target="_blank" rel="noopener"><div class="t">&#128205; ${esc(p.split('\n')[0])}</div><div class="s">${esc(p.split('\n').slice(1).join(', ') || 'Open in Google Maps')}</div></a>`).join('') : ''}
     ${custJobs(c)}
     <div style="height:10px"></div><button class="btn danger block" data-act="delCust">Delete customer</button>`}
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v34';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v35';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -946,6 +947,9 @@ function nameSugHtml(r, q) {
   if (!hits.length) return '';
   return `<div class="small muted" style="margin:6px 0 4px">Existing customers – tap one to fill in their details:</div>` + hits.slice(0, 6).map(c => `<button type="button" class="item cpick" data-act="pickCustId" data-id="${c.id}"><div class="t">${c.fav ? '<span style="color:var(--bad)">♥</span> ' : ''}${esc(c.name)}</div><div class="s">${esc([c.phone, ((c.properties || [])[0] || c.billing || '').split('\n')[0]].filter(Boolean).join(' · ') || 'No details saved')}</div></button>`).join('') + (hits.length > 6 ? `<p class="small muted" style="margin:4px 0">${hits.length - 6} more – keep typing to narrow it down.</p>` : '');
 }
+/* "Navigate": opens Google Maps (the Maps app on a phone) with driving directions to the address */
+const mapsUrl = a => 'https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=' + encodeURIComponent(String(a || '').replace(/\s*\n\s*/g, ', ').trim());
+const navBtnHtml = a => String(a || '').trim().length >= 4 ? `<a class="btn block" style="text-align:center;text-decoration:none;margin-top:10px" href="${esc(mapsUrl(a))}" target="_blank" rel="noopener">&#128205; Navigate to this property</a>` : '';
 function stepCustomer() {
   const r = ui.rec, cu = customers.find(c => c.id === r.customerId);
   return `
@@ -965,6 +969,7 @@ function stepCustomer() {
       ${txt('jobAddress', 'Job address', { area: 1, rows: 3, req: 1 })}
       <div id="addrSug"></div>
       <button class="btn block" data-act="sameAddr">Same as billing address</button>
+      <div id="navBtn">${navBtnHtml(r.jobAddress)}</div>
     </div>
     ${prevCard(r)}
     <div class="card">${txt('inspectionDate', isLeg(r) ? 'Date of assessment' : isAc(r) ? 'Date of commissioning' : 'Date of inspection', { type: 'date' })}</div>`;
@@ -1830,6 +1835,7 @@ document.addEventListener('input', e => {
   if (t.dataset.k) {
     setP(ui.rec, t.dataset.k, t.value); ui.pdf = null; persistRecSoon();
     if (t.dataset.k === 'customer.name') { const el = document.getElementById('nameSug'); if (el) el.innerHTML = nameSugHtml(ui.rec, t.value); }
+    if (t.dataset.k === 'jobAddress') { const nb = document.getElementById('navBtn'); if (nb) nb.innerHTML = navBtnHtml(t.value); }
     if (t.dataset.k === 'jobAddress') { const el = document.getElementById('addrSug'); if (el) el.innerHTML = t.value.trim().length >= 2 ? sugHtml(ui.rec, t.value) : ''; }
     if (/^tight(Start|End|Mins)$/.test(t.dataset.k)) {
       if (!isSvc(ui.rec)) ui.rec.tightnessResult = tightText(ui.rec.tightStart, ui.rec.tightEnd, ui.rec.tightMins);
