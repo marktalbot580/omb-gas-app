@@ -627,7 +627,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v38';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v39';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1528,6 +1528,7 @@ function renderInvEdit(v) {
       ${inf('customer.email', 'Email', { type: 'email', mode: 'email', cap: 'none' })}
       ${inf('customer.billing', 'Billing address', { area: 1, rows: 3 })}
       ${inf('jobAddress', 'Property the work was done at', { area: 1, rows: 3 })}
+      <button type="button" class="btn block" data-act="invSameAddr">Same as billing address</button>
     </div>
     <h2>Dates</h2>
     <div class="card">
@@ -1881,6 +1882,11 @@ document.addEventListener('click', async e => {
       persistInv(ui.inv);
       if (ui.invFrom === 'visit' && !(ui.invPdf && ui.invPdf.id === ui.inv.id)) { try { ui.invPdf = { id: ui.inv.id, blob: await buildInvPdf(ui.inv, settings), name: invFileName(ui.inv) }; } catch (err) { console.error(err); toast('Could not create the invoice PDF: ' + err.message); } }
       ui.view = ui.invFrom === 'visit' ? 'form' : 'invoices'; render(); break;
+    }
+    case 'invSameAddr': {
+      const i = ui.inv, bill = (i.customer.billing || '').trim();
+      if (!bill) { toast('Type the billing address first'); break; }
+      i.jobAddress = bill; ui.invPdf = null; persistInv(i); const y = window.scrollY; render(); window.scrollTo(0, y); toast('Property address set to the billing address'); break;
     }
     case 'invAddLine': { const y = window.scrollY; ui.inv.lines.push({ d: '', q: '1', p: '' }); ui.invPdf = null; persistInv(ui.inv); render(); window.scrollTo(0, document.body.scrollHeight); break; }
     case 'invRmLine': { const y = window.scrollY; ui.inv.lines.splice(+b.dataset.i, 1); ui.invPdf = null; persistInv(ui.inv); render(); window.scrollTo(0, y); break; }
