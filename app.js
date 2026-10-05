@@ -651,7 +651,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v43';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v45';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1209,7 +1209,7 @@ function stepReview() {
     <details class="adv"><summary>More options</summary>
       ${made ? `<button class="btn block" data-act="dlSel">Download selected</button><div style="height:8px"></div>
       <button class="btn block" data-act="makePdf" ${issues.length || needWarn.length ? 'disabled' : ''}>Re-create documents</button><div style="height:8px"></div>` : ''}
-      ${billable(m).length ? (noInv(m) ? `<button class="btn block" data-act="invUndoNone">Add an invoice after all</button>` : `<button class="btn block" data-act="invNoneVisit">Invoice not required (e.g. a favour)</button>`) + `<div style="height:8px"></div>` : ''}
+      ${billable(m).length ? (noInv(m) ? `<button class="btn block" data-act="invUndoNone">Add an invoice after all</button>` : `<button class="btn block" data-act="invNoneVisit">Invoice not required</button>`) + `<div style="height:8px"></div>` : ''}
       ${ui.rec.status === 'draft' ? '' : `<button class="btn danger block" data-act="delRec">${multi ? 'Delete all ' + m.length + ' forms in this visit' : 'Delete this record'}</button>`}
     </details>`;
 }
@@ -1367,9 +1367,12 @@ function svcChecks() {
   <div class="card">${SVC.APP.map(svcCheck).join('')}</div>`;
 }
 function svcSafety() {
+  return `<div class="card">${SVC.SAFE.map(svcCheck).join('')}</div>`;
+}
+/* the gas tightness test is done last on a service, so it sits on the final page before sign-off */
+function svcTightness() {
   const r = ui.rec;
-  return `<div class="card">${SVC.SAFE.map(svcCheck).join('')}</div>
-  <h2>Gas tightness</h2>
+  return `<h2 style="margin-top:0">Gas tightness</h2>
   <div class="card">
     <p class="small muted" style="margin-top:0">Carry out the test and record the readings first, then choose the result.</p>
     ${tightFields(r.tightDone === 'YES')}
@@ -1403,7 +1406,7 @@ function svcOperating() {
 }
 function svcFinish() {
   const r = ui.rec;
-  return `${WARN.needed(r) ? '<div class="notice err">Something on this service has failed, so a Danger / Do Not Use Warning Notice will be needed' + (ui.rec.safe === 'NO' ? ' and the record will be stamped FAIL – DO NOT USE' : '') + '. You will be asked to fill it in at the review step.</div>' : ''}<div class="card">
+  return `${svcTightness()}${WARN.needed(r) ? '<div class="notice err">Something on this service has failed, so a Danger / Do Not Use Warning Notice will be needed' + (ui.rec.safe === 'NO' ? ' and the record will be stamped FAIL – DO NOT USE' : '') + '. You will be asked to fill it in at the review step.</div>' : ''}<div class="card">
     ${choice('filterPresent', 'Is a system filter present?', SVC.YN, { req: 1, yn: 1 })}
     ${r.filterPresent === 'YES' ? choice('filterCleaned', 'Has the system filter been cleaned?', SVC.YN, { req: 1, yn: 1 }) : ''}
     ${choice('manufacturer', 'Does the installation meet the manufacturer’s instructions?', SVC.YN, { req: 1, yn: 1 })}
@@ -1600,7 +1603,7 @@ function renderInvEdit(v) {
     <div style="height:14px"></div>
     <button class="btn ghost block" data-act="invBack">${ui.invFrom === 'visit' ? 'Back to the visit' : 'Back to invoices'}</button>
     <div style="height:10px"></div>
-    ${(i.recIds || []).length ? `<button class="btn block" data-act="invNone">Invoice not required (e.g. a favour)</button>
+    ${(i.recIds || []).length ? `<button class="btn block" data-act="invNone">Invoice not required</button>
     <p class="small muted" style="margin:6px 0 14px">Deletes this invoice and marks the job as complete with no invoice. You can add one again later.</p>` : ''}
     <button class="btn danger block" data-act="invDel">Delete this invoice</button>`;
 }

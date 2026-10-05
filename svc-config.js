@@ -91,7 +91,7 @@ const SVC = (() => {
     need(1, 'serial', 'Serial number'); need(1, 'flue', 'Flue type'); need(1, 'reason', 'Reason for visit'); need(1, 'age', 'Age of boiler');
     APP.forEach(c => { need(2, 'chk.' + c.k, c.label); if (rec.chk[c.k] === 'FAIL') need(2, 'fault.' + c.k, c.label + ' – fault details'); });
     SAFE.forEach(c => { need(3, 'chk.' + c.k, c.label); if (rec.chk[c.k] === 'FAIL') need(3, 'fault.' + c.k, c.label + ' – fault details'); });
-    need(3, 'tightDone', 'Tightness test'); if (rec.tightDone === 'YES') { need(3, 'tightResult', 'Tightness test result'); need(3, 'tightStart', 'Tightness test start pressure'); need(3, 'tightEnd', 'Tightness test end pressure'); }
+    need(5, 'tightDone', 'Tightness test'); if (rec.tightDone === 'YES') { need(5, 'tightResult', 'Tightness test result'); need(5, 'tightStart', 'Tightness test start pressure'); need(5, 'tightEnd', 'Tightness test end pressure'); }
     need(4, 'bpTaken', 'Operating pressure taken?');
     if (rec.bpTaken === 'YES') { need(4, 'bpResult', 'Operating pressure result'); need(4, 'bpValue', 'Operating pressure (mbar)'); }
     if (/worcester/i.test(makeText(rec))) { if (rec.fpTaken === 'YES') { need(4, 'fpValue', 'Fan pressure (mbar)'); need(4, 'fpResult', 'Fan pressure result'); } }
