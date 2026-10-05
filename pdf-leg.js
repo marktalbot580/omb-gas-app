@@ -122,12 +122,12 @@ async function drawLegPdf(rec, s, lv) {
   band(true);
   const g3 = 3, bw = (CW - 2 * g3) / 3;
   const biz = [{ t: s.businessName || 'Your business', b: 1, fs: 8.6 }];
-  if (s.address) biz.push({ t: s.address.replace(/\n/g, ', ') });
+  if (s.address) biz.push({ t: addrLine(s.address) });
   biz.push({ t: 'Tel: ' + (s.phone || blank) + (s.email ? '   ' + s.email : '') });
   if (s.gasSafeReg) biz.push({ t: 'Gas Safe Register No: ' + s.gasSafeReg, b: 1 });
-  const site = [{ t: rec.customer.name, b: 1, fs: 8.6 }, { t: (rec.jobAddress || '').replace(/\n/g, ', ') }];
+  const site = [{ t: rec.customer.name, b: 1, fs: 8.6 }, { t: addrLine(rec.jobAddress || '') }];
   if (rec.customer.phone) site.push({ t: 'Tel: ' + rec.customer.phone });
-  const cli = [{ t: rec.customer.name, b: 1, fs: 8.6 }, { t: (rec.customer.billing || rec.jobAddress || '').replace(/\n/g, ', ') }];
+  const cli = [{ t: rec.customer.name, b: 1, fs: 8.6 }, { t: addrLine(rec.customer.billing || rec.jobAddress || '') }];
   if (rec.customer.email) cli.push({ t: rec.customer.email });
   const T = ['CONTRACTOR DETAILS', 'PROPERTY ASSESSED', 'CLIENT DETAILS'], D = [biz, site, cli];
   const bh = Math.max(...D.map((d, i) => box(T[i], 0, bw, 0, d, 0, true)));

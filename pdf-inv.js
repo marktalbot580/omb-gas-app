@@ -79,13 +79,13 @@ async function buildInvPdf(inv, s, ext) {
   /* from / bill to */
   const g = 4, bw = (CW - g) / 2, blank = '________________';
   const from = [{ t: s.businessName || 'Your business', b: 1, fs: 9.4 }];
-  if (s.address) from.push({ t: s.address.replace(/\n/g, ', ') });
+  if (s.address) from.push({ t: addrLine(s.address) });
   if (s.phone) from.push({ t: 'Tel: ' + s.phone });
   if (s.email) from.push({ t: s.email });
   if (s.gasSafeReg) from.push({ t: 'Gas Safe Register No: ' + s.gasSafeReg });
   if (inv.vatRate > 0 && inv.vatNumber) from.push({ t: 'VAT No: ' + inv.vatNumber });
   const to = [{ t: inv.customer.name || blank, b: 1, fs: 9.4 }];
-  const billAddr = (inv.customer.billing || inv.jobAddress || '').replace(/\n/g, ', ');
+  const billAddr = addrLine(inv.customer.billing || inv.jobAddress || '');
   if (billAddr) to.push({ t: billAddr });
   if (inv.customer.email) to.push({ t: inv.customer.email });
   if (inv.customer.phone) to.push({ t: 'Tel: ' + inv.customer.phone });
@@ -94,7 +94,7 @@ async function buildInvPdf(inv, s, ext) {
   y += bh + 4;
 
   /* job + due */
-  const job = [{ t: (inv.jobAddress || '').replace(/\n/g, ', ') || '–', b: 1 }, { t: 'Date of work: ' + ukd(inv.workDate || inv.date) }];
+  const job = [{ t: addrLine(inv.jobAddress || '') || '–', b: 1 }, { t: 'Date of work: ' + ukd(inv.workDate || inv.date) }];
   const due = [{ t: inv.paid ? 'PAID' + (inv.paidDate ? ' on ' + ukd(inv.paidDate) : '') : ukd(inv.due), b: 1, fs: 11, c: inv.paid ? GREEN : INK }, ...(inv.paid && inv.payMethod ? [{ t: 'Paid by ' + inv.payMethod.toLowerCase() }] : []), { t: 'Reference: ' + inv.number }];
   const jh = Math.max(box('', 0, bw, 0, job, 0, true), box('', 0, bw, 0, due, 0, true));
   box('PROPERTY / WORK CARRIED OUT AT', M, bw, y, job, jh); box(inv.paid ? 'PAYMENT STATUS' : 'PAYMENT DUE BY', M + bw + g, bw, y, due, jh);

@@ -33,7 +33,7 @@ async function buildStatementPdf(list, s, o) {
   const vatNo = (s.vatNumber || '').trim() || (rows.find(r => r.i.vatNumber) || { i: {} }).i.vatNumber || '';
   txt('INVOICE STATEMENT', M, y = 17, 17, 'bold');
   txt(s.businessName || 'Your business', M, y += 6.4, 10.5, 'bold');
-  const addr = [(s.address || '').replace(/\n/g, ', '), s.gasSafeReg ? 'Gas Safe Register No: ' + s.gasSafeReg : '', vatNo ? 'VAT No: ' + vatNo : ''].filter(Boolean).join('   ·   ');
+  const addr = [addrLine(s.address || ''), s.gasSafeReg ? 'Gas Safe Register No: ' + s.gasSafeReg : '', vatNo ? 'VAT No: ' + vatNo : ''].filter(Boolean).join('   ·   ');
   if (addr) txt(fit(addr, CW, 8, 'normal'), M, y += 4.6, 8, 'normal', GREY);
   y += 3.4; hline(y, INK, 0.5); y += 5.2;
   const meta = [['Period', o.periodText], ['Invoices', o.basisText], ['Printed', ukd(todayISO())], ['Number of invoices', String(rows.length)]];
@@ -87,7 +87,7 @@ async function buildStatementPdf(list, s, o) {
     txt('INVOICE BREAKDOWN', M, y + 3, 9.4, 'bold'); y += 5.4; hline(y, INK, 0.5); y += 4;
     const dX = M + 3, qX = M + 120, eX = M + 152, aX = M + CW;
     rows.forEach(({ i, T }) => {
-      const prop = fit((i.jobAddress || '').replace(/\n/g, ', '), CW - 40, 7.6, 'normal');
+      const prop = fit(addrLine(i.jobAddress || ''), CW - 40, 7.6, 'normal');
       const lines = (i.lines || []).map(l => { const q = numOf(l.q || 1); return { d: wrap(l.d || '–', qX - dX - 14, 8), q: String(q % 1 ? q : Math.round(q)), p: money(numOf(l.p)), a: money(r2(q * numOf(l.p))) }; });
       const tot = [];
       if (T.disc > 0 || T.rate > 0) tot.push('Subtotal ' + money(T.sub));

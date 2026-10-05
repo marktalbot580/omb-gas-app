@@ -203,3 +203,5 @@ header.bar .bar-logo,header.bar .bar-title{cursor:pointer;-webkit-tap-highlight-
 .dtb input.dth{position:absolute;inset:0;width:100%;height:100%;opacity:0;padding:0;min-height:0;border:0;cursor:pointer}
 
 .bkm{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}.bkm .gate-card{width:100%;max-width:420px}
+
+.addrw .pc{margin-top:8px;max-width:190px;text-transform:uppercase}

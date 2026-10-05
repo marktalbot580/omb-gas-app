@@ -459,6 +459,35 @@ document.addEventListener('focusout', e => {
   if (!t.value.trim() && nat.value && !nat.dataset.pd) { setDateVal(nat, ''); return; }
   if (t.value !== ukDisp(nat.value)) { t.value = ukDisp(nat.value); t.style.borderColor = ''; }
 });
+/* an address box with its own postcode box underneath. The two are stored together as one text value (postcode on the last line),
+   so every PDF, email and export keeps working. src says where it is saved: rec = this record, inv = this invoice, set = settings, cust = customer. */
+function addrBox(src, path, label, o = {}) {
+  const v = (src === 'rec' ? getP(ui.rec, path) : src === 'inv' ? getP(ui.inv, path) : src === 'set' ? settings[path] : ui.cust[path]) ?? '';
+  const { addr, pc } = splitAddr(v);
+  return `<div class="f addrw ${src === 'rec' && bad(o, v) ? 'bad' : ''}" data-f="${path}" data-src="${src}" data-path="${path}"><span>${label}${o.req ? ' <b>*</b>' : ''}</span>
+    <textarea rows="${o.rows || 3}" placeholder="${esc(o.ph || '')}">${esc(addr)}</textarea>
+    <input class="pc" type="text" placeholder="Postcode" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Postcode" value="${esc(pc)}">${o.hint ? `<small>${o.hint}</small>` : ''}</div>`;
+}
+function addrInput(w, t) {
+  if (t.classList.contains('pc')) t.value = t.value.toUpperCase();
+  const v = joinAddr(w.querySelector('textarea').value, w.querySelector('.pc').value), src = w.dataset.src, path = w.dataset.path;
+  if (src === 'rec') {
+    setP(ui.rec, path, v); ui.pdf = null; persistRecSoon();
+    if (path === 'jobAddress') {
+      const nb = document.getElementById('navBtn'); if (nb) nb.innerHTML = navBtnHtml(v);
+      const el = document.getElementById('addrSug'); if (el) el.innerHTML = v.trim().length >= 2 ? sugHtml(ui.rec, v) : '';
+    }
+  } else if (src === 'inv') {
+    setP(ui.inv, path, v); persistInvSoon();
+    const had = !!ui.invPdf; ui.invPdf = null; if (had) { const bx = $('#invPdfBox'); if (bx) bx.innerHTML = invPdfHtml(); }
+  } else if (src === 'set') { settings[path] = v; saveSettings(); }
+  else if (src === 'cust') ui.cust[path] = v;
+}
+document.addEventListener('focusout', e => {      // tidy the postcode when you leave the box: ln12ab becomes LN1 2AB
+  const t = e.target; if (!(t.classList && t.classList.contains('pc'))) return;
+  const w = t.closest('.addrw'); if (!w) return;
+  const f = fmtPostcode(t.value); if (f !== t.value) { t.value = f; addrInput(w, t); }
+});
 function txt(path, label, o = {}) {
   const v = getP(ui.rec, path) ?? '';
   const el = o.type === 'date' ? dateInp(`data-k="${path}"`, v) : o.area
@@ -571,7 +600,7 @@ function renderHome(v) {
     ${list.length ? list.slice(0, 5).map(r => `${r.status === 'draft' ? '<div class="itemw">' : ''}
       <button class="item" data-act="openRec" data-id="${r.id}">
         <div class="row sp"><span class="t">${esc(r.customer.name || 'No customer yet')}</span><span class="badges"><span class="badge ${r.status}">${r.status}</span>${invBadge(r)}</span></div>
-        <div class="s">${esc((r.jobAddress || '').split('\n')[0] || 'No address yet')}</div>
+        <div class="s">${esc(addrFirst(r.jobAddress || '') || 'No address yet')}</div>
         <div class="s">${FORM_SHORT[typeOf(r)]} · ${esc(r.ref)} · ${ukDate(r.inspectionDate)}${r._dirty ? ' · not synced' : ''}</div>
       </button>${r.status === 'draft' ? `<button class="draftdel" data-act="delDraft" data-id="${r.id}">Delete draft</button></div>` : ''}`).join('') : `<div class="empty">No records yet.<br>Tap one of the buttons above to start.<br>You can do several forms for one customer in a single visit.</div>`}
     ${list.length > 5 ? `<p class="small muted" style="text-align:center">Showing the last 5 jobs. Older ones are under <a href="#" data-nav="customers" style="color:inherit;font-weight:700">Customers</a> – tap a customer to see all their jobs.</p>` : ''}`;
@@ -632,7 +661,7 @@ function paintCustList() {
       <button type="button" class="cmain" data-act="editCust" data-id="${c.id}">
         <div class="t">${esc(c.name)}</div>
         <div class="s">${esc([c.phone, c.email].filter(Boolean).join(' · ') || 'No contact details')}${mode === 'used' ? ` · ${uses[c.id]} form${uses[c.id] === 1 ? '' : 's'}` : ''}</div>
-        ${hit[c.id] ? `<div class="s" style="color:var(--gold2)">&#128205; ${esc(hit[c.id].replace(/\n/g, ', '))}</div>` : ''}
+        ${hit[c.id] ? `<div class="s" style="color:var(--gold2)">&#128205; ${esc(addrLine(hit[c.id]))}</div>` : ''}
       </button>
       ${String(c.phone || '').replace(/\D/g, '').length >= 5 ? `<a class="callb" href="${telHref(c.phone)}" aria-label="Call ${esc(c.name)}">&#128222;</a>` : ''}
       <button type="button" class="heart ${c.fav ? 'on' : ''}" data-act="favCust" data-id="${c.id}" aria-label="${c.fav ? 'Remove from favourites' : 'Add to favourites'}">${c.fav ? '♥' : '♡'}</button>
@@ -646,7 +675,7 @@ function custJobs(c) {
     .sort((a, b) => String(b.inspectionDate).localeCompare(String(a.inspectionDate)) || (b.updated || 0) - (a.updated || 0));
   return `<h2>Previous jobs${list.length ? ' (' + list.length + ')' : ''}</h2>` + (list.length ? list.map(r => `<button class="item" data-act="openRec" data-id="${r.id}">
       <div class="row sp"><span class="t">${FORM_SHORT[typeOf(r)]}</span><span class="badges"><span class="badge ${r.status}">${r.status}</span>${invBadge(r)}</span></div>
-      <div class="s">${esc((r.jobAddress || '').split('\n')[0] || 'No address')}</div>
+      <div class="s">${esc(addrFirst(r.jobAddress || '') || 'No address')}</div>
       <div class="s">${esc(r.ref)} · ${ukDate(r.inspectionDate)}</div></button>`).join('') : '<p class="small muted">No jobs yet for this customer.</p>');
 }
 function renderCustEdit(v) {
@@ -658,18 +687,18 @@ function renderCustEdit(v) {
       <label class="f"><span>Phone</span><input data-c="phone" type="tel" inputmode="tel" value="${esc(c.phone)}"></label>
       ${!c._new && String(c.phone || '').replace(/\D/g, '').length >= 5 ? `<a class="btn block" style="text-align:center;text-decoration:none;margin:-4px 0 12px" href="${telHref(c.phone)}">&#128222; Call ${esc(c.phone)}</a>` : ''}
       <label class="f"><span>Email</span><input data-c="email" type="email" inputmode="email" autocapitalize="none" value="${esc(c.email)}"></label>
-      <label class="f"><span>Billing address</span><textarea data-c="billing" rows="3">${esc(c.billing)}</textarea></label>
+      ${addrBox('cust', 'billing', 'Billing address')}
       <label class="f"><span>Property addresses (one per line)</span><textarea data-c="props" rows="3" placeholder="Properties you inspect for this customer">${esc((c.properties || []).join('\n'))}</textarea></label>
     </div>
     <button class="btn gold block" data-act="saveCust">Save customer</button>
     ${c._new ? '' : `<div style="height:10px"></div><button class="btn block" data-act="recForCust">Start forms for this customer</button>
-    ${(c.properties || []).length && (c.properties || []).length <= 8 ? `<h2>Navigate</h2>` + c.properties.map(p => `<a class="item" style="display:block;text-decoration:none;color:inherit" href="${esc(mapsUrl(p))}" target="_blank" rel="noopener"><div class="t">&#128205; ${esc(p.split('\n')[0])}</div><div class="s">${esc(p.split('\n').slice(1).join(', ') || 'Open in Google Maps')}</div></a>`).join('') : ''}
+    ${(c.properties || []).length && (c.properties || []).length <= 8 ? `<h2>Navigate</h2>` + c.properties.map(p => `<a class="item" style="display:block;text-decoration:none;color:inherit" href="${esc(mapsUrl(p))}" target="_blank" rel="noopener"><div class="t">&#128205; ${esc(addrFirst(p))}</div><div class="s">${esc(p.split('\n').slice(1).join(', ') || 'Open in Google Maps')}</div></a>`).join('') : ''}
     ${custJobs(c)}
     <div style="height:10px"></div><button class="btn danger block" data-act="delCust">Delete customer</button>`}
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v54';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v55';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -750,7 +779,7 @@ function renderSettings(v) {
     <h2>Business (printed on every certificate)</h2>
     <div class="card">
       ${f('businessName', 'Business name')}
-      ${f('address', 'Address', { area: true })}
+      ${addrBox('set', 'address', 'Address')}
       ${f('phone', 'Telephone', { type: 'tel' })}
       ${f('email', 'Email', { type: 'email', cap: 'none' })}
       ${f('gasSafeReg', 'Gas Safe Register number')}
@@ -1017,13 +1046,13 @@ function stepCustomer() {
       <div id="nameSug"></div>
       ${txt('customer.phone', 'Telephone', { type: 'tel', mode: 'tel' })}
       ${txt('customer.email', 'Email (to send the PDF)', { type: 'email', mode: 'email', cap: 'none' })}
-      ${txt('customer.billing', 'Client / billing address', { area: 1, rows: 3 })}
+      ${addrBox('rec', 'customer.billing', 'Client / billing address')}
     </div>
     <h2>Property inspected</h2>
     ${cu && (cu.properties || []).length > 5 ? `<input class="search" id="propSearch" placeholder="Search this customer’s ${cu.properties.length} properties – street, town or postcode" autocomplete="off"><div id="propList"></div>`
-      : cu && (cu.properties || []).length ? `<div class="chips">${cu.properties.map((p, i) => `<button class="chip" data-act="pickProp" data-i="${i}">${esc(p.split('\n')[0])}</button>`).join('')}</div>` : ''}
+      : cu && (cu.properties || []).length ? `<div class="chips">${cu.properties.map((p, i) => `<button class="chip" data-act="pickProp" data-i="${i}">${esc(addrFirst(p))}</button>`).join('')}</div>` : ''}
     <div class="card">
-      ${txt('jobAddress', 'Job address', { area: 1, rows: 3, req: 1 })}
+      ${addrBox('rec', 'jobAddress', 'Job address', { req: 1 })}
       <div id="addrSug"></div>
       <button class="btn block" data-act="sameAddr">Same as billing address</button>
       <div id="navBtn">${navBtnHtml(r.jobAddress)}</div>
@@ -1521,8 +1550,8 @@ async function sharePack(sel) {
   const m = sel || jobRecs() || [ui.rec], r0 = m[0], inv = invForVisit(m), T = invTotals(inv);
   const parts = [...m.map(r => ({ blob: ui.pdfs[r.id].blob, name: ui.pdfs[r.id].name })), { blob: ui.invPdf.blob, name: ui.invPdf.name }];
   const files = parts.map(p => new File([p.blob], p.name, { type: 'application/pdf' }));
-  const first = greetName(r0.customer.name), addr = (r0.jobAddress || '').replace(/\n/g, ', ');
-  const subject = `${m.map(r => SUBJ[typeOf(r)]).join(', ')} and invoice ${inv.number} – ${(r0.jobAddress || '').split('\n')[0]}`;
+  const first = greetName(r0.customer.name), addr = addrLine(r0.jobAddress || '');
+  const subject = `${m.map(r => SUBJ[typeOf(r)]).join(', ')} and invoice ${inv.number} – ${addrFirst(r0.jobAddress || '')}`;
   const text = `Hi ${first},\n\nPlease find attached your records and invoice for ${addr}, carried out on ${ukDate(r0.inspectionDate)}:\n${m.map(r => `- ${docLine(r)}`).join('\n')}\n- Invoice ${inv.number}: ${money(T.total)}${inv.paid ? ' (paid – thank you)' : ', payment due by ' + ukDate(inv.due)}\n\nKind regards,\n${signOff()}`;
   try { if (navigator.canShare && navigator.canShare({ files })) { await navigator.share({ files, title: subject, text }); markSent(inv); return; } }
   catch (err) { if (err.name === 'AbortError') return; console.warn(err); }
@@ -1591,7 +1620,7 @@ function renderInvoices(v) {
     ${shown.length ? shown.map(i => `
       <button class="item" data-act="openInv" data-id="${i.id}">
         <div class="row sp"><span class="t">${esc(i.customer.name || 'No customer')}</span><span class="badge ${invStatus(i)}">${invStatus(i)}</span></div>
-        <div class="s">${esc((i.jobAddress || '').split('\n')[0] || 'No address')}</div>
+        <div class="s">${esc(addrFirst(i.jobAddress || '') || 'No address')}</div>
         <div class="row sp"><span class="s">${esc(i.number)} · ${ukDate(i.date)}${i.paid ? '' : ' · due ' + ukDate(i.due)}</span><span class="t">${money(invTotals(i).total)}</span></div>
       </button>`).join('') : `<div class="empty">${invoices.length ? 'No invoices in this view.' : 'No invoices yet.<br>Finish a visit and tap “Create invoice” on the last screen, or start one here.'}</div>`}`;
 }
@@ -1607,8 +1636,8 @@ function renderInvEdit(v) {
       ${customers.length ? `<label class="f"><span>Existing customer</span><select data-act="pickInvCust"><option value="">— Type details below —</option>${[...customers].sort(custAlpha).map(c => `<option value="${c.id}" ${c.id === i.customerId ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label>` : ''}
       ${inf('customer.name', 'Client name')}
       ${inf('customer.email', 'Email', { type: 'email', mode: 'email', cap: 'none' })}
-      ${inf('customer.billing', 'Billing address', { area: 1, rows: 3 })}
-      ${inf('jobAddress', 'Property the work was done at', { area: 1, rows: 3 })}
+      ${addrBox('inv', 'customer.billing', 'Billing address')}
+      ${addrBox('inv', 'jobAddress', 'Property the work was done at')}
       <button type="button" class="btn block" data-act="invSameAddr">Same as billing address</button>
     </div>
     <h2>Dates</h2>
@@ -1652,7 +1681,7 @@ async function invShare() {
   copyEmail((ui.inv.customer || {}).email);
   const i = ui.inv, { blob, name } = ui.invPdf, T = invTotals(i);
   const file = new File([blob], name, { type: 'application/pdf' });
-  const first = greetName(i.customer.name), addr = (i.jobAddress || '').replace(/\n/g, ', ');
+  const first = greetName(i.customer.name), addr = addrLine(i.jobAddress || '');
   const subject = `Invoice ${i.number} – ${settings.businessName}`;
   const text = `Hi ${first},\n\nPlease find attached invoice ${i.number}${addr ? ' for the work at ' + addr : ''}.\n${i.paid ? 'This invoice has been paid – thank you.' : `Total due: ${money(T.total)}\nPayment is due by ${ukDate(i.due)}.`}\n\nKind regards,\n${signOff()}`;
   try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: subject, text }); markSent(i); return; } }
@@ -2030,6 +2059,7 @@ document.addEventListener('input', e => {
   const t = e.target;
   if (CLOUD.locked() && ui.view !== 'settings' && t.id !== 'custSearch') { lockedMsg(); render(); return; }
   if (t.classList && t.classList.contains('dtx')) { dtxInput(t, e); return; }
+  { const aw = t.closest && t.closest('.addrw'); if (aw) { addrInput(aw, t); return; } }
   if (t.dataset.s === 'sortCode') t.value = fmtSort(t.value);
   if (t.id === 'custSearch') { ui.search = t.value; paintCustList(); return; }
   if (t.id === 'propSearch') { const el = document.getElementById('propList'); if (el) el.innerHTML = sugHtml(ui.rec, t.value); return; }
@@ -2236,8 +2266,8 @@ async function sharePdf(r) {
   copyEmail((r.customer || {}).email);
   const { blob, name } = ui.pdfs[r.id], [doc, due] = FORM_DOC[typeOf(r)];
   const file = new File([blob], name, { type: 'application/pdf' });
-  const first = greetName(r.customer.name), addr = (r.jobAddress || '').replace(/\n/g, ', ');
-  const subject = `${SUBJ[typeOf(r)]} – ${(r.jobAddress || '').split('\n')[0]}`;
+  const first = greetName(r.customer.name), addr = addrLine(r.jobAddress || '');
+  const subject = `${SUBJ[typeOf(r)]} – ${addrFirst(r.jobAddress || '')}`;
   const text = `Hi ${first},\n\nPlease find attached your ${doc} for ${addr}, carried out on ${ukDate(r.inspectionDate)}.${due ? '\n' + due + ' ' + ukDate(r.renewal) + '.' : ''}\n\nKind regards,\n${signOff()}`;
   try {
     if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: subject, text }); return; }
@@ -2248,8 +2278,8 @@ async function sharePdf(r) {
 async function sharePdfAll(sel) {
   const m = sel || jobRecs() || [ui.rec], r0 = m[0];
   const files = m.map(r => new File([ui.pdfs[r.id].blob], ui.pdfs[r.id].name, { type: 'application/pdf' }));
-  const first = greetName(r0.customer.name), addr = (r0.jobAddress || '').replace(/\n/g, ', ');
-  const subject = `${m.map(r => SUBJ[typeOf(r)]).join(', ')} – ${(r0.jobAddress || '').split('\n')[0]}`;
+  const first = greetName(r0.customer.name), addr = addrLine(r0.jobAddress || '');
+  const subject = `${m.map(r => SUBJ[typeOf(r)]).join(', ')} – ${addrFirst(r0.jobAddress || '')}`;
   const text = `Hi ${first},\n\nPlease find attached your records for ${addr}, carried out on ${ukDate(r0.inspectionDate)}:\n${m.map(r => `- ${docLine(r)}`).join('\n')}\n\nKind regards,\n${signOff()}`;
   try {
     if (navigator.canShare && navigator.canShare({ files })) { await navigator.share({ files, title: subject, text }); return; }
