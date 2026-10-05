@@ -95,7 +95,7 @@ const DEFAULT_SETTINGS = {
   businessName: '', logo: '', accent: '#c9a24b', refPrefix: 'REC', updated: 0, address: '', phone: '', email: '',
   gasSafeReg: '', engineerName: '', gasSafeId: '', syncUrl: '', syncToken: '', gasSafeLogo: '', gasSafeLogoAR: 1,
   priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', discType: '£', discValue: '',
-  invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '', vatQtr: '2',
+  invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '', vatQtr: '2', yearDay: '6', yearMonth: '4',
   bankName: '', accName: '', sortCode: '', accNo: '', invFooter: 'Thank you for your business.'
 };
 let settings = Object.assign({}, DEFAULT_SETTINGS, LS.get('omb_settings', {}));
@@ -627,7 +627,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v37';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v38';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -738,6 +738,8 @@ function renderSettings(v) {
       ${f('payDays', 'Payment terms (days)', { mode: 'numeric' })}
       <button type="button" class="item tog ${settings.vatReg === 'Yes' ? 'on' : ''}" data-act="vatReg"><span class="box"></span><span><span class="t">VAT registered</span><span class="s" style="display:block">${settings.vatReg === 'Yes' ? 'VAT is added to invoices' : 'Tick if the business is VAT registered – VAT will then be added to invoices'}</span></span></button>
       ${settings.vatReg === 'Yes' ? f('vatRate', 'VAT rate (%)', { mode: 'decimal' }) + f('vatNumber', 'VAT number') + `<label class="f"><span>VAT quarters end in</span><select data-s="vatQtr"><option value="2" ${settings.vatQtr === '2' ? 'selected' : ''}>March, June, September, December</option><option value="0" ${settings.vatQtr === '0' ? 'selected' : ''}>January, April, July, October</option><option value="1" ${settings.vatQtr === '1' ? 'selected' : ''}>February, May, August, November</option></select><small>Used by “Print for accountant” on the Invoices tab. It is on your VAT registration certificate.</small></label>` + '<p class="small muted">Enter your prices above <b>excluding VAT</b>. VAT is added on the invoice and shown as its own line. The VAT number is printed on the invoice, which is then headed “VAT Invoice”.</p>' : ''}
+      <div class="row"><div class="grow">${f('yearDay', 'Tax year starts: day', { mode: 'numeric', maxlen: 2 })}</div><div class="grow"><label class="f"><span>Month</span><select data-s="yearMonth">${['January','February','March','April','May','June','July','August','September','October','November','December'].map((mn, k) => `<option value="${k + 1}" ${String(+settings.yearMonth || 4) === String(k + 1) ? 'selected' : ''}>${mn}</option>`).join('')}</select></label></div></div>
+      <p class="small muted" style="margin-top:-6px">The first day of your company’s tax / accounting year (6 April for sole traders; a company can be different). Used for “This tax year” and “Last tax year” in Print for accountant.</p>
       ${f('invFooter', 'Message at the bottom of invoices', { area: true })}
     </div>
     <h2>Bank details (printed on invoices)</h2>
@@ -1597,11 +1599,12 @@ function vatQuarterOf(iso, off) {
 function prtPresets() {
   const t = todayISO(), y = +t.slice(0, 4), m = +t.slice(5, 7) - 1, d = +t.slice(8, 10), off = [0, 1, 2].includes(+settings.vatQtr) ? +settings.vatQtr : 2;
   const q0 = vatQuarterOf(t, off), q1 = vatQuarterOf(addDays(q0.from, -1), off), q2 = vatQuarterOf(addDays(q1.from, -1), off);
-  const ty = (m > 3 || (m === 3 && d >= 6)) ? y : y - 1;
+  const ym = Math.min(12, Math.max(1, parseInt(settings.yearMonth, 10) || 4)) - 1, yd = Math.min(31, Math.max(1, parseInt(settings.yearDay, 10) || 6));
+  const yStart = yr => isoOf(yr, ym, yd), ty = t >= yStart(y) ? y : y - 1;
   return [
     ['q1', 'Last VAT quarter', q1], ['q0', 'This VAT quarter', q0], ['q2', 'Quarter before that', q2],
     ['m1', 'Last month', { from: isoOf(y, m - 1, 1), to: isoOf(y, m, 0) }], ['m0', 'This month', { from: isoOf(y, m, 1), to: isoOf(y, m + 1, 0) }],
-    ['ty', 'This tax year', { from: isoOf(ty, 3, 6), to: isoOf(ty + 1, 3, 5) }], ['ly', 'Last tax year', { from: isoOf(ty - 1, 3, 6), to: isoOf(ty, 3, 5) }]
+    ['ty', 'This tax year', { from: yStart(ty), to: addDays(yStart(ty + 1), -1) }], ['ly', 'Last tax year', { from: yStart(ty - 1), to: addDays(yStart(ty), -1) }]
   ];
 }
 function prtApplyPreset(k) { const f = prtPresets().find(x => x[0] === k); if (f) { ui.prt.preset = k; ui.prt.from = f[2].from; ui.prt.to = f[2].to; } ui.prtPdf = null; }
@@ -1645,12 +1648,22 @@ function renderInvPrint(v) {
     <div style="height:6px"></div>
     <button class="btn gold block" data-act="prtMake" ${list.length ? '' : 'disabled'}>Create PDF</button>
     ${pdf ? `<div class="card pdfok" style="margin-top:12px"><div style="font-weight:700;margin-bottom:10px">PDF ready – ${esc(pdf.name)}</div>
-      <button class="btn gold block" data-act="prtView">Open to print</button><div style="height:8px"></div>
+      <button class="btn gold block" data-act="prtPrint">Print</button><div style="height:8px"></div>
       <button class="btn block" data-act="prtShare">Share / save</button><div style="height:8px"></div>
       <button class="btn block" data-act="prtDl">Download PDF</button></div>
-      <p class="small muted">Tip: print double-sided to halve the paper.</p>` : ''}
+      <p class="small muted">${isPhone() ? 'Print opens your phone’s share sheet – choose Print there, or send the PDF to your accountant.' : 'Print opens the print window.'} Tip: print double-sided to halve the paper.</p>` : ''}
     <div style="height:14px"></div>
     <button class="btn ghost block" data-nav="invoices">Back to invoices</button>`;
+}
+const isPhone = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+/* phone / tablet: the share sheet (it has Print on it). Computer: the print window. */
+async function prtPrint() {
+  const p = ui.prtPdf; if (!p) return;
+  if (isPhone()) { await saveFile(p.blob, p.name, 'application/pdf'); return; }
+  const url = URL.createObjectURL(p.blob), fr = document.createElement('iframe');
+  fr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+  fr.onload = () => { try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch (err) { window.open(url, '_blank'); } setTimeout(() => { fr.remove(); URL.revokeObjectURL(url); }, 120000); };
+  fr.src = url; document.body.appendChild(fr);
 }
 async function prtMake() {
   const p = ui.prt, list = prtList();
@@ -1861,7 +1874,7 @@ document.addEventListener('click', async e => {
     case 'prtPreset': { const y = window.scrollY; prtApplyPreset(b.dataset.k); render(); window.scrollTo(0, y); break; }
     case 'prtSet': { const y = window.scrollY; ui.prt[b.dataset.pk] = b.dataset.pv; ui.prtPdf = null; render(); window.scrollTo(0, y); break; }
     case 'prtMake': await prtMake(); break;
-    case 'prtView': window.open(URL.createObjectURL(ui.prtPdf.blob), '_blank'); break;
+    case 'prtPrint': await prtPrint(); break;
     case 'prtShare': await saveFile(ui.prtPdf.blob, ui.prtPdf.name, 'application/pdf'); break;
     case 'prtDl': { const a2 = document.createElement('a'); a2.href = URL.createObjectURL(ui.prtPdf.blob); a2.download = ui.prtPdf.name; document.body.appendChild(a2); a2.click(); a2.remove(); break; }
     case 'invBack': {
