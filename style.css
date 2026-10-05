@@ -194,3 +194,10 @@ body.locked.gated{overflow:hidden}
 header.bar .bar-logo,header.bar .bar-title{cursor:pointer;-webkit-tap-highlight-color:transparent}
 
 .item.crow .callb{flex:none;width:56px;display:flex;align-items:center;justify-content:center;border-left:1px solid var(--line);font-size:22px;text-decoration:none;color:var(--gold)}
+
+/* UK date fields: typed dd/mm/yyyy box + calendar button (the real date input sits invisibly over the button) */
+.dt{display:flex;gap:8px;align-items:stretch}
+.dt .dtx{flex:1;min-width:0}
+.dtb{position:relative;flex:0 0 52px;border:1px solid var(--line);border-radius:12px;background:#101012;display:flex;align-items:center;justify-content:center;color:var(--gold2)}
+.dtb svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;pointer-events:none}
+.dtb input.dth{position:absolute;inset:0;width:100%;height:100%;opacity:0;padding:0;min-height:0;border:0;cursor:pointer}

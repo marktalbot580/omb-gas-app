@@ -435,9 +435,33 @@ function calcPanel(id, target) {
 
 /* ---------- field builders ---------- */
 const bad = (o, v) => ui.showErr && o.req && !String(v ?? '').trim();
+/* UK dates: a day/month/year box you can type in, plus a calendar button. The real value stays yyyy-mm-dd underneath. */
+const ukDisp = iso => (/^\d{4}-\d{2}-\d{2}$/.test(iso || '') ? iso.split('-').reverse().join('/') : '');
+const dateInp = (attrs, iso) => `<div class="dt"><input type="text" class="dtx" inputmode="numeric" maxlength="10" placeholder="dd/mm/yyyy" value="${ukDisp(iso)}" autocomplete="off"><span class="dtb"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><input type="date" class="dth" ${attrs} value="${esc(iso || '')}" aria-label="Pick a date" tabindex="-1"></span></div>`;
+function dtxInput(t, e) {
+  const d = t.value.replace(/\D/g, '').slice(0, 8);
+  let out = d.length > 4 ? d.slice(0, 2) + '/' + d.slice(2, 4) + '/' + d.slice(4) : d.length > 2 ? d.slice(0, 2) + '/' + d.slice(2) : d;
+  if (e && e.inputType && e.inputType.startsWith('delete')) out = out.replace(/\/$/, '');
+  t.value = out;
+  const nat = t.parentNode.querySelector('.dth'); let iso = '', ok = true;
+  if (d.length === 8) {
+    const dd = +d.slice(0, 2), mm = +d.slice(2, 4), yy = +d.slice(4), dt = new Date(Date.UTC(yy, mm - 1, dd));
+    if (yy >= 1900 && dt.getUTCFullYear() === yy && dt.getUTCMonth() === mm - 1 && dt.getUTCDate() === dd) iso = isoOf(yy, mm - 1, dd); else ok = false;
+  } else if (d.length) ok = false;
+  t.style.borderColor = ok || d.length < 8 ? '' : 'var(--bad)';
+  if (iso && nat.value !== iso) setDateVal(nat, iso);
+}
+function setDateVal(nat, iso) { nat.value = iso; nat.dispatchEvent(new Event('input', { bubbles: true })); nat.dispatchEvent(new Event('change', { bubbles: true })); }
+/* leaving a date box: an empty box clears the date (except the print period), anything half-typed goes back to the saved date */
+document.addEventListener('focusout', e => {
+  const t = e.target; if (!(t.classList && t.classList.contains('dtx'))) return;
+  const nat = t.parentNode.querySelector('.dth');
+  if (!t.value.trim() && nat.value && !nat.dataset.pd) { setDateVal(nat, ''); return; }
+  if (t.value !== ukDisp(nat.value)) { t.value = ukDisp(nat.value); t.style.borderColor = ''; }
+});
 function txt(path, label, o = {}) {
   const v = getP(ui.rec, path) ?? '';
-  const el = o.area
+  const el = o.type === 'date' ? dateInp(`data-k="${path}"`, v) : o.area
     ? `<textarea data-k="${path}" rows="${o.rows || 3}" placeholder="${esc(o.ph || '')}">${esc(v)}</textarea>`
     : `<input data-k="${path}" type="${o.type || 'text'}" ${o.mode ? `inputmode="${o.mode}"` : ''} value="${esc(v)}" placeholder="${esc(o.ph || '')}" autocomplete="off" autocapitalize="${o.cap || 'sentences'}">`;
   return `<label class="f ${bad(o, v) ? 'bad' : ''}" data-f="${path}"><span>${label}${o.req ? ' <b>*</b>' : ''}</span>${el}${o.hint ? `<small>${o.hint}</small>` : ''}</label>`;
@@ -627,7 +651,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v39';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v40';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1486,7 +1510,7 @@ function invPdfHtml() {
 }
 function inf(path, label, o = {}) {
   const v = getP(ui.inv, path) ?? '';
-  const el = o.area
+  const el = o.type === 'date' ? dateInp(`data-n="${path}"`, v) : o.area
     ? `<textarea data-n="${path}" rows="${o.rows || 3}" placeholder="${esc(o.ph || '')}">${esc(v)}</textarea>`
     : `<input data-n="${path}" type="${o.type || 'text'}" ${o.mode ? `inputmode="${o.mode}"` : ''} value="${esc(v)}" placeholder="${esc(o.ph || '')}" autocomplete="off" autocapitalize="${o.cap || 'sentences'}">`;
   return `<label class="f"><span>${label}</span>${el}${o.hint ? `<small>${o.hint}</small>` : ''}</label>`;
@@ -1629,7 +1653,7 @@ function renderInvPrint(v) {
     <h2>Period</h2>
     <div class="chips">${prtPresets().map(([k, l]) => chip(k, l)).join('')}</div>
     <div class="card">
-      <div class="row"><div class="grow"><label class="f"><span>From</span><input type="date" data-pd="from" value="${p.from}"></label></div><div class="grow"><label class="f"><span>To</span><input type="date" data-pd="to" value="${p.to}"></label></div></div>
+      <div class="row"><div class="grow"><label class="f"><span>From</span>${dateInp('data-pd="from"', p.from)}</label></div><div class="grow"><label class="f"><span>To</span>${dateInp('data-pd="to"', p.to)}</label></div></div>
       <label class="f"><span>Pick invoices by</span></label>
       ${seg('basis', [['inv', 'Invoice date'], ['paid', 'Date paid']])}
       <small class="muted" style="display:block;margin:6px 0 0">${p.basis === 'paid' ? 'Only paid invoices, by the date they were paid (for cash accounting).' : 'By the date on the invoice (the normal VAT tax point).'}</small>
@@ -1712,6 +1736,8 @@ document.addEventListener('click', async e => {
   if (nav) { e.preventDefault(); ui.view = nav.dataset.nav; ui.search = ''; render(); return; }
   const kv = e.target.closest('button[data-k][data-v]');
   if (kv) { if (CLOUD.locked()) { lockedMsg(); return; } onChoice(kv.dataset.k, kv.dataset.v); return; }
+  const dtb = e.target.closest('.dtb');
+  if (dtb) { const n = dtb.querySelector('.dth'); try { n.showPicker(); } catch (err) { /* the tap itself opens it on phones */ } return; }
   const b = e.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act, r = ui.rec;
   if (CLOUD.locked() && (LOCKED_WRITES.has(a) || (a === 'makePdf' && r && r.status !== 'complete'))) { lockedMsg(); return; }
@@ -1913,6 +1939,7 @@ document.addEventListener('click', async e => {
 document.addEventListener('input', e => {
   const t = e.target;
   if (CLOUD.locked() && ui.view !== 'settings' && t.id !== 'custSearch') { lockedMsg(); render(); return; }
+  if (t.classList && t.classList.contains('dtx')) { dtxInput(t, e); return; }
   if (t.dataset.s === 'sortCode') t.value = fmtSort(t.value);
   if (t.id === 'custSearch') { ui.search = t.value; paintCustList(); return; }
   if (t.id === 'propSearch') { const el = document.getElementById('propList'); if (el) el.innerHTML = sugHtml(ui.rec, t.value); return; }
@@ -1980,6 +2007,7 @@ document.addEventListener('change', async e => {
     if (t.value === 'Other') { if (TAPS.includes(cur)) r[k] = ''; } else r[k] = t.value;
     ui.pdf = null; persistRec(r); const y = window.scrollY; render(); window.scrollTo(0, y); return;
   }
+  if (t.classList && t.classList.contains('dth')) { const x = t.parentNode.parentNode.querySelector('.dtx'); if (x && document.activeElement !== x) { x.value = ukDisp(t.value); x.style.borderColor = ''; } }
   if (t.dataset.pd && ui.prt) { ui.prt[t.dataset.pd] = t.value; if (ui.prt.from > ui.prt.to && ui.prt.to) { if (t.dataset.pd === 'from') ui.prt.to = t.value; else ui.prt.from = t.value; } ui.prt.preset = 'custom'; ui.prtPdf = null; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
   if (t.id === 'restoreFile' && t.files[0]) { restoreBackup(t.files[0]); t.value = ''; return; }
   if (t.id === 'coLogo' && t.files[0]) {
