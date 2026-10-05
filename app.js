@@ -698,7 +698,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v55';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v56';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1202,7 +1202,7 @@ function sendCard(m) {
   let invRow = '', paid = '';
   if (inv) {
     const T = invTotals(inv);
-    invRow = row(inv.id, 'Invoice ' + esc(inv.number), `${money(T.total)} · <span class="badge ${invStatus(inv)}">${invStatus(inv)}</span>`, side('invFromVisit', '', 'Edit'));
+    invRow = row(inv.id, 'Invoice ' + esc(inv.number), `${money(T.total)} · <span class="badge ${invStatus(inv)}">${invStatus(inv)}</span>`, `<div style="display:flex;gap:8px;flex:none">${side('invOpenVisit', '', 'Open')}${side('invFromVisit', '', 'Edit')}</div>`);
     if (selOn(inv.id)) paid = `<button type="button" class="item tog ${inv.paid ? 'on' : ''}" data-act="invPaidVisit" style="margin-bottom:10px"><span class="box"></span><span><span class="t">Paid</span><span class="s" style="display:block">${inv.paid ? 'Paid ' + ukDate(inv.paidDate) + ' – PAID stamp on the invoice' : 'Tick if paid on the day – adds a PAID stamp'}</span></span></button>${methodSeg(inv)}`;
   } else if (bm.length && noInv(m)) invRow = `<div class="notice" style="margin:0 0 10px">No invoice for this job – it counts as complete.</div><button class="btn block" style="margin-bottom:10px" data-act="invUndoNone">Add an invoice after all</button>`;
   else if (bm.length) invRow = `<button class="btn block" style="margin-bottom:10px" data-act="invFromVisit">Add an invoice</button><button class="btn ghost block" style="margin-bottom:10px" data-act="invNoneVisit">Invoice not required</button>`;
@@ -1568,7 +1568,8 @@ function invCardForVisit(m0) {
       <button type="button" class="item tog ${ex.paid ? 'on' : ''}" data-act="invPaidVisit" style="margin-bottom:10px"><span class="box"></span><span><span class="t">Paid</span><span class="s" style="display:block">${ex.paid ? 'Paid ' + ukDate(ex.paidDate) + ' – PAID stamp on the invoice' : 'Tick if paid on the day – adds a PAID stamp'}</span></span></button>
       ${methodSeg(ex)}
       ${!ex.sent && !ex.paid ? `<button class="btn block" data-act="invSentVisit" style="margin-bottom:10px">Mark invoice as sent</button>` : ''}
-      <button class="btn block" data-act="invFromVisit">Open / edit invoice</button>
+      <button class="btn block" data-act="invOpenVisit">Open invoice (PDF)</button><div style="height:8px"></div>
+      <button class="btn block" data-act="invFromVisit">Edit invoice</button>
       ${packReady(m, ex) ? `<div style="height:10px"></div><button class="btn gold block" data-act="sharePack">Email / share everything (${m.length} record${m.length > 1 ? 's' : ''} + invoice)</button>
         <p class="small muted" style="margin-bottom:0">Sends the ${m.length > 1 ? m.length + ' signed PDFs' : 'signed PDF'} and the invoice together in one email.</p>`
         : `<div style="height:10px"></div><button class="btn gold block" data-act="invPrep">Prepare invoice to send with the records</button>`}</div>`;
@@ -1629,6 +1630,7 @@ function renderInvEdit(v) {
   const i = ui.inv, blankPrice = i.lines.some(l => !numOf(l.p));
   v.innerHTML = `
     <div class="row sp"><h1 style="margin-bottom:6px">${esc(i.number)}</h1><span class="badge ${invStatus(i)}">${invStatus(i)}</span></div>
+    <button type="button" class="btn block" data-act="invOpenNow" style="margin:6px 0 12px">View invoice (PDF)</button>
     ${numOf(i.vatRate) > 0 && !String(i.vatNumber || '').trim() ? `<div class="notice">No VAT number on this invoice. Add it in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a> or type it in the VAT box below.</div>` : ''}
     ${blankPrice ? `<div class="notice">A line has no price. Type it below, or set standard prices in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a>.</div>` : ''}
     <h2>Customer</h2>
@@ -1672,6 +1674,18 @@ function renderInvEdit(v) {
     <button class="btn danger block" data-act="invDel">Delete this invoice</button>`;
 }
 
+/* open an invoice's PDF to look at it: straight away if it is already made, otherwise make it first.
+   The blank window is opened first, inside the tap, so the phone does not block the pop-up while the PDF is built. */
+async function openInvPdf(inv) {
+  if (!inv) { toast('No invoice yet'); return; }
+  const have = ui.invPdf && ui.invPdf.id === inv.id ? ui.invPdf : null;
+  if (have) { window.open(URL.createObjectURL(have.blob), '_blank'); return; }
+  const w = window.open('', '_blank');
+  try {
+    const blob = await buildInvPdf(inv, settings); ui.invPdf = { id: inv.id, blob, name: invFileName(inv) };
+    if (w) w.location.href = URL.createObjectURL(blob); else { toast('Invoice ready – tap Open again'); render(); }
+  } catch (err) { console.error(err); if (w) w.close(); toast('Could not create the invoice PDF: ' + err.message); }
+}
 async function invMakePdf() {
   const i = ui.inv;
   try { const blob = await buildInvPdf(i, settings); ui.invPdf = { id: i.id, blob, name: invFileName(i) }; $('#invPdfBox').innerHTML = invPdfHtml(); toast('Invoice PDF created'); }
@@ -2051,6 +2065,8 @@ document.addEventListener('click', async e => {
     case 'invPrep': { const inv = invForVisit(jobRecs() || [ui.rec]); try { ui.invPdf = { id: inv.id, blob: await buildInvPdf(inv, settings), name: invFileName(inv) }; render(); } catch (err) { toast('Could not create the invoice PDF: ' + err.message); } break; }
     case 'invShare': await invShare(); break;
     case 'invDl': invDownload(); break;
+    case 'invOpenVisit': await openInvPdf(invForVisit(jobRecs() || [ui.rec])); break;
+    case 'invOpenNow': await openInvPdf(ui.inv); break;
     case 'invView': window.open(URL.createObjectURL(ui.invPdf.blob), '_blank'); break;
     case 'invDel': if (confirm('Delete this invoice from this phone? This cannot be undone.')) { invoices = invoices.filter(x => x.id !== ui.inv.id); saveInvoices(); deleteRemote('invoice', ui.inv.id); ui.view = ui.invFrom === 'visit' ? 'form' : 'invoices'; ui.inv = null; render(); } break;
   }
