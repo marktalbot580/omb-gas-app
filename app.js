@@ -669,7 +669,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v50';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v51';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -728,6 +728,12 @@ function renderSettings(v) {
   const f = (k, l, o = {}) => `<label class="f"><span>${l}</span>${o.area ? `<textarea data-s="${k}" rows="3">${esc(settings[k])}</textarea>` : `<input data-s="${k}" value="${esc(k === 'sortCode' ? fmtSort(settings[k]) : settings[k])}" ${o.type ? `type="${o.type}"` : ''} ${o.mode ? `inputmode="${o.mode}"` : ''} autocomplete="off" ${o.maxlen ? `maxlength="${o.maxlen}"` : ''} ${o.cap ? `autocapitalize="${o.cap}"` : ''}>`}${o.hint ? `<small>${o.hint}</small>` : ''}</label>`;
   v.innerHTML = `
     <h1>Settings</h1>
+    <h2>App version</h2>
+    <div class="card">
+      <p class="small muted" style="margin-top:0">This phone is running <b id="verHere" style="color:var(--txt)">${APP_VERSION}</b> · newest online: <b id="verNew" style="color:var(--txt)">checking…</b></p>
+      <button class="btn block" data-act="forceUpdate">Update app now</button>
+      <p class="small muted" style="margin-bottom:0">Clears the saved copy of the app and reloads the newest version. Your records, customers and photos are not touched.</p>
+    </div>
     ${installCard(true)}
     <h2>Business (printed on every certificate)</h2>
     <div class="card">
@@ -803,12 +809,6 @@ function renderSettings(v) {
       <button class="btn block" data-act="expAll">Back up everything</button>
       <div style="height:8px"></div>
       <label class="btn block ghost" style="text-align:center">Restore from a backup<input id="restoreFile" type="file" accept=".json,application/json" hidden></label>
-    </div>
-    <h2>App version</h2>
-    <div class="card">
-      <p class="small muted" style="margin-top:0">This phone is running <b id="verHere" style="color:var(--txt)">${APP_VERSION}</b> · newest online: <b id="verNew" style="color:var(--txt)">checking…</b></p>
-      <button class="btn block" data-act="forceUpdate">Update app now</button>
-      <p class="small muted" style="margin-bottom:0">Clears the saved copy of the app and reloads the newest version. Your records, customers and photos are not touched.</p>
     </div>
     ${CLOUD.on ? accountCard() : ''}`;
 }
