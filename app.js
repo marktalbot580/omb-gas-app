@@ -367,13 +367,14 @@ const tightRunning = r => !!(ui.calc['tt-' + r.id] && ui.calc['tt-' + r.id].t0);
 function tightFields(reqd = true) {
   const r = ui.rec, legacy = !isSvc(r) && r.tightnessResult && !r.tightStart && !r.tightEnd;
   return `<div class="row"><div class="grow">${txt('tightStart', 'Start pressure (mbar)', { req: reqd, mode: 'decimal' })}</div><div class="grow">${txt('tightEnd', 'End pressure (mbar)', { req: reqd, mode: 'decimal' })}</div></div>
+    <button type="button" id="tightGo" class="btn block ${tightRunning(r) ? 'gold' : ''}" style="margin:2px 0 6px" data-act="tightTimer" ${tightNeedsStart(r) ? 'disabled' : ''}>${tightRunning(r) ? 'Stop timer' : 'Start timer'}</button>
+    <small id="tightHint" style="display:block;margin-bottom:6px;${tightNeedsStart(r) ? 'color:var(--warn)' : ''}">${tightNeedsStart(r) ? 'Enter the start pressure, then press Start. Press Stop when the test time is up, then enter the end pressure.' : 'Press Start, then Stop when the test time is up and enter the end pressure.'}</small>
+    ${clockHtml('tt-' + r.id)}
     <div class="f"><span>Test duration</span>
       <div class="row" style="align-items:flex-end">
         <div class="grow"><input data-tm="m" type="text" inputmode="numeric" value="${esc(tightParts(r).m)}" placeholder="min" autocomplete="off"><small>minutes</small></div>
-        <div class="grow"><input data-tm="s" type="text" inputmode="numeric" value="${esc(tightParts(r).s)}" placeholder="sec" autocomplete="off"><small>seconds</small></div>
-        <button type="button" id="tightGo" class="btn ${tightRunning(r) ? 'gold' : ''}" style="margin-bottom:22px" data-act="tightTimer" ${tightNeedsStart(r) ? 'disabled' : ''}>${tightRunning(r) ? 'Stop' : 'Start timer'}</button></div>
-      <small id="tightHint" style="${tightNeedsStart(r) ? 'color:var(--warn)' : ''}">${tightNeedsStart(r) ? 'Enter the start pressure before you start the timer.' : 'Optional – type it, or use the timer'}</small></div>
-    ${clockHtml('tt-' + r.id)}
+        <div class="grow"><input data-tm="s" type="text" inputmode="numeric" value="${esc(tightParts(r).s)}" placeholder="sec" autocomplete="off"><small>seconds</small></div></div>
+      <small>Fills in by itself from the timer – or type it in.</small></div>
     <div class="tightlive" id="tightLive">${tightLiveHtml(r)}</div>
     ${legacy ? `<p class="small muted">Previously recorded: ${esc(r.tightnessResult)}</p>` : ''}`;
 }
@@ -625,7 +626,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v30';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v32';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -919,6 +920,23 @@ function applyPrev(r) {
   } else Object.assign(r, pickKeys(p, PREV_SVC));
   persistRec(r); toast('Appliance details copied – check they are still right');
 }
+/* ---------- finding a property: type to search the customer's addresses (or every customer's, if none is chosen yet) ---------- */
+const addrKey = a => String(a || '').toLowerCase().replace(/\s+/g, ' ').trim();
+function propPool(r) {
+  const cu = customers.find(c => c.id === r.customerId), out = [], seen = new Set();
+  const add = (a, c) => { const k = c.id + '|' + addrKey(a); if (a && !seen.has(k)) { seen.add(k); out.push({ a, c }); } };
+  if (cu) { (cu.properties || []).forEach(p => add(p, cu)); records.forEach(x => { if (x.customerId === cu.id) add(x.jobAddress, cu); }); }
+  else customers.forEach(c => (c.properties || []).forEach(p => add(p, c)));
+  return { cu, out };
+}
+function sugHtml(r, q) {
+  const { cu, out } = propPool(r), toks = addrKey(q).split(' ').filter(Boolean);
+  if (!toks.length) return '';
+  const cur = addrKey(r.jobAddress);
+  const hits = out.filter(x => addrKey(x.a) !== cur && toks.every(t => addrKey(x.a).includes(t) || (!cu && addrKey(x.c.name).includes(t))));
+  if (!hits.length) return '<p class="small muted" style="margin:6px 0">No saved address matches – just carry on typing the new one.</p>';
+  return hits.slice(0, 8).map(x => { const ls = x.a.split('\n'); return `<button type="button" class="item cpick" data-act="pickSug" data-c="${x.c.id}" data-a="${esc(x.a)}"><div class="t">${esc(ls[0])}</div><div class="s">${esc([...ls.slice(1), ...(cu ? [] : [x.c.name])].join(', '))}</div></button>`; }).join('') + (hits.length > 8 ? `<p class="small muted" style="margin:4px 0">${hits.length - 8} more – keep typing to narrow it down.</p>` : '');
+}
 function stepCustomer() {
   const r = ui.rec, cu = customers.find(c => c.id === r.customerId);
   return `
@@ -931,9 +949,11 @@ function stepCustomer() {
       ${txt('customer.billing', 'Client / billing address', { area: 1, rows: 3 })}
     </div>
     <h2>Property inspected</h2>
-    ${cu && (cu.properties || []).length ? `<div class="chips">${cu.properties.map((p, i) => `<button class="chip" data-act="pickProp" data-i="${i}">${esc(p.split('\n')[0])}</button>`).join('')}</div>` : ''}
+    ${cu && (cu.properties || []).length > 5 ? `<input class="search" id="propSearch" placeholder="Search this customer’s ${cu.properties.length} properties – street, town or postcode" autocomplete="off"><div id="propList"></div>`
+      : cu && (cu.properties || []).length ? `<div class="chips">${cu.properties.map((p, i) => `<button class="chip" data-act="pickProp" data-i="${i}">${esc(p.split('\n')[0])}</button>`).join('')}</div>` : ''}
     <div class="card">
       ${txt('jobAddress', 'Job address', { area: 1, rows: 3, req: 1 })}
+      <div id="addrSug"></div>
       <button class="btn block" data-act="sameAddr">Same as billing address</button>
     </div>
     ${prevCard(r)}
@@ -1572,7 +1592,7 @@ function initSigs() {
 
 /* ---------- events ---------- */
 /* when the subscription has ended the app is read-only: look, download and export, but no new or changed records */
-const LOCKED_WRITES = new Set(['newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod']);
+const LOCKED_WRITES = new Set(['newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod']);
 const lockedMsg = () => toast('Your subscription has ended. Subscribe to create or change records.');
 document.addEventListener('click', async e => {
   /* tap the logo / name at the top to go back to the home screen – a form you are part way through is kept as a draft */
@@ -1658,6 +1678,11 @@ document.addEventListener('click', async e => {
     }
     case 'copyPrev': applyPrev(r); { const y = window.scrollY; render(); window.scrollTo(0, y); } break;
     case 'sameAddr': r.jobAddress = r.customer.billing; persistRec(r); render(); break;
+    case 'pickSug': {
+      const c = customers.find(x => x.id === b.dataset.c); if (!c) break;
+      if (r.customerId !== c.id) { r.customerId = c.id; r.customer = { name: c.name, phone: c.phone, email: c.email, billing: c.billing }; }
+      r.jobAddress = b.dataset.a; persistRec(r); render(); break;
+    }
     case 'pickProp': r.jobAddress = customers.find(c => c.id === r.customerId).properties[+b.dataset.i]; persistRec(r); render(); break;
     case 'goIssue': { const tgt = records.find(x => x.id === b.dataset.id) || r; ui.showErr = true; goTo(tgt, +b.dataset.step); ui.appTab = b.dataset.app === '' ? 0 : +b.dataset.app; render(); break; }
     case 'sigClear': { const key = b.dataset.key; r[key] = ''; persistRec(r); ui.pdf = null; const cv = document.querySelector(`canvas[data-sig="${key}"]`); cv.getContext('2d').clearRect(0, 0, cv.width, cv.height); document.querySelector(`[data-ph="${key}"]`).style.display = ''; break; }
@@ -1771,6 +1796,7 @@ document.addEventListener('input', e => {
   if (CLOUD.locked() && ui.view !== 'settings' && t.id !== 'custSearch') { lockedMsg(); render(); return; }
   if (t.dataset.s === 'sortCode') t.value = fmtSort(t.value);
   if (t.id === 'custSearch') { ui.search = t.value; paintCustList(); return; }
+  if (t.id === 'propSearch') { const el = document.getElementById('propList'); if (el) el.innerHTML = sugHtml(ui.rec, t.value); return; }
   if (t.dataset.tm) {
     const r = ui.rec, box = t.parentNode.parentNode;
     const mv = box.querySelector('[data-tm="m"]').value.replace(/\D/g, ''), sv = box.querySelector('[data-tm="s"]').value.replace(/\D/g, '');
@@ -1793,12 +1819,13 @@ document.addEventListener('input', e => {
   }
   if (t.dataset.k) {
     setP(ui.rec, t.dataset.k, t.value); ui.pdf = null; persistRecSoon();
+    if (t.dataset.k === 'jobAddress') { const el = document.getElementById('addrSug'); if (el) el.innerHTML = t.value.trim().length >= 2 ? sugHtml(ui.rec, t.value) : ''; }
     if (/^tight(Start|End|Mins)$/.test(t.dataset.k)) {
       if (!isSvc(ui.rec)) ui.rec.tightnessResult = tightText(ui.rec.tightStart, ui.rec.tightEnd, ui.rec.tightMins);
       const tl = document.getElementById('tightLive'); if (tl) tl.innerHTML = tightLiveHtml(ui.rec);
       const tg = document.getElementById('tightGo'), th = document.getElementById('tightHint');
       if (tg) tg.disabled = tightNeedsStart(ui.rec);
-      if (th) { th.textContent = tightNeedsStart(ui.rec) ? 'Enter the start pressure before you start the timer.' : 'Optional – type it, or use the timer'; th.style.color = tightNeedsStart(ui.rec) ? 'var(--warn)' : ''; }
+      if (th) { th.textContent = tightNeedsStart(ui.rec) ? 'Enter the start pressure, then press Start. Press Stop when the test time is up, then enter the end pressure.' : 'Press Start, then Stop when the test time is up and enter the end pressure.'; th.style.color = tightNeedsStart(ui.rec) ? 'var(--warn)' : ''; }
     }
     if (/^(tight(Start|End|Mins)|appliances\.\d+\.(ratio|co)(Min|Max))$/.test(t.dataset.k)) {
       const ch = autoPass(ui.rec); ch.forEach(p => showChoice(ui.rec, p));
