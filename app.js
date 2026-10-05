@@ -556,7 +556,7 @@ function renderPick(v) {
 function renderCustomers(v) {
   v.innerHTML = `
     <h1>Customers</h1>
-    <input class="search" id="custSearch" placeholder="Search name, phone or address" value="${esc(ui.search)}">
+    <input class="search" id="custSearch" placeholder="Search name, phone, email or any address" value="${esc(ui.search)}">
     <div class="seg custsort" style="margin-bottom:12px">${[['az', 'A–Z'], ['used', 'Most used'], ['fav', '♥ Favourites']].map(([k, l]) => `<button type="button" data-act="custSort" data-s="${k}" class="${custSort() === k ? 'on' : ''}">${l}</button>`).join('')}</div>
     <div id="custList"></div>
     <button class="btn gold fab" data-act="newCust">+ Customer</button>`;
@@ -570,13 +570,26 @@ const telHref = p => 'tel:' + String(p || '').replace(/[^\d+]/g, '');
 function paintCustList() {
   const q = ui.search.toLowerCase(), mode = custSort();
   const uses = {}; customers.forEach(c => { uses[c.id] = custUses(c); });
-  let l = customers.filter(c => (mode !== 'fav' || c.fav) && (!q || [c.name, c.phone, c.email, c.billing, ...(c.properties || [])].join(' ').toLowerCase().includes(q)));
+  /* search covers name, phone (with or without spaces), email, billing address, saved property addresses AND the address of every job done for them */
+  const toks = q.split(/\s+/).filter(Boolean), digits = t => t.replace(/\D/g, '');
+  const addrsOf = c => { const out = new Set(c.properties || []); records.forEach(r => { if (r.jobAddress && (r.customerId === c.id || (!r.customerId && String(r.customer.name || '').trim().toLowerCase() === String(c.name || '').trim().toLowerCase()))) out.add(r.jobAddress); }); return [...out].filter(Boolean); };
+  const hit = {};
+  const matches = c => {
+    if (!toks.length) return true;
+    const addrs = addrsOf(c), base = [c.name, c.phone, c.email, c.billing].join(' ').toLowerCase(), ph = digits(String(c.phone || ''));
+    const adr = addrs.join(' ').toLowerCase().replace(/\s+/g, ' ');
+    const ok = toks.every(t => base.includes(t) || adr.includes(t) || (digits(t).length >= 3 && digits(t) === t.replace(/[\s-]/g, '') && ph.includes(digits(t))));
+    if (ok) { const a = addrs.find(x => toks.some(t => x.toLowerCase().replace(/\s+/g, ' ').includes(t))); if (a && !toks.every(t => base.includes(t))) hit[c.id] = a; }
+    return ok;
+  };
+  let l = customers.filter(c => (mode !== 'fav' || c.fav) && matches(c));
   l.sort(mode === 'used' ? (a, b) => uses[b.id] - uses[a.id] || a.name.localeCompare(b.name) : (a, b) => a.name.localeCompare(b.name));
   $('#custList').innerHTML = l.length ? l.map(c => `
     <div class="item crow">
       <button type="button" class="cmain" data-act="editCust" data-id="${c.id}">
         <div class="t">${esc(c.name)}</div>
         <div class="s">${esc([c.phone, c.email].filter(Boolean).join(' · ') || 'No contact details')}${mode === 'used' ? ` · ${uses[c.id]} form${uses[c.id] === 1 ? '' : 's'}` : ''}</div>
+        ${hit[c.id] ? `<div class="s" style="color:var(--gold2)">&#128205; ${esc(hit[c.id].replace(/\n/g, ', '))}</div>` : ''}
       </button>
       ${String(c.phone || '').replace(/\D/g, '').length >= 5 ? `<a class="callb" href="${telHref(c.phone)}" aria-label="Call ${esc(c.name)}">&#128222;</a>` : ''}
       <button type="button" class="heart ${c.fav ? 'on' : ''}" data-act="favCust" data-id="${c.id}" aria-label="${c.fav ? 'Remove from favourites' : 'Add to favourites'}">${c.fav ? '♥' : '♡'}</button>
@@ -612,7 +625,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v29';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v30';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
