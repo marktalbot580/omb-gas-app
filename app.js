@@ -651,7 +651,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v41';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v42';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1098,7 +1098,7 @@ function stepSign() {
     <div class="card">
       ${choice('customerPresent', 'Was the customer present to sign?', OPT.yn, { req: 1 })}
       ${r.customerPresent === 'No' ? '<p class="small muted">The PDF will show “No-one present at time of visit”.</p>' : ''}
-      ${r.customerPresent === 'Yes' ? txt('customerName', 'Client name', { req: 1 }) + sig('customerSig', 'Client signature', true) : ''}
+      ${r.customerPresent === 'Yes' ? txt('customerName', 'Client name', { req: 1 }) + (() => { const on = !!(r.customerName || '').trim() && (r.customerName || '').trim() === (r.customer.name || '').trim(); return `<button type="button" class="item tog ${on ? 'on' : ''}" data-act="sameName" style="margin-bottom:14px"><span class="box"></span><span><span class="t">Same as the customer name</span><span class="s" style="display:block">${r.customer.name ? esc(r.customer.name) : 'Fills in the name from the customer details'}</span></span></button>`; })() + sig('customerSig', 'Client signature', true) : ''}
     </div>`;
 }
 function reviewIssues(m) {
@@ -1740,7 +1740,7 @@ function initSigs() {
 
 /* ---------- events ---------- */
 /* when the subscription has ended the app is read-only: look, download and export, but no new or changed records */
-const LOCKED_WRITES = new Set(['newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'invNone', 'invNoneVisit', 'invUndoNone', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod']);
+const LOCKED_WRITES = new Set(['newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'sameName', 'invNone', 'invNoneVisit', 'invUndoNone', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod']);
 const lockedMsg = () => toast('Your subscription has ended. Subscribe to create or change records.');
 document.addEventListener('click', async e => {
   /* tap the logo / name at the top to go back to the home screen – a form you are part way through is kept as a draft */
@@ -1827,6 +1827,11 @@ document.addEventListener('click', async e => {
       toast('Gas rate filled in'); const y = window.scrollY; render(); window.scrollTo(0, y); break;
     }
     case 'copyPrev': applyPrev(r); { const y = window.scrollY; render(); window.scrollTo(0, y); } break;
+    case 'sameName': {
+      const nm = (r.customer.name || '').trim(), on = (r.customerName || '').trim() === nm && nm;
+      if (!on && !nm) { toast('Enter the customer’s name on the first screen'); break; }
+      r.customerName = on ? '' : nm; persistRec(r); ui.pdf = null; const y = window.scrollY; render(); window.scrollTo(0, y); break;
+    }
     case 'sameAddr': r.jobAddress = r.customer.billing; persistRec(r); render(); break;
     case 'pickSug': {
       const c = customers.find(x => x.id === b.dataset.c); if (!c) break;
