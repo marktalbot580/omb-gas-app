@@ -93,7 +93,7 @@ const blankDefect = () => ({ text: '', cls: '', action: '' });
 /* ---------- persistent state ---------- */
 const DEFAULT_SETTINGS = {
   businessName: '', logo: '', accent: '#c9a24b', refPrefix: 'REC', updated: 0, address: '', phone: '', email: '',
-  gasSafeReg: '', engineerName: '', gasSafeId: '', syncUrl: '', syncToken: '', gasSafeLogo: '', gasSafeLogoAR: 1,
+  gasSafeReg: '', engineerName: '', gasSafeId: '', engSig: '', syncUrl: '', syncToken: '', gasSafeLogo: '', gasSafeLogoAR: 1,
   priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', discType: '£', discValue: '',
   invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '', vatQtr: '2', yearDay: '6', yearMonth: '4',
   bankName: '', accName: '', sortCode: '', accNo: '', invFooter: 'Thank you for your business.'
@@ -651,7 +651,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v42';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v43';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1087,6 +1087,8 @@ function stepNext() {
 }
 function stepSign() {
   const r = ui.rec;
+  /* the engineer's saved signature goes on automatically the first time a form reaches this step (Clear still works afterwards) */
+  if (!r.engineerSig && settings.engSig && !r.engAuto) { r.engAuto = true; r.engineerSig = PH.sigStore(settings.engSig); persistRec(r); }
   const sig = (key, label, req) => `<div class="f ${ui.showErr && req && !r[key] ? 'bad' : ''}"><span>${label}${req ? ' <b>*</b>' : ''}</span>
     <div class="sigwrap"><canvas data-sig="${key}"></canvas><div class="line"></div><div class="ph" data-ph="${key}">Sign here</div></div>
     <div class="sigactions"><span class="small muted">Use your finger</span><button data-act="sigClear" data-key="${key}">Clear</button></div></div>`;
@@ -1094,6 +1096,8 @@ function stepSign() {
     <div class="card">
       <p class="small muted" style="margin-top:0">Engineer: <b style="color:var(--txt)">${esc(settings.engineerName || '(set in Settings)')}</b>${isLeg(r) || isAc(r) ? '' : ` · Gas Safe ID <b style="color:var(--txt)">${esc(settings.gasSafeId || '(set in Settings)')}</b>`}</p>
       ${sig('engineerSig', "Engineer's signature", true)}
+      ${settings.engSig && !r.engineerSig ? `<button type="button" class="btn block" style="margin-bottom:10px" data-act="engSigUse">Use my saved signature</button>` : ''}
+      <button type="button" class="item tog ${settings.engSig ? 'on' : ''}" data-act="engSigTog" style="margin-bottom:0"><span class="box"></span><span><span class="t">Remember my signature</span><span class="s" style="display:block">${settings.engSig ? 'Saved – it is added to your new forms automatically. Tap to remove it.' : 'Sign above, then tick to add it to all your future forms automatically.'}</span></span></button>
     </div>
     <div class="card">
       ${choice('customerPresent', 'Was the customer present to sign?', OPT.yn, { req: 1 })}
@@ -1740,7 +1744,7 @@ function initSigs() {
 
 /* ---------- events ---------- */
 /* when the subscription has ended the app is read-only: look, download and export, but no new or changed records */
-const LOCKED_WRITES = new Set(['newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'sameName', 'invNone', 'invNoneVisit', 'invUndoNone', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod']);
+const LOCKED_WRITES = new Set(['newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'sameName', 'engSigTog', 'engSigUse', 'invNone', 'invNoneVisit', 'invUndoNone', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod']);
 const lockedMsg = () => toast('Your subscription has ended. Subscribe to create or change records.');
 document.addEventListener('click', async e => {
   /* tap the logo / name at the top to go back to the home screen – a form you are part way through is kept as a draft */
@@ -1827,6 +1831,16 @@ document.addEventListener('click', async e => {
       toast('Gas rate filled in'); const y = window.scrollY; render(); window.scrollTo(0, y); break;
     }
     case 'copyPrev': applyPrev(r); { const y = window.scrollY; render(); window.scrollTo(0, y); } break;
+    case 'engSigTog': {
+      if (settings.engSig) { settings.engSig = ''; saveSettings(); toast('Saved signature removed'); }
+      else {
+        if (!r.engineerSig) { toast('Sign in the box first'); break; }
+        const src = await PH.sigResolve(r.engineerSig); if (!src) { toast('Sign in the box first'); break; }
+        settings.engSig = src; saveSettings(); r.engAuto = true; persistRec(r); toast('Signature saved – it will be added to your future forms');
+      }
+      const y = window.scrollY; render(); window.scrollTo(0, y); break;
+    }
+    case 'engSigUse': { r.engineerSig = PH.sigStore(settings.engSig); r.engAuto = true; persistRec(r); ui.pdf = null; const y = window.scrollY; render(); window.scrollTo(0, y); break; }
     case 'sameName': {
       const nm = (r.customer.name || '').trim(), on = (r.customerName || '').trim() === nm && nm;
       if (!on && !nm) { toast('Enter the customer’s name on the first screen'); break; }
