@@ -179,7 +179,7 @@ async function drawSvcPdf(rec, s, lv) {
     [{ t: 'Operating pressure', b: 1 }, res(rec.bpTaken, rec.bpResult), rec.bpTaken === 'YES' ? 'mbar: ' + rec.bpValue : ''],
     ...(/worcester/i.test(SVC.makeText(rec)) ? [[{ t: 'Fan pressure', b: 1 }, res(rec.fpTaken, rec.fpResult), rec.fpTaken === 'YES' ? 'mbar: ' + fanFmt(rec.fpValue) : '']] : []),
     [{ t: 'Gas rate', b: 1 }, res(rec.grTaken, rec.grResult), rec.grTaken === 'YES' ? 'kW: ' + rec.grValue : ''],
-    [{ t: 'Flue gas analysis', b: 1 }, rec.fgDone === 'YES' ? pfCell(rec.fgResult) : { t: rec.fgDone === 'NO' ? 'Not performed' : '–', c: GREY }, rec.fgDone === 'YES' ? 'See results below in combustion analyser readings' : '']
+    [{ t: 'Flue gas analysis', b: 1 }, rec.fgDone === 'YES' ? pfCell(rec.fgResult) : { t: rec.fgDone === 'NO' ? 'Not performed' : '–', c: GREY }, rec.fgDone === 'YES' ? 'See results below (Combustion Analyser Readings)' : '']
   ];
   table('OPERATING CHECKS', [{ h: 'Check', w: 56 }, { h: 'Result', w: 36, a: 'c' }, { h: 'Test result', w: 102 }], opRows);
 
