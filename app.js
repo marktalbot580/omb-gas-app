@@ -521,7 +521,7 @@ function renderTabs(nav) {
 
 /* invoice reminder shown on completed records: green once the invoice has been sent, otherwise a reminder */
 function invBadge(r) {
-  if (r.status !== 'complete' || typeOf(r) === 'warning') return '';
+  if (r.status !== 'complete' || typeOf(r) === 'warning' || r.noInvoice) return '';
   const inv = invoices.find(i => (i.recIds || []).includes(r.id));
   if (inv && inv.paid) return '<span class="badge paid">Paid</span>';
   if (inv && inv.sent) return '<span class="badge invd">Invoiced</span>';
@@ -651,7 +651,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v40';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v41';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1140,7 +1140,8 @@ function sendCard(m) {
     const T = invTotals(inv);
     invRow = row(inv.id, 'Invoice ' + esc(inv.number), `${money(T.total)} · <span class="badge ${invStatus(inv)}">${invStatus(inv)}</span>`, side('invFromVisit', '', 'Edit'));
     if (selOn(inv.id)) paid = `<button type="button" class="item tog ${inv.paid ? 'on' : ''}" data-act="invPaidVisit" style="margin-bottom:10px"><span class="box"></span><span><span class="t">Paid</span><span class="s" style="display:block">${inv.paid ? 'Paid ' + ukDate(inv.paidDate) + ' – PAID stamp on the invoice' : 'Tick if paid on the day – adds a PAID stamp'}</span></span></button>${methodSeg(inv)}`;
-  } else if (bm.length) invRow = `<button class="btn block" style="margin-bottom:10px" data-act="invFromVisit">Add an invoice</button>`;
+  } else if (bm.length && noInv(m)) invRow = `<div class="notice" style="margin:0 0 10px">No invoice for this job – it counts as complete.</div><button class="btn block" style="margin-bottom:10px" data-act="invUndoNone">Add an invoice after all</button>`;
+  else if (bm.length) invRow = `<button class="btn block" style="margin-bottom:10px" data-act="invFromVisit">Add an invoice</button><button class="btn ghost block" style="margin-bottom:10px" data-act="invNoneVisit">Invoice not required</button>`;
   const n = m.filter(x => selOn(x.id)).length + (inv && selOn(inv.id) ? 1 : 0);
   return `<div class="card pdfok" style="margin-top:12px"><div style="font-weight:700;margin-bottom:10px">Ready to send</div>
     ${recRows}${invRow}${paid}
@@ -1204,6 +1205,7 @@ function stepReview() {
     <details class="adv"><summary>More options</summary>
       ${made ? `<button class="btn block" data-act="dlSel">Download selected</button><div style="height:8px"></div>
       <button class="btn block" data-act="makePdf" ${issues.length || needWarn.length ? 'disabled' : ''}>Re-create documents</button><div style="height:8px"></div>` : ''}
+      ${billable(m).length ? (noInv(m) ? `<button class="btn block" data-act="invUndoNone">Add an invoice after all</button>` : `<button class="btn block" data-act="invNoneVisit">Invoice not required (e.g. a favour)</button>`) + `<div style="height:8px"></div>` : ''}
       ${ui.rec.status === 'draft' ? '' : `<button class="btn danger block" data-act="delRec">${multi ? 'Delete all ' + m.length + ' forms in this visit' : 'Delete this record'}</button>`}
     </details>`;
 }
@@ -1418,6 +1420,19 @@ const priceStr = v => (numOf(v) > 0 ? numOf(v).toFixed(2) : '');
 const invStatus = i => (i.paid ? 'paid' : i.due && i.due < todayISO() ? 'overdue' : 'unpaid');
 const markSent = inv => { if (inv && !inv.sent) { inv.sent = Date.now(); persistInv(inv); } };
 const invForVisit = m => invoices.find(i => (i.recIds || []).some(id => m.some(r => r.id === id)));
+/* "Invoice not required" (a favour, a free job): flagged on the visit's records, any invoice is deleted, and the job just shows as complete */
+const noInv = m => billable(m).some(r => r.noInvoice);
+function setNoInvoice(m, on) {
+  billable(m).forEach(r => { r.noInvoice = on; persistRec(r); });
+  const inv = on ? invForVisit(m) : null;
+  if (inv) {
+    const n = parseInt((String(inv.number).match(/(\d+)$/) || [])[1], 10);
+    if (!inv.sent && !inv.paid && n && n === (parseInt(settings.invNext, 10) || 1) - 1) { settings.invNext = String(n); saveSettings(); }   // give the number back so there is no gap in the sequence
+    invoices = invoices.filter(x => x.id !== inv.id); saveInvoices(); deleteRemote('invoice', inv.id);
+    if (ui.invPdf && ui.invPdf.id === inv.id) ui.invPdf = null;
+  }
+  return inv;
+}
 function persistInv(inv) {
   inv.updated = Date.now();
   const k = invoices.findIndex(x => x.id === inv.id);
@@ -1581,6 +1596,8 @@ function renderInvEdit(v) {
     <div style="height:14px"></div>
     <button class="btn ghost block" data-act="invBack">${ui.invFrom === 'visit' ? 'Back to the visit' : 'Back to invoices'}</button>
     <div style="height:10px"></div>
+    ${(i.recIds || []).length ? `<button class="btn block" data-act="invNone">Invoice not required (e.g. a favour)</button>
+    <p class="small muted" style="margin:6px 0 14px">Deletes this invoice and marks the job as complete with no invoice. You can add one again later.</p>` : ''}
     <button class="btn danger block" data-act="invDel">Delete this invoice</button>`;
 }
 
@@ -1723,7 +1740,7 @@ function initSigs() {
 
 /* ---------- events ---------- */
 /* when the subscription has ended the app is read-only: look, download and export, but no new or changed records */
-const LOCKED_WRITES = new Set(['newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod']);
+const LOCKED_WRITES = new Set(['newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'invNone', 'invNoneVisit', 'invUndoNone', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod']);
 const lockedMsg = () => toast('Your subscription has ended. Subscribe to create or change records.');
 document.addEventListener('click', async e => {
   /* tap the logo / name at the top to go back to the home screen – a form you are part way through is kept as a draft */
@@ -1913,6 +1930,21 @@ document.addEventListener('click', async e => {
       const i = ui.inv, bill = (i.customer.billing || '').trim();
       if (!bill) { toast('Type the billing address first'); break; }
       i.jobAddress = bill; ui.invPdf = null; persistInv(i); const y = window.scrollY; render(); window.scrollTo(0, y); toast('Property address set to the billing address'); break;
+    }
+    case 'invNone': {
+      const i = ui.inv, m = (i.recIds || []).map(id => records.find(r => r.id === id)).filter(Boolean);
+      if (!confirm(`Invoice not required? This deletes invoice ${i.number} and marks the job as complete with no invoice.`)) break;
+      setNoInvoice(m, true); ui.view = ui.invFrom === 'visit' ? 'form' : 'invoices'; ui.inv = null; render(); toast('Invoice deleted – job marked as no invoice needed'); break;
+    }
+    case 'invNoneVisit': {
+      const m = jobRecs() || [ui.rec], ex = invForVisit(m);
+      if (ex && !confirm(`Invoice not required? This deletes invoice ${ex.number}.`)) break;
+      const y = window.scrollY; setNoInvoice(m, true); render(); window.scrollTo(0, y); toast('Marked as no invoice needed'); break;
+    }
+    case 'invUndoNone': {
+      const m = jobRecs() || [ui.rec], bm = billable(m); setNoInvoice(m, false);
+      if (bm.length && !invForVisit(m) && bm.every(r => numOf(settings[SVC_PRICE[typeOf(r)]]) > 0)) persistInv(newInvoice(m));
+      await ensureInvPdf(m); const y = window.scrollY; render(); window.scrollTo(0, y); break;
     }
     case 'invAddLine': { const y = window.scrollY; ui.inv.lines.push({ d: '', q: '1', p: '' }); ui.invPdf = null; persistInv(ui.inv); render(); window.scrollTo(0, document.body.scrollHeight); break; }
     case 'invRmLine': { const y = window.scrollY; ui.inv.lines.splice(+b.dataset.i, 1); ui.invPdf = null; persistInv(ui.inv); render(); window.scrollTo(0, y); break; }
@@ -2136,7 +2168,7 @@ async function makePdf() {
     }
     /* make the invoice at the same time when every service has a price in Settings (otherwise "Add an invoice" lets you type the price) */
     const bm = billable(m);
-    if (bm.length && !invForVisit(m) && bm.every(r => numOf(settings[SVC_PRICE[typeOf(r)]]) > 0)) persistInv(newInvoice(m));
+    if (bm.length && !noInv(m) && !invForVisit(m) && bm.every(r => numOf(settings[SVC_PRICE[typeOf(r)]]) > 0)) persistInv(newInvoice(m));
     await ensureInvPdf(m);
     render(); toast(m.length > 1 ? `${m.length} PDFs created` : 'PDF created'); syncAll();
   } catch (err) { console.error(err); toast('Could not create the PDF: ' + err.message); }
