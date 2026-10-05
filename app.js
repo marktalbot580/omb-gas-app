@@ -627,7 +627,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v35';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v36';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -697,7 +697,7 @@ function renderSettings(v) {
     </div>
     <h2>Your branding</h2>
     <div class="card">
-      <div style="background:#fff;border-radius:10px;padding:10px;text-align:center;margin-bottom:12px"><img src="${settings.logo || placeholderLogo(settings.businessName)}" alt="Company logo" style="max-height:90px;max-width:100%"></div>
+      <div style="text-align:center;margin-bottom:12px"><img src="${settings.logo || placeholderLogo(settings.businessName)}" alt="Company logo" style="height:110px;width:110px;border-radius:10px"></div>
       <label class="btn block" style="text-align:center">${settings.logo ? 'Change company logo' : 'Upload company logo'}<input id="coLogo" type="file" accept="image/*" hidden></label>
       ${settings.logo ? '<div style="height:8px"></div><button class="btn block" data-act="rmCoLogo">Remove logo</button>' : ''}
       <div class="hint" style="margin:10px 0 4px">Your logo appears at the top of the app and on every PDF.</div>
@@ -1879,10 +1879,23 @@ document.addEventListener('change', async e => {
   if (t.id === 'restoreFile' && t.files[0]) { restoreBackup(t.files[0]); t.value = ''; return; }
   if (t.id === 'coLogo' && t.files[0]) {
     const img = new Image(), url = URL.createObjectURL(t.files[0]);
-    img.onload = () => {   // fit the logo inside a square white tile so it sits cleanly on every PDF header
-      const S = 400, sc = Math.min(S / img.width, S / img.height) * 0.92, cv = document.createElement('canvas'); cv.width = cv.height = S;
+    img.onload = () => {   // trim blank/white margins, then fill the whole square tile edge to edge
+      const w0 = img.naturalWidth || img.width, h0 = img.naturalHeight || img.height, m = Math.min(1, 1200 / Math.max(w0, h0));
+      const tw = Math.max(1, Math.round(w0 * m)), th = Math.max(1, Math.round(h0 * m));
+      const t = document.createElement('canvas'); t.width = tw; t.height = th;
+      const tc = t.getContext('2d', { willReadFrequently: true }); tc.drawImage(img, 0, 0, tw, th);
+      const px = tc.getImageData(0, 0, tw, th).data; let x0 = tw, y0 = th, x1 = -1, y1 = -1;
+      for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) {
+        const i = (y * tw + x) * 4, blank = px[i + 3] < 20 || (px[i] > 235 && px[i + 1] > 235 && px[i + 2] > 235);
+        if (!blank) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      }
+      if (x1 < 0) { x0 = 0; y0 = 0; x1 = tw - 1; y1 = th - 1; }
+      const cw = x1 - x0 + 1, ch = y1 - y0 + 1, S = 400, sc = Math.min(S / cw, S / ch), dw = cw * sc, dh = ch * sc;
+      const cv = document.createElement('canvas'); cv.width = cv.height = S;
       const c = cv.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, S, S);
-      c.drawImage(img, (S - img.width * sc) / 2, (S - img.height * sc) / 2, img.width * sc, img.height * sc);
+      const e = tc.getImageData(x0, y0, 1, 1).data;   // colour at the logo's own corner, so any gap blends in
+      if (e[3] > 200) { c.fillStyle = 'rgb(' + e[0] + ',' + e[1] + ',' + e[2] + ')'; c.fillRect(0, 0, S, S); }
+      c.drawImage(t, x0, y0, cw, ch, (S - dw) / 2, (S - dh) / 2, dw, dh);
       settings.logo = cv.toDataURL('image/png'); saveSettings(); URL.revokeObjectURL(url); render(); toast('Logo saved');
     };
     img.onerror = () => toast('That file could not be read as an image');
