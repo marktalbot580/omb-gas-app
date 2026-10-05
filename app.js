@@ -669,7 +669,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v51';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v52';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -679,10 +679,21 @@ async function checkVersion() {
   } catch (e) { el.textContent = 'offline'; }
 }
 async function forceUpdate() {
-  toast('Updating…');
+  const msg = t => { const e = $('#updMsg'); if (e) e.textContent = t; toast(t); };
+  const btn = document.querySelector('[data-act=forceUpdate]'); if (btn) btn.disabled = true;
+  let sw = '';
+  try { sw = await (await fetch('sw.js?x=' + Date.now(), { cache: 'no-store' })).text(); }
+  catch (e) { msg('Cannot reach the internet, so the update was not started. Try again with a signal.'); if (btn) btn.disabled = false; return; }
+  const m = sw.match(/omb-gas-(v\d+)/), newest = m ? m[1] : '';
+  if (!newest || navigator.onLine === false) { msg('Cannot reach the internet, so nothing was cleared. Try again with a signal.'); if (btn) btn.disabled = false; return; }   // never wipe the saved copy unless the new one can be fetched
+  msg(newest && newest !== APP_VERSION ? `Updating from ${APP_VERSION} to ${newest}…` : `Online version is ${newest || 'unknown'}. Clearing this phone's saved copy…`);
   try { const regs = await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r => r.unregister())); } catch (e) { }
   try { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); } catch (e) { }
-  location.replace(location.pathname + '?u=' + Date.now());
+  /* the browser keeps its own short-lived copy of each file too: fetch every file fresh so the reload cannot pick up an old one */
+  const files = ['./', ...[...sw.matchAll(/'([^']+\.(?:js|css|png|json|html))'/g)].map(x => x[1])];
+  await Promise.all(files.map(f => fetch(f, { cache: 'reload' }).catch(() => { })));
+  msg('Done – restarting the app…');
+  setTimeout(() => location.replace(location.pathname + '?u=' + Date.now()), 400);
 }
 
 /* ---------- install to the home screen ---------- */
@@ -732,6 +743,7 @@ function renderSettings(v) {
     <div class="card">
       <p class="small muted" style="margin-top:0">This phone is running <b id="verHere" style="color:var(--txt)">${APP_VERSION}</b> · newest online: <b id="verNew" style="color:var(--txt)">checking…</b></p>
       <button class="btn block" data-act="forceUpdate">Update app now</button>
+      <p class="small" id="updMsg" style="margin:8px 0 0;font-weight:600"></p>
       <p class="small muted" style="margin-bottom:0">Clears the saved copy of the app and reloads the newest version. Your records, customers and photos are not touched.</p>
     </div>
     ${installCard(true)}
