@@ -15,9 +15,12 @@ function invTotals(inv) {
   return { sub, disc, net, rate, vat, total: r2(net + vat) };
 }
 
-async function buildInvPdf(inv, s) {
+/* ext = { doc, addPage } draws this invoice into an existing PDF (used by the bulk print) instead of making its own */
+async function buildInvPdf(inv, s, ext) {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const doc = ext ? ext.doc : new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  if (ext && ext.addPage) doc.addPage();
+  const p0 = doc.getNumberOfPages();
   const W = 210, H = 297, M = 12, CW = W - 2 * M, FOOT = 16;
   const GOLD = [201, 162, 75], GOLD_T = [230, 199, 120], GOLD_L = [246, 242, 233], INK = [22, 22, 22], GREY = [105, 105, 105], LINE = [190, 190, 190];
   const GREEN = [22, 120, 70], RED = [190, 35, 30];
@@ -179,13 +182,14 @@ async function buildInvPdf(inv, s) {
 
   /* footer */
   const pages = doc.getNumberOfPages();
-  for (let p = 1; p <= pages; p++) {
+  for (let p = p0; p <= pages; p++) {
     doc.setPage(p);
     doc.setDrawColor(...LINE); doc.setLineWidth(0.25); doc.line(M, H - 11.5, W - M, H - 11.5);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(6.8); doc.setTextColor(...GREY);
     doc.text(`${s.businessName || ''}${s.gasSafeReg ? '  ·  Gas Safe Register No. ' + s.gasSafeReg : ''}`, M, H - 6.5);
-    doc.text(`${inv.number}${pages > 1 ? `  ·  Page ${p} of ${pages}` : ''}`, W - M, H - 6.5, { align: 'right' });
+    doc.text(`${inv.number}${pages - p0 > 0 ? `  ·  Page ${p - p0 + 1} of ${pages - p0 + 1}` : ''}`, W - M, H - 6.5, { align: 'right' });
   }
+  if (ext) return null;
   doc.setProperties({ title: `Invoice ${inv.number}`, subject: inv.jobAddress, author: s.businessName || 'Your business' });
   return doc.output('blob');
 }

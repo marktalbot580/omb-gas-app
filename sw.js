@@ -1,6 +1,6 @@
 // Offline cache so the form still opens with no signal on site.
-const CACHE = 'omb-gas-v36';
-const FILES = ['./', 'index.html', 'style.css', 'app.js', 'leg-config.js', 'svc-config.js', 'ac-config.js', 'warn-config.js', 'pdf.js', 'pdf-leg.js', 'pdf-svc.js', 'pdf-ac.js', 'pdf-warn.js', 'pdf-inv.js', 'photos.js', 'config.js', 'cloud.js', 'manifest.json',
+const CACHE = 'omb-gas-v37';
+const FILES = ['./', 'index.html', 'style.css', 'app.js', 'leg-config.js', 'svc-config.js', 'ac-config.js', 'warn-config.js', 'pdf.js', 'pdf-leg.js', 'pdf-svc.js', 'pdf-ac.js', 'pdf-warn.js', 'pdf-inv.js', 'pdf-stmt.js', 'photos.js', 'config.js', 'cloud.js', 'manifest.json',
   'gassafe.png', 'icon-192.png', 'icon-512.png', 'lib/jspdf.umd.min.js'];
 
 self.addEventListener('install', e => {

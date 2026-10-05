@@ -95,7 +95,7 @@ const DEFAULT_SETTINGS = {
   businessName: '', logo: '', accent: '#c9a24b', refPrefix: 'REC', updated: 0, address: '', phone: '', email: '',
   gasSafeReg: '', engineerName: '', gasSafeId: '', syncUrl: '', syncToken: '', gasSafeLogo: '', gasSafeLogoAR: 1,
   priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', discType: '£', discValue: '',
-  invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '',
+  invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '', vatQtr: '2',
   bankName: '', accName: '', sortCode: '', accNo: '', invFooter: 'Thank you for your business.'
 };
 let settings = Object.assign({}, DEFAULT_SETTINGS, LS.get('omb_settings', {}));
@@ -474,7 +474,7 @@ function render() {
   if (ui.view !== 'home' && typeof instPopClose === 'function') instPopClose();   // the install pop-up must never cover the Next / Back buttons
   if (ui.view === 'form') { renderForm(v, nav); }
   else {
-    ({ home: renderHome, pick: renderPick, customers: renderCustomers, custEdit: renderCustEdit, settings: renderSettings, invoices: renderInvoices, invEdit: renderInvEdit, admin: renderAdmin }[ui.view])(v);
+    ({ home: renderHome, pick: renderPick, customers: renderCustomers, custEdit: renderCustEdit, settings: renderSettings, invoices: renderInvoices, invEdit: renderInvEdit, invPrint: renderInvPrint, admin: renderAdmin }[ui.view])(v);
     renderTabs(nav);
   }
   paintSync();
@@ -491,8 +491,8 @@ const ICON = {
 function renderTabs(nav) {
   nav.className = 'tabs';
   const t = (id, label, ic, on) => `<button data-nav="${id}" class="${on ? 'on' : ''}">${ic}${label}</button>`;
-  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'admin');
-  $('#barSub').textContent = ui.view === 'invoices' || ui.view === 'invEdit' ? 'Invoices' : 'Gas & Legionella records';
+  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'admin');
+  $('#barSub').textContent = ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' ? 'Invoices' : 'Gas & Legionella records';
 }
 
 /* invoice reminder shown on completed records: green once the invoice has been sent, otherwise a reminder */
@@ -627,7 +627,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v36';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v37';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -737,7 +737,7 @@ function renderSettings(v) {
       <div class="notice" style="margin:0 0 14px">Next invoice will be numbered <b id="invPreview">${esc(invNumberFor(settings.invNext))}</b></div>
       ${f('payDays', 'Payment terms (days)', { mode: 'numeric' })}
       <button type="button" class="item tog ${settings.vatReg === 'Yes' ? 'on' : ''}" data-act="vatReg"><span class="box"></span><span><span class="t">VAT registered</span><span class="s" style="display:block">${settings.vatReg === 'Yes' ? 'VAT is added to invoices' : 'Tick if the business is VAT registered – VAT will then be added to invoices'}</span></span></button>
-      ${settings.vatReg === 'Yes' ? f('vatRate', 'VAT rate (%)', { mode: 'decimal' }) + f('vatNumber', 'VAT number') + '<p class="small muted">Enter your prices above <b>excluding VAT</b>. VAT is added on the invoice and shown as its own line. The VAT number is printed on the invoice, which is then headed “VAT Invoice”.</p>' : ''}
+      ${settings.vatReg === 'Yes' ? f('vatRate', 'VAT rate (%)', { mode: 'decimal' }) + f('vatNumber', 'VAT number') + `<label class="f"><span>VAT quarters end in</span><select data-s="vatQtr"><option value="2" ${settings.vatQtr === '2' ? 'selected' : ''}>March, June, September, December</option><option value="0" ${settings.vatQtr === '0' ? 'selected' : ''}>January, April, July, October</option><option value="1" ${settings.vatQtr === '1' ? 'selected' : ''}>February, May, August, November</option></select><small>Used by “Print for accountant” on the Invoices tab. It is on your VAT registration certificate.</small></label>` + '<p class="small muted">Enter your prices above <b>excluding VAT</b>. VAT is added on the invoice and shown as its own line. The VAT number is printed on the invoice, which is then headed “VAT Invoice”.</p>' : ''}
       ${f('invFooter', 'Message at the bottom of invoices', { area: true })}
     </div>
     <h2>Bank details (printed on invoices)</h2>
@@ -1501,6 +1501,8 @@ function renderInvoices(v) {
     <div class="card"><div class="row sp"><div><div class="small muted">Outstanding</div><div style="font-size:24px;font-weight:700;color:var(--gold2)">${money(owed)}</div></div>
       <div style="text-align:right"><div class="small muted">${open.length} unpaid</div>${late.length ? `<div class="small" style="color:var(--bad);font-weight:700">${late.length} overdue</div>` : ''}</div></div></div>
     <button class="btn gold block" data-act="newInvBlank">+ New invoice</button>
+    <div style="height:8px"></div>
+    <button class="btn block" data-act="prtOpen">Print for accountant (VAT quarter / bulk)</button>
     <div style="height:14px"></div>
     <div class="chips">${chip('all', 'All')}${chip('unpaid', 'Unpaid')}${chip('paid', 'Paid')}</div>
     ${shown.length ? shown.map(i => `
@@ -1583,6 +1585,82 @@ function exportInvoices() {
   const rows = [['Invoice', 'Date', 'Due', 'Customer', 'Property', 'Subtotal', 'Discount', 'VAT', 'Total', 'Status', 'Paid on']].concat(
     [...invoices].sort((a, b) => (a.date + a.number).localeCompare(b.date + b.number)).map(i => { const T = invTotals(i); return [i.number, ukDate(i.date), ukDate(i.due), i.customer.name, i.jobAddress, T.sub.toFixed(2), T.disc.toFixed(2), T.vat.toFixed(2), T.total.toFixed(2), invStatus(i), ukDate(i.paidDate)]; }));
   saveFile('﻿' + rows.map(r => r.map(q).join(',')).join('\r\n'), `Invoices ${todayISO()}.csv`, 'text/csv');
+}
+
+/* ---------- print for accountant (bulk invoices for a VAT quarter) ---------- */
+const isoOf = (y, m, d) => new Date(Date.UTC(y, m, d)).toISOString().slice(0, 10);
+function vatQuarterOf(iso, off) {
+  const y = +iso.slice(0, 4), m = +iso.slice(5, 7) - 1; let qe = m;
+  while (qe % 3 !== off) qe++;
+  return { from: isoOf(y, qe - 2, 1), to: isoOf(y, qe + 1, 0) };
+}
+function prtPresets() {
+  const t = todayISO(), y = +t.slice(0, 4), m = +t.slice(5, 7) - 1, d = +t.slice(8, 10), off = [0, 1, 2].includes(+settings.vatQtr) ? +settings.vatQtr : 2;
+  const q0 = vatQuarterOf(t, off), q1 = vatQuarterOf(addDays(q0.from, -1), off), q2 = vatQuarterOf(addDays(q1.from, -1), off);
+  const ty = (m > 3 || (m === 3 && d >= 6)) ? y : y - 1;
+  return [
+    ['q1', 'Last VAT quarter', q1], ['q0', 'This VAT quarter', q0], ['q2', 'Quarter before that', q2],
+    ['m1', 'Last month', { from: isoOf(y, m - 1, 1), to: isoOf(y, m, 0) }], ['m0', 'This month', { from: isoOf(y, m, 1), to: isoOf(y, m + 1, 0) }],
+    ['ty', 'This tax year', { from: isoOf(ty, 3, 6), to: isoOf(ty + 1, 3, 5) }], ['ly', 'Last tax year', { from: isoOf(ty - 1, 3, 6), to: isoOf(ty, 3, 5) }]
+  ];
+}
+function prtApplyPreset(k) { const f = prtPresets().find(x => x[0] === k); if (f) { ui.prt.preset = k; ui.prt.from = f[2].from; ui.prt.to = f[2].to; } ui.prtPdf = null; }
+function prtList() {
+  const p = ui.prt;
+  return invoices.filter(i => {
+    const dt = p.basis === 'paid' ? (i.paid ? i.paidDate : '') : i.date;
+    if (!dt || dt < p.from || dt > p.to) return false;
+    if (p.basis !== 'paid' && ((p.status === 'paid' && !i.paid) || (p.status === 'unpaid' && i.paid))) return false;
+    return true;
+  });
+}
+function renderInvPrint(v) {
+  const p = ui.prt, list = prtList(), T = list.map(invTotals), sum = k => r2(T.reduce((a, t) => a + t[k], 0));
+  const chip = (k, l) => `<button class="chip ${p.preset === k ? 'on' : ''}" data-act="prtPreset" data-k="${k}">${l}</button>`;
+  const seg = (k, opts) => `<div class="seg wrap">${opts.map(([val, l]) => `<button type="button" class="${p[k] === val ? 'on' : ''}" data-act="prtSet" data-pk="${k}" data-pv="${val}">${l}</button>`).join('')}</div>`;
+  const pdf = ui.prtPdf;
+  v.innerHTML = `
+    <h1>Print for accountant</h1>
+    <p class="small muted" style="margin-top:0">Choose the period, then create one PDF with all the invoices to print or send.</p>
+    <h2>Period</h2>
+    <div class="chips">${prtPresets().map(([k, l]) => chip(k, l)).join('')}</div>
+    <div class="card">
+      <div class="row"><div class="grow"><label class="f"><span>From</span><input type="date" data-pd="from" value="${p.from}"></label></div><div class="grow"><label class="f"><span>To</span><input type="date" data-pd="to" value="${p.to}"></label></div></div>
+      <label class="f"><span>Pick invoices by</span></label>
+      ${seg('basis', [['inv', 'Invoice date'], ['paid', 'Date paid']])}
+      <small class="muted" style="display:block;margin:6px 0 0">${p.basis === 'paid' ? 'Only paid invoices, by the date they were paid (for cash accounting).' : 'By the date on the invoice (the normal VAT tax point).'}</small>
+      ${p.basis === 'paid' ? '' : `<div style="height:12px"></div><label class="f"><span>Which ones</span></label>${seg('status', [['all', 'All'], ['paid', 'Paid only'], ['unpaid', 'Unpaid only']])}`}
+    </div>
+    <div class="card"><div class="small muted">In this print</div>
+      <div style="font-weight:700;font-size:18px">${list.length} invoice${list.length === 1 ? '' : 's'}</div>
+      ${list.length ? `<dl class="kv" style="grid-template-columns:1fr auto;margin-top:8px"><dt>Sales (excl VAT)</dt><dd style="text-align:right">${money(sum('net'))}</dd><dt>VAT</dt><dd style="text-align:right">${money(sum('vat'))}</dd><dt style="color:var(--gold2);font-weight:700">Total</dt><dd style="text-align:right;font-weight:700">${money(sum('total'))}</dd></dl>` : '<div class="small muted">Nothing in this period – try another period or change “Pick invoices by”.</div>'}
+    </div>
+    <h2>Layout</h2>
+    ${seg('mode', [['compact', 'Statement + breakdowns'], ['full', 'Statement + full invoices'], ['summary', 'Statement only']])}
+    <p class="small muted">${{
+      compact: '<b>Saves the most paper and ink.</b> Black and white. A one-line-per-invoice statement with VAT totals, then every invoice’s items and totals, several to a page.',
+      full: 'The statement on top, then each invoice exactly as you send it to the customer (gold design, one per page). Uses the most paper and ink.',
+      summary: 'Just the statement with the VAT totals – one or two pages.'
+    }[p.mode]}</p>
+    <div style="height:6px"></div>
+    <button class="btn gold block" data-act="prtMake" ${list.length ? '' : 'disabled'}>Create PDF</button>
+    ${pdf ? `<div class="card pdfok" style="margin-top:12px"><div style="font-weight:700;margin-bottom:10px">PDF ready – ${esc(pdf.name)}</div>
+      <button class="btn gold block" data-act="prtView">Open to print</button><div style="height:8px"></div>
+      <button class="btn block" data-act="prtShare">Share / save</button><div style="height:8px"></div>
+      <button class="btn block" data-act="prtDl">Download PDF</button></div>
+      <p class="small muted">Tip: print double-sided to halve the paper.</p>` : ''}
+    <div style="height:14px"></div>
+    <button class="btn ghost block" data-nav="invoices">Back to invoices</button>`;
+}
+async function prtMake() {
+  const p = ui.prt, list = prtList();
+  if (!list.length) { toast('No invoices in that period'); return; }
+  toast('Creating PDF…');
+  try {
+    const blob = await buildStatementPdf(list, settings, { periodText: `${ukDate(p.from)} to ${ukDate(p.to)}`, basisText: p.basis === 'paid' ? 'Paid invoices, by date paid' : { all: 'All invoices, by invoice date', paid: 'Paid invoices, by invoice date', unpaid: 'Unpaid invoices, by invoice date' }[p.status], mode: p.mode });
+    ui.prtPdf = { blob, name: `Invoices ${ukDate(p.from).replace(/\//g, '-')} to ${ukDate(p.to).replace(/\//g, '-')}.pdf` };
+    const y = window.scrollY; render(); window.scrollTo(0, document.body.scrollHeight); toast(`PDF ready – ${list.length} invoice${list.length === 1 ? '' : 's'}`);
+  } catch (err) { console.error(err); toast('Could not create the PDF: ' + err.message); }
 }
 
 /* ---------- signature pads ---------- */
@@ -1779,6 +1857,13 @@ document.addEventListener('click', async e => {
     case 'newInvBlank': { const inv = newInvoice(null); persistInv(inv); invGo(inv, 'invoices'); break; }
     case 'openInv': invGo(invoices.find(x => x.id === b.dataset.id), 'invoices'); break;
     case 'invFilter': ui.invFilter = b.dataset.f; render(); break;
+    case 'prtOpen': ui.prt = ui.prt || { preset: 'q1', from: '', to: '', basis: 'inv', status: 'all', mode: 'compact' }; prtApplyPreset(ui.prt.preset === 'custom' ? 'q1' : ui.prt.preset); ui.view = 'invPrint'; render(); break;
+    case 'prtPreset': { const y = window.scrollY; prtApplyPreset(b.dataset.k); render(); window.scrollTo(0, y); break; }
+    case 'prtSet': { const y = window.scrollY; ui.prt[b.dataset.pk] = b.dataset.pv; ui.prtPdf = null; render(); window.scrollTo(0, y); break; }
+    case 'prtMake': await prtMake(); break;
+    case 'prtView': window.open(URL.createObjectURL(ui.prtPdf.blob), '_blank'); break;
+    case 'prtShare': await saveFile(ui.prtPdf.blob, ui.prtPdf.name, 'application/pdf'); break;
+    case 'prtDl': { const a2 = document.createElement('a'); a2.href = URL.createObjectURL(ui.prtPdf.blob); a2.download = ui.prtPdf.name; document.body.appendChild(a2); a2.click(); a2.remove(); break; }
     case 'invBack': {
       persistInv(ui.inv);
       if (ui.invFrom === 'visit' && !(ui.invPdf && ui.invPdf.id === ui.inv.id)) { try { ui.invPdf = { id: ui.inv.id, blob: await buildInvPdf(ui.inv, settings), name: invFileName(ui.inv) }; } catch (err) { console.error(err); toast('Could not create the invoice PDF: ' + err.message); } }
@@ -1876,6 +1961,7 @@ document.addEventListener('change', async e => {
     if (t.value === 'Other') { if (TAPS.includes(cur)) r[k] = ''; } else r[k] = t.value;
     ui.pdf = null; persistRec(r); const y = window.scrollY; render(); window.scrollTo(0, y); return;
   }
+  if (t.dataset.pd && ui.prt) { ui.prt[t.dataset.pd] = t.value; if (ui.prt.from > ui.prt.to && ui.prt.to) { if (t.dataset.pd === 'from') ui.prt.to = t.value; else ui.prt.from = t.value; } ui.prt.preset = 'custom'; ui.prtPdf = null; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
   if (t.id === 'restoreFile' && t.files[0]) { restoreBackup(t.files[0]); t.value = ''; return; }
   if (t.id === 'coLogo' && t.files[0]) {
     const img = new Image(), url = URL.createObjectURL(t.files[0]);
