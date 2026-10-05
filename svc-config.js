@@ -97,7 +97,7 @@ const SVC = (() => {
     if (/worcester/i.test(makeText(rec))) { if (rec.fpTaken === 'YES') { need(4, 'fpValue', 'Fan pressure (mbar)'); need(4, 'fpResult', 'Fan pressure result'); } }
     if (rec.grTaken === 'YES') { need(4, 'grResult', 'Gas rate result'); need(4, 'grValue', 'Gas rate (kW)'); }
     need(4, 'fgDone', 'Flue gas analysis performed?'); if (rec.fgDone === 'YES') need(4, 'fgResult', 'Flue gas analysis outcome');
-    need(5, 'filterPresent', 'System filter present?'); if (rec.filterPresent === 'YES') need(5, 'filterCleaned', 'System filter cleaned?');
+    need(2, 'filterPresent', 'System filter present?'); if (rec.filterPresent === 'YES') need(2, 'filterCleaned', 'System filter cleaned?');
     need(5, 'manufacturer', 'Meets manufacturer’s instructions?'); need(5, 'safe', 'Safe to use?'); need(5, 'warning', 'Warning notice issued?');
     need(5, 'renewal', 'Next service due date');
     need(6, 'customerPresent', 'Customer present?'); need(6, 'engineerSig', "Engineer's signature");

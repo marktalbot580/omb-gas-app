@@ -669,7 +669,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v48';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v50';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1382,8 +1382,14 @@ function svcBoiler() {
   </div>`;
 }
 function svcChecks() {
+  const r = ui.rec;
   return `<p class="small muted" style="margin-top:0">Mark each check Pass, Fail or N/A. If a check fails, say what the fault is.</p>
-  <div class="card">${SVC.APP.map(svcCheck).join('')}</div>`;
+  <div class="card">${SVC.APP.map(svcCheck).join('')}</div>
+  <h2>System filter</h2>
+  <div class="card">
+    ${choice('filterPresent', 'Is a system filter present?', SVC.YN, { req: 1, yn: 1 })}
+    ${r.filterPresent === 'YES' ? choice('filterCleaned', 'Has the system filter been cleaned?', SVC.YN, { req: 1, yn: 1 }) : ''}
+  </div>`;
 }
 function svcSafety() {
   return `<div class="card">${SVC.SAFE.map(svcCheck).join('')}</div>`;
@@ -1426,8 +1432,6 @@ function svcOperating() {
 function svcFinish() {
   const r = ui.rec;
   return `${svcTightness()}${WARN.needed(r) ? '<div class="notice err">Something on this service has failed, so a Danger / Do Not Use Warning Notice will be needed' + (ui.rec.safe === 'NO' ? ' and the record will be stamped FAIL – DO NOT USE' : '') + '. You will be asked to fill it in at the review step.</div>' : ''}<div class="card">
-    ${choice('filterPresent', 'Is a system filter present?', SVC.YN, { req: 1, yn: 1 })}
-    ${r.filterPresent === 'YES' ? choice('filterCleaned', 'Has the system filter been cleaned?', SVC.YN, { req: 1, yn: 1 }) : ''}
     ${choice('manufacturer', 'Does the installation meet the manufacturer’s instructions?', SVC.YN, { req: 1, yn: 1 })}
     ${choice('safe', 'Is the appliance / installation safe to use?', SVC.YN, { req: 1, yn: 1 })}
     ${choice('warning', 'Has a warning notice been issued?', SVC.YN, { req: 1 })}
