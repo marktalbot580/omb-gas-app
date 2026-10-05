@@ -535,12 +535,30 @@ function trialBanner() {
   if (a.pastDue) return `<div class="notice err">Your last payment failed. Update your card in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a>.</div>`;
   return '';
 }
+/* monthly backup reminder: dates are kept on this phone only (the backup file is saved from this phone too) */
+const BK_KEY = 'omb_backup';
+const bkGet = () => { try { return JSON.parse(localStorage.getItem(BK_KEY)) || {}; } catch (e) { return {}; } };
+const bkSet = o => { try { localStorage.setItem(BK_KEY, JSON.stringify(Object.assign(bkGet(), o))); } catch (e) { } };
+const daysBetween = (a, b) => Math.floor((Date.parse(b) - Date.parse(a)) / 864e5);
+function bkDue() {
+  if (!records.length && !customers.length && !invoices.length) return null;
+  const b = bkGet(), today = todayISO();
+  if (!b.last && !b.start) { bkSet({ start: today }); return null; }
+  if (b.snooze && b.snooze > today) return null;
+  const since = daysBetween(b.last || b.start, today);
+  return since >= 30 ? { last: b.last || '', days: since } : null;
+}
+function bkBanner() {
+  const d = bkDue(); if (!d) return '';
+  return `<div class="notice">Time for your monthly backup. ${d.last ? 'Your last one was on ' + ukDate(d.last) + '.' : 'You have not made one yet.'} Save the file somewhere safe, like your email or cloud storage.<div style="height:8px"></div><button class="btn gold block" data-act="expAll">Back up now</button><div style="height:6px"></div><button class="btn block ghost" data-act="bkLater">Remind me in a week</button></div>`;
+}
 function renderHome(v) {
   const missing = !settings.address || !settings.gasSafeReg || !settings.engineerName || !settings.gasSafeId;
   const list = [...records].sort((a, b) => b.updated - a.updated);
   v.innerHTML = `
     <h1>Records</h1>
     ${trialBanner()}
+    ${bkBanner()}
     ${missing ? `<div class="notice">Add the business address, Gas Safe register number and engineer details in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a> before issuing certificates.</div>` : ''}
     <button class="btn gold block" data-act="newRec" data-type="gas">+ New gas safety record</button>
     <div style="height:10px"></div>
@@ -651,7 +669,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v46';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v48';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -776,7 +794,8 @@ function renderSettings(v) {
     </div>
     <h2>Backup</h2>
     <div class="card">
-      <p class="small muted" style="margin-top:0">Customers and records are stored on this phone. Keep a copy somewhere safe.</p>
+      <p class="small muted" style="margin-top:0">Customers and records are stored on this phone. Keep a copy somewhere safe. The app reminds you once a month. A backup holds your customers' details, so keep it somewhere private. You can add a password to it. Bank details are never included.</p>
+      <p class="small" style="margin:0 0 10px">Last full backup: <b>${bkGet().last ? ukDate(bkGet().last) : 'none yet'}</b></p>
       <button class="btn block" data-act="expCust">Export customers (spreadsheet)</button>
       <div style="height:8px"></div>
       <button class="btn block" data-act="expInv">Export invoices (spreadsheet)</button>
@@ -1901,6 +1920,7 @@ document.addEventListener('click', async e => {
     case 'expCust': exportCustomers(); break;
     case 'forceUpdate': forceUpdate(); break;
     case 'expAll': exportBackup(); break;
+    case 'bkLater': { const d = new Date(); d.setDate(d.getDate() + 7); bkSet({ snooze: d.toISOString().slice(0, 10) }); render(); break; }
     case 'installApp': if (_installEvt) { _installEvt.prompt(); try { await _installEvt.userChoice; } catch (e) { } _installEvt = null; render(); } instPopClose(); break;
     case 'laterInstall': LS.set('omb_instsnooze', Date.now() + 3 * 864e5); instPopClose(); break;
     case 'neverInstall': LS.set('omb_noinstall', true); instPopClose(); render(); break;
@@ -2228,9 +2248,10 @@ function downloadPdf(r) {
 /* ---------- export / backup ---------- */
 async function saveFile(content, name, mime) {
   const blob = new Blob([content], { type: mime }), file = new File([blob], name, { type: mime });
-  try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: name }); return; } }
-  catch (err) { if (err.name === 'AbortError') return; console.warn(err); }
+  try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: name }); return true; } }
+  catch (err) { if (err.name === 'AbortError') return false; console.warn(err); }
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  return true;
 }
 function exportCustomers() {
   if (!customers.length) { toast('No customers to export yet'); return; }
@@ -2239,18 +2260,71 @@ function exportCustomers() {
     [...customers].sort((a, b) => a.name.localeCompare(b.name)).map(c => [c.name, c.phone, c.email, c.billing, (c.properties || []).join(' | ')]));
   saveFile('\ufeff' + rows.map(r => r.map(q).join(',')).join('\r\n'), `Customers ${todayISO()}.csv`, 'text/csv');
 }
+/* optional password on a backup: AES-256-GCM with a key made from the password (PBKDF2). Nothing is sent anywhere. */
+const b64 = bytes => new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result.split(',')[1]); f.readAsDataURL(new Blob([bytes])); });
+const unb64 = async t => new Uint8Array(await (await fetch('data:application/octet-stream;base64,' + t)).arrayBuffer());
+async function pwKey(pw, salt) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 250000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+}
+async function lockBackup(text, pw) {
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+  const enc = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await pwKey(pw, salt), new TextEncoder().encode(text));
+  return JSON.stringify({ app: 'omb-gas', encrypted: true, v: 1, salt: await b64(salt), iv: await b64(iv), data: await b64(new Uint8Array(enc)) });
+}
+async function unlockBackup(d, pw) {
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: await unb64(d.iv) }, await pwKey(pw, await unb64(d.salt)), await unb64(d.data));
+  return new TextDecoder().decode(plain);
+}
+/* a small box asking for the password; resolves to the password, '' for none, or null if cancelled */
+function pwBox(kind) {
+  return new Promise(res => {
+    const o = document.createElement('div'); o.className = 'bkm';
+    const make = kind === 'make';
+    o.innerHTML = `<form class="gate-card">
+      <h2>${make ? 'Back up your data' : 'This backup has a password'}</h2>
+      ${make ? `<p class="gate-small">The file holds your customers' names, addresses and phone numbers. Only save it somewhere private, like your own email or cloud drive. Your bank details are not included.</p>
+      <label>Password (optional)<input name="pw" type="password" autocomplete="new-password"></label>
+      <label>Type it again<input name="pw2" type="password" autocomplete="new-password"></label>
+      <p class="gate-small"><b>If you forget the password the backup cannot be opened, and nobody can recover it.</b> Write it down somewhere safe.</p>`
+      : `<label>Password<input name="pw" type="password" autocomplete="current-password"></label>`}
+      <p class="gate-err" hidden></p>
+      <button class="btn gold block" data-w="pw">${make ? 'Back up with a password' : 'Open backup'}</button>
+      ${make ? '<button type="button" class="btn block ghost" data-w="none">Back up without a password</button>' : ''}
+      <button type="button" class="link" data-w="no">Cancel</button></form>`;
+    const done = v => { o.remove(); res(v); };
+    const err = m => { const e = o.querySelector('.gate-err'); e.textContent = m; e.hidden = false; };
+    o.addEventListener('click', e => { const w = e.target.closest('[data-w]'); if (!w) return; if (w.dataset.w === 'no') done(null); else if (w.dataset.w === 'none') done(''); });
+    o.querySelector('form').addEventListener('submit', e => {
+      e.preventDefault(); const f = new FormData(e.target), pw = f.get('pw') || '';
+      if (!make) return pw ? done(pw) : err('Type the password.');
+      if (!pw) return err('Type a password, or tap "Back up without a password".');
+      if (pw.length < 8) return err('Use at least 8 characters.');
+      if (pw !== f.get('pw2')) return err('The two passwords are not the same.');
+      done(pw);
+    });
+    document.body.appendChild(o); const i = o.querySelector('input'); if (i) i.focus();
+  });
+}
 async function exportBackup() {
-  const { syncToken, ...keep } = settings;
+  const pw = await pwBox('make'); if (pw === null) return;
+  const { syncToken, bankName, accName, sortCode, accNo, ...keep } = settings;   // bank details are never put in a backup file
   const strip = o => { const c = { ...o }; delete c._dirty; return c; };
   const photos = {};
   for (const r of records) for (const id of PH.allIds(r)) { if (!photos[id]) { const p = await PH.get(id); if (p) photos[id] = p; } }
   const data = { app: 'omb-gas', version: 1, exported: new Date().toISOString(), settings: keep, customers: customers.map(strip), records: records.map(strip), invoices, photos };
-  saveFile(JSON.stringify(data), `OMB backup ${todayISO()}.json`, 'application/json');
+  let out = JSON.stringify(data);
+  if (pw) { try { out = await lockBackup(out, pw); } catch (e) { toast('Could not lock the backup on this device'); return; } }
+  if (await saveFile(out, `OMB backup ${todayISO()}${pw ? ' (password)' : ''}.json`, 'application/json')) { bkSet({ last: todayISO(), snooze: '' }); if (ui.view === 'home' || ui.view === 'settings') render(); }
 }
 async function restoreBackup(file) {
   try {
-    const d = JSON.parse(await file.text());
+    let d = JSON.parse(await file.text());
     if (d.app !== 'omb-gas') throw new Error('not an OMB backup');
+    if (d.encrypted) {
+      const pw = await pwBox('open'); if (!pw) return;
+      try { d = JSON.parse(await unlockBackup(d, pw)); } catch (e) { toast('Wrong password, or the file is damaged'); return; }
+    }
     let addC = 0, addR = 0;
     for (const [id, p] of Object.entries(d.photos || {})) { if (!(await PH.get(id))) await PH.put(id, p); }
     (d.invoices || []).forEach(i => { const l = invoices.find(x => x.id === i.id); if (!l) invoices.push(i); else if ((i.updated || 0) > (l.updated || 0)) Object.assign(l, i); });
@@ -2259,7 +2333,7 @@ async function restoreBackup(file) {
     (d.records || []).forEach(r => { const l = records.find(x => x.id === r.id); if (!l) { records.push(r); addR++; } else if ((r.updated || 0) > (l.updated || 0)) Object.assign(l, r); });
     Object.entries(d.settings || {}).forEach(([k, v]) => { if (k !== 'syncToken' && v && !settings[k]) settings[k] = v; });
     saveCustomers(); saveRecords(); saveSettings(); render();
-    toast(`Restored ${addC} customer${addC === 1 ? '' : 's'} and ${addR} record${addR === 1 ? '' : 's'}`);
+    toast(`Restored ${addC} customer${addC === 1 ? '' : 's'} and ${addR} record${addR === 1 ? '' : 's'}` + (settings.accNo ? '' : '. Bank details are not kept in backups, so add them again in Settings'));
   } catch (err) { toast('That file is not a valid backup'); }
 }
 
