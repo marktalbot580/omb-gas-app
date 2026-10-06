@@ -411,7 +411,7 @@ const calcVolHtml = s => {
   return v === null ? 'Enter both readings.' : v > 0 ? `Used: <b>${v} ${s.unit}</b>` : 'The second reading must be higher than the first.';
 };
 /* on a metric meter the first reading must be entered before the timer can start */
-const calcNeedsStart = s => !s.t0 && s.unit === 'm³' && tgNum(s.start) === null;
+const calcNeedsStart = s => false; // timer can start any time; readings can be typed afterwards
 function calcPanel(id, target) {
   const s = calcState(id); s.target = target;
   const btn = `<button type="button" class="btn calcbtn" data-act="calcToggle" data-id="${id}">${s.open ? 'Hide gas rate calculator' : 'Gas rate calculator'}</button>`;
@@ -698,7 +698,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v56';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v57';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -2047,7 +2047,11 @@ document.addEventListener('click', async e => {
       if (bm.length && !invForVisit(m) && bm.every(r => numOf(settings[SVC_PRICE[typeOf(r)]]) > 0)) persistInv(newInvoice(m));
       await ensureInvPdf(m); const y = window.scrollY; render(); window.scrollTo(0, y); break;
     }
-    case 'invAddLine': { const y = window.scrollY; ui.inv.lines.push({ d: '', q: '1', p: '' }); ui.invPdf = null; persistInv(ui.inv); render(); window.scrollTo(0, document.body.scrollHeight); break; }
+    case 'invAddLine': {
+      ui.inv.lines.push({ d: '', q: '1', p: '' }); ui.invPdf = null; persistInv(ui.inv); render();
+      const el = document.querySelector(`[data-n="lines.${ui.inv.lines.length - 1}.d"]`);
+      if (el) { el.scrollIntoView({ block: 'center' }); try { el.focus({ preventScroll: true }); } catch (e) {} }
+      break; }
     case 'invRmLine': { const y = window.scrollY; ui.inv.lines.splice(+b.dataset.i, 1); ui.invPdf = null; persistInv(ui.inv); render(); window.scrollTo(0, y); break; }
     case 'invPaid': { const i = ui.inv; i.paid = !i.paid; i.paidDate = i.paid ? todayISO() : ''; if (!i.paid) i.payMethod = ''; ui.invPdf = null; persistInv(i); const y = window.scrollY; render(); window.scrollTo(0, y); toast(i.paid ? 'Marked as paid' : 'Marked as unpaid'); break; }
     case 'invMakePdf': await invMakePdf(); break;
