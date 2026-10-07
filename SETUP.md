@@ -27,3 +27,12 @@ Sign up in the app, subscribe with Stripe's test card `4242 4242 4242 4242` (any
 - Register with the ICO (data protection fee) – you will hold other people's customers' names, addresses and phone numbers.
 - Add a privacy policy and terms of service page, and link them from the sign-up screen.
 - Each subscriber is responsible for their own certificates being correct; your terms should say so.
+
+
+## Reminder emails (automatic annual-check reminders)
+1. Resend: the ombgas.com domain is already verified for the sign-up emails. Create an **API key** (Resend → API Keys, "Sending access").
+2. Supabase → **Edge Functions**: create a function named exactly `reminders`, paste in `backend/functions/reminders/index.ts`, and turn **Verify JWT off**.
+3. Supabase → **Edge Functions → Secrets**: add `RESEND_API_KEY` (the key from step 1). Optional: `REMINDER_RUN_CAP` (emails per day across everyone, default 90 – raise it when you upgrade Resend past the free 100 a day).
+4. Supabase → **SQL Editor**: paste and run `backend/reminders.sql` (creates the log tables and the 08:00 UTC daily schedule).
+5. In the app: Settings → Annual check reminders → set the automatic email option to On, then tap **Send me a sample reminder**.
+6. The unsubscribe page lives on the website (`unsubscribe.html` in the omb-gas-site repo) and talks to this function.

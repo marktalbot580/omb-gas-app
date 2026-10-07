@@ -692,6 +692,7 @@ function renderCustEdit(v) {
       <label class="f"><span>Phone</span><input data-c="phone" type="tel" inputmode="tel" value="${esc(c.phone)}"></label>
       ${!c._new && String(c.phone || '').replace(/\D/g, '').length >= 5 ? `<a class="btn block" style="text-align:center;text-decoration:none;margin:-4px 0 12px" href="${telHref(c.phone)}">&#128222; Call ${esc(c.phone)}</a>` : ''}
       <label class="f"><span>Email</span><input data-c="email" type="email" inputmode="email" autocapitalize="none" value="${esc(c.email)}"></label>
+      <button type="button" class="item tog ${c.noRemind ? 'on' : ''}" data-act="custNoRem" style="margin-bottom:12px"><span class="box"></span><span><span class="t">Never send reminder emails to this customer</span><span class="s" style="display:block">Applies to the automatic reminders. You can still text or email them yourself.</span></span></button>
       ${addrBox('cust', 'billing', 'Billing address')}
       <label class="f"><span>Property addresses (one per line)</span><textarea data-c="props" rows="3" placeholder="Properties you inspect for this customer">${esc((c.properties || []).join('\n'))}</textarea></label>
     </div>
@@ -703,7 +704,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v59';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v60';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -846,6 +847,8 @@ function renderSettings(v) {
     <div class="card">
       <label class="f"><span>Message wording</span><textarea data-s="remText" rows="4">${esc(settings.remText || REM_DEFAULT)}</textarea><small>Used for the Text, WhatsApp and Email buttons on the Annual checks due screen. {name}, {business}, {what}, {address} and {date} are filled in for you.</small></label>
       <label class="f"><span>Start listing checks</span><select data-s="remDays">${[['28', '4 weeks before they are due'], ['42', '6 weeks before they are due'], ['56', '8 weeks before they are due'], ['84', '12 weeks before they are due']].map(([k, l]) => `<option value="${k}" ${String(settings.remDays || '56') === k ? 'selected' : ''}>${l}</option>`).join('')}</select><small>A landlord gas safety check can be done up to 2 months early and keep the same yearly date.</small></label>
+      <label class="f"><span>Send reminders automatically by email</span><select data-s="remAuto"><option value="off" ${settings.remAuto === 'on' ? '' : 'selected'}>Off</option><option value="on" ${settings.remAuto === 'on' ? 'selected' : ''}>On</option></select><small>When on, customers with an email address saved get an email about 8 weeks before their check is due, and again 2 weeks before. It comes from reminders@ombgas.com with your business name, and their replies come to <b>${esc(settings.email || 'your email in Settings')}</b>. Customers you mark Booked in, Not needed or Stop are skipped, and every email has an unsubscribe link. You need to be signed in so it can run.${settings.remAuto === 'on' && !settings.email ? ' <b style="color:var(--gold2)">Add your email address under Business below first, or replies will have nowhere to go.</b>' : ''}</small></label>
+      ${settings.remAuto === 'on' ? '<button class="btn block" data-act="remTest">Send me a sample reminder</button><div style="height:8px"></div>' : ''}
       <button class="btn block ghost" data-act="remReset">Put the original wording back</button>
     </div>
     <h2>Business (printed on every certificate)</h2>
@@ -1913,7 +1916,7 @@ function initSigs() {
 
 /* ---------- events ---------- */
 /* when the subscription has ended the app is read-only: look, download and export, but no new or changed records */
-const LOCKED_WRITES = new Set(['newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'sameName', 'engSigTog', 'engSigUse', 'invNone', 'invNoneVisit', 'invUndoNone', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod', 'invPickCust', 'invPickProp', 'invPickSug']);
+const LOCKED_WRITES = new Set(['custNoRem', 'newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'sameName', 'engSigTog', 'engSigUse', 'invNone', 'invNoneVisit', 'invUndoNone', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod', 'invPickCust', 'invPickProp', 'invPickSug']);
 const lockedMsg = () => toast('Your subscription has ended. Subscribe to create or change records.');
 document.addEventListener('click', async e => {
   /* tap the logo / name at the top to go back to the home screen – a form you are part way through is kept as a draft */
@@ -1931,10 +1934,12 @@ document.addEventListener('click', async e => {
   const b = e.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act, r = ui.rec;
   if (CLOUD.locked() && (LOCKED_WRITES.has(a) || (a === 'makePdf' && r && r.status !== 'complete'))) { lockedMsg(); return; }
+  if (a === 'custNoRem') { ui.cust.noRemind = !ui.cust.noRemind; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
+  if (a === 'remTest') { remTest(); return; }
   if (a === 'remOpen') { ui.view = 'due'; render(); window.scrollTo(0, 0); return; }
   if (a === 'remSent') { const id = b.dataset.id; setTimeout(() => { const o = remGet(); o.s[id] = todayISO(); remSet(o); if (ui.view === 'due') { const y = window.scrollY; render(); window.scrollTo(0, y); } }, 600); return; }
-  if (a === 'remDone') { const o = remGet(); o.d[b.dataset.id] = b.dataset.v; remSet(o); toast(b.dataset.v === 'booked' ? 'Marked as booked in' : 'Removed from the list'); render(); return; }
-  if (a === 'remStop') { if (confirm('Stop reminders for this property? You can still do its next check as normal.')) { const o = remGet(); o.stop[b.dataset.key] = 1; remSet(o); render(); } return; }
+  if (a === 'remDone') { const rr = records.find(x => x.id === b.dataset.id); if (rr) remSetState(rr, b.dataset.v); toast(b.dataset.v === 'booked' ? 'Marked as booked in' : 'Removed from the list'); render(); return; }
+  if (a === 'remStop') { if (confirm('Stop reminders for this property? You can still do its next check as normal.')) { const o = remGet(); o.stop[b.dataset.key] = 1; remSet(o); const rr = records.find(x => x.id === b.dataset.id); if (rr) remSetState(rr, 'stop'); render(); } return; }
   if (a === 'remReset') { settings.remText = ''; saveSettings(); render(); return; }
   if (a === 'help') { if (ui.view !== 'help') { ui.helpFrom = ui.view; } ui.helpQ = ''; ui.view = 'help'; render(); return; }
   if (a === 'news') { if (ui.view !== 'news') ui.helpFrom = ui.view; ui.view = 'news'; render(); return; }
@@ -2259,7 +2264,7 @@ document.addEventListener('input', e => {
     if (had) { const bx = $('#invPdfBox'); if (bx) bx.innerHTML = invPdfHtml(); }
     return;
   }
-  if (t.dataset.s) { settings[t.dataset.s] = t.value; saveSettings(); if (/^inv(Prefix|Next|Digits)$/.test(t.dataset.s)) { const pv = document.getElementById('invPreview'); if (pv) pv.textContent = invNumberFor(settings.invNext); } if (t.dataset.s === 'discValue' || /^price/.test(t.dataset.s)) { clearTimeout(settingsRefresh._t); settingsRefresh._t = setTimeout(settingsRefresh, 900); } return; }
+  if (t.dataset.s) { settings[t.dataset.s] = t.value; saveSettings(); if (/^rem(Auto|Days|Text)$/.test(t.dataset.s)) { syncAll(); if (t.dataset.s === 'remAuto') { const y = window.scrollY; render(); window.scrollTo(0, y); return; } } if (/^inv(Prefix|Next|Digits)$/.test(t.dataset.s)) { const pv = document.getElementById('invPreview'); if (pv) pv.textContent = invNumberFor(settings.invNext); } if (t.dataset.s === 'discValue' || /^price/.test(t.dataset.s)) { clearTimeout(settingsRefresh._t); settingsRefresh._t = setTimeout(settingsRefresh, 900); } return; }
   if (t.dataset.c) { ui.cust[t.dataset.c] = t.value; }
 });
 document.addEventListener('change', async e => {
@@ -2385,6 +2390,9 @@ function saveCust(silent) {
   if (!c.name.trim()) { toast('Enter a name'); return; }
   const props = typeof c.props === 'string' ? c.props.split('\n').map(x => x.trim()).filter(Boolean) : c.properties;
   const out = { id: c.id, name: c.name.trim(), phone: c.phone, email: c.email, billing: c.billing, properties: props, updated: Date.now(), _dirty: true };
+  if (c.noRemind) out.noRemind = true;
+  if (c.fav) out.fav = true;
+  if (c.remSt && Object.keys(c.remSt).length) out.remSt = c.remSt;
   const i = customers.findIndex(x => x.id === c.id);
   if (i >= 0) customers[i] = out; else customers.unshift(out);
   saveCustomers(); ui.cust = out;

@@ -333,6 +333,7 @@ const CLOUD = (() => {
     signedIn: () => !!session,
     sub: () => sub,
     isAdmin: () => admin && !!session,
+    call: (name, qs) => req('/functions/v1/' + name + (qs || ''), { method: 'POST', body: {} }),
     rpc: (name, args) => req('/rest/v1/rpc/' + name, { method: 'POST', body: args || {} }),
     insert: (table, row) => req('/rest/v1/' + table, { method: 'POST', headers: { Prefer: 'return=minimal' }, body: row }),
     signOut: async wipe => { await signOut(); if (wipe) wipeLocal(); gate(); }

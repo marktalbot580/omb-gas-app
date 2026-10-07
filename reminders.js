@@ -25,7 +25,20 @@ function remItems(allDays) {
     const r = best[key], cu = customers.find(c => c.id === r.customerId) || {}, cd = r.customer || {};
     return { key, r, t: typeOf(r), due: r.renewal, days: Math.round((Date.parse(r.renewal) - Date.parse(today)) / 864e5),
       name: cu.name || cd.name || '', phone: cu.phone || cd.phone || '', email: cu.email || cd.email || '' };
-  }).filter(x => !st.stop[x.key] && !st.d[x.r.id] && (allDays || x.due <= limit)).sort((a, b) => a.due.localeCompare(b.due));
+  }).filter(x => !st.stop[x.key] && !st.d[x.r.id] && !remStateOf(x.r) && (allDays || x.due <= limit)).sort((a, b) => a.due.localeCompare(b.due));
+}
+/* Booked / Not needed / Stop are saved on the customer (so they sync and the automatic emails skip them); a record with no customer keeps it on itself */
+const remStateOf = r => { const cu = customers.find(c => c.id === r.customerId); return (cu && cu.remSt && cu.remSt[r.id]) || r.remState || ''; };
+function remSetState(r, v) {
+  const cu = customers.find(c => c.id === r.customerId);
+  if (cu) { cu.remSt = Object.assign({}, cu.remSt, { [r.id]: v }); cu.updated = Date.now(); cu._dirty = true; saveCustomers(); syncAll(); }
+  else { r.remState = v; persistRec(r); }
+}
+async function remTest() {
+  if (!CLOUD.on || !CLOUD.signedIn || !CLOUD.signedIn()) { toast('Sign in first, then try again'); return; }
+  toast('Sending a sample…');
+  try { const j = await CLOUD.call('reminders', '?action=test'); if (j && j.error) throw new Error(j.error); toast('Sample sent to ' + (j.to || 'your sign-in email')); }
+  catch (e) { toast('Could not send: ' + (e.message || e)); }
 }
 const remCount = () => { try { return remItems().length; } catch (e) { return 0; } };
 
@@ -60,7 +73,7 @@ function remCard(it, st) {
     <div class="remways">
       <button class="btn ghost" data-act="remDone" data-id="${id}" data-v="booked">Booked in</button>
       <button class="btn ghost" data-act="remDone" data-id="${id}" data-v="skip">Not needed</button>
-      <button class="btn ghost" data-act="remStop" data-key="${esc(it.key)}">Stop for this property</button>
+      <button class="btn ghost" data-act="remStop" data-id="${id}" data-key="${esc(it.key)}">Stop for this property</button>
     </div>
   </div>`;
 }
