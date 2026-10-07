@@ -56,7 +56,7 @@ function remBadge(it) {
   if (it.days === 0) return '<span class="badge overdue">Due today</span>';
   return `<span class="badge ${it.days <= 14 ? 'unpaid' : 'draft'}">Due in ${it.days} day${it.days === 1 ? '' : 's'}</span>`;
 }
-const emailed = id => { const a = REM_LOG && REM_LOG[id]; return a && a.length ? `<div class="s" style="color:var(--ok,#6fcf97)">&#9993; Emailed automatically ${a.map(ukDate).join(' and ')}</div>` : ''; };
+const emailed = id => { const a = REM_LOG && REM_LOG[id]; return a && a.length ? `<div class="s" style="color:var(--ok,#6fcf97)">&#9993; Reminder sent by email ${a.map(ukDate).join(" and ")}</div>` : ''; };
 function remCard(it, st) {
   const body = encodeURIComponent(remMsg(it)), id = it.r.id, sent = st.s[id];
   const sub = encodeURIComponent((settings.businessName || 'Annual check') + ': your ' + REM_WHAT[it.t] + ' is due');
