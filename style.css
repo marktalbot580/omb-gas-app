@@ -214,3 +214,5 @@ details.hlp summary::after{content:'+';color:var(--gold2);font-size:20px;line-he
 details.hlp[open] summary::after{content:'–'}
 .hlpb{padding:0 14px 8px;font-size:15px;line-height:1.5}
 .hlpb p{margin:0 0 10px}.hlpb ol,.hlpb ul{margin:0 0 10px;padding-left:22px}.hlpb li{margin-bottom:6px}
+
+.remc{margin-bottom:12px}.remc .s{margin-top:2px}.remways{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.remways .btn{flex:1 1 auto;min-width:0;text-align:center;text-decoration:none;padding:10px 12px;font-size:14px}

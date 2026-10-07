@@ -56,6 +56,14 @@ const HELP = [
   { t: 'Warning notices', k: 'warning notice immediately dangerous at risk defect unsafe appliance capped off',
     h: `<p>If you record a defect that needs a warning notice, the record shows <b>Warning notice required</b>. Tap <b>Fill in the warning notice</b> on the record to complete it. It makes its own PDF, separate from the certificate.</p>` },
 
+  { t: 'Annual check reminders', k: 'reminder due annual renewal gas safety service text whatsapp email overdue booked chase landlord',
+    h: `<p>Gas safety checks and boiler services are needed every year. The app keeps track for you.</p>
+<ol><li>On the <b>Records</b> screen tap <b>Annual checks due</b>. The number shows how many are coming up.</li>
+<li>Each customer shows when their check is due (or how many days overdue).</li>
+<li>Tap <b>Text</b>, <b>WhatsApp</b> or <b>Email</b>. Your phone opens a message that is already written, using their number or email. Check it, then press send. Nothing is ever sent without you.</li>
+<li>When they reply, tap <b>Booked in</b> or <b>Not needed</b> to take them off the list. Tap <b>Stop for this property</b> if they should never be reminded.</li></ol>
+<p>The list uses the “next check due” date on your completed gas safety records and boiler services. In <b>Settings</b> you can change the wording of the message and how many weeks early they show. Which ones you have reminded is kept on this phone.</p>` },
+
   { t: 'Customers', k: 'customer list search favourite heart previous jobs add edit delete',
     h: `<p>The <b>Customers</b> tab lists everyone you have worked for.</p>
 <ul><li>Use the search box to find a name, phone number, email or any address.</li>

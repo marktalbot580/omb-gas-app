@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v59', items: ['New: Annual checks due. A button on the Records screen lists gas safety checks and boiler services coming up, or overdue.', 'Tap Text, WhatsApp or Email and the reminder opens on your phone ready to send, using the customer’s details. Nothing is sent without you pressing send.', 'Mark each one Booked in or Not needed, or stop reminders for a property. Change the wording and how early they show in Settings.'] },
   { v: 'v58', items: ['Help guide added. Tap the ? at the top of any screen, or find it in Settings.', 'This What’s new list.', 'Invoices: start typing a client name and matching customers appear. Tap one to fill in their details.', 'Invoices: tap a saved property for that customer, or start typing an address to see saved ones.', 'Send feedback: report a fault, make a suggestion or ask a question from Settings or the Help guide.'] },
   { v: 'v57', items: ['The gas rate timer can now be started before any meter readings are entered.', 'Adding a line to an invoice no longer jumps to the bottom. You stay where you are and the new line is ready to type in.'] },
   { v: 'v56', items: ['You can now open and view an invoice PDF from a customer’s record and from the ready-to-send box, not just edit it.'] },

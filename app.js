@@ -96,7 +96,8 @@ const DEFAULT_SETTINGS = {
   gasSafeReg: '', engineerName: '', gasSafeId: '', engSig: '', syncUrl: '', syncToken: '', gasSafeLogo: '', gasSafeLogoAR: 1,
   priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', discType: '£', discValue: '',
   invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '', vatQtr: '2', yearDay: '6', yearMonth: '4',
-  bankName: '', accName: '', sortCode: '', accNo: '', invFooter: 'Thank you for your business.'
+  bankName: '', accName: '', sortCode: '', accNo: '', invFooter: 'Thank you for your business.',
+  remText: '', remDays: '56'
 };
 let settings = Object.assign({}, DEFAULT_SETTINGS, LS.get('omb_settings', {}));
 let customers = LS.get('omb_customers', []);
@@ -528,7 +529,7 @@ function render() {
   if (ui.view !== 'home' && typeof instPopClose === 'function') instPopClose();   // the install pop-up must never cover the Next / Back buttons
   if (ui.view === 'form') { renderForm(v, nav); }
   else {
-    ({ home: renderHome, pick: renderPick, customers: renderCustomers, custEdit: renderCustEdit, settings: renderSettings, invoices: renderInvoices, invEdit: renderInvEdit, invPrint: renderInvPrint, admin: renderAdmin, help: renderHelp, news: renderNews, feedback: renderFeedback }[ui.view])(v);
+    ({ home: renderHome, pick: renderPick, customers: renderCustomers, custEdit: renderCustEdit, settings: renderSettings, invoices: renderInvoices, invEdit: renderInvEdit, invPrint: renderInvPrint, admin: renderAdmin, help: renderHelp, news: renderNews, feedback: renderFeedback, due: renderDue }[ui.view])(v);
     renderTabs(nav);
   }
   paintSync();
@@ -545,7 +546,7 @@ const ICON = {
 function renderTabs(nav) {
   nav.className = 'tabs';
   const t = (id, label, ic, on) => `<button data-nav="${id}" class="${on ? 'on' : ''}">${ic}${label}</button>`;
-  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'admin' || ui.view === 'help' || ui.view === 'news' || ui.view === 'feedback');
+  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick' || ui.view === 'due') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'admin' || ui.view === 'help' || ui.view === 'news' || ui.view === 'feedback');
   $('#barSub').textContent = ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' ? 'Invoices' : 'Gas & Legionella records';
 }
 
@@ -598,6 +599,8 @@ function renderHome(v) {
     <button class="btn gold block" data-act="newRec" data-type="legionella">+ New Legionella risk assessment</button>
     <div style="height:10px"></div>
     <button class="btn gold block" data-act="newRec" data-type="aircon">+ New air conditioning commissioning</button>
+    <div style="height:10px"></div>
+    ${remHomeBtn()}
     <h2>Recent</h2>
     ${list.length ? list.slice(0, 5).map(r => `${r.status === 'draft' ? '<div class="itemw">' : ''}
       <button class="item" data-act="openRec" data-id="${r.id}">
@@ -700,7 +703,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v58';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v59';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -839,6 +842,12 @@ function renderSettings(v) {
       <p class="small muted" style="margin-bottom:0">Clears the saved copy of the app and reloads the newest version. Your records, customers and photos are not touched.</p>
     </div>
     ${installCard(true)}
+    <h2>Annual check reminders</h2>
+    <div class="card">
+      <label class="f"><span>Message wording</span><textarea data-s="remText" rows="4">${esc(settings.remText || REM_DEFAULT)}</textarea><small>Used for the Text, WhatsApp and Email buttons on the Annual checks due screen. {name}, {business}, {what}, {address} and {date} are filled in for you.</small></label>
+      <label class="f"><span>Start listing checks</span><select data-s="remDays">${[['28', '4 weeks before they are due'], ['42', '6 weeks before they are due'], ['56', '8 weeks before they are due'], ['84', '12 weeks before they are due']].map(([k, l]) => `<option value="${k}" ${String(settings.remDays || '56') === k ? 'selected' : ''}>${l}</option>`).join('')}</select><small>A landlord gas safety check can be done up to 2 months early and keep the same yearly date.</small></label>
+      <button class="btn block ghost" data-act="remReset">Put the original wording back</button>
+    </div>
     <h2>Business (printed on every certificate)</h2>
     <div class="card">
       ${f('businessName', 'Business name')}
@@ -1922,6 +1931,11 @@ document.addEventListener('click', async e => {
   const b = e.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act, r = ui.rec;
   if (CLOUD.locked() && (LOCKED_WRITES.has(a) || (a === 'makePdf' && r && r.status !== 'complete'))) { lockedMsg(); return; }
+  if (a === 'remOpen') { ui.view = 'due'; render(); window.scrollTo(0, 0); return; }
+  if (a === 'remSent') { const id = b.dataset.id; setTimeout(() => { const o = remGet(); o.s[id] = todayISO(); remSet(o); if (ui.view === 'due') { const y = window.scrollY; render(); window.scrollTo(0, y); } }, 600); return; }
+  if (a === 'remDone') { const o = remGet(); o.d[b.dataset.id] = b.dataset.v; remSet(o); toast(b.dataset.v === 'booked' ? 'Marked as booked in' : 'Removed from the list'); render(); return; }
+  if (a === 'remStop') { if (confirm('Stop reminders for this property? You can still do its next check as normal.')) { const o = remGet(); o.stop[b.dataset.key] = 1; remSet(o); render(); } return; }
+  if (a === 'remReset') { settings.remText = ''; saveSettings(); render(); return; }
   if (a === 'help') { if (ui.view !== 'help') { ui.helpFrom = ui.view; } ui.helpQ = ''; ui.view = 'help'; render(); return; }
   if (a === 'news') { if (ui.view !== 'news') ui.helpFrom = ui.view; ui.view = 'news'; render(); return; }
   if (a === 'feedback') { ui.fbFrom = ui.view === 'help' ? (ui.helpFrom || 'help') : ui.view; if (ui.view !== 'help') ui.helpFrom = ui.view; ui.view = 'feedback'; render(); return; }
