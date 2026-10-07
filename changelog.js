@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v80', items: ['A fresh look: new OMB flame logo and icon, cleaner type, and a more polished feel throughout. Everything works the same.'] },
   { v: 'v79', items: ['Customer card: each property address now has its own address box and postcode box, with an Add another property button (and Remove).'] },
   { v: 'v78', items: ['Tools: opening Tools from the front page no longer shows the last customer you used it for.'] },
   { v: 'v77', items: ['Pipe sizing now uses the published BS 6891 copper pipe capacity table (interpolated between lengths) instead of a fitted formula. Sizes and the step-down figures are now on the safe side of the table.'] },
