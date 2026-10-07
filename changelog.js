@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v62', items: ['Legionella risk assessments now appear in Annual checks due, and in the automatic reminder emails, using the next assessment date on the record.'] },
   { v: 'v61', items: ['The Annual checks due button on the home screen now matches the other buttons.'] },
   { v: 'v60', items: ['Automatic reminder emails. Turn them on in Settings and customers with an email address get a reminder about 8 weeks before their gas check or boiler service is due, and again at 2 weeks.', 'Replies come to your own email. Every email has an unsubscribe link, and you can switch it off for any customer.', 'Booked in, Not needed and Stop now sync between your devices and stop the automatic emails too.', 'Fixed: editing a customer no longer removes their favourite heart.'] },
   { v: 'v59', items: ['New: Annual checks due. A button on the Records screen lists gas safety checks and boiler services coming up, or overdue.', 'Tap Text, WhatsApp or Email and the reminder opens on your phone ready to send, using the customer’s details. Nothing is sent without you pressing send.', 'Mark each one Booked in or Not needed, or stop reminders for a property. Change the wording and how early they show in Settings.'] },

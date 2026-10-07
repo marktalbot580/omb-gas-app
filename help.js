@@ -57,13 +57,13 @@ const HELP = [
     h: `<p>If you record a defect that needs a warning notice, the record shows <b>Warning notice required</b>. Tap <b>Fill in the warning notice</b> on the record to complete it. It makes its own PDF, separate from the certificate.</p>` },
 
   { t: 'Annual check reminders', k: 'reminder due annual renewal gas safety service text whatsapp email overdue booked chase landlord',
-    h: `<p>Gas safety checks and boiler services are needed every year. The app keeps track for you.</p>
+    h: `<p>Gas safety checks, boiler services and Legionella assessments are all tracked yearly. The app keeps track for you.</p>
 <ol><li>On the <b>Records</b> screen tap <b>Annual checks due</b>. The number shows how many are coming up.</li>
 <li>Each customer shows when their check is due (or how many days overdue).</li>
 <li>Tap <b>Text</b>, <b>WhatsApp</b> or <b>Email</b>. Your phone opens a message that is already written, using their number or email. Check it, then press send. Nothing is ever sent without you.</li>
 <li>When they reply, tap <b>Booked in</b> or <b>Not needed</b> to take them off the list. Tap <b>Stop for this property</b> if they should never be reminded.</li></ol>
 <p><b>Automatic emails:</b> in <b>Settings</b>, under <b>Annual check reminders</b>, set <b>Send reminders automatically by email</b> to On. Customers who have an email address saved are emailed about 8 weeks before the check is due, and again 2 weeks before, from reminders@ombgas.com with your business name on it. Their replies come to the email address in your Settings. Tap <b>Send me a sample reminder</b> to see exactly what they get. Customers marked <b>Booked in</b>, <b>Not needed</b> or <b>Stop</b> are skipped, and so is anyone you tick <b>Never send reminder emails</b> for on their customer page. Every email has an unsubscribe link. You need to be signed in for this to run.</p>
-<p>The list uses the “next check due” date on your completed gas safety records and boiler services. In <b>Settings</b> you can change the wording of the message and how many weeks early they show. Which ones you have reminded is kept on this phone.</p>` },
+<p>The list uses the “next check due” date on your completed gas safety, boiler service and Legionella records. In <b>Settings</b> you can change the wording of the message and how many weeks early they show. Which ones you have reminded is kept on this phone.</p>` },
 
   { t: 'Customers', k: 'customer list search favourite heart previous jobs add edit delete',
     h: `<p>The <b>Customers</b> tab lists everyone you have worked for.</p>

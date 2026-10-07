@@ -1,4 +1,4 @@
-/* Annual check reminders: lists gas safety checks and boiler services that are due soon,
+/* Annual check reminders: lists gas safety checks, boiler services and Legionella assessments that are due soon,
    and builds a ready-to-send message (text, WhatsApp or email) from the engineer's own phone.
    Nothing is sent automatically. What has been reminded / booked is kept on this phone only. */
 const REM_KEY = 'omb_rem';
@@ -9,14 +9,14 @@ const remNorm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const remAdd = (iso, n) => { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const remWindow = () => { const n = parseInt(settings.remDays, 10); return n >= 7 && n <= 365 ? n : 56; };
 const remLong = iso => { const [y, m, d] = String(iso).split('-').map(Number); return `${d} ${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][m - 1]} ${y}`; };
-const REM_WHAT = { gas: 'gas safety check', service: 'boiler service' };
+const REM_WHAT = { gas: 'gas safety check', service: 'boiler service', legionella: 'Legionella risk assessment' };
 
 /* the newest completed gas check / service for each customer + property, if due within the window (or overdue) */
 function remItems(allDays) {
   const st = remGet(), today = todayISO(), limit = remAdd(today, remWindow()), best = {};
   records.forEach(r => {
     const t = typeOf(r);
-    if ((t !== 'gas' && t !== 'service') || r.status !== 'complete' || !r.renewal) return;
+    if ((t !== 'gas' && t !== 'service' && t !== 'legionella') || r.status !== 'complete' || !r.renewal) return;
     const who = r.customerId || remNorm(r.customer && r.customer.name), key = [who, remNorm(r.jobAddress), t].join('|');
     const c = best[key];
     if (!c || String(r.inspectionDate) > String(c.inspectionDate) || (r.inspectionDate === c.inspectionDate && (r.updated || 0) > (c.updated || 0))) best[key] = r;
@@ -81,8 +81,8 @@ function renderDue(v) {
   const items = remItems(), st = remGet(), n = remWindow();
   v.innerHTML = `
     <h1>Annual checks due</h1>
-    <p class="small muted" style="margin-top:0">Gas safety checks and boiler services due in the next ${Math.round(n / 7)} weeks, or already overdue. Tap <b>Text</b>, <b>WhatsApp</b> or <b>Email</b> and your phone opens the message ready to send. Nothing is sent until you press send. You can change the wording in Settings.</p>
-    ${items.length ? items.map(it => remCard(it, st)).join('') : '<div class="empty">Nothing due soon.<br>Completed gas checks and boiler services show up here as their next due date gets close.</div>'}
+    <p class="small muted" style="margin-top:0">Gas safety checks, boiler services and Legionella assessments due in the next ${Math.round(n / 7)} weeks, or already overdue. Tap <b>Text</b>, <b>WhatsApp</b> or <b>Email</b> and your phone opens the message ready to send. Nothing is sent until you press send. You can change the wording in Settings.</p>
+    ${items.length ? items.map(it => remCard(it, st)).join('') : '<div class="empty">Nothing due soon.<br>Completed gas checks, boiler services and Legionella assessments show up here as their next due date gets close.</div>'}
     <div style="height:10px"></div><button class="btn ghost block" data-nav="home">Back</button>`;
 }
 function remHomeBtn() {

@@ -10,7 +10,7 @@ const SELF = 'https://klgscnjbjglwrdqucufg.supabase.co/functions/v1/reminders';
 const SITE = 'https://ombgas.com';
 const DEFAULT_TEXT = "Hi {name}, it's {business}. The annual {what} at {address} is due on {date}. Reply to let me know a good time to book it in. Thanks";
 const PER_ENGINEER_DAILY = 40;
-const WHAT: Record<string, string> = { gas: 'gas safety check', service: 'boiler service' };
+const WHAT: Record<string, string> = { gas: 'gas safety check', service: 'boiler service', legionella: 'Legionella risk assessment' };
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, content-type, apikey, x-client-info' };
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 
@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
         const best = new Map<string, any>();
         for (const r of recs || []) {
           const d = r.data || {}, t = d.type || 'gas';
-          if ((t !== 'gas' && t !== 'service') || d.status !== 'complete' || !/^\d{4}-\d{2}-\d{2}$/.test(String(d.renewal || ''))) continue;
+          if ((t !== 'gas' && t !== 'service' && t !== 'legionella') || d.status !== 'complete' || !/^\d{4}-\d{2}-\d{2}$/.test(String(d.renewal || ''))) continue;
           const who = d.customerId || norm(d.customer?.name), key = [who, norm(d.jobAddress), t].join('|');
           const cur = best.get(key);
           if (!cur || String(d.inspectionDate) > String(cur.d.inspectionDate) || (d.inspectionDate === cur.d.inspectionDate && (d.updated || 0) > (cur.d.updated || 0))) best.set(key, { id: r.id, d, t });
