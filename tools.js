@@ -2,17 +2,39 @@
    These are quick guides for the van. They do not make a certificate and are not a substitute for BS 6891 / IGEM/UP/2 tables or a full heat loss survey. */
 const TL_KEY = 'omb_tools';
 const TL_DEFAULT = () => ({
+  prop: { same: false, name: '', addr: '', phone: '', email: '', cid: '' }, pulled: {}, note: {}, used: {},
   pipe: { kw: '24', basis: 'net', len: '6', dp: '1', f: { b90: '2', e90: '0', b45: '0', tin: '0', tout: '0' } },
   iv: { gas: 'ng', meter: 'u6', mvol: '', runs: [{ pipe: 'cu15', len: '', v: '' }] },
   heat: { outside: '-3', sys: 'cond', flow: '70', ret: '50', room: '', factor: '1.5', rooms: [] }
 });
-let TL = (() => { try { const o = JSON.parse(localStorage.getItem(TL_KEY)); if (o && o.pipe && o.heat) { if (!o.iv) o.iv = TL_DEFAULT().iv; return o; } } catch (e) { } return TL_DEFAULT(); })();
+let TL = (() => { try { const o = JSON.parse(localStorage.getItem(TL_KEY)); if (o && o.pipe && o.heat) { const d = TL_DEFAULT(); if (!o.iv) o.iv = d.iv; if (!o.prop) o.prop = d.prop; if (!o.pulled) o.pulled = {}; if (!o.note) o.note = {}; if (!o.used) o.used = {}; return o; } } catch (e) { } return TL_DEFAULT(); })();
 const tlUse = () => { try { return JSON.parse(localStorage.getItem('omb_tooluse')) || {}; } catch (e) { return {}; } };
 const tlCount = k => { try { const u = tlUse(); u[k] = (u[k] || 0) + 1; localStorage.setItem('omb_tooluse', JSON.stringify(u)); } catch (e) { } };
 const tlFav = () => { try { return JSON.parse(localStorage.getItem('omb_toolfav')) || {}; } catch (e) { return {}; } };
 const tlSave = () => { try { localStorage.setItem(TL_KEY, JSON.stringify(TL)); } catch (e) { } };
 const tlNum = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return Number.isFinite(n) ? n : null; };
 const tlFmt = (n, d = 1) => n === null || !Number.isFinite(n) ? '–' : (Math.round(n * Math.pow(10, d)) / Math.pow(10, d)).toFixed(d);
+
+
+/* ---------- same property: tick it and results flow from one tool into the next ---------- */
+const sameBox = () => `<label class="tlsame"><input type="checkbox" data-tl-chk="prop.same" ${TL.prop.same ? 'checked' : ''}> <span><b>Same property</b> as my other calculators. Results carry through.</span></label>`;
+const noteBox = k => TL.prop.same && TL.note[k] ? `<div class="notice" style="margin:0 0 12px">${esc(TL.note[k])}</div>` : '';
+const IVIDS = ['cu15', 'cu22', 'cu28', 'cu35'];
+function tlPull(tool) {
+  if (!TL.prop.same) return;
+  if (tool === 'pipe') {
+    const g = gasCalc(calcState('tool-gas')), gSig = g ? 'g' + g.net.toFixed(1) : '', hs = heatSums(), hSig = hs.tot > 0 ? 'h' + Math.round(hs.tot) : '';
+    if (g && gSig !== TL.pulled.gas) { TL.pulled.gas = gSig; TL.pipe.kw = g.net.toFixed(1); TL.pipe.basis = 'net'; TL.used.pipe = 1; TL.note.pipe = 'Heat input filled in from the gas rate result (' + g.net.toFixed(1) + ' kW net). Change it if you need to.'; }
+    else if (hSig && hSig !== TL.pulled.heat) { TL.pulled.heat = hSig; TL.pipe.kw = (hs.tot / 1000).toFixed(1); TL.pipe.basis = 'net'; TL.used.pipe = 1; TL.note.pipe = 'Heat input filled in from the heat loss (' + (hs.tot / 1000).toFixed(1) + ' kW). Change it to the boiler or appliance input if you need to.'; }
+  } else if (tool === 'iv') {
+    const c = pipeCalc(), sig = c && c.best ? TL.pipe.len + '|' + c.best.n : '';
+    if (sig && sig !== TL.pulled.run) {
+      TL.pulled.run = sig; const id = IVIDS[PIPES.findIndex(p => p.n === c.best.n)];
+      TL.iv.runs[0] = { pipe: id, len: String(TL.pipe.len), v: '' }; TL.note.iv = 'First pipe run filled in from pipe sizing (' + c.best.n + ', ' + TL.pipe.len + ' m). Add the other runs.';
+    }
+  }
+  tlSave();
+}
 
 /* ---------- gas pipe sizing ----------
    Flow in a round pipe for a given pressure drop (Darcy–Weisbach with Colebrook friction, natural gas at 15°C).
@@ -64,7 +86,8 @@ function pipeResHtml() {
 function pipeView() {
   const p = TL.pipe, f = p.f, inp = (k, label, ph, extra = '') => `<div class="grow f"><span>${label}</span><input data-tl-in="pipe.${k}" type="text" inputmode="decimal" value="${esc(p[k])}" ${ph ? `placeholder="${ph}"` : ''} autocomplete="off" ${extra}></div>`;
   const fit = (k, label) => `<div class="grow f"><span>${label}</span><input data-tl-in="pipe.f.${k}" type="text" inputmode="numeric" value="${esc(f[k])}" autocomplete="off"></div>`;
-  return `<h1>Gas pipe sizing</h1>
+  tlPull('pipe');
+  return `<h1>Gas pipe sizing</h1>${sameBox()}${noteBox('pipe')}
     <p class="small muted" style="margin-top:0">Copper pipe, natural gas. Add up the total heat input of everything the pipe feeds and the longest run to it.</p>
     <div class="card">
       <div class="row">${inp('kw', 'Total heat input (kW)', 'e.g. 24')}
@@ -114,7 +137,8 @@ function ivResHtml() {
 }
 function ivView() {
   const v = TL.iv, opt = (list, cur) => list.map(x => `<option value="${x[0]}" ${cur === x[0] ? 'selected' : ''}>${esc(x[1])}</option>`).join('');
-  return `<h1>Tightness test volume</h1>
+  tlPull('iv');
+  return `<h1>Tightness test volume</h1>${sameBox()}${noteBox('iv')}
     <p class="small muted" style="margin-top:0">Works out the installation volume (IV) and the pressure drop you are allowed under the new IGEM/UP/1B Edition 4, in force from 1 October 2026.</p>
     <div class="card">
       <div class="f"><span>Gas</span><select data-tl-sel="iv.gas">${Object.keys(IVGAS).map(k => `<option value="${k}" ${v.gas === k ? 'selected' : ''}>${IVGAS[k]}</option>`).join('')}</select></div>
@@ -196,7 +220,7 @@ function roomForm(r, i) {
 }
 function heatView() {
   const h = TL.heat, custom = h.sys === 'custom';
-  return `<h1>Heat loss and radiators</h1>
+  return `<h1>Heat loss and radiators</h1>${sameBox()}
     <p class="small muted" style="margin-top:0">Room by room. Radiator sizes change with the water temperature: pick the system, or type your own flow and return.</p>
     <div class="card">
       <div class="f"><span>Heating system</span><select data-tl-sel="heat.sys">${Object.keys(SYSTEMS).map(k => `<option value="${k}" ${h.sys === k ? 'selected' : ''}>${esc(SYSTEMS[k][0])}</option>`).join('')}</select></div>
@@ -209,12 +233,54 @@ function heatView() {
     <h2>Totals</h2><div class="card" id="tlHeatTot">${heatTotals()}</div>
     <p class="small muted">An estimate using typical U-values and the room-by-room method. It ignores heat flow through internal walls and assumes neighbouring rooms are at a similar temperature. Check against a full heat loss calculation for new systems and heat pumps.</p>`;
 }
+
+/* ---------- report: everything you have calculated, on one PDF ---------- */
+function tlSections() {
+  const out = [], f2 = (n, d = 1) => tlFmt(n, d);
+  /* gas rate */
+  const gs = calcState('tool-gas'), g = gasCalc(gs);
+  if (g) out.push({ title: 'Gas rate (meter test)', items: [{ t: 'kv', bold: ['Heat input, net'], rows: [['Meter', gs.unit === 'ft³' ? 'Imperial (ft³)' : 'Metric (m³)'], ['Volume used', (calcVol(gs) ?? '–') + ' ' + gs.unit], ['Time taken', gs.secs + ' (' + f2(calcSecs(gs.secs), 1) + ' s)'], ['Calorific value', gs.cv + ' MJ/m³'], ['Gas rate', f2(g.m3h, 3) + ' m³/h'], ['Heat input, gross', f2(g.gross, 1) + ' kW'], ['Heat input, net', f2(g.net, 1) + ' kW']] }] });
+  /* pipe sizing */
+  const pc = pipeCalc();
+  if (pc && TL.used.pipe) { const p = TL.pipe; out.push({ title: 'Gas pipe sizing', items: [
+    { t: 'kv', rows: [['Heat input used (gross)', f2(pc.gross, 1) + ' kW'], ['Gas rate needed', f2(pc.flow, 2) + ' m³/h'], ['Pipe length', p.len + ' m'], ['Fittings', `${p.f.b90 || 0} × 90° bend, ${p.f.e90 || 0} × 90° elbow, ${p.f.b45 || 0} × 45° bend, ${p.f.tin || 0} × tee in, ${p.f.tout || 0} × tee out`], ['Allowed pressure drop', f2(pc.dpMax, 1) + ' mbar'], ['Smallest pipe that works', pc.best ? pc.best.n : 'None of the sizes listed']], bold: ['Smallest pipe that works'] },
+    { t: 'table', head: ['Pipe', 'Run + fittings', 'Capacity', 'Drop at your flow', 'Result'], w: [30, 26, 28, 34, 24], a: ['l', 'r', 'r', 'r', 'l'], rows: pc.rows.map(r => [r.n, f2(r.eqL, 1) + ' m', f2(r.cap, 2) + ' m³/h', f2(r.drop, 2) + ' mbar', r.ok ? 'Big enough' : 'Too small']) },
+    { t: 'note', text: 'Calculated for natural gas with the flow calibrated to the published BS 6891 figures for 15 mm copper. Confirm the final size against BS 6891 / IGEM/UP/2.' }] }); }
+  /* tightness test volume */
+  const ic = ivCalc();
+  if (ic) { const v = TL.iv; out.push({ title: 'Tightness test: installation volume (IGEM/UP/1B Edition 4)', items: [
+    { t: 'table', head: ['Pipe run', 'Length', 'Volume'], w: [60, 30, 40], a: ['l', 'r', 'r'], rows: v.runs.filter(r => tlNum(r.len) > 0).map(r => { const p = IVPIPES.find(x => x[0] === r.pipe), per = p[2] === null ? tlNum(r.v) : p[2]; return [p[1], f2(tlNum(r.len), 1) + ' m', tlFmt(per * tlNum(r.len), 5) + ' m³']; }) },
+    { t: 'kv', bold: ['Installation volume (IV)', 'Most the pressure may drop'], rows: [['Gas', IVGAS[v.gas]], ['Meter volume', tlFmt(ic.mv, 4) + ' m³'], ['Pipework', tlFmt(ic.pipe, 4) + ' m³'], ['Fittings allowance (10%)', tlFmt(ic.fit, 4) + ' m³'], ['Installation volume (IV)', tlFmt(ic.iv, 4) + ' m³ (' + f2(ic.iv * 1000, 1) + ' litres)'], ['Most the pressure may drop', ic.drop ? ic.drop + ' in 2 minutes' : 'IV over 0.035 m³: outside the scope of IGEM/UP/1B'], ['Purge volume (1.5 × IV)', tlFmt(ic.pv, 4) + ' m³'], ['Test pressure', v.gas === 'ng' ? '20 to 21 mbar' : v.gas === 'lpg' ? '37 mbar' : 'See the standard']] },
+    { t: 'note', text: 'Let the pressure settle for 1 minute, then test for 2 minutes. New pipework, or pipework with no appliances connected: no pressure drop allowed. Any perceptible movement (0.25 mbar, or 0.2 mbar on a gauge reading to one decimal place) within the permissible drop means isolating every appliance and retesting the pipework alone with no drop allowed.' }] }); }
+  /* heat loss */
+  const h = TL.heat, rooms = h.rooms.map(r => ({ r, c: roomCalc(r) })).filter(x => x.c);
+  if (rooms.length && TL.used.heat) { const sy = hlSys(), sm = heatSums(), fct = tlNum(h.factor) || 1.5; out.push({ title: 'Heat loss and radiator sizing', items: [
+    { t: 'kv', rows: [['Heating system', SYSTEMS[h.sys][0] + ': ' + sy.flow + '°C flow, ' + sy.ret + '°C return'], ['Outside design temperature', h.outside + '°C']] },
+    { t: 'table', head: ['Room', 'Temp', 'Heat loss', 'Radiator needed', 'Catalogue size (ΔT50)'], w: [38, 16, 26, 32, 36], a: ['l', 'r', 'r', 'r', 'r'], rows: rooms.map(({ r, c }) => { const re = radEquiv(c.watts, tlNum(r.temp)); return [r.name + ' ' + r.l + '×' + r.w + '×' + r.h + ' m', r.temp + '°C', Math.round(c.watts) + ' W', Math.round(c.watts) + ' W', re ? Math.round(re.rated) + ' W' : '–']; }) },
+    { t: 'kv', bold: ['Whole-house heat loss'], rows: [['Whole-house heat loss', f2(sm.tot / 1000, 2) + ' kW'], ['Radiators to fit (catalogue ΔT50)', f2(sm.rated / 1000, 2) + ' kW'], ['Boiler, rule of thumb (× ' + f2(fct, 1) + ')', f2(sm.tot * fct / 1000, 1) + ' kW']] },
+    { t: 'note', text: 'An estimate using typical U-values and the room-by-room method. Check against a full heat loss calculation for new systems and heat pumps.' }] }); }
+  return out;
+}
+async function tlMakeReport() {
+  const secs = tlSections(); if (!secs.length) { toast('Nothing calculated yet'); return; }
+  toast('Creating PDF…');
+  try {
+    const blob = await buildToolsPdf(secs, TL.prop, settings), nm = (TL.prop.name || 'Calculations').replace(/[^\w ]+/g, '').trim() || 'Calculations';
+    ui.toolPdf = { blob, name: `Calculation report - ${nm} ${todayISO()}.pdf` }; tlRepaint(); toast('Report ready');
+  } catch (e) { console.error(e); toast('Could not create the PDF: ' + e.message); }
+}
+async function tlSharePdf() {
+  const p = ui.toolPdf; if (!p) return; const file = new File([p.blob], p.name, { type: 'application/pdf' });
+  try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: p.name }); return; } } catch (e) { if (e.name === 'AbortError') return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(p.blob); a.download = p.name; document.body.appendChild(a); a.click(); a.remove();
+}
+
 /* ---------- screens ---------- */
 function renderTools(v) {
   const t = ui.tool || 'menu';
   if (t === 'gas') {
     const s = calcState('tool-gas'); if (s.open === false && !s._seen) { s.open = true; s._seen = true; }
-    v.innerHTML = `<h1>Gas rate</h1><p class="small muted" style="margin-top:0">Time the meter for a gas rate and heat input without making a certificate.</p>${calcPanel('tool-gas', '')}
+    v.innerHTML = `<h1>Gas rate</h1>${sameBox()}<p class="small muted" style="margin-top:0">Time the meter for a gas rate and heat input without making a certificate.</p>${calcPanel('tool-gas', '')}
       <div style="height:10px"></div><button class="btn ghost block" data-tl="go" data-v="menu">Back to tools</button>`;
   } else if (t === 'pipe') {
     v.innerHTML = pipeView() + '<div style="height:10px"></div><button class="btn ghost block" data-tl="go" data-v="menu">Back to tools</button>';
@@ -228,14 +294,34 @@ function renderTools(v) {
       .filter(x => toolOn(x[0])).map((x, i) => ({ k: x[0], l: x[1], n: use[x[0]] || 0, f: !!fav[x[0]], i })).sort((a, b) => (b.f ? 1 : 0) - (a.f ? 1 : 0) || b.n - a.n || a.i - b.i);
     v.innerHTML = `<h1>Tools</h1><p class="small muted" style="margin-top:0">Quick calculators for the van. None of these makes a certificate. Tap the heart to pin one to the top. After that, the ones you use most come first.</p>
       ${list.map(x => `<div class="item crow" style="padding:0;margin-bottom:10px"><button type="button" class="btn gold grow" style="flex:1" data-tl="go" data-v="${x.k}">${x.l}</button><button type="button" class="heart ${x.f ? 'on' : ''}" data-tl="favTool" data-v="${x.k}" aria-label="${x.f ? 'Unpin' : 'Pin to the top'}">${x.f ? '♥' : '♡'}</button></div>`).join('')}
-      <div style="height:4px"></div><button class="btn ghost block" data-nav="home">Back</button>`;
+ <h2>Report</h2>
+      <div class="card">
+        ${(() => { const c = customers.find(x => x.id === TL.prop.cid), ps = c ? (c.properties || []).filter(Boolean) : []; return ps.length > 1 ? `<div class="f"><span>Which property?</span><select data-tl-sel-prop="1">${ps.map(p => `<option ${p === TL.prop.addr ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></div>` : ''; })()}
+        <div class="f"><span>Customer</span><input data-tl-in="prop.name" type="text" value="${esc(TL.prop.name)}" list="tlCust" autocomplete="off"><datalist id="tlCust">${customers.map(c => `<option value="${esc(c.name)}">`).join('')}</datalist></div>
+        <div class="f"><span>Property address</span><textarea data-tl-in="prop.addr" rows="2" autocomplete="off">${esc(TL.prop.addr)}</textarea></div>
+        <button type="button" class="btn gold block" data-tl="mkPdf">Create PDF report</button>
+        ${ui.toolPdf ? `<div style="height:8px"></div><button type="button" class="btn block" data-tl="shPdf">Share or save: ${esc(ui.toolPdf.name)}</button>` : ''}
+        <div style="height:8px"></div><button type="button" class="btn ghost block" data-tl="newProp">Start a new property (clear everything)</button>
+        <small class="muted">The report includes every calculator you have filled in.</small>
+      </div>
+      <div style="height:10px"></div>${ui.toolBack === 'custEdit' ? '<button class="btn ghost block" data-tl="backCust">Back to the customer</button>' : '<button class="btn ghost block" data-nav="home">Back</button>'}`;
   }
 }
 const toolOn = k => settings['tool' + k[0].toUpperCase() + k.slice(1)] !== 'off';
+function toolsForCustomer(c) {
+  const same = TL.prop.cid === c.id;
+  if (!same) { TL = TL_DEFAULT(); ui.toolPdf = null; try { delete ui.calc['tool-gas']; } catch (e) { } }
+  const props = (c.properties || []).filter(Boolean);
+  TL.prop.cid = c.id; TL.prop.name = c.name || ''; TL.prop.phone = c.phone || ''; TL.prop.email = c.email || '';
+  if (!same || !TL.prop.addr) TL.prop.addr = props[0] || c.billing || '';
+  if (!same) TL.prop.same = true;
+  tlSave(); ui.toolBack = 'custEdit'; ui.tool = 'menu'; ui.view = 'tools'; render(); window.scrollTo(0, 0);
+}
 const toolsHomeBtn = () => !['gas', 'pipe', 'iv', 'heat'].some(toolOn) ? '' : `<button class="btn block" data-act="toolsOpen">Tools: gas rate, pipe sizing, heat loss</button><div style="height:10px"></div>`;
 
 /* ---------- events (kept separate from the main app handlers) ---------- */
 function tlSet(path, val) {
+  if (/^(pipe|heat)\./.test(path)) TL.used[path.split('.')[0]] = 1;
   const k = path.split('.'); let o = TL; for (let i = 0; i < k.length - 1; i++) o = o[k[i]]; o[k[k.length - 1]] = val; tlSave();
 }
 function tlRepaint() { const y = window.scrollY; render(); window.scrollTo(0, y); }
@@ -246,17 +332,23 @@ document.addEventListener('click', e => {
   else if (a === 'favTool') { const f = tlFav(); if (f[v]) delete f[v]; else f[v] = 1; try { localStorage.setItem('omb_toolfav', JSON.stringify(f)); } catch (e) { } tlRepaint(); }
   else if (a === 'addRun') { TL.iv.runs.push({ pipe: 'cu22', len: '', v: '' }); tlSave(); tlRepaint(); }
   else if (a === 'rmRun') { TL.iv.runs.splice(+v, 1); tlSave(); tlRepaint(); }
-  else if (a === 'pipeBasis') { TL.pipe.basis = v; tlSave(); tlRepaint(); }
-  else if (a === 'addRoom') { TL.heat.rooms.push(newRoom()); tlSave(); tlRepaint(); }
+  else if (a === 'backCust') { ui.view = 'custEdit'; render(); window.scrollTo(0, 0); }
+  else if (a === 'mkPdf') tlMakeReport();
+  else if (a === 'shPdf') tlSharePdf();
+  else if (a === 'newProp') { if (!confirm('Clear all the calculators and the customer details?')) return; const k = TL.prop.same; TL = TL_DEFAULT(); TL.prop.same = k; tlSave(); ui.toolPdf = null; try { delete ui.calc['tool-gas']; } catch (e) { } tlRepaint(); toast('Cleared'); }
+  else if (a === 'pipeBasis') { TL.used.pipe = 1; TL.pipe.basis = v; tlSave(); tlRepaint(); }
+  else if (a === 'addRoom') { TL.used.heat = 1; TL.heat.rooms.push(newRoom()); tlSave(); tlRepaint(); }
   else if (a === 'rmRoom') { TL.heat.rooms.splice(+v, 1); tlSave(); tlRepaint(); }
 });
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act="toolsOpen"]'); if (!b) return;
-  ui.tool = 'menu'; ui.view = 'tools'; render(); window.scrollTo(0, 0);
+  ui.toolBack = ''; ui.tool = 'menu'; ui.view = 'tools'; render(); window.scrollTo(0, 0);
 });
 document.addEventListener('input', e => {
   const t = e.target, p = t.dataset && t.dataset.tlIn; if (!p || ui.view !== 'tools') return;
-  tlSet(p, t.value);
+  tlSet(p, t.value); if (p === 'pipe.kw') delete TL.note.pipe;
+  if (p === 'prop.name') { const c = customers.find(x => x.name === t.value); TL.prop.cid = c ? c.id : ''; TL.prop.phone = c ? c.phone || '' : ''; TL.prop.email = c ? c.email || '' : ''; tlSave(); }
+  if (p.startsWith('prop.')) return;
   if (p.startsWith('pipe.')) { const el = document.getElementById('tlPipeRes'); if (el) el.innerHTML = pipeResHtml(); }
   else if (p.startsWith('iv.')) { const el = document.getElementById('tlIvRes'); if (el) el.innerHTML = ivResHtml(); }
   else if (p.startsWith('heat.')) {
@@ -267,9 +359,11 @@ document.addEventListener('input', e => {
   }
 });
 document.addEventListener('change', e => {
+  if (e.target.dataset && e.target.dataset.tlSelProp && ui.view === 'tools') { TL.prop.addr = e.target.value; tlSave(); tlRepaint(); return; }
+  const ck = e.target.dataset && e.target.dataset.tlChk; if (ck && ui.view === 'tools') { tlSet(ck, e.target.checked); tlRepaint(); return; }
   const t = e.target, p = t.dataset && t.dataset.tlSel; if (!p || ui.view !== 'tools') return;
   const m = p.match(/^heat\.rooms\.(\d+)\.type$/);
-  if (m) { const r = TL.heat.rooms[+m[1]], d = ROOMT[t.value]; r.name = t.value; if (d) { r.temp = String(d[0]); r.ach = String(d[1]); } }
+  if (m) { TL.used.heat = 1; const r = TL.heat.rooms[+m[1]], d = ROOMT[t.value]; r.name = t.value; if (d) { r.temp = String(d[0]); r.ach = String(d[1]); } }
   else tlSet(p, t.value);
   tlSave(); tlRepaint();
 });

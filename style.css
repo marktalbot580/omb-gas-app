@@ -220,3 +220,6 @@ details.hlp[open] summary::after{content:'–'}
 .tlrow{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;background:var(--card2)}
 .tlrow.ok{border-color:var(--ok)}.tlrow.no{opacity:.7}.tlrow.best{box-shadow:0 0 0 2px var(--ok)}
 .tlroom select{width:100%}
+
+.tlsame{display:flex;gap:10px;align-items:flex-start;margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card2);font-size:15px}
+.tlsame input{width:22px;height:22px;flex:none;margin-top:2px}
