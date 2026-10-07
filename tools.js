@@ -46,8 +46,9 @@ function pipeWork(c) {
   c.rows.forEach(r => {
     const fl = r.det.length ? r.det.map(d => `${d.n} × ${d.eq} m`).join(' + ') + ' = ' + w2(r.fit, 2) + ' m' : 'no fittings';
     out.push(wk('2. ' + r.n, [`Effective length = run ${w2(c.len, 1)} m + fittings (${fl}) = <b>${w2(r.eqL, 2)} m</b>`,
-      `Loss per metre at ${w2(c.flow, 2)} m³/h = ${w2(r.perM, 4)} mbar/m`,
-      `Pressure drop = ${w2(r.perM, 4)} × ${w2(r.eqL, 2)} = <b>${w2(r.drop, 2)} mbar</b>`,
+      `BS 6891 table (interpolated): carries <b>${w2(pipeQ1(PIPES.find(q => q.n === r.n).d, r.eqL), 2)} m³/h</b> at 1 mbar over ${w2(r.eqL, 2)} m`,
+      `Drop at your flow = (${w2(c.flow, 2)} ÷ table flow)² = ${w2(r.drop, 2)} mbar, which is ${w2(r.perM, 4)} mbar per metre`,
+      `Pressure drop = <b>${w2(r.drop, 2)} mbar</b>`,
       `Limit ${w2(c.dpMax, 1)} mbar: ${r.drop <= c.dpMax + 1e-9 ? 'passes' : 'fails'}. It would carry ${w2(r.cap, 2)} m³/h at the limit.`]));
   });
   c.steps.forEach(x => out.push(wk('3. Stepping down ' + x.big + ' to ' + x.small, [
@@ -93,36 +94,33 @@ function gasWork() {
     <div>Net heat input = ${w2(g.gross, 1)} ÷ 1.11 = <b>${w2(g.net, 1)} kW</b></div></div>`;
 }
 
-/* ---------- gas pipe sizing ----------
-   Flow in a round pipe for a given pressure drop (Darcy–Weisbach with Colebrook friction, natural gas at 15°C).
-   The friction is calibrated (x1.1) so the answers match the published BS 6891 figures for 15 mm copper
-   (3 m 2.9, 6 m 1.9, 9 m 1.5, 12 m 1.3, 15 m 1.1 m³/h at 1 mbar) to within about 2%. */
+/* ---------- gas pipe sizing (BS 6891 table) ---------- */
 const PIPES = [
   { n: '15 mm copper', d: 13.6, eq: { b45: 0.15, b90: 0.20, e90: 0.40, tin: 0.75, tout: 1.20 } },
   { n: '22 mm copper', d: 20.2, eq: { b45: 0.20, b90: 0.30, e90: 0.60, tin: 1.20, tout: 1.80 } },
   { n: '28 mm copper', d: 26.2, eq: { b45: 0.25, b90: 0.40, e90: 0.80, tin: 1.50, tout: 2.30 } },
   { n: '35 mm copper', d: 32.6, eq: { b45: 0.30, b90: 0.50, e90: 1.00, tin: 1.90, tout: 2.90 } }
 ];
-/* friction multiplier by pipe bore: 15 mm is fitted to the published BS 6891 15 mm figures; 28 mm (and 35 mm) is fitted to the reference app Kyle uses (3.02 m3/h through 20.5 m of 28 mm drops 0.22 mbar); 22 mm sits between */
-const pipeK = dmm => { const t = Math.min(1, Math.max(0, (Math.log(dmm) - Math.log(13.6)) / (Math.log(26.2) - Math.log(13.6)))); return 1.1 + (0.715 - 1.1) * t; };
-const KW_PER_M3H = 10.6;   // kW per m3/h of natural gas, as used by the reference app
-function pipeFlow(dmm, L, dpMbar) {
-  const d = dmm / 1000, A = Math.PI * d * d / 4, rho = 0.717, mu = 1.11e-5, eps = 1.5e-6, dp = dpMbar * 100;
-  let v = 2;
-  for (let i = 0; i < 80; i++) {
-    const Re = rho * v * d / mu; let f = 0.02;
-    for (let j = 0; j < 25; j++) f = Math.pow(-2 * Math.log10(eps / (3.7 * d) + 2.51 / (Re * Math.sqrt(f))), -2);
-    f *= pipeK(dmm);
-    const vn = Math.sqrt(2 * dp * d / (f * L * rho));
-    if (Math.abs(vn - v) < 1e-7) { v = vn; break; } v = (v + vn) / 2;
-  }
-  return v * A * 3600;
+/* BS 6891 capacity table: flow (m3/h of natural gas) a copper pipe carries with a 1 mbar drop, by length.
+   15 mm figures are the published ones; 22 mm and 28 mm are the published copper table (0.6 relative density).
+   35 mm is estimated from 28 mm. Between and beyond the listed lengths the figures are interpolated on a log-log line.
+   For other pressure drops the flow goes with the square root of the drop. */
+const PIPE_L = [3, 6, 9, 12, 15, 20];
+const PIPE_Q = {
+  13.6: [2.9, 1.9, 1.5, 1.3, 1.1, 0.95],
+  20.2: [8.7, 5.8, 4.6, 3.9, 3.4, 2.9],
+  26.2: [18, 12, 9.4, 8.0, 7.0, 5.9],
+  32.6: [32, 21.2, 16.6, 14.2, 12.4, 10.4]
+};
+const KW_PER_M3H = 10.6;
+function pipeQ1(dmm, L) {                  // m3/h at 1 mbar over length L
+  const q = PIPE_Q[dmm], n = PIPE_L.length; let i = 0;
+  while (i < n - 2 && L > PIPE_L[i + 1]) i++;
+  const sl = Math.log(q[i + 1] / q[i]) / Math.log(PIPE_L[i + 1] / PIPE_L[i]);
+  return q[i] * Math.pow(L / PIPE_L[i], sl);
 }
-function pipeDrop(dmm, L, flow) {          // pressure drop (mbar) that gives this flow
-  let lo = 0.0001, hi = 200;
-  for (let i = 0; i < 60; i++) { const mid = (lo + hi) / 2; if (pipeFlow(dmm, L, mid) < flow) lo = mid; else hi = mid; }
-  return (lo + hi) / 2;
-}
+function pipeFlow(dmm, L, dpMbar) { return pipeQ1(dmm, L) * Math.sqrt(dpMbar); }
+function pipeDrop(dmm, L, flow) { const r = flow / pipeQ1(dmm, L); return r * r; }
 function pipeCalc() {
   const p = TL.pipe, kw = tlNum(p.kw), len = tlNum(p.len), dpMax = tlNum(p.dp) || 1;
   if (!(kw > 0) || !(len > 0)) return null;
@@ -139,7 +137,7 @@ function pipeCalc() {
   for (let i = 1; i < PIPES.length; i++) {
     const big = PIPES[i], small = PIPES[i - 1], fs = rows[i - 1].eqL - len;
     if (rows[i - 1].ok || !rows[i].ok) continue;                      // only where the smaller size fails on its own and the bigger one works
-    const db = pipeDrop(big.d, 1, flow), ds = pipeDrop(small.d, 1, flow), tot = len + fs;
+    const tot = len + fs, db = pipeDrop(big.d, tot, flow) / tot, ds = pipeDrop(small.d, tot, flow) / tot;
     const x = Math.min(len, Math.max(0, Math.ceil(((ds * tot - dpMax) / (ds - db)) * 2) / 2));
     steps.push({ db, ds, tot, raw: (ds * tot - dpMax) / (ds - db), big: big.n, small: small.n, x, rest: Math.round((len - x) * 10) / 10, all: x >= len });
   }
@@ -169,7 +167,7 @@ function pipeView() {
       <div class="row">${fit('tin', 'Tees (flow in)')}${fit('tout', 'Tees (flow out)')}</div>
     </div>
     <h2>Result</h2><div class="card" id="tlPipeRes">${pipeResHtml()}</div>${workBtn()}
-    <p class="small muted">A guide only. Gas rate is the kW divided by 10.6. The pressure drop is fitted to the published BS 6891 15 mm figures and to one reference run in 28 mm. Always check the final size against BS 6891 / IGEM/UP/2 and the appliance maker's instructions. The 35 mm fitting lengths are estimated.</p>`;
+    <p class="small muted">A guide only. Gas rate is the kW divided by 10.6. Capacities come from the published BS 6891 copper pipe table, interpolated between lengths. Always check the final size against BS 6891 / IGEM/UP/2 and the appliance maker's instructions. The 35 mm figures and all fitting lengths are estimated.</p>`;
 }
 
 
@@ -317,7 +315,7 @@ function tlSections() {
     { t: 'kv', rows: [['Heat input', f2(pc.kw, 1) + ' kW'], ['Gas rate needed', f2(pc.flow, 2) + ' m³/h'], ['Pipe length', p.len + ' m'], ['Fittings', `${p.f.b90 || 0} × 90° bend, ${p.f.e90 || 0} × 90° elbow, ${p.f.b45 || 0} × 45° bend, ${p.f.tin || 0} × tee in, ${p.f.tout || 0} × tee out`], ['Allowed pressure drop', f2(pc.dpMax, 1) + ' mbar'], ['Smallest pipe that works', pc.best ? pc.best.n : 'None of the sizes listed']], bold: ['Smallest pipe that works'] },
     { t: 'table', head: ['Pipe', 'Run + fittings', 'Capacity', 'Drop at your flow', 'Result'], w: [30, 26, 28, 34, 24], a: ['l', 'r', 'r', 'r', 'l'], rows: pc.rows.map(r => [r.n, f2(r.eqL, 1) + ' m', f2(r.cap, 2) + ' m³/h', f2(r.drop, 2) + ' mbar', r.ok ? 'Big enough' : 'Too small']) },
     ...(pc.steps.length ? [{ t: 'table', head: ['Step down to save pipe', 'Bigger pipe, nearest the meter', 'Then, for the rest'], w: [34, 46, 46], a: ['l', 'r', 'r'], rows: pc.steps.map(x => x.all ? [x.big, 'Whole run', '-'] : [x.big + ' to ' + x.small, tlFmt(x.x, 1) + ' m of ' + x.big, tlFmt(x.rest, 1) + ' m of ' + x.small]) }] : []),
-    { t: 'note', text: 'Natural gas, gas rate = kW / 10.6. Pressure drop fitted to the published BS 6891 figures for 15 mm copper and a reference run in 28 mm. Confirm the final size against BS 6891 / IGEM/UP/2.' }] }); }
+    { t: 'note', text: 'Natural gas, gas rate = kW / 10.6. Capacities from the published BS 6891 copper pipe table, interpolated between lengths. Confirm the final size against BS 6891 / IGEM/UP/2.' }] }); }
   /* tightness test volume */
   const ic = ivCalc();
   if (ic && TL.iv.runs.some(r => tlNum(r.len) > 0)) { const v = TL.iv; out.push({ title: 'Tightness test: installation volume (IGEM/UP/1B Edition 4)', items: [
