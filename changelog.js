@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v83', items: ['The Tools button in the bottom bar now has a spanner icon.'] },
   { v: 'v82', items: ['Tools now has its own button in the bottom bar, between Invoices and Settings. It disappears if you turn all the tools off in Settings.'] },
   { v: 'v81', items: ['Tools report: tick which calculator results go in the PDF, with Select all and Select none. Saved reports and the PDF only include what is ticked.'] },
   { v: 'v80', items: ['A fresh look: new OMB flame logo and icon, cleaner type, and a more polished feel throughout. Everything works the same.'] },
