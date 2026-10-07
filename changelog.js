@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v64', items: ['Annual checks due now shows when an automatic reminder email was sent to a customer.'] },
   { v: 'v63', items: ['The Annual checks due page now says whether automatic emails are on, so you know if you need to send anything yourself.'] },
   { v: 'v62', items: ['Legionella risk assessments now appear in Annual checks due, and in the automatic reminder emails, using the next assessment date on the record.'] },
   { v: 'v61', items: ['The Annual checks due button on the home screen now matches the other buttons.'] },

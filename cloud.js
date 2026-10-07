@@ -333,6 +333,7 @@ const CLOUD = (() => {
     signedIn: () => !!session,
     sub: () => sub,
     isAdmin: () => admin && !!session,
+    remLog: () => req('/rest/v1/reminder_log?select=record_id,stage,sent_at&order=sent_at.desc&limit=1000'),
     call: (name, qs) => req('/functions/v1/' + name + (qs || ''), { method: 'POST', body: {} }),
     rpc: (name, args) => req('/rest/v1/rpc/' + name, { method: 'POST', body: args || {} }),
     insert: (table, row) => req('/rest/v1/' + table, { method: 'POST', headers: { Prefer: 'return=minimal' }, body: row }),

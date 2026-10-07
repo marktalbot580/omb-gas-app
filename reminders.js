@@ -56,6 +56,7 @@ function remBadge(it) {
   if (it.days === 0) return '<span class="badge overdue">Due today</span>';
   return `<span class="badge ${it.days <= 14 ? 'unpaid' : 'draft'}">Due in ${it.days} day${it.days === 1 ? '' : 's'}</span>`;
 }
+const emailed = id => { const a = REM_LOG && REM_LOG[id]; return a && a.length ? `<div class="s" style="color:var(--ok,#6fcf97)">&#9993; Emailed automatically ${a.map(ukDate).join(' and ')}</div>` : ''; };
 function remCard(it, st) {
   const body = encodeURIComponent(remMsg(it)), id = it.r.id, sent = st.s[id];
   const sub = encodeURIComponent((settings.businessName || 'Annual check') + ': your ' + REM_WHAT[it.t] + ' is due');
@@ -69,6 +70,7 @@ function remCard(it, st) {
     <div class="row sp"><span class="t">${esc(it.name || 'No name')}</span>${remBadge(it)}</div>
     <div class="s">${esc(addrFirst(it.r.jobAddress || '') || 'No address')}</div>
     <div class="s">${FORM_SHORT[it.t]} due ${ukDate(it.due)}${sent ? ' · reminder sent ' + ukDate(sent) : ''}</div>
+    ${emailed(id)}
     ${ways ? `<div class="remways">${ways}</div>` : `<p class="small muted" style="margin:8px 0 0">No mobile number or email saved for this customer.</p>`}
     <div class="remways">
       <button class="btn ghost" data-act="remDone" data-id="${id}" data-v="booked">Booked in</button>
@@ -77,7 +79,20 @@ function remCard(it, st) {
     </div>
   </div>`;
 }
+/* which automatic emails the server has sent (read from the signed-in user's own log) */
+let REM_LOG = null;
+async function remLoadLog() {
+  if (!CLOUD.on || !CLOUD.signedIn || !CLOUD.signedIn()) return;
+  try {
+    const rows = await CLOUD.remLog(), m = {};
+    (rows || []).forEach(x => { (m[x.record_id] = m[x.record_id] || []).push(String(x.sent_at).slice(0, 10)); });
+    Object.keys(m).forEach(k => m[k].sort());
+    const was = JSON.stringify(REM_LOG); REM_LOG = m;
+    if (JSON.stringify(m) !== was && ui.view === 'due') { const y = window.scrollY; render(); window.scrollTo(0, y); }
+  } catch (e) { /* offline or not set up yet: just don't show the line */ }
+}
 function renderDue(v) {
+  remLoadLog();
   const items = remItems(), st = remGet(), n = remWindow();
   v.innerHTML = `
     <h1>Annual checks due</h1>

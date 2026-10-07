@@ -34,6 +34,11 @@ alter table public.reminder_log enable row level security;
 alter table public.reminder_suppress enable row level security;
 alter table public.reminder_runs enable row level security;
 
+-- Each engineer can read their own sent log (the app shows "Emailed automatically 12/10/2026" on the Annual checks due list)
+drop policy if exists "own reminder log" on public.reminder_log;
+create policy "own reminder log" on public.reminder_log for select to authenticated using (user_id = auth.uid());
+grant select on public.reminder_log to authenticated;
+
 -- Run the function every morning at 08:00 UTC (09:00 in summer, 08:00 in winter, UK time)
 create extension if not exists pg_cron;
 create extension if not exists pg_net with schema extensions;
