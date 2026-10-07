@@ -269,11 +269,36 @@ async function tlMakeReport() {
     ui.toolPdf = { blob, name: `Calculation report - ${nm} ${todayISO()}.pdf` }; tlRepaint(); toast('Report ready');
   } catch (e) { console.error(e); toast('Could not create the PDF: ' + e.message); }
 }
-async function tlSharePdf() {
-  const p = ui.toolPdf; if (!p) return; const file = new File([p.blob], p.name, { type: 'application/pdf' });
+async function tlSharePdf(p) {
+  p = p || ui.toolPdf; if (!p) return; const file = new File([p.blob], p.name, { type: 'application/pdf' });
   try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: p.name }); return; } } catch (e) { if (e.name === 'AbortError') return; }
   const a = document.createElement('a'); a.href = URL.createObjectURL(p.blob); a.download = p.name; document.body.appendChild(a); a.click(); a.remove();
 }
+
+
+/* ---------- reports kept on the customer ---------- */
+function tlSaveReport() {
+  const cu = customers.find(x => x.id === TL.prop.cid); if (!cu) { toast('Open Tools from a customer to save a report on their card'); return; }
+  const secs = tlSections(); if (!secs.length) { toast('Nothing calculated yet'); return; }
+  cu.reports = [{ id: uid(), date: todayISO(), prop: { name: TL.prop.name, addr: TL.prop.addr, phone: TL.prop.phone, email: TL.prop.email }, sections: secs }].concat(cu.reports || []);
+  cu.updated = Date.now(); cu._dirty = true; saveCustomers(); syncAll(); toast('Saved on ' + cu.name + "'s card");
+}
+function custReports(c) {
+  const l = c.reports || []; if (!l.length) return '';
+  return `<h2>Calculation reports (${l.length})</h2>` + l.map(r => `<div class="item"><div class="t">${esc(ukDate(r.date))} · ${esc((r.prop.addr || '').split('\n')[0] || 'No address')}</div>
+    <div class="s">${esc(r.sections.map(x => x.title.replace(/:.*|\(.*/, '').trim()).join(', '))}</div>
+    <div class="row" style="margin-top:8px"><button type="button" class="btn grow" data-act="repOpen" data-id="${r.id}">Open / share PDF</button><button type="button" class="btn ghost" data-act="repDel" data-id="${r.id}">Delete</button></div></div>`).join('');
+}
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act="repOpen"],[data-act="repDel"]'); if (!b) return;
+  const cu = customers.find(x => x.id === (ui.cust && ui.cust.id)); const r = cu && (cu.reports || []).find(x => x.id === b.dataset.id); if (!r) return;
+  if (b.dataset.act === 'repDel') {
+    if (!confirm('Delete this saved report?')) return;
+    cu.reports = cu.reports.filter(x => x.id !== r.id); cu.updated = Date.now(); cu._dirty = true; saveCustomers(); syncAll(); tlRepaint(); return;
+  }
+  try { toast('Creating PDF…'); const blob = await buildToolsPdf(r.sections, r.prop, settings); await tlSharePdf({ blob, name: `Calculation report - ${(r.prop.name || 'Customer').replace(/[^\w ]+/g, '')} ${r.date}.pdf` }); }
+  catch (err) { console.error(err); toast('Could not create the PDF: ' + err.message); }
+});
 
 /* ---------- screens ---------- */
 function renderTools(v) {
@@ -301,6 +326,7 @@ function renderTools(v) {
         <div class="f"><span>Property address</span><textarea data-tl-in="prop.addr" rows="2" autocomplete="off">${esc(TL.prop.addr)}</textarea></div>
         <button type="button" class="btn gold block" data-tl="mkPdf">Create PDF report</button>
         ${ui.toolPdf ? `<div style="height:8px"></div><button type="button" class="btn block" data-tl="shPdf">Share or save: ${esc(ui.toolPdf.name)}</button>` : ''}
+        ${TL.prop.cid ? `<div style="height:8px"></div><button type="button" class="btn block" data-tl="svRep">Save these results on ${esc(TL.prop.name)}'s card</button>` : ''}
         <div style="height:8px"></div><button type="button" class="btn ghost block" data-tl="newProp">Start a new property (clear everything)</button>
         <small class="muted">The report includes every calculator you have filled in.</small>
       </div>
@@ -314,7 +340,7 @@ function toolsForCustomer(c) {
   const props = (c.properties || []).filter(Boolean);
   TL.prop.cid = c.id; TL.prop.name = c.name || ''; TL.prop.phone = c.phone || ''; TL.prop.email = c.email || '';
   if (!same || !TL.prop.addr) TL.prop.addr = props[0] || c.billing || '';
-  if (!same) TL.prop.same = true;
+  TL.prop.same = true;
   tlSave(); ui.toolBack = 'custEdit'; ui.tool = 'menu'; ui.view = 'tools'; render(); window.scrollTo(0, 0);
 }
 const toolsHomeBtn = () => !['gas', 'pipe', 'iv', 'heat'].some(toolOn) ? '' : `<button class="btn block" data-act="toolsOpen">Tools: gas rate, pipe sizing, heat loss</button><div style="height:10px"></div>`;
@@ -335,6 +361,7 @@ document.addEventListener('click', e => {
   else if (a === 'backCust') { ui.view = 'custEdit'; render(); window.scrollTo(0, 0); }
   else if (a === 'mkPdf') tlMakeReport();
   else if (a === 'shPdf') tlSharePdf();
+  else if (a === 'svRep') tlSaveReport();
   else if (a === 'newProp') { if (!confirm('Clear all the calculators and the customer details?')) return; const k = TL.prop.same; TL = TL_DEFAULT(); TL.prop.same = k; tlSave(); ui.toolPdf = null; try { delete ui.calc['tool-gas']; } catch (e) { } tlRepaint(); toast('Cleared'); }
   else if (a === 'pipeBasis') { TL.used.pipe = 1; TL.pipe.basis = v; tlSave(); tlRepaint(); }
   else if (a === 'addRoom') { TL.used.heat = 1; TL.heat.rooms.push(newRoom()); tlSave(); tlRepaint(); }

@@ -708,6 +708,7 @@ function renderCustEdit(v) {
     ${c._new ? '' : `<div style="height:10px"></div><button class="btn block" data-act="recForCust">Start forms for this customer</button>
       ${toolOn('gas') || toolOn('pipe') || toolOn('iv') || toolOn('heat') ? '<div style="height:10px"></div><button class="btn block" data-act="custTools">Tools and calculation report</button>' : ''}
     ${(c.properties || []).length && (c.properties || []).length <= 8 ? `<h2>Navigate</h2>` + c.properties.map(p => `<a class="item" style="display:block;text-decoration:none;color:inherit" href="${esc(mapsUrl(p))}" target="_blank" rel="noopener"><div class="t">&#128205; ${esc(addrFirst(p))}</div><div class="s">${esc(p.split('\n').slice(1).join(', ') || 'Open in Google Maps')}</div></a>`).join('') : ''}
+    ${custReports(c)}
     ${custJobs(c)}
     <div style="height:10px"></div><button class="btn danger block" data-act="delCust">Delete customer</button>`}
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
@@ -2408,6 +2409,7 @@ function saveCust(silent) {
   if (c.noRemind) out.noRemind = true;
   if (c.fav) out.fav = true;
   if (c.remSt && Object.keys(c.remSt).length) out.remSt = c.remSt;
+  if (c.reports && c.reports.length) out.reports = c.reports;
   const i = customers.findIndex(x => x.id === c.id);
   if (i >= 0) customers[i] = out; else customers.unshift(out);
   saveCustomers(); ui.cust = out;
