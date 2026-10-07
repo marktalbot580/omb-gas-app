@@ -463,7 +463,7 @@ document.addEventListener('focusout', e => {
 /* an address box with its own postcode box underneath. The two are stored together as one text value (postcode on the last line),
    so every PDF, email and export keeps working. src says where it is saved: rec = this record, inv = this invoice, set = settings, cust = customer. */
 function addrBox(src, path, label, o = {}) {
-  const v = (src === 'rec' ? getP(ui.rec, path) : src === 'inv' ? getP(ui.inv, path) : src === 'set' ? settings[path] : ui.cust[path]) ?? '';
+  const v = (src === 'rec' ? getP(ui.rec, path) : src === 'inv' ? getP(ui.inv, path) : src === 'set' ? settings[path] : src === 'cprop' ? (ui.cust.properties || [])[+path] : ui.cust[path]) ?? '';
   const { addr, pc } = splitAddr(v);
   return `<div class="f addrw ${src === 'rec' && bad(o, v) ? 'bad' : ''}" data-f="${path}" data-src="${src}" data-path="${path}"><span>${label}${o.req ? ' <b>*</b>' : ''}</span>
     <textarea rows="${o.rows || 3}" placeholder="${esc(o.ph || '')}">${esc(addr)}</textarea>
@@ -484,6 +484,7 @@ function addrInput(w, t) {
     const had = !!ui.invPdf; ui.invPdf = null; if (had) { const bx = $('#invPdfBox'); if (bx) bx.innerHTML = invPdfHtml(); }
   } else if (src === 'set') { settings[path] = v; saveSettings(); }
   else if (src === 'cust') ui.cust[path] = v;
+  else if (src === 'cprop') { (ui.cust.properties = ui.cust.properties || [])[+path] = v; }
 }
 document.addEventListener('focusout', e => {      // tidy the postcode when you leave the box: ln12ab becomes LN1 2AB
   const t = e.target; if (!(t.classList && t.classList.contains('pc'))) return;
@@ -702,8 +703,10 @@ function renderCustEdit(v) {
       <label class="f"><span>Email</span><input data-c="email" type="email" inputmode="email" autocapitalize="none" value="${esc(c.email)}"></label>
       <button type="button" class="item tog ${c.noRemind ? 'on' : ''}" data-act="custNoRem" style="margin-bottom:12px"><span class="box"></span><span><span class="t">Never send reminder emails to this customer</span><span class="s" style="display:block">Applies to the automatic reminders. You can still text or email them yourself.</span></span></button>
       ${addrBox('cust', 'billing', 'Billing address')}
-      <label class="f"><span>Property addresses (one per line)</span><textarea data-c="props" rows="3" placeholder="Properties you inspect for this customer">${esc((c.properties || []).join('\n'))}</textarea></label>
     </div>
+    <h2>Property addresses</h2>
+    ${(c.properties && c.properties.length ? c.properties : (c.properties = [''])).map((p, i) => `<div class="card">${addrBox('cprop', String(i), 'Property ' + (c.properties.length > 1 ? i + 1 : 'address'), { ph: 'House number and street, town' })}${c.properties.length > 1 || p ? `<button type="button" class="btn ghost" data-act="rmCustProp" data-i="${i}" style="margin-top:6px">Remove this property</button>` : ''}</div>`).join('')}
+    <button type="button" class="btn block" data-act="addCustProp">+ Add another property address</button><div style="height:10px"></div>
     <button class="btn gold block" data-act="saveCust">Save customer</button>
     ${c._new ? '' : `<div style="height:10px"></div><button class="btn block" data-act="recForCust">Start forms for this customer</button>
       ${toolOn('gas') || toolOn('pipe') || toolOn('iv') || toolOn('heat') ? '<div style="height:10px"></div><button class="btn block" data-act="custTools">Tools and calculation report</button>' : ''}
@@ -714,7 +717,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v78';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v79';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -2101,6 +2104,8 @@ document.addEventListener('click', async e => {
     case 'favCust': { const c = customers.find(x => x.id === b.dataset.id); if (c) { c.fav = !c.fav; c.updated = Date.now(); c._dirty = true; saveCustomers(); paintCustList(); } break; }
     case 'newCust': ui.cust = { _new: true, id: uid(), name: '', phone: '', email: '', billing: '', properties: [] }; ui.view = 'custEdit'; render(); break;
     case 'editCust': ui.cust = JSON.parse(JSON.stringify(customers.find(c => c.id === b.dataset.id))); ui.view = 'custEdit'; render(); break;
+    case 'addCustProp': ui.cust.properties = (ui.cust.properties || []).concat(['']); render(); break;
+    case 'rmCustProp': { const ps = (ui.cust.properties || []).slice(); ps.splice(+b.dataset.i, 1); ui.cust.properties = ps; render(); break; }
     case 'saveCust': saveCust(); break;
     case 'custTools': { saveCust(true); const cu = customers.find(c => c.id === ui.cust.id); if (cu) toolsForCustomer(cu); break; }
     case 'recForCust': { saveCust(true); const cu = customers.find(c => c.id === ui.cust.id); ui.pick = { types: {}, customer: cu }; ui.pickFromCust = true; ui.view = 'pick'; render(); break; }
@@ -2404,7 +2409,7 @@ function goNext() {
 function saveCust(silent) {
   const c = ui.cust;
   if (!c.name.trim()) { toast('Enter a name'); return; }
-  const props = typeof c.props === 'string' ? c.props.split('\n').map(x => x.trim()).filter(Boolean) : c.properties;
+  const props = (c.properties || []).map(x => String(x || '').trim()).filter(Boolean);
   const out = { id: c.id, name: c.name.trim(), phone: c.phone, email: c.email, billing: c.billing, properties: props, updated: Date.now(), _dirty: true };
   if (c.noRemind) out.noRemind = true;
   if (c.fav) out.fav = true;

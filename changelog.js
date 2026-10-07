@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v79', items: ['Customer card: each property address now has its own address box and postcode box, with an Add another property button (and Remove).'] },
   { v: 'v78', items: ['Tools: opening Tools from the front page no longer shows the last customer you used it for.'] },
   { v: 'v77', items: ['Pipe sizing now uses the published BS 6891 copper pipe capacity table (interpolated between lengths) instead of a fitted formula. Sizes and the step-down figures are now on the safe side of the table.'] },
   { v: 'v76', items: ['Tools: a Show workings out button on each calculator, so you can follow every step of the sums.','Pipe sizing now divides your kW by 10.6 for the gas rate, and its pressure drop on larger pipes is fitted to the reference app.'] },
