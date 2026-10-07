@@ -114,10 +114,12 @@ const saveInvoices = () => LS.set('omb_invoices', invoices);
 /* ---------- branding: each business's own logo, name and accent colour ---------- */
 const cleanPrefix = p => String(p || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
 function placeholderLogo(name) {
-  const w = String(name || '').trim().split(/\s+/).filter(Boolean), t = w.length ? ((w[0][0] || '') + ((w[1] || '')[0] || '')).toUpperCase().replace(/[^A-Z0-9&]/g, '') : 'OMB';
+  const w = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (!w.length) return 'logo.svg';   // OMB flame mark until the engineer adds their own name/logo
+  const t = ((w[0][0] || '') + ((w[1] || '')[0] || '')).toUpperCase().replace(/[^A-Z0-9&]/g, '') || 'OMB';
   const cv = document.createElement('canvas'); cv.width = cv.height = 200; const c = cv.getContext('2d');
-  c.fillStyle = '#111'; c.fillRect(0, 0, 200, 200); c.fillStyle = '#c9a24b';
-  c.font = 'bold 96px Helvetica,Arial,sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(t, 100, 106);
+  c.fillStyle = '#0c0e10'; c.fillRect(0, 0, 200, 200); c.fillStyle = '#d9b25f';
+  c.font = '800 96px "Bricolage Grotesque",Helvetica,Arial,sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(t, 100, 106);
   return cv.toDataURL('image/png');
 }
 function mixHex(h, to, k) { const n = x => parseInt(h.slice(x, x + 2), 16); return '#' + [1, 3, 5].map(i => Math.round(n(i) + (to - n(i)) * k).toString(16).padStart(2, '0')).join(''); }
@@ -714,7 +716,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v78';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v79';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {

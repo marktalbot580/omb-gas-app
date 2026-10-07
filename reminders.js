@@ -102,5 +102,5 @@ function renderDue(v) {
 }
 function remHomeBtn() {
   const n = remCount();
-  return `<button class="btn gold block" data-act="remOpen">Annual checks due${n ? ` (${n})` : ''}</button><div style="height:10px"></div>`;
+  return `<button class="btn block sec" data-act="remOpen">Annual checks due${n ? ` (${n})` : ''}</button><div style="height:10px"></div>`;
 }
