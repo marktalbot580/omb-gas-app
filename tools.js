@@ -170,13 +170,14 @@ function renderTools(v) {
     v.innerHTML = heatView() + '<div style="height:10px"></div><button class="btn ghost block" data-tl="go" data-v="menu">Back to tools</button>';
   } else {
     const use = tlUse(), fav = tlFav(), list = [['gas', 'Gas rate calculator'], ['pipe', 'Gas pipe sizing'], ['heat', 'Heat loss and radiator sizing']]
-      .map((x, i) => ({ k: x[0], l: x[1], n: use[x[0]] || 0, f: !!fav[x[0]], i })).sort((a, b) => (b.f ? 1 : 0) - (a.f ? 1 : 0) || b.n - a.n || a.i - b.i);
+      .filter(x => toolOn(x[0])).map((x, i) => ({ k: x[0], l: x[1], n: use[x[0]] || 0, f: !!fav[x[0]], i })).sort((a, b) => (b.f ? 1 : 0) - (a.f ? 1 : 0) || b.n - a.n || a.i - b.i);
     v.innerHTML = `<h1>Tools</h1><p class="small muted" style="margin-top:0">Quick calculators for the van. None of these makes a certificate. Tap the heart to pin one to the top. After that, the ones you use most come first.</p>
       ${list.map(x => `<div class="item crow" style="padding:0;margin-bottom:10px"><button type="button" class="btn gold grow" style="flex:1" data-tl="go" data-v="${x.k}">${x.l}</button><button type="button" class="heart ${x.f ? 'on' : ''}" data-tl="favTool" data-v="${x.k}" aria-label="${x.f ? 'Unpin' : 'Pin to the top'}">${x.f ? '♥' : '♡'}</button></div>`).join('')}
       <div style="height:4px"></div><button class="btn ghost block" data-nav="home">Back</button>`;
   }
 }
-const toolsHomeBtn = () => `<button class="btn block" data-act="toolsOpen">Tools: gas rate, pipe sizing, heat loss</button><div style="height:10px"></div>`;
+const toolOn = k => settings['tool' + k[0].toUpperCase() + k.slice(1)] !== 'off';
+const toolsHomeBtn = () => !['gas', 'pipe', 'heat'].some(toolOn) ? '' : `<button class="btn block" data-act="toolsOpen">Tools: gas rate, pipe sizing, heat loss</button><div style="height:10px"></div>`;
 
 /* ---------- events (kept separate from the main app handlers) ---------- */
 function tlSet(path, val) {

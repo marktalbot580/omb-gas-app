@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v69', items: ['You can now hide any of the Tools you do not use, in Settings.'] },
   { v: 'v68', items: ['In Tools, tap the heart to pin a calculator to the top.'] },
   { v: 'v67', items: ['In Tools, the calculators you use most move to the top.'] },
   { v: 'v66', items: ['New Tools section on the home screen: gas rate calculator, gas pipe sizing, and room-by-room heat loss with radiator sizes that change with your flow and return temperatures.','Customer search now finds invoice numbers and certificate numbers too.'] },

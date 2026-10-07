@@ -97,7 +97,7 @@ const DEFAULT_SETTINGS = {
   priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', discType: '£', discValue: '',
   invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '', vatQtr: '2', yearDay: '6', yearMonth: '4',
   bankName: '', accName: '', sortCode: '', accNo: '', invFooter: 'Thank you for your business.',
-  remText: '', remDays: '56'
+  remText: '', remDays: '56', toolGas: 'on', toolPipe: 'on', toolHeat: 'on'
 };
 let settings = Object.assign({}, DEFAULT_SETTINGS, LS.get('omb_settings', {}));
 let customers = LS.get('omb_customers', []);
@@ -712,7 +712,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v68';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v69';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -851,6 +851,11 @@ function renderSettings(v) {
       <p class="small muted" style="margin-bottom:0">Clears the saved copy of the app and reloads the newest version. Your records, customers and photos are not touched.</p>
     </div>
     ${installCard(true)}
+    <h2>Tools</h2>
+    <div class="card">
+      ${[['toolGas', 'Gas rate calculator'], ['toolPipe', 'Gas pipe sizing'], ['toolHeat', 'Heat loss and radiator sizing']].map(([k, l]) => `<label class="f"><span>${l}</span><select data-s="${k}"><option value="on" ${settings[k] === 'off' ? '' : 'selected'}>Show</option><option value="off" ${settings[k] === 'off' ? 'selected' : ''}>Hide</option></select></label>`).join('')}
+      <small class="muted">Hidden tools disappear from the Tools list. Hide all three and the Tools button leaves the home screen.</small>
+    </div>
     <h2>Annual check reminders</h2>
     <div class="card">
       <label class="f"><span>Message wording</span><textarea data-s="remText" rows="4">${esc(settings.remText || REM_DEFAULT)}</textarea><small>Used for the Text, WhatsApp and Email buttons on the Annual checks due screen. {name}, {business}, {what}, {address} and {date} are filled in for you.</small></label>
