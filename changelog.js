@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v73', items: ['The Tools button on the home screen now matches the other buttons.'] },
   { v: 'v72', items: ['Open a customer and tap Tools and calculation report. Their name, phone, email and property go at the top of the PDF report, and Same property is ticked for you. You can save the results on their card and open the PDF again later.'] },
   { v: 'v71', items: ['Tools: tick Same property and results carry from one calculator to the next (gas rate or heat loss into pipe sizing, pipe sizing into the tightness test).','Tools: create a PDF report of everything you have calculated, with your details and the customer at the top.'] },
   { v: 'v70', items: ['New tool: Tightness test volume. Works out the installation volume and the pressure drop allowed under the new IGEM/UP/1B Edition 4 rules that start on 1 October 2026.'] },

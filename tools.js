@@ -343,7 +343,7 @@ function toolsForCustomer(c) {
   TL.prop.same = true;
   tlSave(); ui.toolBack = 'custEdit'; ui.tool = 'menu'; ui.view = 'tools'; render(); window.scrollTo(0, 0);
 }
-const toolsHomeBtn = () => !['gas', 'pipe', 'iv', 'heat'].some(toolOn) ? '' : `<button class="btn block" data-act="toolsOpen">Tools: gas rate, pipe sizing, heat loss</button><div style="height:10px"></div>`;
+const toolsHomeBtn = () => !['gas', 'pipe', 'iv', 'heat'].some(toolOn) ? '' : `<button class="btn gold block" data-act="toolsOpen">Tools: gas rate, pipe sizing, heat loss</button><div style="height:10px"></div>`;
 
 /* ---------- events (kept separate from the main app handlers) ---------- */
 function tlSet(path, val) {
