@@ -527,7 +527,7 @@ function render() {
   if (ui.view !== 'home' && typeof instPopClose === 'function') instPopClose();   // the install pop-up must never cover the Next / Back buttons
   if (ui.view === 'form') { renderForm(v, nav); }
   else {
-    ({ home: renderHome, pick: renderPick, customers: renderCustomers, custEdit: renderCustEdit, settings: renderSettings, invoices: renderInvoices, invEdit: renderInvEdit, invPrint: renderInvPrint, admin: renderAdmin, help: renderHelp, news: renderNews }[ui.view])(v);
+    ({ home: renderHome, pick: renderPick, customers: renderCustomers, custEdit: renderCustEdit, settings: renderSettings, invoices: renderInvoices, invEdit: renderInvEdit, invPrint: renderInvPrint, admin: renderAdmin, help: renderHelp, news: renderNews, feedback: renderFeedback }[ui.view])(v);
     renderTabs(nav);
   }
   paintSync();
@@ -544,7 +544,7 @@ const ICON = {
 function renderTabs(nav) {
   nav.className = 'tabs';
   const t = (id, label, ic, on) => `<button data-nav="${id}" class="${on ? 'on' : ''}">${ic}${label}</button>`;
-  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'admin' || ui.view === 'help' || ui.view === 'news');
+  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'admin' || ui.view === 'help' || ui.view === 'news' || ui.view === 'feedback');
   $('#barSub').textContent = ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' ? 'Invoices' : 'Gas & Legionella records';
 }
 
@@ -778,11 +778,49 @@ function renderNews(v) {
   nsSet();
   v.innerHTML = `<h1>What’s new</h1><p class="small muted" style="margin-top:0">You are on <b>${APP_VERSION}</b>.</p>${newsHtml()}<button class="btn block ghost" data-act="helpBack">Back</button>`;
 }
+/* ---------- feedback: faults, suggestions, questions ---------- */
+const FB_KEY = 'omb_fbq';
+const fbQueue = () => { try { return JSON.parse(localStorage.getItem(FB_KEY)) || []; } catch (e) { return []; } };
+const fbSave = q => { try { localStorage.setItem(FB_KEY, JSON.stringify(q)); } catch (e) { } };
+let fbBusy = false;
+async function fbFlush() {
+  if (fbBusy || !CLOUD.on || !CLOUD.signedIn() || navigator.onLine === false) return 0;
+  fbBusy = true; let sent = 0;
+  try {
+    for (let q = fbQueue(); q.length;) {
+      try { await CLOUD.insert('feedback', q[0]); } catch (e) { if (e && e.status >= 400 && e.status < 500 && e.status !== 401 && e.status !== 408 && e.status !== 429) { /* rejected for good: drop it */ } else break; }
+      q = fbQueue().slice(1); fbSave(q); sent++;
+    }
+  } finally { fbBusy = false; }
+  return sent;
+}
+window.addEventListener('online', () => { fbFlush(); });
+const FB_KINDS = [['fault', 'Report a fault'], ['suggestion', 'Suggestion'], ['question', 'Question']];
+function fbWhere() {
+  const from = ui.fbFrom || 'settings', r = ui.rec;
+  return from === 'form' && r ? `form: ${typeOf(r)}, step ${ui.step + 1}` : from;
+}
+function renderFeedback(v) {
+  const F = ui.fb = ui.fb || { kind: 'fault', text: '' }, q = fbQueue().length;
+  v.innerHTML = `
+    <h1>Send feedback</h1>
+    <p class="small muted" style="margin-top:0">Something broken, an idea, or a question? Tell us and we will look at it.</p>
+    ${q ? `<div class="notice">${q} earlier message${q === 1 ? ' is' : 's are'} waiting to send when you are online.</div>` : ''}
+    <div class="seg" style="margin-bottom:12px">${FB_KINDS.map(([k, l]) => `<button type="button" class="${F.kind === k ? 'on' : ''}" data-act="fbKind" data-kind="${k}">${l}</button>`).join('')}</div>
+    <label class="f"><span>${F.kind === 'fault' ? 'What went wrong? What were you doing?' : F.kind === 'suggestion' ? 'What would make the app better?' : 'What would you like to ask?'}</span>
+      <textarea id="fbText" rows="7" maxlength="4000" placeholder="Type here…">${esc(F.text)}</textarea>
+      <small>Sent with it: app version (${APP_VERSION}), your phone type, the screen you were on, and your account email. Customer records are never sent.</small></label>
+    <button class="btn gold block" data-act="fbSend">Send</button>
+    <div style="height:10px"></div>
+    <button class="btn block ghost" data-act="helpBack">Back</button>
+    <p class="small muted" style="text-align:center;margin-top:14px">You can also email <a href="mailto:support@ombgas.com" style="color:var(--gold2)">support@ombgas.com</a></p>`;
+}
 function renderHelp(v) {
   v.innerHTML = `
     <h1>Help guide</h1>
     <input class="search" id="helpSearch" placeholder="Search help, e.g. invoice, backup, timer" value="${esc(ui.helpQ || '')}" autocomplete="off">
     <div id="helpList">${helpListHtml(ui.helpQ)}</div>
+    <button class="btn block" data-act="feedback" style="margin-bottom:10px">Report a fault or send a suggestion</button>
     <button class="btn block ghost" data-act="helpBack">Back</button>`;
 }
 function renderSettings(v) {
@@ -790,7 +828,8 @@ function renderSettings(v) {
   v.innerHTML = `
     <h1>Settings</h1>
     <button class="btn block" data-act="help" style="margin-bottom:10px">Help guide</button>
-    <button class="btn block" data-act="news" style="margin-bottom:12px">What’s new</button>
+    <button class="btn block" data-act="news" style="margin-bottom:10px">What’s new</button>
+    <button class="btn block" data-act="feedback" style="margin-bottom:12px">Send feedback</button>
     <h2>App version</h2>
     <div class="card">
       <p class="small muted" style="margin-top:0">This phone is running <b id="verHere" style="color:var(--txt)">${APP_VERSION}</b> · newest online: <b id="verNew" style="color:var(--txt)">checking…</b></p>
@@ -908,6 +947,11 @@ function renderAdmin(v) {
     <h2>Give someone a free pass</h2>
     <div class="card"><label class="f"><span>Their email address</span><input id="adminEmail" type="email" inputmode="email" autocapitalize="none" autocomplete="off" placeholder="kyle@example.com"><small>Works before or after they sign up. They get full access with no payment.</small></label>
       <button class="btn gold block" data-act="adminCompEmail">Give free pass</button></div>
+    <h2>Feedback${A.fb ? ' (' + A.fb.filter(x => x.status === 'new').length + ' new)' : ''}</h2>
+    ${A.fbErr ? `<div class="notice">${esc(A.fbErr)}</div>` : ''}
+    ${(A.fb || []).slice(0, 30).map(x => `<div class="card"><div class="small muted">${esc(x.kind)} · ${esc(x.status)} · ${esc(x.email || '')} · ${ukDate((x.created_at || '').slice(0, 10))} · ${esc(x.app_version || '')} · ${esc(x.screen || '')}</div>
+      <div style="margin:6px 0;white-space:pre-wrap">${esc(x.message)}</div>
+      <div class="row">${['new', 'fixing', 'done'].map(s => `<button class="btn grow ${x.status === s ? 'gold' : 'ghost'}" data-act="adminFbStatus" data-id="${x.id}" data-v="${s}">${s}</button>`).join('')}</div></div>`).join('') || (A.fbErr ? '' : '<p class="muted">No feedback yet.</p>')}
     <h2>Everyone</h2>
     ${rows.map(r => `<div class="card"><div class="t" style="font-weight:700">${esc(r.email)}</div>
       <div class="small muted">${esc(state(r))}${r.confirmed ? '' : ' · email not confirmed'} · joined ${ukDate((r.created_at || '').slice(0, 10))}${r.last_sign_in ? ' · last in ' + ukDate(r.last_sign_in.slice(0, 10)) : ''}${r.status === 'trialing' && !r.comped ? ' · trial ends ' + ukDate((r.trial_end || '').slice(0, 10)) : ''}</div>
@@ -915,6 +959,7 @@ function renderAdmin(v) {
 }
 async function adminLoad() {
   ui.admin = ui.admin || {}; ui.admin.err = '';
+  try { ui.admin.fb = await CLOUD.rpc('admin_feedback'); } catch (e) { ui.admin.fb = ui.admin.fb || null; ui.admin.fbErr = /does not exist|schema cache|404/i.test(e.message) ? 'Feedback table not set up yet.' : ''; }
   try { ui.admin.rows = await CLOUD.rpc('admin_overview'); } catch (e) { ui.admin.err = /not allowed/i.test(e.message) ? 'This account is not an admin.' : 'Could not load: ' + e.message; ui.admin.rows = ui.admin.rows || []; }
   if (ui.view === 'admin') render();
 }
@@ -1868,6 +1913,19 @@ document.addEventListener('click', async e => {
   if (CLOUD.locked() && (LOCKED_WRITES.has(a) || (a === 'makePdf' && r && r.status !== 'complete'))) { lockedMsg(); return; }
   if (a === 'help') { if (ui.view !== 'help') { ui.helpFrom = ui.view; } ui.helpQ = ''; ui.view = 'help'; render(); return; }
   if (a === 'news') { if (ui.view !== 'news') ui.helpFrom = ui.view; ui.view = 'news'; render(); return; }
+  if (a === 'feedback') { ui.fbFrom = ui.view === 'help' ? (ui.helpFrom || 'help') : ui.view; if (ui.view !== 'help') ui.helpFrom = ui.view; ui.view = 'feedback'; render(); return; }
+  if (a === 'fbKind') { ui.fb = ui.fb || { kind: 'fault', text: '' }; ui.fb.kind = b.dataset.kind; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
+  if (a === 'fbSend') {
+    const F = ui.fb || { kind: 'fault', text: '' }, txt = (F.text || '').trim();
+    if (!txt) { toast('Type your message first'); return; }
+    if (!CLOUD.on || !CLOUD.signedIn()) { location.href = 'mailto:support@ombgas.com?subject=' + encodeURIComponent('OMB Gas ' + APP_VERSION + ' ' + F.kind) + '&body=' + encodeURIComponent(txt); return; }
+    const q = fbQueue(); q.push({ kind: F.kind, message: txt.slice(0, 4000), app_version: APP_VERSION, device: String(navigator.userAgent || '').slice(0, 200), screen: fbWhere() }); fbSave(q);
+    ui.fb = { kind: 'fault', text: '' };
+    const n = await fbFlush();
+    toast(n ? 'Sent. Thank you!' : 'Saved. It will send when you are online.');
+    ui.view = ui.helpFrom && ui.helpFrom !== 'help' && ui.helpFrom !== 'feedback' && (ui.helpFrom !== 'form' || ui.rec) ? ui.helpFrom : 'home'; render(); return;
+  }
+  if (a === 'adminFbStatus') { try { await CLOUD.rpc('admin_feedback_status', { target: b.dataset.id, val: b.dataset.v }); toast('Updated'); } catch (e) { toast('Could not update: ' + e.message); } adminLoad(); return; }
   if (a === 'newsDismiss') { nsSet(); render(); return; }
   if (a === 'helpBack') { ui.view = ui.helpFrom && ui.helpFrom !== 'help' && (ui.helpFrom !== 'form' || ui.rec) ? ui.helpFrom : 'home'; render(); return; }
   switch (a) {
@@ -2104,10 +2162,11 @@ document.addEventListener('click', async e => {
 });
 document.addEventListener('input', e => {
   const t = e.target;
-  if (CLOUD.locked() && ui.view !== 'settings' && t.id !== 'custSearch' && t.id !== 'helpSearch') { lockedMsg(); render(); return; }
+  if (CLOUD.locked() && ui.view !== 'settings' && t.id !== 'custSearch' && t.id !== 'helpSearch' && t.id !== 'fbText') { lockedMsg(); render(); return; }
   if (t.classList && t.classList.contains('dtx')) { dtxInput(t, e); return; }
   { const aw = t.closest && t.closest('.addrw'); if (aw) { addrInput(aw, t); return; } }
   if (t.dataset.s === 'sortCode') t.value = fmtSort(t.value);
+  if (t.id === 'fbText') { ui.fb = ui.fb || { kind: 'fault', text: '' }; ui.fb.text = t.value; return; }
   if (t.id === 'helpSearch') { ui.helpQ = t.value; const hl = document.getElementById('helpList'); if (hl) hl.innerHTML = helpListHtml(t.value); return; }
   if (t.id === 'custSearch') { ui.search = t.value; paintCustList(); return; }
   if (t.id === 'propSearch') { const el = document.getElementById('propList'); if (el) el.innerHTML = sugHtml(ui.rec, t.value); return; }
@@ -2162,7 +2221,7 @@ document.addEventListener('input', e => {
   if (t.dataset.c) { ui.cust[t.dataset.c] = t.value; }
 });
 document.addEventListener('change', async e => {
-  if (CLOUD.locked() && ui.view !== 'settings' && e.target.id !== 'custSearch' && e.target.id !== 'helpSearch') { lockedMsg(); render(); return; }
+  if (CLOUD.locked() && ui.view !== 'settings' && e.target.id !== 'custSearch' && e.target.id !== 'helpSearch' && e.target.id !== 'fbText') { lockedMsg(); render(); return; }
   const t = e.target;
   if (t.dataset.photo && t.files && t.files.length) {
     const r = ui.rec, path = t.dataset.photo, files = Array.from(t.files); t.value = '';
@@ -2460,3 +2519,4 @@ window.__app = { invoices: () => invoices, newInvoice, invTotals, buildInvPdf, u
 applyBrand();
 render();
 CLOUD.start();
+setTimeout(() => { fbFlush(); }, 6000);

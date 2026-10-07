@@ -107,7 +107,7 @@ const HELP = [
 <li><b>Confirmation email did not arrive:</b> check your junk or spam folder, then use the resend button on the sign-up screen.</li>
 <li><b>A button looks greyed out:</b> a required answer on that step is missing. Look for the highlighted box.</li>
 <li><b>Wrong details on a PDF:</b> fix them in Settings or the record, then tap <b>Re-create documents</b> on the last step.</li></ul>
-<p>If you are still stuck, contact the person who set up your account.</p>` }
+<p>Still stuck, or got an idea? Go to <b>Settings</b> and tap <b>Send feedback</b> (or use the button at the bottom of this guide). You can also email <b>support@ombgas.com</b>.</p>` }
 ];
 
 const helpMatch = (x, q) => !q || (x.t + ' ' + x.k + ' ' + x.h.replace(/<[^>]+>/g, ' ')).toLowerCase().includes(q);

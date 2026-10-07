@@ -334,6 +334,7 @@ const CLOUD = (() => {
     sub: () => sub,
     isAdmin: () => admin && !!session,
     rpc: (name, args) => req('/rest/v1/rpc/' + name, { method: 'POST', body: args || {} }),
+    insert: (table, row) => req('/rest/v1/' + table, { method: 'POST', headers: { Prefer: 'return=minimal' }, body: row }),
     signOut: async wipe => { await signOut(); if (wipe) wipeLocal(); gate(); }
   };
 })();

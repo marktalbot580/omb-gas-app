@@ -1,6 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
-  { v: 'v58', items: ['Help guide added. Tap the ? at the top of any screen, or find it in Settings.', 'This What’s new list.'] },
+  { v: 'v58', items: ['Help guide added. Tap the ? at the top of any screen, or find it in Settings.', 'This What’s new list.', 'Send feedback: report a fault, make a suggestion or ask a question from Settings or the Help guide.'] },
   { v: 'v57', items: ['The gas rate timer can now be started before any meter readings are entered.', 'Adding a line to an invoice no longer jumps to the bottom. You stay where you are and the new line is ready to type in.'] },
   { v: 'v56', items: ['You can now open and view an invoice PDF from a customer’s record and from the ready-to-send box, not just edit it.'] },
   { v: 'v55', items: ['Addresses no longer end up with double commas on invoices.', 'Every address now has its own postcode box.'] },
