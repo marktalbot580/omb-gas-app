@@ -527,7 +527,7 @@ function render() {
   if (ui.view !== 'home' && typeof instPopClose === 'function') instPopClose();   // the install pop-up must never cover the Next / Back buttons
   if (ui.view === 'form') { renderForm(v, nav); }
   else {
-    ({ home: renderHome, pick: renderPick, customers: renderCustomers, custEdit: renderCustEdit, settings: renderSettings, invoices: renderInvoices, invEdit: renderInvEdit, invPrint: renderInvPrint, admin: renderAdmin }[ui.view])(v);
+    ({ home: renderHome, pick: renderPick, customers: renderCustomers, custEdit: renderCustEdit, settings: renderSettings, invoices: renderInvoices, invEdit: renderInvEdit, invPrint: renderInvPrint, admin: renderAdmin, help: renderHelp }[ui.view])(v);
     renderTabs(nav);
   }
   paintSync();
@@ -544,7 +544,7 @@ const ICON = {
 function renderTabs(nav) {
   nav.className = 'tabs';
   const t = (id, label, ic, on) => `<button data-nav="${id}" class="${on ? 'on' : ''}">${ic}${label}</button>`;
-  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'admin');
+  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'admin' || ui.view === 'help');
   $('#barSub').textContent = ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' ? 'Invoices' : 'Gas & Legionella records';
 }
 
@@ -698,7 +698,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v57';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v58';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -764,10 +764,18 @@ function instPopShow() {
   window.addEventListener('beforeinstallprompt', () => setTimeout(() => { if (document.getElementById('instPop')) instPopShow(); else { _instTries = 0; tick(); } }, 400));
   window.addEventListener('appinstalled', instPopClose);
 })();
+function renderHelp(v) {
+  v.innerHTML = `
+    <h1>Help guide</h1>
+    <input class="search" id="helpSearch" placeholder="Search help, e.g. invoice, backup, timer" value="${esc(ui.helpQ || '')}" autocomplete="off">
+    <div id="helpList">${helpListHtml(ui.helpQ)}</div>
+    <button class="btn block ghost" data-act="helpBack">Back</button>`;
+}
 function renderSettings(v) {
   const f = (k, l, o = {}) => `<label class="f"><span>${l}</span>${o.area ? `<textarea data-s="${k}" rows="3">${esc(settings[k])}</textarea>` : `<input data-s="${k}" value="${esc(k === 'sortCode' ? fmtSort(settings[k]) : settings[k])}" ${o.type ? `type="${o.type}"` : ''} ${o.mode ? `inputmode="${o.mode}"` : ''} autocomplete="off" ${o.maxlen ? `maxlength="${o.maxlen}"` : ''} ${o.cap ? `autocapitalize="${o.cap}"` : ''}>`}${o.hint ? `<small>${o.hint}</small>` : ''}</label>`;
   v.innerHTML = `
     <h1>Settings</h1>
+    <button class="btn block" data-act="help" style="margin-bottom:12px">Help guide</button>
     <h2>App version</h2>
     <div class="card">
       <p class="small muted" style="margin-top:0">This phone is running <b id="verHere" style="color:var(--txt)">${APP_VERSION}</b> · newest online: <b id="verNew" style="color:var(--txt)">checking…</b></p>
@@ -1843,6 +1851,8 @@ document.addEventListener('click', async e => {
   const b = e.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act, r = ui.rec;
   if (CLOUD.locked() && (LOCKED_WRITES.has(a) || (a === 'makePdf' && r && r.status !== 'complete'))) { lockedMsg(); return; }
+  if (a === 'help') { if (ui.view !== 'help') { ui.helpFrom = ui.view; } ui.helpQ = ''; ui.view = 'help'; render(); return; }
+  if (a === 'helpBack') { ui.view = ui.helpFrom && ui.helpFrom !== 'help' && (ui.helpFrom !== 'form' || ui.rec) ? ui.helpFrom : 'home'; render(); return; }
   switch (a) {
     case 'newRec': ui.pick = { types: { [b.dataset.type]: true }, customer: null }; ui.view = 'pick'; render(); break;
     case 'pickToggle': ui.pick.types[b.dataset.t] = !ui.pick.types[b.dataset.t]; render(); break;
@@ -2077,10 +2087,11 @@ document.addEventListener('click', async e => {
 });
 document.addEventListener('input', e => {
   const t = e.target;
-  if (CLOUD.locked() && ui.view !== 'settings' && t.id !== 'custSearch') { lockedMsg(); render(); return; }
+  if (CLOUD.locked() && ui.view !== 'settings' && t.id !== 'custSearch' && t.id !== 'helpSearch') { lockedMsg(); render(); return; }
   if (t.classList && t.classList.contains('dtx')) { dtxInput(t, e); return; }
   { const aw = t.closest && t.closest('.addrw'); if (aw) { addrInput(aw, t); return; } }
   if (t.dataset.s === 'sortCode') t.value = fmtSort(t.value);
+  if (t.id === 'helpSearch') { ui.helpQ = t.value; const hl = document.getElementById('helpList'); if (hl) hl.innerHTML = helpListHtml(t.value); return; }
   if (t.id === 'custSearch') { ui.search = t.value; paintCustList(); return; }
   if (t.id === 'propSearch') { const el = document.getElementById('propList'); if (el) el.innerHTML = sugHtml(ui.rec, t.value); return; }
   if (t.dataset.tm) {
@@ -2134,7 +2145,7 @@ document.addEventListener('input', e => {
   if (t.dataset.c) { ui.cust[t.dataset.c] = t.value; }
 });
 document.addEventListener('change', async e => {
-  if (CLOUD.locked() && ui.view !== 'settings' && e.target.id !== 'custSearch') { lockedMsg(); render(); return; }
+  if (CLOUD.locked() && ui.view !== 'settings' && e.target.id !== 'custSearch' && e.target.id !== 'helpSearch') { lockedMsg(); render(); return; }
   const t = e.target;
   if (t.dataset.photo && t.files && t.files.length) {
     const r = ui.rec, path = t.dataset.photo, files = Array.from(t.files); t.value = '';
