@@ -266,7 +266,7 @@ async function tlMakeReport() {
   toast('Creating PDF…');
   try {
     const blob = await buildToolsPdf(secs, TL.prop, settings), nm = (TL.prop.name || 'Calculations').replace(/[^\w ]+/g, '').trim() || 'Calculations';
-    ui.toolPdf = { blob, name: `Calculation report - ${nm} ${todayISO()}.pdf` }; tlRepaint(); toast('Report ready');
+    ui.toolPdf = { blob, name: `Calculation report - ${nm} ${todayISO()}.pdf` }; tlRepaint(); toast('Report ready: tap Open report');
   } catch (e) { console.error(e); toast('Could not create the PDF: ' + e.message); }
 }
 async function tlSharePdf(p) {
@@ -300,6 +300,28 @@ document.addEventListener('click', async e => {
   catch (err) { console.error(err); toast('Could not create the PDF: ' + err.message); }
 });
 
+
+/* customer and property pickers for the report */
+const tlHit = (q, hay) => { const t = String(q || '').toLowerCase().split(/\s+/).filter(Boolean); const h = hay.toLowerCase().replace(/\s+/g, ' '); return t.length && t.every(x => h.includes(x)); };
+function tlCustSug(q) {
+  if (!String(q || '').trim()) return '';
+  const l = customers.filter(c => tlHit(q, [c.name, c.phone, c.email, c.billing, (c.properties || []).join(' ')].join(' '))).slice(0, 6);
+  return l.length ? l.map(c => `<button type="button" class="item" style="display:block;width:100%;text-align:left;margin-top:6px" data-tl="pickCust" data-v="${c.id}"><div class="t">${esc(c.name)}</div><div class="s">${esc([c.phone, addrFirst((c.properties || [])[0] || '')].filter(Boolean).join(' · ') || 'No details')}</div></button>`).join('') : '';
+}
+function tlAddrSug(q) {
+  if (!String(q || '').trim() || TL.prop.cid) return '';
+  const l = []; customers.forEach(c => (c.properties || []).forEach((p, i) => { if (tlHit(q, p)) l.push({ c, p, i }); }));
+  return l.slice(0, 6).map(x => `<button type="button" class="item" style="display:block;width:100%;text-align:left;margin-top:6px" data-tl="pickProp" data-v="${x.c.id}|${x.i}"><div class="t">${esc(addrLine(x.p))}</div><div class="s">${esc(x.c.name)}</div></button>`).join('');
+}
+function tlAddrBox() {
+  const c = customers.find(x => x.id === TL.prop.cid), ps = c ? (c.properties || []).filter(Boolean) : [];
+  const typed = !ps.length || TL.prop.other || (TL.prop.addr && !ps.includes(TL.prop.addr));
+  return `<div class="f"><span>Property address${ps.length ? '' : ' (type to search your customers’ properties)'}</span>
+    ${ps.length ? `<select data-tl-sel-prop="1">${ps.map(p => `<option value="${esc(p)}" ${p === TL.prop.addr && !typed ? 'selected' : ''}>${esc(addrLine(p))}</option>`).join('')}<option value="__other__" ${typed ? 'selected' : ''}>Another address (type it)</option></select>` : ''}
+    ${typed ? `<textarea data-tl-in="prop.addr" rows="2" autocomplete="off" ${ps.length ? 'style="margin-top:8px"' : ''}>${esc(TL.prop.addr)}</textarea>` : ''}
+    <div id="tlAddrSug">${typed && !ps.length ? tlAddrSug(TL.prop.addr) : ''}</div></div>`;
+}
+
 /* ---------- screens ---------- */
 function renderTools(v) {
   const t = ui.tool || 'menu';
@@ -321,11 +343,10 @@ function renderTools(v) {
       ${list.map(x => `<div class="item crow" style="padding:0;margin-bottom:10px"><button type="button" class="btn gold grow" style="flex:1" data-tl="go" data-v="${x.k}">${x.l}</button><button type="button" class="heart ${x.f ? 'on' : ''}" data-tl="favTool" data-v="${x.k}" aria-label="${x.f ? 'Unpin' : 'Pin to the top'}">${x.f ? '♥' : '♡'}</button></div>`).join('')}
  <h2>Report</h2>
       <div class="card">
-        ${(() => { const c = customers.find(x => x.id === TL.prop.cid), ps = c ? (c.properties || []).filter(Boolean) : []; return ps.length > 1 ? `<div class="f"><span>Which property?</span><select data-tl-sel-prop="1">${ps.map(p => `<option ${p === TL.prop.addr ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></div>` : ''; })()}
-        <div class="f"><span>Customer</span><input data-tl-in="prop.name" type="text" value="${esc(TL.prop.name)}" list="tlCust" autocomplete="off"><datalist id="tlCust">${customers.map(c => `<option value="${esc(c.name)}">`).join('')}</datalist></div>
-        <div class="f"><span>Property address</span><textarea data-tl-in="prop.addr" rows="2" autocomplete="off">${esc(TL.prop.addr)}</textarea></div>
+        <div class="f"><span>Customer (type to search)</span><input data-tl-in="prop.name" type="text" value="${esc(TL.prop.name)}" placeholder="Name, phone or address" autocomplete="off"><div id="tlCustSug">${tlCustSug(TL.prop.cid ? '' : TL.prop.name)}</div></div>
+        ${tlAddrBox()}
         <button type="button" class="btn gold block" data-tl="mkPdf">Create PDF report</button>
-        ${ui.toolPdf ? `<div style="height:8px"></div><button type="button" class="btn block" data-tl="shPdf">Share or save: ${esc(ui.toolPdf.name)}</button>` : ''}
+        ${ui.toolPdf ? `<div style="height:8px"></div><button type="button" class="btn gold block" data-tl="opPdf">Open report</button><div style="height:8px"></div><button type="button" class="btn block" data-tl="shPdf">Share or save</button>` : ''}
         ${TL.prop.cid ? `<div style="height:8px"></div><button type="button" class="btn block" data-tl="svRep">Save these results on ${esc(TL.prop.name)}'s card</button>` : ''}
         <div style="height:8px"></div><button type="button" class="btn ghost block" data-tl="newProp">Start a new property (clear everything)</button>
         <small class="muted">The report includes every calculator you have filled in.</small>
@@ -358,8 +379,11 @@ document.addEventListener('click', e => {
   else if (a === 'favTool') { const f = tlFav(); if (f[v]) delete f[v]; else f[v] = 1; try { localStorage.setItem('omb_toolfav', JSON.stringify(f)); } catch (e) { } tlRepaint(); }
   else if (a === 'addRun') { TL.iv.runs.push({ pipe: 'cu22', len: '', v: '' }); tlSave(); tlRepaint(); }
   else if (a === 'rmRun') { TL.iv.runs.splice(+v, 1); tlSave(); tlRepaint(); }
+  else if (a === 'pickCust') { const c = customers.find(x => x.id === v); if (c) { TL.prop.cid = c.id; TL.prop.name = c.name || ''; TL.prop.phone = c.phone || ''; TL.prop.email = c.email || ''; const ps = (c.properties || []).filter(Boolean); TL.prop.addr = ps[0] || c.billing || ''; TL.prop.other = false; tlSave(); tlRepaint(); } }
+  else if (a === 'pickProp') { const [id, ix] = v.split('|'), c = customers.find(x => x.id === id); if (c) { TL.prop.cid = c.id; TL.prop.name = c.name || ''; TL.prop.phone = c.phone || ''; TL.prop.email = c.email || ''; TL.prop.addr = (c.properties || [])[+ix] || ''; TL.prop.other = false; tlSave(); tlRepaint(); } }
   else if (a === 'backCust') { ui.view = 'custEdit'; render(); window.scrollTo(0, 0); }
   else if (a === 'mkPdf') tlMakeReport();
+  else if (a === 'opPdf') { if (ui.toolPdf) { const w = window.open(URL.createObjectURL(ui.toolPdf.blob), '_blank'); if (!w) toast('Tap Open report again, or use Share or save'); } }
   else if (a === 'shPdf') tlSharePdf();
   else if (a === 'svRep') tlSaveReport();
   else if (a === 'newProp') { if (!confirm('Clear all the calculators and the customer details?')) return; const k = TL.prop.same; TL = TL_DEFAULT(); TL.prop.same = k; tlSave(); ui.toolPdf = null; try { delete ui.calc['tool-gas']; } catch (e) { } tlRepaint(); toast('Cleared'); }
@@ -374,7 +398,9 @@ document.addEventListener('click', e => {
 document.addEventListener('input', e => {
   const t = e.target, p = t.dataset && t.dataset.tlIn; if (!p || ui.view !== 'tools') return;
   tlSet(p, t.value); if (p === 'pipe.kw') delete TL.note.pipe;
-  if (p === 'prop.name') { const c = customers.find(x => x.name === t.value); TL.prop.cid = c ? c.id : ''; TL.prop.phone = c ? c.phone || '' : ''; TL.prop.email = c ? c.email || '' : ''; tlSave(); }
+  if (p === 'prop.name') { const c = customers.find(x => x.name === t.value); TL.prop.cid = c ? c.id : ''; if (c && !TL.prop.addr) TL.prop.addr = (c.properties || [])[0] || ''; TL.prop.phone = c ? c.phone || '' : ''; TL.prop.email = c ? c.email || '' : ''; tlSave(); }
+  if (p === 'prop.name') { const el = document.getElementById('tlCustSug'); if (el) el.innerHTML = tlCustSug(TL.prop.cid ? '' : t.value); }
+  if (p === 'prop.addr') { const el = document.getElementById('tlAddrSug'); if (el) el.innerHTML = tlAddrSug(t.value); }
   if (p.startsWith('prop.')) return;
   if (p.startsWith('pipe.')) { const el = document.getElementById('tlPipeRes'); if (el) el.innerHTML = pipeResHtml(); }
   else if (p.startsWith('iv.')) { const el = document.getElementById('tlIvRes'); if (el) el.innerHTML = ivResHtml(); }
@@ -386,7 +412,7 @@ document.addEventListener('input', e => {
   }
 });
 document.addEventListener('change', e => {
-  if (e.target.dataset && e.target.dataset.tlSelProp && ui.view === 'tools') { TL.prop.addr = e.target.value; tlSave(); tlRepaint(); return; }
+  if (e.target.dataset && e.target.dataset.tlSelProp && ui.view === 'tools') { if (e.target.value === '__other__') { TL.prop.other = true; TL.prop.addr = ''; } else { TL.prop.other = false; TL.prop.addr = e.target.value; } tlSave(); tlRepaint(); return; }
   const ck = e.target.dataset && e.target.dataset.tlChk; if (ck && ui.view === 'tools') { tlSet(ck, e.target.checked); tlRepaint(); return; }
   const t = e.target, p = t.dataset && t.dataset.tlSel; if (!p || ui.view !== 'tools') return;
   const m = p.match(/^heat\.rooms\.(\d+)\.type$/);
