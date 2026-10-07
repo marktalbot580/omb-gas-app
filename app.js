@@ -401,7 +401,7 @@ function calcResHtml(id) {
   const gr = g ? (Math.round(g.gross * 10) / 10).toFixed(1) : '', nt = g ? (Math.round(g.net * 10) / 10).toFixed(1) : '';
   const rowv = (label, val, unit) => `<div class="row" style="margin:0 0 8px"><span class="grow">${label}</span><b style="min-width:84px;text-align:right">${val || '–'}</b><span class="muted" style="min-width:52px">${unit}</span></div>`;
   const msg = g ? '' : (v !== null && v <= 0 ? '<div style="color:var(--warn);margin-bottom:8px">The second reading must be higher than the first.</div>' : '');
-  return msg + rowv('Gas rate', g ? g.m3h.toFixed(3) : '', 'm³/hr') + rowv('H.I. gross', gr, 'kW') + rowv('H.I. net', nt, 'kW') + (g ? `
+  return msg + rowv('Gas rate', g ? g.m3h.toFixed(3) : '', 'm³/hr') + rowv('H.I. gross', gr, 'kW') + rowv('H.I. net', nt, 'kW') + (g && !s.target ? `<p class="small muted" style="margin:8px 0 0">Compare the net figure with the net heat input on the data plate.</p>` : '') + (g && s.target ? `
     <div class="row" style="margin-top:12px"><button type="button" class="btn gold grow" data-act="calcUse" data-id="${id}" data-path="${esc(s.target)}" data-val="${nt}">Use ${nt} kW (net)</button>
     <button type="button" class="btn grow" data-act="calcUse" data-id="${id}" data-path="${esc(s.target)}" data-val="${gr}">Use ${gr} (gross)</button></div>
     <p class="small muted" style="margin:8px 0 0">Compare the net figure with the net heat input on the data plate.</p>` : '');
@@ -529,7 +529,7 @@ function render() {
   if (ui.view !== 'home' && typeof instPopClose === 'function') instPopClose();   // the install pop-up must never cover the Next / Back buttons
   if (ui.view === 'form') { renderForm(v, nav); }
   else {
-    ({ home: renderHome, pick: renderPick, customers: renderCustomers, custEdit: renderCustEdit, settings: renderSettings, invoices: renderInvoices, invEdit: renderInvEdit, invPrint: renderInvPrint, admin: renderAdmin, help: renderHelp, news: renderNews, feedback: renderFeedback, due: renderDue }[ui.view])(v);
+    ({ home: renderHome, pick: renderPick, customers: renderCustomers, custEdit: renderCustEdit, settings: renderSettings, invoices: renderInvoices, invEdit: renderInvEdit, invPrint: renderInvPrint, admin: renderAdmin, help: renderHelp, news: renderNews, feedback: renderFeedback, due: renderDue, tools: renderTools }[ui.view])(v);
     renderTabs(nav);
   }
   paintSync();
@@ -546,7 +546,7 @@ const ICON = {
 function renderTabs(nav) {
   nav.className = 'tabs';
   const t = (id, label, ic, on) => `<button data-nav="${id}" class="${on ? 'on' : ''}">${ic}${label}</button>`;
-  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick' || ui.view === 'due') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'admin' || ui.view === 'help' || ui.view === 'news' || ui.view === 'feedback');
+  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick' || ui.view === 'due' || ui.view === 'tools') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'admin' || ui.view === 'help' || ui.view === 'news' || ui.view === 'feedback');
   $('#barSub').textContent = ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' ? 'Invoices' : 'Gas & Legionella records';
 }
 
@@ -601,6 +601,7 @@ function renderHome(v) {
     <button class="btn gold block" data-act="newRec" data-type="aircon">+ New air conditioning commissioning</button>
     <div style="height:10px"></div>
     ${remHomeBtn()}
+    ${toolsHomeBtn()}
     <h2>Recent</h2>
     ${list.length ? list.slice(0, 5).map(r => `${r.status === 'draft' ? '<div class="itemw">' : ''}
       <button class="item" data-act="openRec" data-id="${r.id}">
@@ -633,7 +634,7 @@ function renderPick(v) {
 function renderCustomers(v) {
   v.innerHTML = `
     <h1>Customers</h1>
-    <input class="search" id="custSearch" placeholder="Search name, phone, email or any address" value="${esc(ui.search)}">
+    <input class="search" id="custSearch" placeholder="Search name, phone, address, invoice or cert no." value="${esc(ui.search)}">
     <div class="seg custsort" style="margin-bottom:12px">${[['az', 'A–Z'], ['used', 'Most used'], ['fav', '♥ Favourites']].map(([k, l]) => `<button type="button" data-act="custSort" data-s="${k}" class="${custSort() === k ? 'on' : ''}">${l}</button>`).join('')}</div>
     <div id="custList"></div>
     <button class="btn gold fab" data-act="newCust">+ Customer</button>`;
@@ -650,12 +651,18 @@ function paintCustList() {
   /* search covers name, phone (with or without spaces), email, billing address, saved property addresses AND the address of every job done for them */
   const toks = q.split(/\s+/).filter(Boolean), digits = t => t.replace(/\D/g, '');
   const addrsOf = c => { const out = new Set(c.properties || []); records.forEach(r => { if (r.jobAddress && (r.customerId === c.id || (!r.customerId && String(r.customer.name || '').trim().toLowerCase() === String(c.name || '').trim().toLowerCase()))) out.add(r.jobAddress); }); return [...out].filter(Boolean); };
+  /* reference numbers: certificate / record refs of this customer's jobs and their invoice numbers */
+  const sameCust = (x, c) => x.customerId === c.id || (!x.customerId && String((x.customer || {}).name || '').trim().toLowerCase() === String(c.name || '').trim().toLowerCase() && String(c.name || '').trim());
+  const refsOf = c => records.filter(r => sameCust(r, c)).map(r => ({ t: (r.ref || ''), l: FORM_SHORT[typeOf(r)] + ' ' + (r.ref || '') }))
+    .concat(invoices.filter(i => sameCust(i, c)).map(i => ({ t: (i.number || ''), l: 'Invoice ' + (i.number || '') }))).filter(x => x.t);
+  const refHit = {};
   const hit = {};
   const matches = c => {
     if (!toks.length) return true;
     const addrs = addrsOf(c), base = [c.name, c.phone, c.email, c.billing].join(' ').toLowerCase(), ph = digits(String(c.phone || ''));
-    const adr = addrs.join(' ').toLowerCase().replace(/\s+/g, ' ');
-    const ok = toks.every(t => base.includes(t) || adr.includes(t) || (digits(t).length >= 3 && digits(t) === t.replace(/[\s-]/g, '') && ph.includes(digits(t))));
+    const adr = addrs.join(' ').toLowerCase().replace(/\s+/g, ' '), refs = refsOf(c), refTxt = refs.map(x => x.t.toLowerCase()).join(' ');
+    const ok = toks.every(t => base.includes(t) || adr.includes(t) || refTxt.includes(t) || (digits(t).length >= 3 && digits(t) === t.replace(/[\s-]/g, '') && ph.includes(digits(t))));
+    if (ok) { const rh = refs.filter(x => toks.some(t => x.t.toLowerCase().includes(t))); if (rh.length && !toks.every(t => base.includes(t) || adr.includes(t))) refHit[c.id] = rh.slice(0, 3).map(x => x.l).join(', ') + (rh.length > 3 ? ' +' + (rh.length - 3) + ' more' : ''); }
     if (ok) { const a = addrs.find(x => toks.some(t => x.toLowerCase().replace(/\s+/g, ' ').includes(t))); if (a && !toks.every(t => base.includes(t))) hit[c.id] = a; }
     return ok;
   };
@@ -667,6 +674,7 @@ function paintCustList() {
         <div class="t">${esc(c.name)}</div>
         <div class="s">${esc([c.phone, c.email].filter(Boolean).join(' · ') || 'No contact details')}${mode === 'used' ? ` · ${uses[c.id]} form${uses[c.id] === 1 ? '' : 's'}` : ''}</div>
         ${hit[c.id] ? `<div class="s" style="color:var(--gold2)">&#128205; ${esc(addrLine(hit[c.id]))}</div>` : ''}
+        ${refHit[c.id] ? `<div class="s" style="color:var(--gold2)">&#128196; ${esc(refHit[c.id])}</div>` : ''}
       </button>
       ${String(c.phone || '').replace(/\D/g, '').length >= 5 ? `<a class="callb" href="${telHref(c.phone)}" aria-label="Call ${esc(c.name)}">&#128222;</a>` : ''}
       <button type="button" class="heart ${c.fav ? 'on' : ''}" data-act="favCust" data-id="${c.id}" aria-label="${c.fav ? 'Remove from favourites' : 'Add to favourites'}">${c.fav ? '♥' : '♡'}</button>
@@ -704,7 +712,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v65';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v66';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {

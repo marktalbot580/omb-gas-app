@@ -216,3 +216,7 @@ details.hlp[open] summary::after{content:'–'}
 .hlpb p{margin:0 0 10px}.hlpb ol,.hlpb ul{margin:0 0 10px;padding-left:22px}.hlpb li{margin-bottom:6px}
 
 .remc{margin-bottom:12px}.remc .s{margin-top:2px}.remways{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.remways .btn{flex:1 1 auto;min-width:0;text-align:center;text-decoration:none;padding:10px 12px;font-size:14px}
+
+.tlrow{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;background:var(--card2)}
+.tlrow.ok{border-color:var(--ok)}.tlrow.no{opacity:.7}.tlrow.best{box-shadow:0 0 0 2px var(--ok)}
+.tlroom select{width:100%}
