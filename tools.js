@@ -3,9 +3,10 @@
 const TL_KEY = 'omb_tools';
 const TL_DEFAULT = () => ({
   pipe: { kw: '24', basis: 'net', len: '6', dp: '1', f: { b90: '2', e90: '0', b45: '0', tin: '0', tout: '0' } },
+  iv: { gas: 'ng', meter: 'u6', mvol: '', runs: [{ pipe: 'cu15', len: '', v: '' }] },
   heat: { outside: '-3', sys: 'cond', flow: '70', ret: '50', room: '', factor: '1.5', rooms: [] }
 });
-let TL = (() => { try { const o = JSON.parse(localStorage.getItem(TL_KEY)); if (o && o.pipe && o.heat) return o; } catch (e) { } return TL_DEFAULT(); })();
+let TL = (() => { try { const o = JSON.parse(localStorage.getItem(TL_KEY)); if (o && o.pipe && o.heat) { if (!o.iv) o.iv = TL_DEFAULT().iv; return o; } } catch (e) { } return TL_DEFAULT(); })();
 const tlUse = () => { try { return JSON.parse(localStorage.getItem('omb_tooluse')) || {}; } catch (e) { return {}; } };
 const tlCount = k => { try { const u = tlUse(); u[k] = (u[k] || 0) + 1; localStorage.setItem('omb_tooluse', JSON.stringify(u)); } catch (e) { } };
 const tlFav = () => { try { return JSON.parse(localStorage.getItem('omb_toolfav')) || {}; } catch (e) { return {}; } };
@@ -75,6 +76,58 @@ function pipeView() {
     </div>
     <h2>Result</h2><div class="card" id="tlPipeRes">${pipeResHtml()}</div>
     <p class="small muted">A guide only. It is calibrated to the published BS 6891 15 mm copper figures. Always check the final size against BS 6891 / IGEM/UP/2 and the appliance maker's instructions. The 35 mm fitting lengths are estimated.</p>`;
+}
+
+
+/* ---------- tightness test: installation volume (IGEM/UP/1B Edition 4, mandatory from 1 October 2026) ----------
+   IV = meter + pipework + 10% for fittings. The permissible drop now depends on IV and the gas, not the meter size. */
+const IVPIPES = [['cu15', 'Copper 15 mm', 0.00014], ['cu22', 'Copper 22 mm', 0.00032], ['cu28', 'Copper 28 mm', 0.00054], ['cu35', 'Copper 35 mm', 0.00084],
+  ['st15', 'Steel ½" (15 mm)', 0.00024], ['st20', 'Steel ¾" (20 mm)', 0.00046], ['st25', 'Steel 1" (25 mm)', 0.00064], ['st32', 'Steel 1¼" (32 mm)', 0.0011],
+  ['x', 'Other (enter m³ per metre)', null]];
+const IVMETERS = [['u6', 'U6 / G4 diaphragm', 0.008], ['e6', 'E6 smart meter', 0.0024], ['u16', 'U16 diaphragm', 0.025], ['none', 'No meter (LPG cylinders)', 0], ['x', 'Other (enter m³)', null]];
+const IVBANDS = {
+  ng: [[0.005, '8 mbar'], [0.010, '4 mbar'], [0.015, '2.5 mbar'], [0.035, '1 mbar']],
+  lpg: [[0.0025, '2 mbar'], [0.005, '1 mbar'], [0.010, '0.5 mbar'], [0.035, 'No perceptible movement']],
+  lpgair: [[0.025, '1.5 mbar'], [0.035, '0.5 mbar']]
+};
+const IVGAS = { ng: 'Natural gas', lpg: 'LPG', lpgair: 'LPG/Air' };
+function ivCalc() {
+  const v = TL.iv, m = IVMETERS.find(x => x[0] === v.meter), mv = m[2] === null ? tlNum(v.mvol) : m[2];
+  let pipe = 0, len = 0, any = false;
+  v.runs.forEach(r => { const p = IVPIPES.find(x => x[0] === r.pipe), per = p[2] === null ? tlNum(r.v) : p[2], l = tlNum(r.len); if (l > 0 && per > 0) { pipe += per * l; len += l; any = true; } });
+  if (mv === null || (!any && !(mv > 0))) return null;
+  const fit = pipe * 0.1, iv = mv + pipe + fit, band = IVBANDS[v.gas].find(b => iv <= b[0] + 1e-12);
+  return { mv, pipe, fit, iv, len, drop: band ? band[1] : null, pv: iv * 1.5 };
+}
+function ivResHtml() {
+  const c = ivCalc(); if (!c) return '<p class="muted">Add the meter and at least one pipe run.</p>';
+  const g = TL.iv.gas, f = n => tlFmt(n, 4) + ' m³';
+  const rows = (a, b) => `<div class="row sp"><span>${a}</span><span>${b}</span></div>`;
+  return rows('Meter', f(c.mv)) + rows('Pipework (' + tlFmt(c.len, 1) + ' m)', f(c.pipe)) + rows('Fittings allowance (10%)', f(c.fit))
+    + `<div class="row sp" style="margin-top:6px"><b>Installation volume (IV)</b><b>${f(c.iv)} (${tlFmt(c.iv * 1000, 1)} litres)</b></div>
+    <hr style="border:0;border-top:1px solid var(--line);margin:10px 0">`
+    + (c.drop ? `<div class="tlrow ok"><div class="row sp"><span>Most the pressure may drop in 2 minutes</span><b>${esc(c.drop)}</b></div><div class="small muted">${IVGAS[g]}, IV ${tlFmt(c.iv, 4)} m³. Existing installation with appliances connected and no smell of gas.</div></div>`
+      : `<div class="tlrow no"><b>IV is over 0.035 m³.</b><div class="small">This is outside the scope of IGEM/UP/1B. Check the standard for the right procedure.</div></div>`)
+    + rows('Purge volume (1.5 × IV)', f(c.pv))
+    + `<div class="small muted" style="margin-top:8px">Test pressure: ${g === 'ng' ? '20 to 21 mbar' : g === 'lpg' ? '37 mbar' : 'see the standard'}. Let 1 minute settle, then test for 2 minutes.
+      New pipework, or pipework with no appliances connected: no pressure drop allowed. Any movement you can see (0.25 mbar, or 0.2 mbar on a gauge that reads to one decimal place) within the permissible drop means isolate every appliance and retest the pipework alone with no drop allowed.</div>`;
+}
+function ivView() {
+  const v = TL.iv, opt = (list, cur) => list.map(x => `<option value="${x[0]}" ${cur === x[0] ? 'selected' : ''}>${esc(x[1])}</option>`).join('');
+  return `<h1>Tightness test volume</h1>
+    <p class="small muted" style="margin-top:0">Works out the installation volume (IV) and the pressure drop you are allowed under the new IGEM/UP/1B Edition 4, in force from 1 October 2026.</p>
+    <div class="card">
+      <div class="f"><span>Gas</span><select data-tl-sel="iv.gas">${Object.keys(IVGAS).map(k => `<option value="${k}" ${v.gas === k ? 'selected' : ''}>${IVGAS[k]}</option>`).join('')}</select></div>
+      <div class="f"><span>Meter</span><select data-tl-sel="iv.meter">${opt(IVMETERS, v.meter)}</select></div>
+      ${v.meter === 'x' ? `<div class="f"><span>Meter volume (m³), from the meter's data</span><input data-tl-in="iv.mvol" type="text" inputmode="decimal" value="${esc(v.mvol)}" autocomplete="off"></div>` : ''}
+    </div>
+    <h2>Pipework</h2>
+    ${v.runs.map((r, i) => `<div class="card"><div class="row sp"><div class="grow f" style="margin:0"><span>Pipe</span><select data-tl-sel="iv.runs.${i}.pipe">${opt(IVPIPES, r.pipe)}</select></div>${v.runs.length > 1 ? `<button type="button" class="btn ghost" style="margin-left:8px" data-tl="rmRun" data-v="${i}">Remove</button>` : ''}</div>
+      <div class="row"><div class="grow f"><span>Length (m)</span><input data-tl-in="iv.runs.${i}.len" type="text" inputmode="decimal" value="${esc(r.len)}" placeholder="e.g. 6" autocomplete="off"></div>
+      ${r.pipe === 'x' ? `<div class="grow f"><span>m³ per metre</span><input data-tl-in="iv.runs.${i}.v" type="text" inputmode="decimal" value="${esc(r.v)}" autocomplete="off"></div>` : ''}</div></div>`).join('')}
+    <button type="button" class="btn gold block" data-tl="addRun">+ Add another pipe run</button>
+    <h2>Result</h2><div class="card" id="tlIvRes">${ivResHtml()}</div>
+    <p class="small muted">Pipe volumes are worked out from the pipe's internal bore with 10% added for fittings, and the meter volumes are common values. For a meter or flexible pipe not listed, use the manufacturer's figure. A guide only: check against the IGEM/UP/1B Edition 4 tables, which are the rules.</p>`;
 }
 
 /* ---------- heat loss ---------- */
@@ -165,11 +218,13 @@ function renderTools(v) {
       <div style="height:10px"></div><button class="btn ghost block" data-tl="go" data-v="menu">Back to tools</button>`;
   } else if (t === 'pipe') {
     v.innerHTML = pipeView() + '<div style="height:10px"></div><button class="btn ghost block" data-tl="go" data-v="menu">Back to tools</button>';
+  } else if (t === 'iv') {
+    v.innerHTML = ivView() + '<div style="height:10px"></div><button class="btn ghost block" data-tl="go" data-v="menu">Back to tools</button>';
   } else if (t === 'heat') {
     if (!TL.heat.rooms.length) { TL.heat.rooms.push(newRoom()); tlSave(); }
     v.innerHTML = heatView() + '<div style="height:10px"></div><button class="btn ghost block" data-tl="go" data-v="menu">Back to tools</button>';
   } else {
-    const use = tlUse(), fav = tlFav(), list = [['gas', 'Gas rate calculator'], ['pipe', 'Gas pipe sizing'], ['heat', 'Heat loss and radiator sizing']]
+    const use = tlUse(), fav = tlFav(), list = [['gas', 'Gas rate calculator'], ['pipe', 'Gas pipe sizing'], ['iv', 'Tightness test volume (new regs)'], ['heat', 'Heat loss and radiator sizing']]
       .filter(x => toolOn(x[0])).map((x, i) => ({ k: x[0], l: x[1], n: use[x[0]] || 0, f: !!fav[x[0]], i })).sort((a, b) => (b.f ? 1 : 0) - (a.f ? 1 : 0) || b.n - a.n || a.i - b.i);
     v.innerHTML = `<h1>Tools</h1><p class="small muted" style="margin-top:0">Quick calculators for the van. None of these makes a certificate. Tap the heart to pin one to the top. After that, the ones you use most come first.</p>
       ${list.map(x => `<div class="item crow" style="padding:0;margin-bottom:10px"><button type="button" class="btn gold grow" style="flex:1" data-tl="go" data-v="${x.k}">${x.l}</button><button type="button" class="heart ${x.f ? 'on' : ''}" data-tl="favTool" data-v="${x.k}" aria-label="${x.f ? 'Unpin' : 'Pin to the top'}">${x.f ? '♥' : '♡'}</button></div>`).join('')}
@@ -177,7 +232,7 @@ function renderTools(v) {
   }
 }
 const toolOn = k => settings['tool' + k[0].toUpperCase() + k.slice(1)] !== 'off';
-const toolsHomeBtn = () => !['gas', 'pipe', 'heat'].some(toolOn) ? '' : `<button class="btn block" data-act="toolsOpen">Tools: gas rate, pipe sizing, heat loss</button><div style="height:10px"></div>`;
+const toolsHomeBtn = () => !['gas', 'pipe', 'iv', 'heat'].some(toolOn) ? '' : `<button class="btn block" data-act="toolsOpen">Tools: gas rate, pipe sizing, heat loss</button><div style="height:10px"></div>`;
 
 /* ---------- events (kept separate from the main app handlers) ---------- */
 function tlSet(path, val) {
@@ -189,6 +244,8 @@ document.addEventListener('click', e => {
   const a = b.dataset.tl, v = b.dataset.v;
   if (a === 'go') { if (v !== 'menu') tlCount(v); ui.tool = v; render(); window.scrollTo(0, 0); }
   else if (a === 'favTool') { const f = tlFav(); if (f[v]) delete f[v]; else f[v] = 1; try { localStorage.setItem('omb_toolfav', JSON.stringify(f)); } catch (e) { } tlRepaint(); }
+  else if (a === 'addRun') { TL.iv.runs.push({ pipe: 'cu22', len: '', v: '' }); tlSave(); tlRepaint(); }
+  else if (a === 'rmRun') { TL.iv.runs.splice(+v, 1); tlSave(); tlRepaint(); }
   else if (a === 'pipeBasis') { TL.pipe.basis = v; tlSave(); tlRepaint(); }
   else if (a === 'addRoom') { TL.heat.rooms.push(newRoom()); tlSave(); tlRepaint(); }
   else if (a === 'rmRoom') { TL.heat.rooms.splice(+v, 1); tlSave(); tlRepaint(); }
@@ -201,6 +258,7 @@ document.addEventListener('input', e => {
   const t = e.target, p = t.dataset && t.dataset.tlIn; if (!p || ui.view !== 'tools') return;
   tlSet(p, t.value);
   if (p.startsWith('pipe.')) { const el = document.getElementById('tlPipeRes'); if (el) el.innerHTML = pipeResHtml(); }
+  else if (p.startsWith('iv.')) { const el = document.getElementById('tlIvRes'); if (el) el.innerHTML = ivResHtml(); }
   else if (p.startsWith('heat.')) {
     const m = p.match(/^heat\.rooms\.(\d+)\./);
     const paint = i => { const el = document.getElementById('tlRoomRes-' + i); if (el) el.outerHTML = roomResHtml(TL.heat.rooms[i], i); };

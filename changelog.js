@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v70', items: ['New tool: Tightness test volume. Works out the installation volume and the pressure drop allowed under the new IGEM/UP/1B Edition 4 rules that start on 1 October 2026.'] },
   { v: 'v69', items: ['You can now hide any of the Tools you do not use, in Settings.'] },
   { v: 'v68', items: ['In Tools, tap the heart to pin a calculator to the top.'] },
   { v: 'v67', items: ['In Tools, the calculators you use most move to the top.'] },
