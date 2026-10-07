@@ -223,3 +223,7 @@ details.hlp[open] summary::after{content:'–'}
 
 .tlsame{display:flex;gap:10px;align-items:flex-start;margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card2);font-size:15px}
 .tlsame input{width:22px;height:22px;flex:none;margin-top:2px}
+
+.tlwork{margin:10px 0 0;padding:10px 12px;border-left:3px solid var(--gold);background:var(--card2);border-radius:0 10px 10px 0;font-size:13px;line-height:1.5}
+.tlwork .t{font-weight:700;margin-bottom:4px}
+.tlwork div{overflow-wrap:anywhere}

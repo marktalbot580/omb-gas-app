@@ -2,7 +2,7 @@
    These are quick guides for the van. They do not make a certificate and are not a substitute for BS 6891 / IGEM/UP/2 tables or a full heat loss survey. */
 const TL_KEY = 'omb_tools';
 const TL_DEFAULT = () => ({
-  prop: { same: false, name: '', addr: '', phone: '', email: '', cid: '' }, pulled: {}, note: {}, used: {},
+  work: false, prop: { same: false, name: '', addr: '', phone: '', email: '', cid: '' }, pulled: {}, note: {}, used: {},
   pipe: { kw: '24', basis: 'net', len: '6', dp: '1', f: { b90: '2', e90: '0', b45: '0', tin: '0', tout: '0' } },
   iv: { gas: 'ng', meter: 'u6', mvol: '', runs: [{ pipe: 'cu15', len: '', v: '' }] },
   heat: { outside: '-3', sys: 'cond', flow: '70', ret: '50', room: '', factor: '1.5', rooms: [] }
@@ -36,6 +36,63 @@ function tlPull(tool) {
   tlSave();
 }
 
+/* ---------- show workings out ---------- */
+const workBtn = () => `<button type="button" class="btn ghost block" style="margin-top:10px" data-tl="toggleWork">${TL.work ? 'Hide workings out' : 'Show workings out'}</button>`;
+const wk = (title, lines) => `<div class="tlwork"><div class="t">${esc(title)}</div>${lines.map(l => `<div>${l}</div>`).join('')}</div>`;
+const w2 = (n, d = 2) => tlFmt(n, d);
+function pipeWork(c) {
+  const p = TL.pipe, out = [];
+  out.push(wk('1. Gas rate', [`${w2(c.kw, 1)} kW ÷ ${KW_PER_M3H} kW per m³/h = <b>${w2(c.flow, 2)} m³/h</b>`]));
+  c.rows.forEach(r => {
+    const fl = r.det.length ? r.det.map(d => `${d.n} × ${d.eq} m`).join(' + ') + ' = ' + w2(r.fit, 2) + ' m' : 'no fittings';
+    out.push(wk('2. ' + r.n, [`Effective length = run ${w2(c.len, 1)} m + fittings (${fl}) = <b>${w2(r.eqL, 2)} m</b>`,
+      `Loss per metre at ${w2(c.flow, 2)} m³/h = ${w2(r.perM, 4)} mbar/m`,
+      `Pressure drop = ${w2(r.perM, 4)} × ${w2(r.eqL, 2)} = <b>${w2(r.drop, 2)} mbar</b>`,
+      `Limit ${w2(c.dpMax, 1)} mbar: ${r.drop <= c.dpMax + 1e-9 ? 'passes' : 'fails'}. It would carry ${w2(r.cap, 2)} m³/h at the limit.`]));
+  });
+  c.steps.forEach(x => out.push(wk('3. Stepping down ' + x.big + ' to ' + x.small, [
+    `Loss per metre: ${x.big} ${w2(x.db, 4)} mbar/m, ${x.small} ${w2(x.ds, 4)} mbar/m`,
+    `Total length to cover (run + fittings counted on the smaller pipe) = ${w2(x.tot, 2)} m`,
+    `Bigger pipe length x so that ${w2(x.db, 4)}·x + ${w2(x.ds, 4)}·(${w2(x.tot, 2)} − x) = ${w2(c.dpMax, 1)}`,
+    `x = (${w2(x.ds, 4)} × ${w2(x.tot, 2)} − ${w2(c.dpMax, 1)}) ÷ (${w2(x.ds, 4)} − ${w2(x.db, 4)}) = ${w2(x.raw, 2)} m`,
+    x.all ? `That is longer than the run, so the <b>whole run needs ${esc(x.big)}</b>.` : `Rounded up to the next half metre = <b>${w2(x.x, 1)} m of ${esc(x.big)}</b>, then ${w2(x.rest, 1)} m of ${esc(x.small)}`])));
+  return out.join('');
+}
+function ivWork(c) {
+  const v = TL.iv, out = [`<div>Meter: <b>${w2(c.mv, 4)} m³</b></div>`];
+  v.runs.forEach(r => { const pp = IVPIPES.find(x => x[0] === r.pipe), per = pp[2] === null ? tlNum(r.v) : pp[2], l = tlNum(r.len); if (l > 0 && per > 0) out.push(`<div>${esc(pp[1])}: ${w2(l, 1)} m × ${per} m³/m = ${tlFmt(l * per, 5)} m³</div>`); });
+  out.push(`<div>Pipework total = ${w2(c.pipe, 5)} m³</div><div>Fittings allowance = 10% × ${w2(c.pipe, 5)} = ${w2(c.fit, 5)} m³</div>`,
+    `<div>IV = ${w2(c.mv, 4)} + ${w2(c.pipe, 5)} + ${w2(c.fit, 5)} = <b>${w2(c.iv, 5)} m³</b></div>`,
+    `<div>Looked up in the ${IVGAS[v.gas]} table: ${c.drop ? '<b>' + esc(c.drop) + '</b>' : 'over 0.035 m³, outside the table'}</div>`, `<div>Purge volume = 1.5 × ${w2(c.iv, 5)} = ${w2(c.pv, 5)} m³</div>`);
+  return `<div class="tlwork"><div class="t">Workings</div>${out.join('')}</div>`;
+}
+function heatWork(r) {
+  const o = tlNum(TL.heat.outside), t = tlNum(r.temp), L = tlNum(r.l), W = tlNum(r.w), H = tlNum(r.h), ext = tlNum(r.ext) || 0, win = tlNum(r.win) || 0, ach = tlNum(r.ach) || 0;
+  if (o === null || t === null || !(L > 0 && W > 0 && H > 0)) return '';
+  const dT = t - o, wallA = Math.max(0, ext * H - win), area = L * W, vol = area * H, uw = WALLS[+r.wall][1], ug = GLAZ[+r.glaz][1], ur = ROOFS[+r.roof][1], uf = FLOORS[+r.floor][1];
+  const c = roomCalc(r), re = radEquiv(c.watts, t), sy = hlSys();
+  return `<div class="tlwork"><div class="t">Workings</div>
+    <div>Temperature difference = ${t} − (${o}) = ${dT}°C</div>
+    <div>Outside wall = ${ext} m × ${H} m − ${win} m² windows = ${w2(wallA, 1)} m² × U ${uw} = ${w2(wallA * uw, 1)} W/K</div>
+    <div>Windows and doors = ${win} m² × U ${ug} = ${w2(win * ug, 1)} W/K</div>
+    <div>Floor = ${w2(area, 1)} m² × U ${uf} = ${w2(area * uf, 1)} W/K</div>
+    <div>Above = ${w2(area, 1)} m² × U ${ur} = ${w2(area * ur, 1)} W/K</div>
+    <div>Air changes = 0.33 × ${ach} × ${w2(vol, 1)} m³ = ${w2(0.33 * ach * vol, 1)} W/K</div>
+    <div>Heat loss = (${w2(wallA * uw + win * ug + area * uf + area * ur + 0.33 * ach * vol, 1)} W/K) × ${dT} = <b>${Math.round(c.watts)} W</b></div>
+    ${re ? `<div>Radiator mean water = (${sy.flow} + ${sy.ret}) ÷ 2 = ${(sy.flow + sy.ret) / 2}°C, so ΔT = ${w2(re.dT, 1)}°C</div>
+    <div>Output factor = (${w2(re.dT, 1)} ÷ 50)^1.3 = ${w2(re.factor, 3)}</div>
+    <div>Catalogue size (ΔT50) = ${Math.round(c.watts)} ÷ ${w2(re.factor, 3)} = <b>${Math.round(re.rated)} W</b></div>` : ''}</div>`;
+}
+function gasWork() {
+  const s = calcState('tool-gas'), g = gasCalc(s), v = calcVol(s), t = calcSecs(s.secs), cv = tgNum(s.cv); if (!g) return '';
+  const m3 = s.unit === 'ft³' ? v * 0.0283168 : v;
+  return `<div class="tlwork"><div class="t">Workings</div>
+    ${s.unit === 'ft³' ? `<div>${v} ft³ × 0.0283168 = ${w2(m3, 4)} m³</div>` : ''}
+    <div>Gas rate = ${w2(m3, 4)} m³ × 3600 ÷ ${w2(t, 1)} s = <b>${w2(g.m3h, 3)} m³/h</b></div>
+    <div>Gross heat input = ${w2(g.m3h, 3)} × ${cv} MJ/m³ ÷ 3.6 = <b>${w2(g.gross, 1)} kW</b></div>
+    <div>Net heat input = ${w2(g.gross, 1)} ÷ 1.11 = <b>${w2(g.net, 1)} kW</b></div></div>`;
+}
+
 /* ---------- gas pipe sizing ----------
    Flow in a round pipe for a given pressure drop (Darcy–Weisbach with Colebrook friction, natural gas at 15°C).
    The friction is calibrated (x1.1) so the answers match the published BS 6891 figures for 15 mm copper
@@ -46,13 +103,16 @@ const PIPES = [
   { n: '28 mm copper', d: 26.2, eq: { b45: 0.25, b90: 0.40, e90: 0.80, tin: 1.50, tout: 2.30 } },
   { n: '35 mm copper', d: 32.6, eq: { b45: 0.30, b90: 0.50, e90: 1.00, tin: 1.90, tout: 2.90 } }
 ];
+/* friction multiplier by pipe bore: 15 mm is fitted to the published BS 6891 15 mm figures; 28 mm (and 35 mm) is fitted to the reference app Kyle uses (3.02 m3/h through 20.5 m of 28 mm drops 0.22 mbar); 22 mm sits between */
+const pipeK = dmm => { const t = Math.min(1, Math.max(0, (Math.log(dmm) - Math.log(13.6)) / (Math.log(26.2) - Math.log(13.6)))); return 1.1 + (0.715 - 1.1) * t; };
+const KW_PER_M3H = 10.6;   // kW per m3/h of natural gas, as used by the reference app
 function pipeFlow(dmm, L, dpMbar) {
   const d = dmm / 1000, A = Math.PI * d * d / 4, rho = 0.717, mu = 1.11e-5, eps = 1.5e-6, dp = dpMbar * 100;
   let v = 2;
   for (let i = 0; i < 80; i++) {
     const Re = rho * v * d / mu; let f = 0.02;
     for (let j = 0; j < 25; j++) f = Math.pow(-2 * Math.log10(eps / (3.7 * d) + 2.51 / (Re * Math.sqrt(f))), -2);
-    f *= 1.1;
+    f *= pipeK(dmm);
     const vn = Math.sqrt(2 * dp * d / (f * L * rho));
     if (Math.abs(vn - v) < 1e-7) { v = vn; break; } v = (v + vn) / 2;
   }
@@ -64,13 +124,14 @@ function pipeDrop(dmm, L, flow) {          // pressure drop (mbar) that gives th
   return (lo + hi) / 2;
 }
 function pipeCalc() {
-  const p = TL.pipe, kw = tlNum(p.kw), len = tlNum(p.len), dpMax = tlNum(p.dp) || 1, cv = tlNum(settings.gasCV) || 38.76;
+  const p = TL.pipe, kw = tlNum(p.kw), len = tlNum(p.len), dpMax = tlNum(p.dp) || 1;
   if (!(kw > 0) || !(len > 0)) return null;
-  const gross = p.basis === 'net' ? kw * 1.11 : kw, flow = gross * 3.6 / cv;     // kW gross -> m3/h
+  const flow = kw / KW_PER_M3H;     // m3/h
   const rows = PIPES.map(pp => {
     const fit = Object.keys(pp.eq).reduce((s, k) => s + (tlNum(p.f[k]) || 0) * pp.eq[k], 0), eqL = len + fit;
     const cap = pipeFlow(pp.d, eqL, dpMax), drop = pipeDrop(pp.d, eqL, flow);
-    return { n: pp.n, eqL, cap, drop, ok: flow <= cap };
+    const det = Object.keys(pp.eq).filter(k => (tlNum(p.f[k]) || 0) > 0).map(k => ({ k, n: tlNum(p.f[k]), eq: pp.eq[k] }));
+    return { n: pp.n, eqL, fit, det, cap, drop, perM: drop / eqL, ok: flow <= cap };
   });
   /* stepping down: how much of the bigger pipe is needed, nearest the meter, before the rest can drop a size.
      Pressure drop is in direct proportion to length, so: drop(big) * x + drop(small) * (rest) = allowed. Fittings are counted on the smaller pipe, which is the safe way round. */
@@ -80,19 +141,19 @@ function pipeCalc() {
     if (rows[i - 1].ok || !rows[i].ok) continue;                      // only where the smaller size fails on its own and the bigger one works
     const db = pipeDrop(big.d, 1, flow), ds = pipeDrop(small.d, 1, flow), tot = len + fs;
     const x = Math.min(len, Math.max(0, Math.ceil(((ds * tot - dpMax) / (ds - db)) * 2) / 2));
-    steps.push({ big: big.n, small: small.n, x, rest: Math.round((len - x) * 10) / 10, all: x >= len });
+    steps.push({ db, ds, tot, raw: (ds * tot - dpMax) / (ds - db), big: big.n, small: small.n, x, rest: Math.round((len - x) * 10) / 10, all: x >= len });
   }
-  return { flow, gross, dpMax, rows, steps, best: rows.find(r => r.ok) };
+  return { flow, kw, len, dpMax, rows, steps, best: rows.find(r => r.ok) };
 }
 function pipeResHtml() {
   const c = pipeCalc(); if (!c) return '<p class="muted">Enter the heat input and the pipe length.</p>';
   return `<div class="row sp" style="margin-bottom:6px"><span>Gas rate needed</span><b>${tlFmt(c.flow, 2)} m³/h</b></div>
-    <div class="row sp" style="margin-bottom:10px"><span class="muted">Heat input used (gross)</span><span>${tlFmt(c.gross, 1)} kW</span></div>
+    <div class="row sp" style="margin-bottom:10px"><span class="muted">Heat input</span><span>${tlFmt(c.kw, 1)} kW</span></div>
     ${c.rows.map(r => `<div class="tlrow ${r.ok ? 'ok' : 'no'} ${c === c && c.best === r ? 'best' : ''}">
       <div class="row sp"><b>${esc(r.n)}</b><span>${r.ok ? '&#10003; big enough' : '&#10007; too small'}</span></div>
       <div class="small muted">Run + fittings: ${tlFmt(r.eqL, 1)} m · capacity ${tlFmt(r.cap, 2)} m³/h at ${tlFmt(c.dpMax, 1)} mbar · drop at your flow ${tlFmt(r.drop, 2)} mbar</div></div>`).join('')}
     ${c.steps.length ? '<h2 style="margin:14px 0 6px">Step down to save pipe</h2>' + c.steps.map(x => x.all ? `<div class="tlrow no"><b>${esc(x.big)}</b> for the whole run: stepping down to ${esc(x.small)} doesn't leave enough drop.</div>` : `<div class="tlrow ok"><b>${tlFmt(x.x, 1)} m of ${esc(x.big)}</b> nearest the meter, then <b>${tlFmt(x.rest, 1)} m of ${esc(x.small)}</b> for the rest.</div>`).join('') + '<div class="small muted">Put the bigger pipe at the meter end. Worked out at the full flow all the way along, so it is on the safe side if the run branches.</div>' : ''}
-    <p class="small" style="margin:10px 0 0"><b>${c.best ? 'Smallest pipe that works: ' + esc(c.best.n) : 'None of these is big enough: use a larger pipe or split the run.'}</b></p>`;
+    <p class="small" style="margin:10px 0 0"><b>${c.best ? 'Smallest pipe that works: ' + esc(c.best.n) : 'None of these is big enough: use a larger pipe or split the run.'}</b></p>${TL.work ? pipeWork(c) : ''}`;
 }
 function pipeView() {
   const p = TL.pipe, f = p.f, inp = (k, label, ph, extra = '') => `<div class="grow f"><span>${label}</span><input data-tl-in="pipe.${k}" type="text" inputmode="decimal" value="${esc(p[k])}" ${ph ? `placeholder="${ph}"` : ''} autocomplete="off" ${extra}></div>`;
@@ -101,15 +162,14 @@ function pipeView() {
   return `<h1>Gas pipe sizing</h1>${sameBox()}${noteBox('pipe')}
     <p class="small muted" style="margin-top:0">Copper pipe, natural gas. Add up the total heat input of everything the pipe feeds and the longest run to it.</p>
     <div class="card">
-      <div class="row">${inp('kw', 'Total heat input (kW)', 'e.g. 24')}
-        <div class="grow f"><span>That figure is</span><div class="seg"><button type="button" class="${p.basis === 'net' ? 'on' : ''}" data-tl="pipeBasis" data-v="net">Net</button><button type="button" class="${p.basis === 'gross' ? 'on' : ''}" data-tl="pipeBasis" data-v="gross">Gross</button></div></div></div>
+      <div class="row">${inp('kw', 'Total heat input (kW)', 'e.g. 24')}</div>
       <div class="row">${inp('len', 'Pipe length (m)', 'e.g. 6')}${inp('dp', 'Allowed pressure drop (mbar)', '1')}</div>
       <div class="small muted" style="margin:6px 0">Fittings on the run (how many):</div>
       <div class="row">${fit('b90', '90° bends')}${fit('e90', '90° elbows')}${fit('b45', '45° bends')}</div>
       <div class="row">${fit('tin', 'Tees (flow in)')}${fit('tout', 'Tees (flow out)')}</div>
     </div>
-    <h2>Result</h2><div class="card" id="tlPipeRes">${pipeResHtml()}</div>
-    <p class="small muted">A guide only. It is calibrated to the published BS 6891 15 mm copper figures. Always check the final size against BS 6891 / IGEM/UP/2 and the appliance maker's instructions. The 35 mm fitting lengths are estimated.</p>`;
+    <h2>Result</h2><div class="card" id="tlPipeRes">${pipeResHtml()}</div>${workBtn()}
+    <p class="small muted">A guide only. Gas rate is the kW divided by 10.6. The pressure drop is fitted to the published BS 6891 15 mm figures and to one reference run in 28 mm. Always check the final size against BS 6891 / IGEM/UP/2 and the appliance maker's instructions. The 35 mm fitting lengths are estimated.</p>`;
 }
 
 
@@ -144,7 +204,7 @@ function ivResHtml() {
       : `<div class="tlrow no"><b>IV is over 0.035 m³.</b><div class="small">This is outside the scope of IGEM/UP/1B. Check the standard for the right procedure.</div></div>`)
     + rows('Purge volume (1.5 × IV)', f(c.pv))
     + `<div class="small muted" style="margin-top:8px">Test pressure: ${g === 'ng' ? '20 to 21 mbar' : g === 'lpg' ? '37 mbar' : 'see the standard'}. Let 1 minute settle, then test for 2 minutes.
-      New pipework, or pipework with no appliances connected: no pressure drop allowed. Any movement you can see (0.25 mbar, or 0.2 mbar on a gauge that reads to one decimal place) within the permissible drop means isolate every appliance and retest the pipework alone with no drop allowed.</div>`;
+      New pipework, or pipework with no appliances connected: no pressure drop allowed. Any movement you can see (0.25 mbar, or 0.2 mbar on a gauge that reads to one decimal place) within the permissible drop means isolate every appliance and retest the pipework alone with no drop allowed.</div>${TL.work ? ivWork(c) : ''}`;
 }
 function ivView() {
   const v = TL.iv, opt = (list, cur) => list.map(x => `<option value="${x[0]}" ${cur === x[0] ? 'selected' : ''}>${esc(x[1])}</option>`).join('');
@@ -161,7 +221,7 @@ function ivView() {
       <div class="row"><div class="grow f"><span>Length (m)</span><input data-tl-in="iv.runs.${i}.len" type="text" inputmode="decimal" value="${esc(r.len)}" placeholder="e.g. 6" autocomplete="off"></div>
       ${r.pipe === 'x' ? `<div class="grow f"><span>m³ per metre</span><input data-tl-in="iv.runs.${i}.v" type="text" inputmode="decimal" value="${esc(r.v)}" autocomplete="off"></div>` : ''}</div></div>`).join('')}
     <button type="button" class="btn gold block" data-tl="addRun">+ Add another pipe run</button>
-    <h2>Result</h2><div class="card" id="tlIvRes">${ivResHtml()}</div>
+    <h2>Result</h2><div class="card" id="tlIvRes">${ivResHtml()}</div>${workBtn()}
     <p class="small muted">Pipe volumes are worked out from the pipe's internal bore with 10% added for fittings, and the meter volumes are common values. For a meter or flexible pipe not listed, use the manufacturer's figure. A guide only: check against the IGEM/UP/1B Edition 4 tables, which are the rules.</p>`;
 }
 
@@ -196,7 +256,7 @@ function roomResHtml(r, i) {
   return `<div id="tlRoomRes-${i}" class="tlrow"><div class="row sp"><span>Heat loss</span><b>${Math.round(c.watts)} W</b></div>
     <div class="small muted">Walls, windows, floor and roof ${Math.round(c.fab)} W · air changes ${Math.round(c.vent)} W</div>
     <div class="row sp" style="margin-top:6px"><span>Radiator needed at your temperatures</span><b>${Math.round(c.watts)} W</b></div>
-    <div class="row sp"><span>Catalogue size (ΔT50) to buy</span><b>${re ? Math.round(re.rated) + ' W' : '–'}</b></div></div>`;
+    <div class="row sp"><span>Catalogue size (ΔT50) to buy</span><b>${re ? Math.round(re.rated) + ' W' : '–'}</b></div>${TL.work ? heatWork(r) : ''}</div>`;
 }
 function heatSums() {
   let tot = 0, rated = 0;
@@ -241,7 +301,7 @@ function heatView() {
     </div>
     <div id="tlRooms">${h.rooms.map((r, i) => roomForm(r, i) + roomResHtml(r, i) + '</div>').join('')}</div>
     <button type="button" class="btn gold block" data-tl="addRoom">+ Add a room</button>
-    <h2>Totals</h2><div class="card" id="tlHeatTot">${heatTotals()}</div>
+    <h2>Totals</h2><div class="card" id="tlHeatTot">${heatTotals()}</div>${workBtn()}
     <p class="small muted">An estimate using typical U-values and the room-by-room method. It ignores heat flow through internal walls and assumes neighbouring rooms are at a similar temperature. Check against a full heat loss calculation for new systems and heat pumps.</p>`;
 }
 
@@ -254,10 +314,10 @@ function tlSections() {
   /* pipe sizing */
   const pc = pipeCalc();
   if (pc && TL.used.pipe) { const p = TL.pipe; out.push({ title: 'Gas pipe sizing', items: [
-    { t: 'kv', rows: [['Heat input used (gross)', f2(pc.gross, 1) + ' kW'], ['Gas rate needed', f2(pc.flow, 2) + ' m³/h'], ['Pipe length', p.len + ' m'], ['Fittings', `${p.f.b90 || 0} × 90° bend, ${p.f.e90 || 0} × 90° elbow, ${p.f.b45 || 0} × 45° bend, ${p.f.tin || 0} × tee in, ${p.f.tout || 0} × tee out`], ['Allowed pressure drop', f2(pc.dpMax, 1) + ' mbar'], ['Smallest pipe that works', pc.best ? pc.best.n : 'None of the sizes listed']], bold: ['Smallest pipe that works'] },
+    { t: 'kv', rows: [['Heat input', f2(pc.kw, 1) + ' kW'], ['Gas rate needed', f2(pc.flow, 2) + ' m³/h'], ['Pipe length', p.len + ' m'], ['Fittings', `${p.f.b90 || 0} × 90° bend, ${p.f.e90 || 0} × 90° elbow, ${p.f.b45 || 0} × 45° bend, ${p.f.tin || 0} × tee in, ${p.f.tout || 0} × tee out`], ['Allowed pressure drop', f2(pc.dpMax, 1) + ' mbar'], ['Smallest pipe that works', pc.best ? pc.best.n : 'None of the sizes listed']], bold: ['Smallest pipe that works'] },
     { t: 'table', head: ['Pipe', 'Run + fittings', 'Capacity', 'Drop at your flow', 'Result'], w: [30, 26, 28, 34, 24], a: ['l', 'r', 'r', 'r', 'l'], rows: pc.rows.map(r => [r.n, f2(r.eqL, 1) + ' m', f2(r.cap, 2) + ' m³/h', f2(r.drop, 2) + ' mbar', r.ok ? 'Big enough' : 'Too small']) },
     ...(pc.steps.length ? [{ t: 'table', head: ['Step down to save pipe', 'Bigger pipe, nearest the meter', 'Then, for the rest'], w: [34, 46, 46], a: ['l', 'r', 'r'], rows: pc.steps.map(x => x.all ? [x.big, 'Whole run', '-'] : [x.big + ' to ' + x.small, tlFmt(x.x, 1) + ' m of ' + x.big, tlFmt(x.rest, 1) + ' m of ' + x.small]) }] : []),
-    { t: 'note', text: 'Calculated for natural gas with the flow calibrated to the published BS 6891 figures for 15 mm copper. Confirm the final size against BS 6891 / IGEM/UP/2.' }] }); }
+    { t: 'note', text: 'Natural gas, gas rate = kW / 10.6. Pressure drop fitted to the published BS 6891 figures for 15 mm copper and a reference run in 28 mm. Confirm the final size against BS 6891 / IGEM/UP/2.' }] }); }
   /* tightness test volume */
   const ic = ivCalc();
   if (ic && TL.iv.runs.some(r => tlNum(r.len) > 0)) { const v = TL.iv; out.push({ title: 'Tightness test: installation volume (IGEM/UP/1B Edition 4)', items: [
@@ -339,7 +399,7 @@ function renderTools(v) {
   const t = ui.tool || 'menu';
   if (t === 'gas') {
     const s = calcState('tool-gas'); if (s.open === false && !s._seen) { s.open = true; s._seen = true; }
-    v.innerHTML = `<h1>Gas rate</h1>${sameBox()}<p class="small muted" style="margin-top:0">Time the meter for a gas rate and heat input without making a certificate.</p>${calcPanel('tool-gas', '')}
+    v.innerHTML = `<h1>Gas rate</h1>${sameBox()}<p class="small muted" style="margin-top:0">Time the meter for a gas rate and heat input without making a certificate.</p>${calcPanel('tool-gas', '')}<div id="tlGasWork">${TL.work ? gasWork() : ''}</div>${workBtn()}
       <div style="height:10px"></div><button class="btn ghost block" data-tl="go" data-v="menu">Back to tools</button>`;
   } else if (t === 'pipe') {
     v.innerHTML = pipeView() + '<div style="height:10px"></div><button class="btn ghost block" data-tl="go" data-v="menu">Back to tools</button>';
@@ -394,6 +454,7 @@ document.addEventListener('click', e => {
   else if (a === 'pickCust') { const c = customers.find(x => x.id === v); if (c) { TL.prop.cid = c.id; TL.prop.name = c.name || ''; TL.prop.phone = c.phone || ''; TL.prop.email = c.email || ''; const ps = (c.properties || []).filter(Boolean); TL.prop.addr = ps[0] || c.billing || ''; TL.prop.other = false; tlSave(); tlRepaint(); } }
   else if (a === 'pickProp') { const [id, ix] = v.split('|'), c = customers.find(x => x.id === id); if (c) { TL.prop.cid = c.id; TL.prop.name = c.name || ''; TL.prop.phone = c.phone || ''; TL.prop.email = c.email || ''; TL.prop.addr = (c.properties || [])[+ix] || ''; TL.prop.other = false; tlSave(); tlRepaint(); } }
   else if (a === 'backCust') { ui.view = 'custEdit'; render(); window.scrollTo(0, 0); }
+  else if (a === 'toggleWork') { TL.work = !TL.work; tlSave(); tlRepaint(); }
   else if (a === 'mkPdf') tlMakeReport();
   else if (a === 'opPdf') { if (ui.toolPdf) { const w = window.open(URL.createObjectURL(ui.toolPdf.blob), '_blank'); if (!w) toast('Tap Open report again, or use Share or save'); } }
   else if (a === 'shPdf') tlSharePdf();
@@ -408,6 +469,7 @@ document.addEventListener('click', e => {
   ui.toolBack = ''; ui.tool = 'menu'; ui.view = 'tools'; render(); window.scrollTo(0, 0);
 });
 document.addEventListener('input', e => {
+  if (e.target.dataset && e.target.dataset.calc && ui.view === 'tools') setTimeout(() => { const el = document.getElementById('tlGasWork'); if (el) el.innerHTML = TL.work ? gasWork() : ''; }, 0);
   const t = e.target, p = t.dataset && t.dataset.tlIn; if (!p || ui.view !== 'tools') return;
   tlSet(p, t.value); if (p === 'pipe.kw') delete TL.note.pipe;
   if (p === 'prop.name') { const c = customers.find(x => x.name === t.value); TL.prop.cid = c ? c.id : ''; if (c && !TL.prop.addr) TL.prop.addr = (c.properties || [])[0] || ''; TL.prop.phone = c ? c.phone || '' : ''; TL.prop.email = c ? c.email || '' : ''; tlSave(); }

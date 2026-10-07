@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v76', items: ['Tools: a Show workings out button on each calculator, so you can follow every step of the sums.','Pipe sizing now divides your kW by 10.6 for the gas rate, and its pressure drop on larger pipes is fitted to the reference app.'] },
   { v: 'v75', items: ['Gas pipe sizing now shows how many metres of the bigger pipe you need nearest the meter before the rest of the run can drop a size.'] },
   { v: 'v74', items: ['Tools report: search for the customer, pick their property from a list, and tap Open report once the PDF is made.'] },
   { v: 'v73', items: ['The Tools button on the home screen now matches the other buttons.'] },
