@@ -81,7 +81,7 @@ function renderDue(v) {
   const items = remItems(), st = remGet(), n = remWindow();
   v.innerHTML = `
     <h1>Annual checks due</h1>
-    <p class="small muted" style="margin-top:0">Gas safety checks, boiler services and Legionella assessments due in the next ${Math.round(n / 7)} weeks, or already overdue. Tap <b>Text</b>, <b>WhatsApp</b> or <b>Email</b> and your phone opens the message ready to send. Nothing is sent until you press send. You can change the wording in Settings.</p>
+    <p class="small muted" style="margin-top:0">Gas safety checks, boiler services and Legionella assessments due in the next ${Math.round(n / 7)} weeks, or already overdue. ${settings.remAuto === 'on' ? 'Automatic emails are <b>on</b>: customers with an email address are emailed for you about 8 weeks and 2 weeks before. You don’t need to do anything. The buttons below are optional, for a text or WhatsApp, or to nudge someone yourself.' : 'Automatic emails are <b>off</b>. Tap <b>Text</b>, <b>WhatsApp</b> or <b>Email</b> and your phone opens the message ready to send. Nothing is sent until you press send. You can turn on automatic emails in Settings.'} You can change the wording in Settings.</p>
     ${items.length ? items.map(it => remCard(it, st)).join('') : '<div class="empty">Nothing due soon.<br>Completed gas checks, boiler services and Legionella assessments show up here as their next due date gets close.</div>'}
     <div style="height:10px"></div><button class="btn ghost block" data-nav="home">Back</button>`;
 }

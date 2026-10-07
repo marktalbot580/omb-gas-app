@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v63', items: ['The Annual checks due page now says whether automatic emails are on, so you know if you need to send anything yourself.'] },
   { v: 'v62', items: ['Legionella risk assessments now appear in Annual checks due, and in the automatic reminder emails, using the next assessment date on the record.'] },
   { v: 'v61', items: ['The Annual checks due button on the home screen now matches the other buttons.'] },
   { v: 'v60', items: ['Automatic reminder emails. Turn them on in Settings and customers with an email address get a reminder about 8 weeks before their gas check or boiler service is due, and again at 2 weeks.', 'Replies come to your own email. Every email has an unsubscribe link, and you can switch it off for any customer.', 'Booked in, Not needed and Stop now sync between your devices and stop the automatic emails too.', 'Fixed: editing a customer no longer removes their favourite heart.'] },
