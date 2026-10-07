@@ -527,7 +527,7 @@ function render() {
   if (ui.view !== 'home' && typeof instPopClose === 'function') instPopClose();   // the install pop-up must never cover the Next / Back buttons
   if (ui.view === 'form') { renderForm(v, nav); }
   else {
-    ({ home: renderHome, pick: renderPick, customers: renderCustomers, custEdit: renderCustEdit, settings: renderSettings, invoices: renderInvoices, invEdit: renderInvEdit, invPrint: renderInvPrint, admin: renderAdmin, help: renderHelp }[ui.view])(v);
+    ({ home: renderHome, pick: renderPick, customers: renderCustomers, custEdit: renderCustEdit, settings: renderSettings, invoices: renderInvoices, invEdit: renderInvEdit, invPrint: renderInvPrint, admin: renderAdmin, help: renderHelp, news: renderNews }[ui.view])(v);
     renderTabs(nav);
   }
   paintSync();
@@ -544,7 +544,7 @@ const ICON = {
 function renderTabs(nav) {
   nav.className = 'tabs';
   const t = (id, label, ic, on) => `<button data-nav="${id}" class="${on ? 'on' : ''}">${ic}${label}</button>`;
-  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'admin' || ui.view === 'help');
+  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'admin' || ui.view === 'help' || ui.view === 'news');
   $('#barSub').textContent = ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' ? 'Invoices' : 'Gas & Legionella records';
 }
 
@@ -588,6 +588,7 @@ function renderHome(v) {
     <h1>Records</h1>
     ${trialBanner()}
     ${bkBanner()}
+    ${newsBanner()}
     ${missing ? `<div class="notice">Add the business address, Gas Safe register number and engineer details in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a> before issuing certificates.</div>` : ''}
     <button class="btn gold block" data-act="newRec" data-type="gas">+ New gas safety record</button>
     <div style="height:10px"></div>
@@ -764,6 +765,19 @@ function instPopShow() {
   window.addEventListener('beforeinstallprompt', () => setTimeout(() => { if (document.getElementById('instPop')) instPopShow(); else { _instTries = 0; tick(); } }, 400));
   window.addEventListener('appinstalled', instPopClose);
 })();
+/* "What's new": a note on the home screen once after each update */
+const NS_KEY = 'omb_seenver';
+const nsGet = () => { try { return localStorage.getItem(NS_KEY) || ''; } catch (e) { return ''; } };
+const nsSet = () => { try { localStorage.setItem(NS_KEY, APP_VERSION); } catch (e) { } };
+function newsBanner() {
+  const s = nsGet(); if (!s) { nsSet(); return ''; }
+  if (s === APP_VERSION) return '';
+  return `<div class="notice">The app has been updated to <b>${APP_VERSION}</b>.<div style="height:8px"></div><button class="btn gold block" data-act="news">See what’s new</button><div style="height:6px"></div><button class="btn block ghost" data-act="newsDismiss">Dismiss</button></div>`;
+}
+function renderNews(v) {
+  nsSet();
+  v.innerHTML = `<h1>What’s new</h1><p class="small muted" style="margin-top:0">You are on <b>${APP_VERSION}</b>.</p>${newsHtml()}<button class="btn block ghost" data-act="helpBack">Back</button>`;
+}
 function renderHelp(v) {
   v.innerHTML = `
     <h1>Help guide</h1>
@@ -775,7 +789,8 @@ function renderSettings(v) {
   const f = (k, l, o = {}) => `<label class="f"><span>${l}</span>${o.area ? `<textarea data-s="${k}" rows="3">${esc(settings[k])}</textarea>` : `<input data-s="${k}" value="${esc(k === 'sortCode' ? fmtSort(settings[k]) : settings[k])}" ${o.type ? `type="${o.type}"` : ''} ${o.mode ? `inputmode="${o.mode}"` : ''} autocomplete="off" ${o.maxlen ? `maxlength="${o.maxlen}"` : ''} ${o.cap ? `autocapitalize="${o.cap}"` : ''}>`}${o.hint ? `<small>${o.hint}</small>` : ''}</label>`;
   v.innerHTML = `
     <h1>Settings</h1>
-    <button class="btn block" data-act="help" style="margin-bottom:12px">Help guide</button>
+    <button class="btn block" data-act="help" style="margin-bottom:10px">Help guide</button>
+    <button class="btn block" data-act="news" style="margin-bottom:12px">What’s new</button>
     <h2>App version</h2>
     <div class="card">
       <p class="small muted" style="margin-top:0">This phone is running <b id="verHere" style="color:var(--txt)">${APP_VERSION}</b> · newest online: <b id="verNew" style="color:var(--txt)">checking…</b></p>
@@ -1852,6 +1867,8 @@ document.addEventListener('click', async e => {
   const a = b.dataset.act, r = ui.rec;
   if (CLOUD.locked() && (LOCKED_WRITES.has(a) || (a === 'makePdf' && r && r.status !== 'complete'))) { lockedMsg(); return; }
   if (a === 'help') { if (ui.view !== 'help') { ui.helpFrom = ui.view; } ui.helpQ = ''; ui.view = 'help'; render(); return; }
+  if (a === 'news') { if (ui.view !== 'news') ui.helpFrom = ui.view; ui.view = 'news'; render(); return; }
+  if (a === 'newsDismiss') { nsSet(); render(); return; }
   if (a === 'helpBack') { ui.view = ui.helpFrom && ui.helpFrom !== 'help' && (ui.helpFrom !== 'form' || ui.rec) ? ui.helpFrom : 'home'; render(); return; }
   switch (a) {
     case 'newRec': ui.pick = { types: { [b.dataset.type]: true }, customer: null }; ui.view = 'pick'; render(); break;
