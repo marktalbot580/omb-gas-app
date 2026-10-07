@@ -479,6 +479,7 @@ function addrInput(w, t) {
     }
   } else if (src === 'inv') {
     setP(ui.inv, path, v); persistInvSoon();
+    if (path === 'jobAddress') { const sg = document.getElementById('invAddrSug'); if (sg) sg.innerHTML = v.trim().length >= 2 ? sugHtml(ui.inv, v, 'invPickSug') : ''; }
     const had = !!ui.invPdf; ui.invPdf = null; if (had) { const bx = $('#invPdfBox'); if (bx) bx.innerHTML = invPdfHtml(); }
   } else if (src === 'set') { settings[path] = v; saveSettings(); }
   else if (src === 'cust') ui.cust[path] = v;
@@ -1084,22 +1085,22 @@ function propPool(r) {
   else customers.forEach(c => (c.properties || []).forEach(p => add(p, c)));
   return { cu, out };
 }
-function sugHtml(r, q) {
+function sugHtml(r, q, act = 'pickSug') {
   const { cu, out } = propPool(r), toks = addrKey(q).split(' ').filter(Boolean);
   if (!toks.length) return '';
   const cur = addrKey(r.jobAddress);
   const hits = out.filter(x => addrKey(x.a) !== cur && toks.every(t => addrKey(x.a).includes(t) || (!cu && addrKey(x.c.name).includes(t))));
   if (!hits.length) return '<p class="small muted" style="margin:6px 0">No saved address matches – just carry on typing the new one.</p>';
-  return hits.slice(0, 8).map(x => { const ls = x.a.split('\n'); return `<button type="button" class="item cpick" data-act="pickSug" data-c="${x.c.id}" data-a="${esc(x.a)}"><div class="t">${esc(ls[0])}</div><div class="s">${esc([...ls.slice(1), ...(cu ? [] : [x.c.name])].join(', '))}</div></button>`; }).join('') + (hits.length > 8 ? `<p class="small muted" style="margin:4px 0">${hits.length - 8} more – keep typing to narrow it down.</p>` : '');
+  return hits.slice(0, 8).map(x => { const ls = x.a.split('\n'); return `<button type="button" class="item cpick" data-act="${act}" data-c="${x.c.id}" data-a="${esc(x.a)}"><div class="t">${esc(ls[0])}</div><div class="s">${esc([...ls.slice(1), ...(cu ? [] : [x.c.name])].join(', '))}</div></button>`; }).join('') + (hits.length > 8 ? `<p class="small muted" style="margin:4px 0">${hits.length - 8} more – keep typing to narrow it down.</p>` : '');
 }
 /* type-ahead for the client name: the more you type, the fewer customers are suggested */
-function nameSugHtml(r, q) {
+function nameSugHtml(r, q, act = 'pickCustId') {
   const toks = addrKey(q).split(' ').filter(Boolean); if (!toks.length) return '';
   const sel = customers.find(c => c.id === r.customerId);
   const hits = customers.filter(c => !(sel && sel.id === c.id && addrKey(c.name) === addrKey(q)) && toks.every(t => addrKey([c.name, c.phone, c.email].join(' ')).includes(t)))
     .sort((a, b) => (addrKey(b.name).startsWith(toks[0]) ? 1 : 0) - (addrKey(a.name).startsWith(toks[0]) ? 1 : 0) || (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || a.name.localeCompare(b.name));
   if (!hits.length) return '';
-  return `<div class="small muted" style="margin:6px 0 4px">Existing customers – tap one to fill in their details:</div>` + hits.slice(0, 6).map(c => `<button type="button" class="item cpick" data-act="pickCustId" data-id="${c.id}"><div class="t">${c.fav ? '<span style="color:var(--bad)">♥</span> ' : ''}${esc(c.name)}</div><div class="s">${esc([c.phone, ((c.properties || [])[0] || c.billing || '').split('\n')[0]].filter(Boolean).join(' · ') || 'No details saved')}</div></button>`).join('') + (hits.length > 6 ? `<p class="small muted" style="margin:4px 0">${hits.length - 6} more – keep typing to narrow it down.</p>` : '');
+  return `<div class="small muted" style="margin:6px 0 4px">Existing customers – tap one to fill in their details:</div>` + hits.slice(0, 6).map(c => `<button type="button" class="item cpick" data-act="${act}" data-id="${c.id}"><div class="t">${c.fav ? '<span style="color:var(--bad)">♥</span> ' : ''}${esc(c.name)}</div><div class="s">${esc([c.phone, ((c.properties || [])[0] || c.billing || '').split('\n')[0]].filter(Boolean).join(' · ') || 'No details saved')}</div></button>`).join('') + (hits.length > 6 ? `<p class="small muted" style="margin:4px 0">${hits.length - 6} more – keep typing to narrow it down.</p>` : '');
 }
 /* "Navigate": opens Google Maps (the Maps app on a phone) with driving directions to the address */
 const mapsUrl = a => 'https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=' + encodeURIComponent(String(a || '').replace(/\s*\n\s*/g, ', ').trim());
@@ -1694,6 +1695,13 @@ function renderInvoices(v) {
       </button>`).join('') : `<div class="empty">${invoices.length ? 'No invoices in this view.' : 'No invoices yet.<br>Finish a visit and tap “Create invoice” on the last screen, or start one here.'}</div>`}`;
 }
 
+/* saved properties for the customer on this invoice: tap one to use it (a search box appears when there are lots) */
+function invPropPick(i) {
+  const cu = customers.find(c => c.id === i.customerId), ps = cu ? (cu.properties || []) : [];
+  if (ps.length > 5) return `<div class="small muted" style="margin:4px 0">Saved properties for ${esc(cu.name)} – search and tap one:</div><input class="search" id="invPropSearch" placeholder="Search ${ps.length} properties – street, town or postcode" autocomplete="off"><div id="invPropList"></div>`;
+  if (ps.length) return `<div class="small muted" style="margin:4px 0">Saved properties for ${esc(cu.name)} – tap the one the work was done at:</div><div class="chips">${ps.map((p, k) => `<button type="button" class="chip ${addrKey(p) === addrKey(i.jobAddress) ? 'on' : ''}" data-act="invPickProp" data-i="${k}">${esc(addrFirst(p))}</button>`).join('')}</div>`;
+  return '';
+}
 function renderInvEdit(v) {
   const i = ui.inv, blankPrice = i.lines.some(l => !numOf(l.p));
   v.innerHTML = `
@@ -1703,11 +1711,14 @@ function renderInvEdit(v) {
     ${blankPrice ? `<div class="notice">A line has no price. Type it below, or set standard prices in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a>.</div>` : ''}
     <h2>Customer</h2>
     <div class="card">
-      ${customers.length ? `<label class="f"><span>Existing customer</span><select data-act="pickInvCust"><option value="">— Type details below —</option>${[...customers].sort(custAlpha).map(c => `<option value="${c.id}" ${c.id === i.customerId ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label>` : ''}
-      ${inf('customer.name', 'Client name')}
+      ${inf('customer.name', 'Client name', { ph: customers.length ? 'Start typing a name to pick a saved customer' : '' })}
+      <div id="invNameSug"></div>
+      ${i.customerId ? `<button type="button" class="btn ghost block" data-act="invPickCust" data-id="" style="margin:4px 0 10px">Clear – this is a different customer</button>` : ''}
       ${inf('customer.email', 'Email', { type: 'email', mode: 'email', cap: 'none' })}
       ${addrBox('inv', 'customer.billing', 'Billing address')}
+      ${invPropPick(i)}
       ${addrBox('inv', 'jobAddress', 'Property the work was done at')}
+      <div id="invAddrSug"></div>
       <button type="button" class="btn block" data-act="invSameAddr">Same as billing address</button>
     </div>
     <h2>Dates</h2>
@@ -1893,7 +1904,7 @@ function initSigs() {
 
 /* ---------- events ---------- */
 /* when the subscription has ended the app is read-only: look, download and export, but no new or changed records */
-const LOCKED_WRITES = new Set(['newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'sameName', 'engSigTog', 'engSigUse', 'invNone', 'invNoneVisit', 'invUndoNone', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod']);
+const LOCKED_WRITES = new Set(['newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'sameName', 'engSigTog', 'engSigUse', 'invNone', 'invNoneVisit', 'invUndoNone', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod', 'invPickCust', 'invPickProp', 'invPickSug']);
 const lockedMsg = () => toast('Your subscription has ended. Subscribe to create or change records.');
 document.addEventListener('click', async e => {
   /* tap the logo / name at the top to go back to the home screen – a form you are part way through is kept as a draft */
@@ -2112,6 +2123,21 @@ document.addEventListener('click', async e => {
       if (ui.invFrom === 'visit' && !(ui.invPdf && ui.invPdf.id === ui.inv.id)) { try { ui.invPdf = { id: ui.inv.id, blob: await buildInvPdf(ui.inv, settings), name: invFileName(ui.inv) }; } catch (err) { console.error(err); toast('Could not create the invoice PDF: ' + err.message); } }
       ui.view = ui.invFrom === 'visit' ? 'form' : 'invoices'; render(); break;
     }
+    case 'invPickCust': {
+      const c = customers.find(x => x.id === b.dataset.id), i = ui.inv;
+      i.customerId = c ? c.id : '';
+      if (c) { i.customer = { name: c.name, phone: c.phone, email: c.email, billing: c.billing }; if ((c.properties || []).length === 1) i.jobAddress = c.properties[0]; }
+      ui.invPdf = null; persistInv(i); const y = window.scrollY; render(); window.scrollTo(0, y); break;
+    }
+    case 'invPickProp': {
+      const i = ui.inv, c = customers.find(x => x.id === i.customerId), p = c && (c.properties || [])[+b.dataset.i];
+      if (!p) break; i.jobAddress = p; ui.invPdf = null; persistInv(i); const y = window.scrollY; render(); window.scrollTo(0, y); break;
+    }
+    case 'invPickSug': {
+      const c = customers.find(x => x.id === b.dataset.c), i = ui.inv; if (!c) break;
+      if (i.customerId !== c.id) { i.customerId = c.id; i.customer = { name: c.name, phone: c.phone, email: c.email, billing: c.billing }; }
+      i.jobAddress = b.dataset.a; ui.invPdf = null; persistInv(i); const y = window.scrollY; render(); window.scrollTo(0, y); break;
+    }
     case 'invSameAddr': {
       const i = ui.inv, bill = (i.customer.billing || '').trim();
       if (!bill) { toast('Type the billing address first'); break; }
@@ -2162,13 +2188,14 @@ document.addEventListener('click', async e => {
 });
 document.addEventListener('input', e => {
   const t = e.target;
-  if (CLOUD.locked() && ui.view !== 'settings' && t.id !== 'custSearch' && t.id !== 'helpSearch' && t.id !== 'fbText') { lockedMsg(); render(); return; }
+  if (CLOUD.locked() && ui.view !== 'settings' && t.id !== 'custSearch' && t.id !== 'helpSearch' && t.id !== 'fbText' && t.id !== 'invPropSearch') { lockedMsg(); render(); return; }
   if (t.classList && t.classList.contains('dtx')) { dtxInput(t, e); return; }
   { const aw = t.closest && t.closest('.addrw'); if (aw) { addrInput(aw, t); return; } }
   if (t.dataset.s === 'sortCode') t.value = fmtSort(t.value);
   if (t.id === 'fbText') { ui.fb = ui.fb || { kind: 'fault', text: '' }; ui.fb.text = t.value; return; }
   if (t.id === 'helpSearch') { ui.helpQ = t.value; const hl = document.getElementById('helpList'); if (hl) hl.innerHTML = helpListHtml(t.value); return; }
   if (t.id === 'custSearch') { ui.search = t.value; paintCustList(); return; }
+  if (t.id === 'invPropSearch') { const el = document.getElementById('invPropList'); if (el) el.innerHTML = sugHtml(ui.inv, t.value, 'invPickSug'); return; }
   if (t.id === 'propSearch') { const el = document.getElementById('propList'); if (el) el.innerHTML = sugHtml(ui.rec, t.value); return; }
   if (t.dataset.tm) {
     const r = ui.rec, box = t.parentNode.parentNode;
@@ -2212,6 +2239,7 @@ document.addEventListener('input', e => {
   }
   if (t.dataset.n) {
     setP(ui.inv, t.dataset.n, t.value); persistInvSoon();
+    if (t.dataset.n === 'customer.name') { const sg = document.getElementById('invNameSug'); if (sg) sg.innerHTML = nameSugHtml(ui.inv, t.value, 'invPickCust'); }
     const had = !!ui.invPdf; ui.invPdf = null;
     const el = $('#invTotals'); if (el) el.innerHTML = invTotalsHtml(ui.inv);
     if (had) { const bx = $('#invPdfBox'); if (bx) bx.innerHTML = invPdfHtml(); }

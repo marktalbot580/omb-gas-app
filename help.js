@@ -67,7 +67,7 @@ const HELP = [
   { t: 'Invoices', k: 'invoice create new bill price line item vat discount sent paid due no invoice needed',
     h: `<p>When a record is complete it shows <b>Requires invoice</b> until you deal with it.</p>
 <ol><li>On the last screen of a finished visit tap <b>Create invoice</b>, or start one from the <b>Invoices</b> tab.</li>
-<li>Check the client, property and dates. Prices from Settings are filled in for you.</li>
+<li>Start typing the client name and tap a saved customer to fill in their details. Tap one of their saved properties for the address, or type a new one. Prices from Settings are filled in for you.</li>
 <li>Tap <b>+ Add a line</b> for parts, call-out or extras. The cursor jumps to the new line.</li>
 <li>Set the VAT rate (use 0 for no VAT). Enter prices excluding VAT.</li>
 <li>Tap <b>View invoice (PDF)</b> to check it, then send it.</li></ol>
