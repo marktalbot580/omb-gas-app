@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v75', items: ['Gas pipe sizing now shows how many metres of the bigger pipe you need nearest the meter before the rest of the run can drop a size.'] },
   { v: 'v74', items: ['Tools report: search for the customer, pick their property from a list, and tap Open report once the PDF is made.'] },
   { v: 'v73', items: ['The Tools button on the home screen now matches the other buttons.'] },
   { v: 'v72', items: ['Open a customer and tap Tools and calculation report. Their name, phone, email and property go at the top of the PDF report, and Same property is ticked for you. You can save the results on their card and open the PDF again later.'] },

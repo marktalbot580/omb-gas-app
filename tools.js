@@ -72,7 +72,17 @@ function pipeCalc() {
     const cap = pipeFlow(pp.d, eqL, dpMax), drop = pipeDrop(pp.d, eqL, flow);
     return { n: pp.n, eqL, cap, drop, ok: flow <= cap };
   });
-  return { flow, gross, dpMax, rows, best: rows.find(r => r.ok) };
+  /* stepping down: how much of the bigger pipe is needed, nearest the meter, before the rest can drop a size.
+     Pressure drop is in direct proportion to length, so: drop(big) * x + drop(small) * (rest) = allowed. Fittings are counted on the smaller pipe, which is the safe way round. */
+  const steps = [];
+  for (let i = 1; i < PIPES.length; i++) {
+    const big = PIPES[i], small = PIPES[i - 1], fs = rows[i - 1].eqL - len;
+    if (rows[i - 1].ok || !rows[i].ok) continue;                      // only where the smaller size fails on its own and the bigger one works
+    const db = pipeDrop(big.d, 1, flow), ds = pipeDrop(small.d, 1, flow), tot = len + fs;
+    const x = Math.min(len, Math.max(0, Math.ceil(((ds * tot - dpMax) / (ds - db)) * 2) / 2));
+    steps.push({ big: big.n, small: small.n, x, rest: Math.round((len - x) * 10) / 10, all: x >= len });
+  }
+  return { flow, gross, dpMax, rows, steps, best: rows.find(r => r.ok) };
 }
 function pipeResHtml() {
   const c = pipeCalc(); if (!c) return '<p class="muted">Enter the heat input and the pipe length.</p>';
@@ -81,6 +91,7 @@ function pipeResHtml() {
     ${c.rows.map(r => `<div class="tlrow ${r.ok ? 'ok' : 'no'} ${c === c && c.best === r ? 'best' : ''}">
       <div class="row sp"><b>${esc(r.n)}</b><span>${r.ok ? '&#10003; big enough' : '&#10007; too small'}</span></div>
       <div class="small muted">Run + fittings: ${tlFmt(r.eqL, 1)} m · capacity ${tlFmt(r.cap, 2)} m³/h at ${tlFmt(c.dpMax, 1)} mbar · drop at your flow ${tlFmt(r.drop, 2)} mbar</div></div>`).join('')}
+    ${c.steps.length ? '<h2 style="margin:14px 0 6px">Step down to save pipe</h2>' + c.steps.map(x => x.all ? `<div class="tlrow no"><b>${esc(x.big)}</b> for the whole run: stepping down to ${esc(x.small)} doesn't leave enough drop.</div>` : `<div class="tlrow ok"><b>${tlFmt(x.x, 1)} m of ${esc(x.big)}</b> nearest the meter, then <b>${tlFmt(x.rest, 1)} m of ${esc(x.small)}</b> for the rest.</div>`).join('') + '<div class="small muted">Put the bigger pipe at the meter end. Worked out at the full flow all the way along, so it is on the safe side if the run branches.</div>' : ''}
     <p class="small" style="margin:10px 0 0"><b>${c.best ? 'Smallest pipe that works: ' + esc(c.best.n) : 'None of these is big enough: use a larger pipe or split the run.'}</b></p>`;
 }
 function pipeView() {
@@ -245,6 +256,7 @@ function tlSections() {
   if (pc && TL.used.pipe) { const p = TL.pipe; out.push({ title: 'Gas pipe sizing', items: [
     { t: 'kv', rows: [['Heat input used (gross)', f2(pc.gross, 1) + ' kW'], ['Gas rate needed', f2(pc.flow, 2) + ' m³/h'], ['Pipe length', p.len + ' m'], ['Fittings', `${p.f.b90 || 0} × 90° bend, ${p.f.e90 || 0} × 90° elbow, ${p.f.b45 || 0} × 45° bend, ${p.f.tin || 0} × tee in, ${p.f.tout || 0} × tee out`], ['Allowed pressure drop', f2(pc.dpMax, 1) + ' mbar'], ['Smallest pipe that works', pc.best ? pc.best.n : 'None of the sizes listed']], bold: ['Smallest pipe that works'] },
     { t: 'table', head: ['Pipe', 'Run + fittings', 'Capacity', 'Drop at your flow', 'Result'], w: [30, 26, 28, 34, 24], a: ['l', 'r', 'r', 'r', 'l'], rows: pc.rows.map(r => [r.n, f2(r.eqL, 1) + ' m', f2(r.cap, 2) + ' m³/h', f2(r.drop, 2) + ' mbar', r.ok ? 'Big enough' : 'Too small']) },
+    ...(pc.steps.length ? [{ t: 'table', head: ['Step down to save pipe', 'Bigger pipe, nearest the meter', 'Then, for the rest'], w: [34, 46, 46], a: ['l', 'r', 'r'], rows: pc.steps.map(x => x.all ? [x.big, 'Whole run', '-'] : [x.big + ' to ' + x.small, tlFmt(x.x, 1) + ' m of ' + x.big, tlFmt(x.rest, 1) + ' m of ' + x.small]) }] : []),
     { t: 'note', text: 'Calculated for natural gas with the flow calibrated to the published BS 6891 figures for 15 mm copper. Confirm the final size against BS 6891 / IGEM/UP/2.' }] }); }
   /* tightness test volume */
   const ic = ivCalc();
