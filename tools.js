@@ -475,7 +475,7 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act="toolsOpen"]'); if (!b) return;
-  if (TL.prop.cid) { TL = TL_DEFAULT(); ui.toolPdf = null; try { delete ui.calc['tool-gas']; } catch (x) { } tlSave(); }   // left over from a customer: start clean from the front page
+  if (TL.prop.cid && ui.view !== 'tools') { TL = TL_DEFAULT(); ui.toolPdf = null; try { delete ui.calc['tool-gas']; } catch (x) { } tlSave(); }   // left over from a customer: start clean from the front page
   ui.toolBack = ''; ui.tool = 'menu'; ui.view = 'tools'; render(); window.scrollTo(0, 0);
 });
 document.addEventListener('input', e => {
