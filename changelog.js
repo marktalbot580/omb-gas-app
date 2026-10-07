@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v67', items: ['In Tools, the calculators you use most move to the top.'] },
   { v: 'v66', items: ['New Tools section on the home screen: gas rate calculator, gas pipe sizing, and room-by-room heat loss with radiator sizes that change with your flow and return temperatures.','Customer search now finds invoice numbers and certificate numbers too.'] },
   { v: 'v65', items: ['The line on Annual checks due now reads "Reminder sent by email" instead of "Emailed automatically".'] },
   { v: 'v64', items: ['Annual checks due now shows "Reminder sent by email" with the date when an automatic reminder has gone to a customer.'] },

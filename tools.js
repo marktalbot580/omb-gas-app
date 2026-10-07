@@ -6,6 +6,8 @@ const TL_DEFAULT = () => ({
   heat: { outside: '-3', sys: 'cond', flow: '70', ret: '50', room: '', factor: '1.5', rooms: [] }
 });
 let TL = (() => { try { const o = JSON.parse(localStorage.getItem(TL_KEY)); if (o && o.pipe && o.heat) return o; } catch (e) { } return TL_DEFAULT(); })();
+const tlUse = () => { try { return JSON.parse(localStorage.getItem('omb_tooluse')) || {}; } catch (e) { return {}; } };
+const tlCount = k => { try { const u = tlUse(); u[k] = (u[k] || 0) + 1; localStorage.setItem('omb_tooluse', JSON.stringify(u)); } catch (e) { } };
 const tlSave = () => { try { localStorage.setItem(TL_KEY, JSON.stringify(TL)); } catch (e) { } };
 const tlNum = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return Number.isFinite(n) ? n : null; };
 const tlFmt = (n, d = 1) => n === null || !Number.isFinite(n) ? '–' : (Math.round(n * Math.pow(10, d)) / Math.pow(10, d)).toFixed(d);
@@ -166,11 +168,11 @@ function renderTools(v) {
     if (!TL.heat.rooms.length) { TL.heat.rooms.push(newRoom()); tlSave(); }
     v.innerHTML = heatView() + '<div style="height:10px"></div><button class="btn ghost block" data-tl="go" data-v="menu">Back to tools</button>';
   } else {
-    v.innerHTML = `<h1>Tools</h1><p class="small muted" style="margin-top:0">Quick calculators for the van. None of these makes a certificate.</p>
-      <button class="btn gold block" data-tl="go" data-v="gas">Gas rate calculator</button><div style="height:10px"></div>
-      <button class="btn gold block" data-tl="go" data-v="pipe">Gas pipe sizing</button><div style="height:10px"></div>
-      <button class="btn gold block" data-tl="go" data-v="heat">Heat loss and radiator sizing</button><div style="height:14px"></div>
-      <button class="btn ghost block" data-nav="home">Back</button>`;
+    const use = tlUse(), list = [['gas', 'Gas rate calculator'], ['pipe', 'Gas pipe sizing'], ['heat', 'Heat loss and radiator sizing']]
+      .map((x, i) => ({ k: x[0], l: x[1], n: use[x[0]] || 0, i })).sort((a, b) => b.n - a.n || a.i - b.i);
+    v.innerHTML = `<h1>Tools</h1><p class="small muted" style="margin-top:0">Quick calculators for the van. None of these makes a certificate. The ones you use most are at the top.</p>
+      ${list.map(x => `<button class="btn gold block" data-tl="go" data-v="${x.k}" style="margin-bottom:10px">${x.l}</button>`).join('')}
+      <div style="height:4px"></div><button class="btn ghost block" data-nav="home">Back</button>`;
   }
 }
 const toolsHomeBtn = () => `<button class="btn block" data-act="toolsOpen">Tools: gas rate, pipe sizing, heat loss</button><div style="height:10px"></div>`;
@@ -183,7 +185,7 @@ function tlRepaint() { const y = window.scrollY; render(); window.scrollTo(0, y)
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-tl]'); if (!b || ui.view !== 'tools') return;
   const a = b.dataset.tl, v = b.dataset.v;
-  if (a === 'go') { ui.tool = v; render(); window.scrollTo(0, 0); }
+  if (a === 'go') { if (v !== 'menu') tlCount(v); ui.tool = v; render(); window.scrollTo(0, 0); }
   else if (a === 'pipeBasis') { TL.pipe.basis = v; tlSave(); tlRepaint(); }
   else if (a === 'addRoom') { TL.heat.rooms.push(newRoom()); tlSave(); tlRepaint(); }
   else if (a === 'rmRoom') { TL.heat.rooms.splice(+v, 1); tlSave(); tlRepaint(); }
