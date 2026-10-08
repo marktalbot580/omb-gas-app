@@ -740,7 +740,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v87';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v88';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1451,11 +1451,27 @@ function comBoiler() {
   <h2>System components</h2>
   <div class="card">${COM.PARTS.map(([k, l]) => choice(k, l, COM.PFN, { req: 1, wrap: 1 })).join('')}</div>`;
 }
+/* Brand / product pickers for the water treatment: common ones as buttons, anything else typed under Other and remembered */
+const COM_MEMO = ['cleanerBrand', 'cleanerProduct', 'inhibBrand', 'inhibProduct'];
+function comPick(path, label, kind, brandPath) {
+  const r = ui.rec, v = String(getP(r, path) ?? '').trim();
+  const base = kind ? (COM.WATER[getP(r, brandPath)] || {})[kind] || [] : Object.keys(COM.WATER);
+  const memo = ((settings.comMemo || {})[path] || []).filter(x => !base.some(b => b.toLowerCase() === x.toLowerCase()));
+  const opts = [...base, ...memo];
+  const hit = opts.find(x => x.toLowerCase() === v.toLowerCase());
+  const key = r.id + '.' + path, other = !hit && (v !== '' || (ui.comOther && ui.comOther[key]));
+  const act = kind ? 'data-k="' + path + '"' : 'data-act="comBrand" data-path="' + path + '"';
+  const bd = ui.showErr && !v;
+  return `<div class="f ${bd ? 'bad' : ''}" data-f="${path}"><span>${label} <b>*</b></span><div class="seg wrap">` +
+    opts.map(x => `<button type="button" class="${hit === x ? 'on' : ''}" ${act} data-v="${esc(x)}">${esc(x)}</button>`).join('') +
+    `<button type="button" class="${other ? 'on' : ''}" data-act="comOther" data-path="${path}">Other</button></div></div>` +
+    (other ? txt(path, label + ' (type it in)', { req: 1, cap: 'words' }) : '');
+}
 function comWater() {
   const r = ui.rec;
   return `<div class="card">
     ${choice('flushed', 'System flushed, cleaned and a suitable inhibitor applied after final fill (BS 7593 and the boiler maker\'s instructions)?', COM.YN, { req: 1, yn: 1 })}
-    ${r.flushed === 'Yes' ? `${txt('cleanerBrand', 'System cleaner: brand', { req: 1 })}${txt('cleanerProduct', 'System cleaner: product', { req: 1 })}${txt('inhibBrand', 'Inhibitor: brand', { req: 1 })}${txt('inhibProduct', 'Inhibitor: product', { req: 1 })}` : ''}
+    ${r.flushed === 'Yes' ? `<h2>System cleaner</h2>${comPick('cleanerBrand', 'Brand')}${comPick('cleanerProduct', 'Product', 'cleaner', 'cleanerBrand')}<h2>Inhibitor</h2>${comPick('inhibBrand', 'Brand')}${comPick('inhibProduct', 'Product', 'inhib', 'inhibBrand')}` : ''}
     ${choice('filter', 'Primary water system filter', COM.PFN, { req: 1, wrap: 1 })}
   </div>`;
 }
@@ -2131,6 +2147,18 @@ document.addEventListener('click', async e => {
       r.age = b.checked ? 'Unknown' : ''; ui.pdf = null; persistRec(r);
       const y = window.scrollY; render(); window.scrollTo(0, y); break;
     }
+    case 'comOther': {
+      (ui.comOther = ui.comOther || {})[r.id + '.' + b.dataset.path] = true;
+      const cur = String(getP(r, b.dataset.path) ?? '').trim(), known = Object.keys(COM.WATER).concat(...Object.values(COM.WATER).map(w => [...w.cleaner, ...w.inhib]));
+      if (known.some(x => x.toLowerCase() === cur.toLowerCase())) { setP(r, b.dataset.path, ''); ui.pdf = null; persistRec(r); }
+      const y = window.scrollY; render(); window.scrollTo(0, y); break;
+    }
+    case 'comBrand': {
+      const p = b.dataset.path; setP(r, p, b.dataset.v);
+      const prod = p === 'cleanerBrand' ? 'cleanerProduct' : 'inhibProduct'; setP(r, prod, '');
+      if (ui.comOther) { delete ui.comOther[r.id + '.' + p]; delete ui.comOther[r.id + '.' + prod]; }
+      ui.pdf = null; persistRec(r); const y = window.scrollY; render(); window.scrollTo(0, y); break;
+    }
     case 'mfrOther': {
       const cur = String(getP(r, b.dataset.path) ?? '').trim();
       const isBrand = SVC.MAKE.some(x => x !== 'Other' && x.toLowerCase() === cur.toLowerCase());
@@ -2410,6 +2438,10 @@ document.addEventListener('input', e => {
 document.addEventListener('change', async e => {
   if (CLOUD.locked() && ui.view !== 'settings' && e.target.id !== 'custSearch' && e.target.id !== 'helpSearch' && e.target.id !== 'fbText') { lockedMsg(); render(); return; }
   const t = e.target;
+  if (ui.view === 'form' && ui.rec && ui.rec.type === 'commission' && COM_MEMO.includes(t.dataset.k) && t.value.trim()) {
+    const v = t.value.trim(), m = settings.comMemo = settings.comMemo || {}, l = m[t.dataset.k] = m[t.dataset.k] || [];
+    if (!l.some(x => x.toLowerCase() === v.toLowerCase())) { l.unshift(v); l.length = Math.min(l.length, 8); saveSettings(); }
+  }
   if (t.dataset.photo && t.files && t.files.length) {
     const r = ui.rec, path = t.dataset.photo, files = Array.from(t.files); t.value = '';
     toast('Adding photo…'); await PH.attach(r, path, files);

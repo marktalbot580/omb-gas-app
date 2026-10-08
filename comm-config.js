@@ -21,6 +21,12 @@ const COM = (() => {
   ];
   const PARTS = [['zone', 'Zone valves'], ['trv', 'Thermostatic radiator valves'], ['bypass', 'Automatic bypass to system'], ['ufh', 'Underfloor heating']];
 
+  /* common system cleaners and inhibitors by brand (anything else is typed under Other and remembered) */
+  const WATER = {
+    Fernox: { cleaner: ['Cleaner F3', 'Express Cleaner F5', 'Restorer'], inhib: ['Protector F1', 'Protector F1 Express', 'Alphi-11'] },
+    Sentinel: { cleaner: ['X300 Cleaner', 'X400 Restorer', 'X800 Jetflush'], inhib: ['X100 Inhibitor'] },
+    Adey: { cleaner: ['MC3+ Cleaner', 'MC3+ Rapide'], inhib: ['MC1+ Protector', 'MC1+ Rapide'] }
+  };
   const getP = (o, p) => p.split('.').reduce((a, k) => (a == null ? a : a[k]), o);
   const num = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return Number.isFinite(n) ? n : null; };
 
@@ -94,5 +100,5 @@ const COM = (() => {
     return w;
   }
 
-  return { STEPS, KIND, YN, PFN, UNIT, TERM, DISP, FLUE, PLUS, PARTS, num, blank, makeText, isCombi, plusFor, ratio, ratioText, validate, warnings };
+  return { STEPS, KIND, YN, PFN, UNIT, TERM, DISP, FLUE, PLUS, PARTS, WATER, num, blank, makeText, isCombi, plusFor, ratio, ratioText, validate, warnings };
 })();

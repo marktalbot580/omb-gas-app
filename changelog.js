@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v88', items: ['Boiler commissioning checklist: pick the system cleaner and inhibitor from common brands and products (Fernox, Sentinel, Adey), or choose Other and type it. Anything you type is remembered as a button for next time.'] },
   { v: 'v87', items: ['The one-tap button on the forms-for-this-visit screen is now called Landlord visit, so it is clear it ticks just the gas check, boiler service and Legionella forms.'] },
   { v: 'v86', items: ['New form: Boiler commissioning checklist for a new boiler installation. It records compliance and Boiler Plus options, water quality, operating readings, condensate, combustion readings and customer handover, and makes a PDF in the same look as your other certificates. There is a price for it in Settings.'] },
   { v: 'v85', items: ['The gas rate calculator now starts blank on each new certificate, so the readings from the last job are not left in the boxes.'] },
