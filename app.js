@@ -762,7 +762,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v109';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v110';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1361,7 +1361,7 @@ function sendCard(m) {
   const inv = invForVisit(m), bm = billable(m);
   const row = (id, title, sub, extra) => `<div class="row" style="margin-bottom:10px;align-items:stretch"><button type="button" class="item tog grow ${selOn(id) ? 'on' : ''}" style="margin:0;min-width:0" data-act="selToggle" data-id="${id}"><span class="box"></span><span><span class="t">${title}</span><span class="s" style="display:block">${sub}</span></span></button>${extra}</div>`;
   const side = (act, id, label) => `<button type="button" class="btn" style="flex:none;min-width:76px" data-act="${act}" ${id ? `data-id="${id}"` : ''}>${label}</button>`;
-  const recRows = m.map(x => row(x.id, esc(FORM_NAME[typeOf(x)]), 'Signed PDF ready', side('viewPdf', x.id, 'Open'))).join('');
+  const recRows = m.map(x => row(x.id, esc(FORM_NAME[typeOf(x)]), typeOf(x) === 'quote' ? 'Quote PDF ready' : 'Signed PDF ready', `<div style="display:flex;gap:8px;flex:none">${side('viewPdf', x.id, 'Open')}${side('editRec', x.id, 'Edit')}</div>`)).join('');
   let invRow = '', paid = '';
   if (inv) {
     const T = invTotals(inv);
@@ -2446,6 +2446,7 @@ document.addEventListener('click', async e => {
     case 'sharePdf': await sharePdf(records.find(x => x.id === b.dataset.id) || r); break;
     case 'sharePdfAll': await sharePdfAll(); break;
     case 'dlPdf': downloadPdf(records.find(x => x.id === b.dataset.id) || r); break;
+    case 'editRec': { const x = records.find(q => q.id === b.dataset.id); if (!x) break; ui.rec = x; ui.step = 1; ui.appTab = 0; ui.showErr = false; ui.pdfs = {}; ui.pdf = null; ui.view = 'form'; render(); break; }
     case 'viewPdf': window.open(URL.createObjectURL(ui.pdfs[b.dataset.id].blob), '_blank'); break;
     case 'delDraft': {
       const x = records.find(q => q.id === b.dataset.id);
