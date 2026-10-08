@@ -757,7 +757,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v101';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v102';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -957,7 +957,6 @@ function renderSettings(v) {
         <p class="small muted" style="margin:0 0 8px">${(settings.qList || []).length ? (settings.qList.length + ' items.') : 'Not set up yet.'} Boilers, flue kits, copper, fittings, thermostats and labour, each with your cost and mark-up. Quotes pick from it and show your profit to you only.</p>
         <button type="button" class="btn block" data-act="pricesOpen">Open price list</button></div>
       ${f('quoteIncluded', 'What is included as standard (one item per line)', { area: 1 })}
-      ${f('qItemsText', 'Saved quote items (one per line: item | price)', { area: 1, hint: 'Items you add to a quote are saved here automatically. You can edit or delete lines.' })}
       ${f('quoteTerms', 'Terms shown on the quote (one per line)', { area: 1 })}
     </div>
     <h2>Tools</h2>
@@ -969,7 +968,7 @@ function renderSettings(v) {
     <div class="card">
       <label class="f"><span>Message wording</span><textarea data-s="remText" rows="4">${esc(settings.remText || REM_DEFAULT)}</textarea><small>Used for the Text, WhatsApp and Email buttons on the Annual checks due screen. {name}, {business}, {what}, {address} and {date} are filled in for you.</small></label>
       <label class="f"><span>Start listing checks</span><select data-s="remDays">${[['28', '4 weeks before they are due'], ['42', '6 weeks before they are due'], ['56', '8 weeks before they are due'], ['84', '12 weeks before they are due']].map(([k, l]) => `<option value="${k}" ${String(settings.remDays || '56') === k ? 'selected' : ''}>${l}</option>`).join('')}</select><small>A landlord gas safety check can be done up to 2 months early and keep the same yearly date.</small></label>
-      <label class="f"><span>Send reminders automatically by email</span><select data-s="remAuto"><option value="off" ${settings.remAuto === 'on' ? '' : 'selected'}>Off</option><option value="on" ${settings.remAuto === 'on' ? 'selected' : ''}>On</option></select><small>When on, customers with an email address saved get an email about 8 weeks before their check is due, and again 2 weeks before. It comes from reminders@ombgas.com with your business name, and their replies come to <b>${esc(settings.email || 'your email in Settings')}</b>. Customers you mark Booked in, Not needed or Stop are skipped, and every email has an unsubscribe link. You need to be signed in so it can run.${settings.remAuto === 'on' && !settings.email ? ' <b style="color:var(--gold2)">Add your email address under Business below first, or replies will have nowhere to go.</b>' : ''}</small></label>
+      <label class="f"><span>Send reminders automatically by email</span><select data-s="remAuto"><option value="off" ${settings.remAuto === 'on' ? '' : 'selected'}>Off</option><option value="on" ${settings.remAuto === 'on' ? 'selected' : ''}>On</option></select><small>When on, customers with an email address saved get an email about 8 weeks before their check is due, and again 2 weeks before. It comes from reminders@ombgas.com with your business name, and their replies come to <b>${esc(settings.email || 'your email in Settings')}</b>. Customers you mark Booked in, Not needed or Stop are skipped, and every email has an unsubscribe link. You need to be signed in so it can run.${settings.remAuto === 'on' && !settings.email ? ' <b style="color:var(--gold2)">Add your email address under Business first, or replies will have nowhere to go.</b>' : ''}</small></label>
       ${settings.remAuto === 'on' ? '<button class="btn block" data-act="remTest">Send me a sample reminder</button><div style="height:8px"></div>' : ''}
       <button class="btn block ghost" data-act="remReset">Put the original wording back</button>
     </div>
@@ -1497,6 +1496,8 @@ function qSelect(kind, title, list, group) {
 }
 function qSeed() {
   if (!settings.qList || !settings.qList.length) settings.qList = QUO.itemsFromRows([QUO.SHEET_HEAD].concat(QUO.STARTER));
+  const old = QUO.parseItems(settings.qItemsText);
+  if (old.length) { old.forEach(o => { if (!settings.qList.some(x => x.name.toLowerCase() === o.name.toLowerCase())) settings.qList.push({ id: QUO.newId(), type: 'Other', make: '', name: o.name, kind: '', kw: '', warranty: '', unit: '', cost: '', markup: '', price: String(o.price || '') }); }); settings.qItemsText = ''; saveSettings(); }
   let ch = false; settings.qList.forEach(x => { if (!x.id) { x.id = QUO.newId(); ch = true; } }); if (ch) saveSettings();
 }
 function renderPrices(v) {
@@ -1598,14 +1599,13 @@ function quoTotHtml() {
   return `<div class="row sp"><span>Subtotal</span><b>${m(T.sub)}</b></div>${T.rate ? `<div class="row sp"><span>VAT at ${T.rate}%</span><b>${m(T.vat)}</b></div>` : ''}<div class="row sp"><span>Total</span><b>${m(T.total)}</b></div>${(() => { const c = QUO.costOf(r); return c === null ? '' : `<p class="small muted" style="margin:10px 0 0">Only you see this. Your cost ${m(c)} · profit ${m(T.sub - c)} (${T.sub ? Math.round((T.sub - c) / T.sub * 100) : 0}%)</p>`; })()}`;
 }
 function quoExtras() {
-  const r = ui.rec, saved = QUO.parseItems(settings.qItemsText);
+  const r = ui.rec; qSeed();
   const lines = (r.lines || []).map((l, i) => `<div class="card" style="margin-bottom:10px">
     ${txt('lines.' + i + '.name', 'Item', { ph: 'For example magnetic filter' })}
     <div class="row">${txt('lines.' + i + '.qty', 'Qty', { mode: 'numeric' })}${txt('lines.' + i + '.price', 'Price each (£)', { mode: 'decimal' })}</div>
     <button type="button" class="btn ghost" data-act="qRmLine" data-i="${i}">Remove this item</button></div>`).join('');
-  return `<p class="small muted" style="margin-top:0">Add anything else that goes on the quote. Items you type are remembered, so next time you can just tap them.</p>
+  return `<p class="small muted" style="margin-top:0">Add anything else that goes on the quote. Items you type with a price are added to your price list automatically.</p>
   ${qFinder('extra', 'Add from your price list')}
-  ${saved.length ? `<div class="seg wrap" style="margin-bottom:12px">${saved.map(x => `<button type="button" data-act="qAddLine" data-name="${esc(x.name)}" data-price="${esc(x.price)}">${esc(x.name)}${x.price ? ' · £' + esc(x.price) : ''}</button>`).join('')}</div>` : ''}
   ${lines}
   <button type="button" class="btn block" data-act="qAddLine" data-name="" data-price="">+ Add an item</button>
   <h2>Labour</h2>
@@ -2653,8 +2653,12 @@ document.addEventListener('change', async e => {
   if (t.dataset.qpick) { if (t.value !== '') qPick(t.dataset.qpick, +t.value); return; }
   if (ui.view === 'form' && ui.rec && ui.rec.type === 'quote' && /^lines\.\d+\.(name|price|qty)$/.test(t.dataset.k || '')) {
     const l = ui.rec.lines[+t.dataset.k.split('.')[1]];
-    if (l && String(l.name || '').trim() && String(l.price || '').trim() && !QUO.parseItems(settings.qItemsText).some(x => x.name.toLowerCase() === l.name.trim().toLowerCase())) {
-      settings.qItemsText = (String(settings.qItemsText || '').trim() + '\n' + l.name.trim() + ' | ' + String(l.price).trim()).trim(); saveSettings();
+    if (l && String(l.name || '').trim() && String(l.price || '').trim()) {
+      qSeed();
+      const nm = l.name.trim().toLowerCase();
+      if (!settings.qList.some(x => ((x.make ? x.make + ' ' : '') + x.name).toLowerCase() === nm || x.name.toLowerCase() === nm)) {
+        settings.qList.push({ id: QUO.newId(), type: 'Other', make: '', name: l.name.trim(), kind: '', kw: '', warranty: '', unit: '', cost: String(l.cost || ''), markup: '', price: String(l.price).trim() }); saveSettings();
+      }
     }
   }
   if (ui.view === 'form' && ui.rec && ui.rec.type === 'quote') { const tt = document.getElementById('quoTot'); if (tt) tt.innerHTML = quoTotHtml(); }
