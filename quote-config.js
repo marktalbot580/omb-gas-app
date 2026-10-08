@@ -32,7 +32,7 @@ const QUO = (() => {
     return {
       kind: '', make: '', makeOther: '', model: '', kw: '', warranty: '',
       boilerPrice: '', boilerCost: '', flueDesc: '', fluePrice: '', flueCost: '', labourDesc: 'Installation labour', labourPrice: '', labourCost: '',
-      lines: [], homeNotes: '', accepted: ''
+      lines: [], homeNotes: '', textSize: 'Normal', accepted: ''
     };
   }
   const makeText = r => (r.make === 'Other' ? r.makeOther : r.make);

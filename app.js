@@ -757,7 +757,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v106';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v107';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1624,6 +1624,7 @@ function quoExtras() {
     <div class="row">${txt('labourDesc', 'Description')}${txt('labourPrice', 'Price (£)', { req: 1, mode: 'decimal' })}</div>
   </div>
   <div class="card">${txt('homeNotes', 'Specific to this home (optional, shown on the quote)', { area: 1, rows: 2 })}</div>
+  <div class="card">${choice('textSize', 'Text size on the quote (Large is easier for older customers)', ['Normal', 'Large'])}</div>
   <div class="card" id="quoTot">${quoTotHtml()}</div>`;
 }
 function comBoiler() {
