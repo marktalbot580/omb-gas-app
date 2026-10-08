@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v91', items: ['Heat loss tool made simpler: Air changes per hour is replaced by a plain Draughts choice (Well sealed, Normal, Draughty), the U-values are gone from the wall, glazing, roof and floor lists, and two boxes have friendlier names (Coldest outside temperature, Boiler allowance).'] },
   { v: 'v90', items: ['The Boiler commissioning checklist has been taken off the menus for now. Anything already saved still opens.'] },
   { v: 'v89', items: ['Settings now has Add sample data: two made-up customers and a completed example of every form, so you can open them and see how the forms and PDFs look. Remove sample data clears them again.'] },
   { v: 'v88', items: ['Boiler commissioning checklist: pick the system cleaner and inhibitor from common brands and products (Fernox, Sentinel, Adey), or choose Other and type it. Anything you type is remembered as a button for next time.'] },

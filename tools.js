@@ -68,7 +68,7 @@ function ivWork(c) {
   return `<div class="tlwork"><div class="t">Workings</div>${out.join('')}</div>`;
 }
 function heatWork(r) {
-  const o = tlNum(TL.heat.outside), t = tlNum(r.temp), L = tlNum(r.l), W = tlNum(r.w), H = tlNum(r.h), ext = tlNum(r.ext) || 0, win = tlNum(r.win) || 0, ach = tlNum(r.ach) || 0;
+  const o = tlNum(TL.heat.outside), t = tlNum(r.temp), L = tlNum(r.l), W = tlNum(r.w), H = tlNum(r.h), ext = tlNum(r.ext) || 0, win = tlNum(r.win) || 0, ach = achOf(r);
   if (o === null || t === null || !(L > 0 && W > 0 && H > 0)) return '';
   const dT = t - o, wallA = Math.max(0, ext * H - win), area = L * W, vol = area * H, uw = WALLS[+r.wall][1], ug = GLAZ[+r.glaz][1], ur = ROOFS[+r.roof][1], uf = FLOORS[+r.floor][1];
   const c = roomCalc(r), re = radEquiv(c.watts, t), sy = hlSys();
@@ -78,7 +78,7 @@ function heatWork(r) {
     <div>Windows and doors = ${win} m² × U ${ug} = ${w2(win * ug, 1)} W/K</div>
     <div>Floor = ${w2(area, 1)} m² × U ${uf} = ${w2(area * uf, 1)} W/K</div>
     <div>Above = ${w2(area, 1)} m² × U ${ur} = ${w2(area * ur, 1)} W/K</div>
-    <div>Air changes = 0.33 × ${ach} × ${w2(vol, 1)} m³ = ${w2(0.33 * ach * vol, 1)} W/K</div>
+    <div>Draughts and ventilation = 0.33 × ${ach} × ${w2(vol, 1)} m³ = ${w2(0.33 * ach * vol, 1)} W/K</div>
     <div>Heat loss = (${w2(wallA * uw + win * ug + area * uf + area * ur + 0.33 * ach * vol, 1)} W/K) × ${dT} = <b>${Math.round(c.watts)} W</b></div>
     ${re ? `<div>Radiator mean water = (${sy.flow} + ${sy.ret}) ÷ 2 = ${(sy.flow + sy.ret) / 2}°C, so ΔT = ${w2(re.dT, 1)}°C</div>
     <div>Output factor = (${w2(re.dT, 1)} ÷ 50)^1.3 = ${w2(re.factor, 3)}</div>
@@ -230,10 +230,13 @@ const ROOFS = [['Heated room above', 0], ['Loft, 270 mm insulation', 0.16], ['Lo
 const FLOORS = [['Heated room below', 0], ['Solid floor, uninsulated', 0.7], ['Solid floor, insulated', 0.25], ['Timber floor, uninsulated', 0.7], ['Timber floor, insulated', 0.25]];
 const ROOMT = { 'Living room': [21, 1.5], 'Dining room': [21, 1.5], 'Kitchen': [18, 2], 'Bedroom': [18, 1], 'Bathroom': [22, 2], 'Hall / landing': [18, 1.5], 'Toilet': [18, 2], 'Study': [21, 1] };
 const SYSTEMS = { cond: ['Condensing boiler (70/50)', 70, 50], cond2: ['Low temperature (55/45)', 55, 45], old: ['Older boiler (75/65)', 75, 65], hp: ['Heat pump (45/40)', 45, 40], hp2: ['Heat pump (50/40)', 50, 40], custom: ['My own temperatures', null, null] };
+/* plain-English draught level: multiplies the room's usual air changes per hour (kept behind the scenes) */
+const DRAUGHT = [['0.6', 'Well sealed'], ['1', 'Normal'], ['1.5', 'Draughty']];
+const achOf = r => (tlNum(r.ach) || 0) * (tlNum(r.draught) || 1);
 const newRoom = () => ({ name: 'Living room', temp: '21', l: '4', w: '4', h: '2.4', ext: '4', wall: '1', win: '2', glaz: '1', roof: '0', floor: '1', ach: '1.5' });
 const hlSys = () => { const h = TL.heat, s = SYSTEMS[h.sys]; return s && s[1] ? { flow: s[1], ret: s[2] } : { flow: tlNum(h.flow) || 70, ret: tlNum(h.ret) || 50 }; };
 function roomCalc(r) {
-  const out = tlNum(TL.heat.outside), t = tlNum(r.temp), L = tlNum(r.l), W = tlNum(r.w), H = tlNum(r.h), ext = tlNum(r.ext) || 0, win = tlNum(r.win) || 0, ach = tlNum(r.ach);
+  const out = tlNum(TL.heat.outside), t = tlNum(r.temp), L = tlNum(r.l), W = tlNum(r.w), H = tlNum(r.h), ext = tlNum(r.ext) || 0, win = tlNum(r.win) || 0, ach = achOf(r);
   if (out === null || t === null || !(L > 0 && W > 0 && H > 0)) return null;
   const dT = t - out, wallA = Math.max(0, ext * H - win), area = L * W, vol = area * H;
   const uw = WALLS[+r.wall][1], ug = GLAZ[+r.glaz][1], ur = ROOFS[+r.roof][1], uf = FLOORS[+r.floor][1];
@@ -252,7 +255,7 @@ function roomResHtml(r, i) {
   const c = roomCalc(r); if (!c) return `<div id="tlRoomRes-${i}" class="small muted">Fill in the room size and temperatures.</div>`;
   const re = radEquiv(c.watts, tlNum(r.temp));
   return `<div id="tlRoomRes-${i}" class="tlrow"><div class="row sp"><span>Heat loss</span><b>${Math.round(c.watts)} W</b></div>
-    <div class="small muted">Walls, windows, floor and roof ${Math.round(c.fab)} W · air changes ${Math.round(c.vent)} W</div>
+    <div class="small muted">Walls, windows, floor and roof ${Math.round(c.fab)} W · draughts and ventilation ${Math.round(c.vent)} W</div>
     <div class="row sp" style="margin-top:6px"><span>Radiator needed at your temperatures</span><b>${Math.round(c.watts)} W</b></div>
     <div class="row sp"><span>Catalogue size (ΔT50) to buy</span><b>${re ? Math.round(re.rated) + ' W' : '–'}</b></div>${TL.work ? heatWork(r) : ''}</div>`;
 }
@@ -274,12 +277,12 @@ function heatTotals() {
     <p class="small muted" style="margin:8px 0 0">Add hot water demand if it is a system or regular boiler with a cylinder. A combi is sized for its hot water output as well.</p>`;
 }
 function roomForm(r, i) {
-  const sel = (k, list) => `<select data-tl-sel="heat.rooms.${i}.${k}">${list.map((x, j) => `<option value="${j}" ${String(r[k]) === String(j) ? 'selected' : ''}>${esc(x[0])}${x[1] ? ' (U ' + x[1] + ')' : ''}</option>`).join('')}</select>`;
+  const sel = (k, list) => `<select data-tl-sel="heat.rooms.${i}.${k}">${list.map((x, j) => `<option value="${j}" ${String(r[k]) === String(j) ? 'selected' : ''}>${esc(x[0])}</option>`).join('')}</select>`;
   const n = (k, label, ph) => `<div class="grow f"><span>${label}</span><input data-tl-in="heat.rooms.${i}.${k}" type="text" inputmode="decimal" value="${esc(r[k])}" ${ph ? `placeholder="${ph}"` : ''} autocomplete="off"></div>`;
   return `<div class="card tlroom">
     <div class="row sp"><div class="grow f" style="margin:0"><span>Room</span><select data-tl-sel="heat.rooms.${i}.type">${Object.keys(ROOMT).map(k => `<option ${r.name === k ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select></div>
       <button type="button" class="btn ghost" style="margin-left:8px" data-tl="rmRoom" data-v="${i}">Remove</button></div>
-    <div class="row">${n('temp', 'Room temperature (°C)')}${n('ach', 'Air changes per hour')}</div>
+    <div class="row">${n('temp', 'Room temperature (°C)')}<div class="grow f"><span>Draughts</span><select data-tl-sel="heat.rooms.${i}.draught">${DRAUGHT.map(([v, l]) => `<option value="${v}" ${String(r.draught || '1') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div></div>
     <div class="row">${n('l', 'Length (m)')}${n('w', 'Width (m)')}${n('h', 'Height (m)')}</div>
     <div class="row">${n('ext', 'Outside wall length (m)')}${n('win', 'Window and door area (m²)')}</div>
     <div class="f"><span>Outside wall type</span>${sel('wall', WALLS)}</div>
@@ -294,8 +297,8 @@ function heatView() {
     <div class="card">
       <div class="f"><span>Heating system</span><select data-tl-sel="heat.sys">${Object.keys(SYSTEMS).map(k => `<option value="${k}" ${h.sys === k ? 'selected' : ''}>${esc(SYSTEMS[k][0])}</option>`).join('')}</select></div>
       ${custom ? `<div class="row"><div class="grow f"><span>Flow (°C)</span><input data-tl-in="heat.flow" type="text" inputmode="decimal" value="${esc(h.flow)}" autocomplete="off"></div><div class="grow f"><span>Return (°C)</span><input data-tl-in="heat.ret" type="text" inputmode="decimal" value="${esc(h.ret)}" autocomplete="off"></div></div>` : ''}
-      <div class="row"><div class="grow f"><span>Outside design temperature (°C)</span><input data-tl-in="heat.outside" type="text" inputmode="decimal" value="${esc(h.outside)}" autocomplete="off"></div>
-        <div class="grow f"><span>Boiler rule of thumb ×</span><input data-tl-in="heat.factor" type="text" inputmode="decimal" value="${esc(h.factor)}" autocomplete="off"></div></div>
+      <div class="row"><div class="grow f"><span>Coldest outside temperature (°C)</span><input data-tl-in="heat.outside" type="text" inputmode="decimal" value="${esc(h.outside)}" autocomplete="off"></div>
+        <div class="grow f"><span>Boiler allowance ×</span><input data-tl-in="heat.factor" type="text" inputmode="decimal" value="${esc(h.factor)}" autocomplete="off"></div></div>
     </div>
     <div id="tlRooms">${h.rooms.map((r, i) => roomForm(r, i) + roomResHtml(r, i) + '</div>').join('')}</div>
     <button type="button" class="btn gold block" data-tl="addRoom">+ Add a room</button>
