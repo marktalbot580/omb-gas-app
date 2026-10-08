@@ -98,7 +98,7 @@ const blankDefect = () => ({ text: '', cls: '', action: '' });
 const DEFAULT_SETTINGS = {
   businessName: '', logo: '', accent: '#c9a24b', refPrefix: 'REC', updated: 0, address: '', phone: '', email: '',
   gasSafeReg: '', engineerName: '', gasSafeId: '', engSig: '', syncUrl: '', syncToken: '', gasSafeLogo: '', gasSafeLogoAR: 1,
-  priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', priceCom: '', quoteIncluded: QUO.DEFAULT_INCLUDED, quoteTerms: QUO.DEFAULT_TERMS, qItemsText: '', discType: '£', discValue: '',
+  priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', priceCom: '', quoteIncluded: QUO.DEFAULT_INCLUDED, quoteTerms: QUO.DEFAULT_TERMS, qItemsText: '', qList: [], qMarkup: {}, qMarkupDef: '30', discType: '£', discValue: '',
   invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '', vatQtr: '2', yearDay: '6', yearMonth: '4',
   bankName: '', accName: '', sortCode: '', accNo: '', invFooter: 'Thank you for your business.',
   remText: '', remDays: '56', toolGas: 'on', toolPipe: 'on', toolIv: 'on', toolHeat: 'on'
@@ -566,7 +566,7 @@ function render() {
   if (ui.view !== 'home' && typeof instPopClose === 'function') instPopClose();   // the install pop-up must never cover the Next / Back buttons
   if (ui.view === 'form') { renderForm(v, nav); }
   else {
-    ({ home: renderHome, pick: renderPick, customers: renderCustomers, custEdit: renderCustEdit, settings: renderSettings, invoices: renderInvoices, invEdit: renderInvEdit, invPrint: renderInvPrint, admin: renderAdmin, help: renderHelp, news: renderNews, feedback: renderFeedback, due: renderDue, tools: renderTools }[ui.view])(v);
+    ({ home: renderHome, pick: renderPick, customers: renderCustomers, custEdit: renderCustEdit, settings: renderSettings, invoices: renderInvoices, invEdit: renderInvEdit, invPrint: renderInvPrint, admin: renderAdmin, prices: renderPrices, help: renderHelp, news: renderNews, feedback: renderFeedback, due: renderDue, tools: renderTools }[ui.view])(v);
     renderTabs(nav);
   }
   paintSync();
@@ -584,7 +584,7 @@ const ICON = {
 function renderTabs(nav) {
   nav.className = 'tabs';
   const t = (id, label, ic, on) => `<button data-nav="${id}" class="${on ? 'on' : ''}">${ic}${label}</button>`;
-  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick' || ui.view === 'due') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint') + (['gas', 'pipe', 'iv', 'heat'].some(toolOn) ? `<button data-act="toolsOpen" class="${ui.view === 'tools' ? 'on' : ''}">${ICON.tools}Tools</button>` : '') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'admin' || ui.view === 'help' || ui.view === 'news' || ui.view === 'feedback');
+  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick' || ui.view === 'due') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint') + (['gas', 'pipe', 'iv', 'heat'].some(toolOn) ? `<button data-act="toolsOpen" class="${ui.view === 'tools' ? 'on' : ''}">${ICON.tools}Tools</button>` : '') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'prices' || ui.view === 'admin' || ui.view === 'help' || ui.view === 'news' || ui.view === 'feedback');
   $('#barSub').textContent = ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' ? 'Invoices' : 'Gas & Legionella records';
 }
 
@@ -757,7 +757,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v98';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v99';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -958,6 +958,9 @@ function renderSettings(v) {
     </div>
     <h2>Quotes</h2>
     <div class="card">
+      <div class="f"><span>Price list</span>
+        <p class="small muted" style="margin:0 0 8px">${(settings.qList || []).length ? (settings.qList.length + ' items.') : 'Not set up yet.'} Boilers, flue kits, copper, fittings, thermostats and labour, each with your cost and mark-up. Quotes pick from it and show your profit to you only.</p>
+        <button type="button" class="btn block" data-act="pricesOpen">Open price list</button></div>
       ${f('quoteIncluded', 'What is included as standard (one item per line)', { area: 1 })}
       ${f('qItemsText', 'Saved quote items (one per line: item | price)', { area: 1, hint: 'Items you add to a quote are saved here automatically. You can edit or delete lines.' })}
       ${f('quoteTerms', 'Terms shown on the quote (one per line)', { area: 1 })}
@@ -1060,8 +1063,7 @@ function renderForm(v, nav) {
   let body = '';
   if (s === 0) body = stepCustomer();
   else if (s === last) body = stepReview();
-  else if (s === last - 1 && isQuo(r)) body = quoAccept();
-  else if (s === last - 1) body = (job ? `<div class="notice">This sign-off is used on all ${job.length} forms in this visit.</div>` : '') + stepSign();
+  else if (s === last - 1 && !isQuo(r)) body = (job ? `<div class="notice">This sign-off is used on all ${job.length} forms in this visit.</div>` : '') + stepSign();
   else if (t === 'legionella') body = [null, legSystem, legTemps, legTanks, legRisk, legFindings][s]();
   else if (t === 'warning') body = [null, warnFaults][s]();
   else if (t === 'aircon') body = [null, acSystem, acRefrig][s]();
@@ -1335,7 +1337,7 @@ function recSummary(r) {
   let rows = dl('Record', r.ref) + dl('Date', ukDate(r.inspectionDate)) + dl('Client', r.customer.name) + dl('Property', r.jobAddress);
   if (t === 'legionella') rows += dl('Temperatures', LEG.temps(r).map(x => `${x.label}: ${x.n === null ? '?' : x.n + '°C'} – ${x.pass === null ? '?' : x.pass ? 'pass' : 'FAIL'}`).join('\n')) + dl('Overall risk', r.overall) + dl('Risks / defects', String(r.defects.length)) + dl('Next assessment', ukDate(r.renewal));
   else if (t === 'aircon') rows += dl('System', [AC.makeText(r), r.indoorModel].filter(Boolean).join(' ')) + dl('Gas', [AC.gasText(r), r.charge ? r.charge + ' g' : ''].filter(Boolean).join(' · ')) + dl('Pressure / vacuum', [r.pressure ? r.pressure + ' bar' : '', r.vacuum ? r.vacuum + ' hrs' : ''].filter(Boolean).join(' · ')) + dl('Drain / electrical', `${r.drain || '?'} / ${r.electrical || '?'}`);
-  else if (t === 'quote') { const T = QUO.totals(r, settings); rows += dl('Boiler', [QUO.makeText(r), r.model, r.kw ? r.kw + ' kW' : ''].filter(Boolean).join(' ')) + dl('Quote total', QUO.money(T.total) + (T.rate ? ' inc. VAT' : '')) + dl('Accepted', r.customerSig ? 'Signed ' + ukDate(r.accepted || r.inspectionDate) : 'Not yet'); }
+  else if (t === 'quote') { const T = QUO.totals(r, settings); rows += dl('Boiler', [QUO.makeText(r), r.model, r.kw ? r.kw + ' kW' : ''].filter(Boolean).join(' ')) + dl('Quote total', QUO.money(T.total) + (T.rate ? ' inc. VAT' : '')); }
   else if (t === 'commission') rows += dl('Boiler', [COM.makeText(r), r.model].filter(Boolean).join(' ')) + dl('Type', r.kind) + dl('Max CO / CO₂', [r.maxCo ? r.maxCo + ' ppm' : '', r.maxCo2 ? r.maxCo2 + ' %' : ''].filter(Boolean).join(' · ')) + dl('Next service', ukDate(r.renewal));
   else if (t === 'warning') rows += dl('Faults', r.faults.slice(0, +r.faultCount || 1).map((f, i) => `${i + 1}. ${f.type || '?'} – ${f.cls || '?'}${f.riddor === 'YES' ? ' (RIDDOR)' : ''}`).join('\n'));
   else if (t === 'service') rows += dl('Boiler', [SVC.makeText(r), r.model].filter(Boolean).join(' ')) + dl('Visit', r.reason) + dl('Checks failed', String(SVC.failCount(r))) + dl('Safe to use', r.safe) + dl('Warning notice', r.warning) + dl('Next service', ukDate(r.renewal));
@@ -1465,6 +1467,7 @@ function quoBoiler() {
   const mk = QUO_MAKES();
   const hit = mk.includes(r.make);
   return `<div class="card">
+    ${qSelect('boiler', 'Choose from your price list', qOf('Boiler'), 'make')}
     ${choice('kind', 'Boiler type', QUO.KIND, { req: 1, wrap: 1 })}
     <div class="f ${ui.showErr && !r.make ? 'bad' : ''}" data-f="make"><span>Boiler make <b>*</b></span><div class="seg wrap">${mk.map(x => `<button type="button" class="${r.make === x ? 'on' : ''}" data-k="make" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div></div>
     ${r.make === 'Other' ? txt('makeOther', 'Boiler make (other)', { req: 1 }) : ''}
@@ -1474,14 +1477,108 @@ function quoBoiler() {
   </div>
   <h2>Flue</h2>
   <div class="card">
-    ${txt('flueDesc', 'Flue kit', { ph: 'For example horizontal flue kit' })}
+    ${qSelect('flue', 'Type of flue kit', qOf('Flue'), false)}
+    ${txt('flueDesc', 'Flue kit', { ph: 'Pick from the list, or type your own' })}
     ${txt('fluePrice', 'Flue price (£)', { mode: 'decimal' })}
   </div>`;
 }
 const QUO_MAKES = () => SVC.MAKE;
+const qAll = () => (settings.qList && settings.qList.length) ? settings.qList : QUO.itemsFromRows([QUO.SHEET_HEAD].concat(QUO.STARTER));
+const qOf = type => qAll().filter(x => x.type === type);
+const qPrice = x => { const v = QUO.saleText(x, settings); return v ? ' · £' + v : ''; };
+const qExtraList = () => qAll().filter(x => !QUO.MAIN.includes(x.type));
+function qSelect(kind, title, list, group) {
+  if (!list.length) return '';
+  let opts;
+  if (group) { const by = {}, key = x => (group === 'type' ? x.type : x.make) || 'Other'; list.forEach((x, i) => (by[key(x)] = by[key(x)] || []).push([x, i]));
+    opts = Object.keys(by).sort().map(m => `<optgroup label="${esc(m)}">${by[m].map(([x, i]) => `<option value="${i}">${esc((group === 'type' && x.make ? x.make + ' ' : '') + x.name + (x.kind && group !== 'type' ? ' · ' + x.kind : '') + qPrice(x))}</option>`).join('')}</optgroup>`).join('');
+  } else opts = list.map((x, i) => `<option value="${i}">${esc(x.name + qPrice(x))}</option>`).join('');
+  return `<div class="f"><span>${title}</span><select data-qpick="${kind}"><option value="">Choose…</option>${opts}</select></div>`;
+}
+function qSeed() {
+  if (!settings.qList || !settings.qList.length) settings.qList = QUO.itemsFromRows([QUO.SHEET_HEAD].concat(QUO.STARTER));
+  let ch = false; settings.qList.forEach(x => { if (!x.id) { x.id = QUO.newId(); ch = true; } }); if (ch) saveSettings();
+}
+function renderPrices(v) {
+  qSeed();
+  const list = settings.qList, cats = QUO.TYPES.concat(list.map(x => x.type).filter((t, i, a) => !QUO.TYPES.includes(t) && a.indexOf(t) === i));
+  const cat = ui.pCat || 'Boiler', items = list.filter(x => x.type === cat), M = settings.qMarkup || {};
+  const money = n => n === null ? '' : '£' + (Math.round(n * 100) / 100).toFixed(2).replace(/\.00$/, '');
+  const row = x => {
+    const sale = QUO.saleOf(x, settings), mk = QUO.markupOf(x, settings), open = ui.pEdit === x.id;
+    const sub = (QUO.num(x.cost) !== null ? 'cost ' + money(QUO.num(x.cost)) + ' + ' + mk + '% = ' : '') + (sale !== null ? '<b>' + money(sale) + '</b>' : 'no price yet') + (x.unit ? ' / ' + esc(x.unit) : '') + (QUO.num(x.price) !== null ? ' (fixed)' : '');
+    const i = (k, l, o = {}) => `<label class="f"><span>${l}</span><input data-pi="${k}" data-id="${x.id}" value="${esc(x[k] || '')}" ${o.mode ? `inputmode="${o.mode}"` : ''} ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} ${o.list ? `list="${o.list}"` : ''}></label>`;
+    return `<div class="card" style="margin-bottom:10px"><button type="button" class="item" data-act="pEdit" data-id="${x.id}" style="width:100%;text-align:left"><span><span class="t">${esc(((x.make ? x.make + ' ' : '') + (x.name || 'New item')) + (x.kw && x.type === 'Boiler' ? ' · ' + x.kw + ' kW' : ''))}</span><span class="s" style="display:block">${sub}</span></span></button>
+    ${open ? `<div style="margin-top:12px">
+      ${i('type', 'Category', { list: 'pCats' })}${x.type === 'Boiler' || x.make ? '' : ''}
+      ${i('make', 'Make')}${i('name', 'Model / item')}
+      ${x.type === 'Boiler' ? `<div class="row"><label class="f grow"><span>Boiler type</span><select data-pi="kind" data-id="${x.id}"><option value=""></option>${QUO.KIND.map(k => `<option ${x.kind === k ? 'selected' : ''}>${k}</option>`).join('')}</select></label>${i('kw', 'kW', { mode: 'decimal' })}</div>
+      <label class="f"><span>Manufacturer warranty</span><select data-pi="warranty" data-id="${x.id}"><option value=""></option>${QUO.WARRANTY.map(k => `<option ${x.warranty === k ? 'selected' : ''}>${k}</option>`).join('')}</select></label>` : ''}
+      <div class="row">${i('cost', 'My cost (£)', { mode: 'decimal' })}${i('markup', 'Mark-up %', { mode: 'decimal', ph: mk + ' (' + (QUO.num(x.markup) === null ? 'standard' : 'own') + ')' })}</div>
+      ${i('price', 'Fixed sale price (£), optional', { mode: 'decimal', ph: 'Leave empty to use cost + mark-up' })}
+      ${i('unit', 'Unit', { ph: 'each, metre, pack…' })}
+      <p class="small muted" style="margin:0 0 10px">Sale price before VAT: <b>${sale === null ? 'needs a cost price' : money(sale)}</b>${sale !== null && QUO.num(x.cost) ? ` · profit ${money(sale - QUO.num(x.cost))}` : ''}</p>
+      <button type="button" class="btn ghost" data-act="pDel" data-id="${x.id}">Delete this item</button></div>` : ''}</div>`;
+  };
+  v.innerHTML = `<h1>Price list</h1>
+    <p class="small muted" style="margin-top:0">Add your cost and mark-up and the app works out the price you quote. Tap an item to change it.</p>
+    <div class="card"><label class="f"><span>Standard mark-up on everything (%)</span><input data-s="qMarkupDef" inputmode="decimal" value="${esc(settings.qMarkupDef)}"></label>
+    <label class="f" style="margin-bottom:0"><span>Mark-up for ${esc(cat)} (%)</span><input data-pmk="${esc(cat)}" inputmode="decimal" value="${esc(M[cat] || '')}" placeholder="${esc(settings.qMarkupDef || '0')} (standard)"></label></div>
+    <div class="seg wrap" style="margin:14px 0">${cats.map(c => `<button type="button" class="${c === cat ? 'on' : ''}" data-act="pCat" data-c="${esc(c)}">${esc(c)} (${list.filter(x => x.type === c).length})</button>`).join('')}</div>
+    <button type="button" class="btn block" data-act="pAdd" style="margin-bottom:12px">+ Add to ${esc(cat)}</button>
+    ${items.length ? items.map(row).join('') : '<p class="muted">Nothing here yet.</p>'}
+    <datalist id="pCats">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
+    <h2>Excel</h2><div class="card">
+      <p class="small muted" style="margin:0 0 8px">Easier for filling in lots of prices at once. Download, type in the cost and mark-up columns, and import it back. Importing replaces the list.</p>
+      <button type="button" class="btn block" data-act="qExport">Download price list (Excel)</button><div style="height:8px"></div>
+      <label class="btn block ghost" style="display:block;text-align:center">Import price list<input type="file" id="qImport" accept=".xlsx,.xls,.csv" hidden></label><div style="height:8px"></div>
+      <button type="button" class="btn block ghost" data-act="qClearList">Reset to the built-in list</button></div>
+    <button class="btn block ghost" data-nav="settings" style="margin-top:14px">Back to settings</button>`;
+}
+async function qLib() {
+  if (window.XLSX) return window.XLSX;
+  await new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'lib/xlsx.core.min.js'; s.onload = ok; s.onerror = () => no(new Error('Could not load the spreadsheet tool. Check your connection and try again.')); document.head.appendChild(s); });
+  return window.XLSX;
+}
+async function qExport() {
+  try {
+    const X = await qLib(), items = (settings.qList && settings.qList.length) ? settings.qList.slice() : qAll();
+    if (!(settings.qList && settings.qList.length)) QUO.parseItems(settings.qItemsText).forEach(x => items.push({ type: 'Other', make: '', name: x.name, kind: '', kw: '', warranty: '', cost: '', price: x.price }));
+    const ws = X.utils.aoa_to_sheet(QUO.rowsFromItems(items));
+    ws['!cols'] = [{ wch: 22 }, { wch: 16 }, { wch: 46 }, { wch: 13 }, { wch: 6 }, { wch: 10 }, { wch: 8 }, { wch: 12 }, { wch: 10 }, { wch: 14 }];
+    const help = X.utils.aoa_to_sheet([['How to use this price list'], ['1. On the Price list sheet, fill in My cost (what you pay) and Mark-up %. The app works out the sale price (before VAT). Only type a Sale price if you want a fixed price instead.'], ['2. Category: Boiler, Flue, Labour, Copper & pipe, Fittings, Controls & thermostats and so on, or make up your own. Boiler type: Combination, System or Heat only.'], ['3. Add your own rows at the bottom. Delete any you do not use.'], ['4. Save the file, then in the app go to Settings, Quotes, Import price list.'], ['Your cost prices are only ever shown to you. They never appear on a customer quote.']]);
+    help['!cols'] = [{ wch: 110 }];
+    const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Price list'); X.utils.book_append_sheet(wb, help, 'How to use');
+    const out = X.write(wb, { bookType: 'xlsx', type: 'array' });
+    await saveFile(out, 'Quote price list.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  } catch (e) { toast(e.message || 'Could not make the spreadsheet'); }
+}
+async function qImport(file) {
+  try {
+    const X = await qLib(), wb = X.read(await file.arrayBuffer(), { type: 'array' });
+    const name = wb.SheetNames.find(n => /price/i.test(n)) || wb.SheetNames[0];
+    const items = QUO.itemsFromRows(X.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: '' }));
+    if (!items.length) { toast('No items found. Use the sheet you downloaded from here.'); return; }
+    settings.qList = items; saveSettings(); render();
+    toast(items.length + ' items imported');
+  } catch (e) { toast(e.message || 'Could not read that file'); }
+}
+function qPick(kind, idx) {
+  const r = ui.rec, it = { boiler: qOf('Boiler'), flue: qOf('Flue'), labour: qOf('Labour'), extra: qExtraList() }[kind], x = it[idx];
+  if (!x) return;
+  if (kind === 'boiler') {
+    r.kind = x.kind || r.kind; r.model = x.name; r.kw = x.kw || r.kw;
+    if (SVC.MAKE.includes(x.make)) { r.make = x.make; r.makeOther = ''; } else if (x.make) { r.make = 'Other'; r.makeOther = x.make; }
+    if (QUO.WARRANTY.includes(x.warranty)) r.warranty = x.warranty;
+    if (QUO.saleText(x, settings)) r.boilerPrice = QUO.saleText(x, settings); r.boilerCost = x.cost || '';
+  } else if (kind === 'flue') { r.flueDesc = x.name; if (QUO.saleText(x, settings)) r.fluePrice = QUO.saleText(x, settings); r.flueCost = x.cost || ''; }
+  else if (kind === 'labour') { r.labourDesc = x.name; if (QUO.saleText(x, settings)) r.labourPrice = QUO.saleText(x, settings); r.labourCost = x.cost || ''; }
+  else { (r.lines = r.lines || []).push({ name: (x.make ? x.make + ' ' : '') + x.name, qty: '1', price: QUO.saleText(x, settings), cost: x.cost || '' }); }
+  ui.pdf = null; persistRec(r); const y = window.scrollY; render(); window.scrollTo(0, y);
+}
 function quoTotHtml() {
   const r = ui.rec, T = QUO.totals(r, settings), m = QUO.money;
-  return `<div class="row sp"><span>Subtotal</span><b>${m(T.sub)}</b></div>${T.rate ? `<div class="row sp"><span>VAT at ${T.rate}%</span><b>${m(T.vat)}</b></div>` : ''}<div class="row sp"><span>Total</span><b>${m(T.total)}</b></div>`;
+  return `<div class="row sp"><span>Subtotal</span><b>${m(T.sub)}</b></div>${T.rate ? `<div class="row sp"><span>VAT at ${T.rate}%</span><b>${m(T.vat)}</b></div>` : ''}<div class="row sp"><span>Total</span><b>${m(T.total)}</b></div>${(() => { const c = QUO.costOf(r); return c === null ? '' : `<p class="small muted" style="margin:10px 0 0">Only you see this. Your cost ${m(c)} · profit ${m(T.sub - c)} (${T.sub ? Math.round((T.sub - c) / T.sub * 100) : 0}%)</p>`; })()}`;
 }
 function quoExtras() {
   const r = ui.rec, saved = QUO.parseItems(settings.qItemsText);
@@ -1490,11 +1587,13 @@ function quoExtras() {
     <div class="row">${txt('lines.' + i + '.qty', 'Qty', { mode: 'numeric' })}${txt('lines.' + i + '.price', 'Price each (£)', { mode: 'decimal' })}</div>
     <button type="button" class="btn ghost" data-act="qRmLine" data-i="${i}">Remove this item</button></div>`).join('');
   return `<p class="small muted" style="margin-top:0">Add anything else that goes on the quote. Items you type are remembered, so next time you can just tap them.</p>
+  ${qSelect('extra', 'Add from your price list', qExtraList(), 'type')}
   ${saved.length ? `<div class="seg wrap" style="margin-bottom:12px">${saved.map(x => `<button type="button" data-act="qAddLine" data-name="${esc(x.name)}" data-price="${esc(x.price)}">${esc(x.name)}${x.price ? ' · £' + esc(x.price) : ''}</button>`).join('')}</div>` : ''}
   ${lines}
   <button type="button" class="btn block" data-act="qAddLine" data-name="" data-price="">+ Add an item</button>
   <h2>Labour</h2>
   <div class="card">
+    ${qSelect('labour', 'Choose labour', qOf('Labour'), false)}
     ${txt('labourDesc', 'Description')}
     ${txt('labourPrice', 'Labour price (£)', { req: 1, mode: 'decimal' })}
   </div>
@@ -1502,16 +1601,6 @@ function quoExtras() {
   <div class="card">${txt('homeNotes', 'Anything customers should know about this job', { area: 1, rows: 3, hint: 'Optional. Shown on the quote.' })}</div>
   <h2>Total</h2>
   <div class="card" id="quoTot">${quoTotHtml()}</div>`;
-}
-function quoAccept() {
-  const r = ui.rec;
-  return `<p class="small muted" style="margin-top:0">Optional. If the customer is happy to go ahead there and then, they can sign here. Otherwise skip it, and they can sign the printed quote or say yes later.</p>
-  <div class="card">
-    ${txt('customerName', 'Customer name', { ph: r.customer.name })}
-    <div class="f"><span>Customer signature</span>
-    <div class="sigwrap"><canvas data-sig="customerSig"></canvas><div class="line"></div><div class="ph" data-ph="customerSig">Sign here</div></div>
-    <div class="sigactions"><span class="small muted">Use your finger</span><button data-act="sigClear" data-key="customerSig">Clear</button></div></div>
-  </div>`;
 }
 function comBoiler() {
   const r = ui.rec;
@@ -2173,6 +2262,13 @@ document.addEventListener('click', async e => {
   if (CLOUD.locked() && (LOCKED_WRITES.has(a) || (a === 'makePdf' && r && r.status !== 'complete'))) { lockedMsg(); return; }
   if (a === 'custNoRem') { ui.cust.noRemind = !ui.cust.noRemind; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
   if (a === 'remTest') { remTest(); return; }
+  if (a === 'pricesOpen') { qSeed(); ui.pCat = ui.pCat || 'Boiler'; ui.pEdit = ''; ui.view = 'prices'; render(); return; }
+  if (a === 'pCat') { ui.pCat = b.dataset.c; ui.pEdit = ''; render(); return; }
+  if (a === 'pEdit') { ui.pEdit = ui.pEdit === b.dataset.id ? '' : b.dataset.id; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
+  if (a === 'pAdd') { const it = { id: QUO.newId(), type: ui.pCat || 'Other', make: '', name: '', kind: '', kw: '', warranty: '', unit: '', cost: '', markup: '', price: '' }; settings.qList.unshift(it); saveSettings(); ui.pEdit = it.id; render(); return; }
+  if (a === 'pDel') { if (confirm('Delete this item?')) { settings.qList = settings.qList.filter(x => x.id !== b.dataset.id); saveSettings(); ui.pEdit = ''; render(); } return; }
+  if (a === 'qExport') { qExport(); return; }
+  if (a === 'qClearList') { if (confirm('Remove the whole price list and start again from the built-in one?')) { settings.qList = []; saveSettings(); qSeed(); render(); toast('Price list reset'); } return; }
   if (a === 'sampleOn') { const n = SAMPLE.add(); render(); toast(n + ' sample forms added'); return; }
   if (a === 'sampleOff') { if (confirm('Remove the sample customers and forms?')) { SAMPLE.remove(); render(); toast('Sample data removed'); } return; }
   if (a === 'remOpen') { ui.view = 'due'; render(); window.scrollTo(0, 0); return; }
@@ -2526,6 +2622,11 @@ document.addEventListener('input', e => {
 document.addEventListener('change', async e => {
   if (CLOUD.locked() && ui.view !== 'settings' && e.target.id !== 'custSearch' && e.target.id !== 'helpSearch' && e.target.id !== 'fbText') { lockedMsg(); render(); return; }
   const t = e.target;
+  if (t.id === 'qImport' && t.files && t.files[0]) { const fl = t.files[0]; t.value = ''; qImport(fl); return; }
+  if (t.dataset.pi) { const it = (settings.qList || []).find(x => x.id === t.dataset.id); if (it) { it[t.dataset.pi] = t.value.trim(); if (t.dataset.pi === 'type' && !it.type) it.type = 'Other'; saveSettings(); const y = window.scrollY; if (t.dataset.pi === 'type') ui.pCat = it.type; render(); window.scrollTo(0, y); } return; }
+  if (t.dataset.pmk !== undefined) { settings.qMarkup = settings.qMarkup || {}; settings.qMarkup[t.dataset.pmk] = t.value.trim(); saveSettings(); const y = window.scrollY; render(); window.scrollTo(0, y); return; }
+  if (t.dataset.s === 'qMarkupDef' && ui.view === 'prices') { const y = window.scrollY; setTimeout(() => { render(); window.scrollTo(0, y); }, 0); }
+  if (t.dataset.qpick) { if (t.value !== '') qPick(t.dataset.qpick, +t.value); return; }
   if (ui.view === 'form' && ui.rec && ui.rec.type === 'quote' && /^lines\.\d+\.(name|price|qty)$/.test(t.dataset.k || '')) {
     const l = ui.rec.lines[+t.dataset.k.split('.')[1]];
     if (l && String(l.name || '').trim() && String(l.price || '').trim() && !QUO.parseItems(settings.qItemsText).some(x => x.name.toLowerCase() === l.name.trim().toLowerCase())) {

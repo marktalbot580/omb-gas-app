@@ -115,7 +115,7 @@ async function buildQuotePdf(rec, s) {
 
   /* ---------- what happens next ---------- */
   ensure(52); heading('THE PROCESS', 'What happens next');
-  { const st = [['Accept your quote', 'Reply to the email to say you would like to go ahead, or sign below.'], ['Book your date', 'We will call you to arrange an installation date that suits you.'], ['Installation day', 'Most boiler swaps take one to two days.'], ['Handover', 'We show you how it all works and register your warranty.']];
+  { const st = [['Accept your quote', 'Reply to the email to say you would like to go ahead.'], ['Book your date', 'We will call you to arrange an installation date that suits you.'], ['Installation day', 'Most boiler swaps take one to two days.'], ['Handover', 'We show you how it all works and register your warranty.']];
     const sw = CW / 4; doc.setDrawColor(...GOLD); doc.setLineWidth(0.5); doc.line(M + 6, y + 4, M + 3 * sw + 6, y + 4);
     st.forEach(([t, d], i) => { const x = M + i * sw; doc.setFillColor(...DARK); doc.circle(x + 6, y + 4, 5, 'F'); txt(String(i + 1), x + 6, y + 5.8, { b: 1, fs: 10, c: GOLD, align: 'center' }); txt(t, x, y + 15, { b: 1, fs: 8.6, c: DARK }); para(d, x, y + 19.5, sw - 5, 7.8, { c: GREY }); });
     y += 36; }
@@ -136,15 +136,10 @@ async function buildQuotePdf(rec, s) {
   y += 4;
 
   /* ---------- acceptance ---------- */
-  ensure(52); heading('ACCEPTANCE', 'Ready to go ahead?');
-  { const ah = 40; doc.setDrawColor(...GOLD); doc.setLineWidth(0.6); doc.roundedRect(M, y - 2, CW, ah, 3, 3, 'S');
-    para('To accept this quotation, reply to the email we sent it with, or sign below. We will then call you to arrange a date for the installation.', M + 7, y + 5, CW - 14, 8.6, { c: GREY });
-    const ly = y + 25;
-    if (rec.customerSig) doc.addImage(rec.customerSig, 'PNG', M + 7, y + 8, 46, 14, undefined, 'FAST');
-    doc.setDrawColor(...LINE); doc.setLineWidth(0.3); doc.line(M + 7, ly, M + 110, ly); doc.line(M + 120, ly, W - M - 7, ly);
-    txt('Signature', M + 7, ly + 4, { fs: 7, c: GREY }); txt('Date', M + 120, ly + 4, { fs: 7, c: GREY });
-    txt((rec.customerName || rec.customer.name || '') + '  ·  ' + rec.ref + '  ·  ' + money(T.total), M + 7, ly + 10, { b: 1, fs: 8, c: DARK });
-    if (rec.customerSig) txt(ukd(rec.accepted || rec.inspectionDate), M + 120, ly - 1.5, { fs: 9, c: INK });
+  ensure(34); heading('ACCEPTANCE', 'Ready to go ahead?');
+  { const ah = 22; doc.setDrawColor(...GOLD); doc.setLineWidth(0.6); doc.roundedRect(M, y - 2, CW, ah, 3, 3, 'S');
+    para('To accept this quotation, simply reply to the email we sent it with. We will then call you to arrange a date for the installation.', M + 7, y + 5, CW - 14, 9, { c: GREY });
+    txt(rec.ref + '  ·  ' + money(T.total) + (T.rate ? ' inc. VAT' : ''), M + 7, y + 15, { b: 1, fs: 8.5, c: DARK });
     y += ah + 8; }
 
   /* ---------- terms ---------- */
