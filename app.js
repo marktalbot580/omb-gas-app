@@ -756,7 +756,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v95';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v96';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -2692,7 +2692,8 @@ async function sharePdf(r) {
   const file = new File([blob], name, { type: 'application/pdf' });
   const first = greetName(r.customer.name), addr = addrLine(r.jobAddress || '');
   const subject = `${SUBJ[typeOf(r)]} – ${addrFirst(r.jobAddress || '')}`;
-  const text = `Hi ${first},\n\nPlease find attached your ${doc} for ${addr}, carried out on ${ukDate(r.inspectionDate)}.${due ? '\n' + due + ' ' + ukDate(r.renewal) + '.' : ''}\n\nKind regards,\n${signOff()}`;
+  const text = isQuo(r) ? `Hi ${first},\n\nThank you for the chance to quote. Please find attached your quotation for ${addr}. It is valid for 30 days.\n\nIf you would like to go ahead, just reply to this email and I will call you to arrange a date for the installation.\n\nKind regards,\n${signOff()}`
+    : `Hi ${first},\n\nPlease find attached your ${doc} for ${addr}, carried out on ${ukDate(r.inspectionDate)}.${due ? '\n' + due + ' ' + ukDate(r.renewal) + '.' : ''}\n\nKind regards,\n${signOff()}`;
   try {
     if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: subject, text }); return; }
   } catch (err) { if (err.name === 'AbortError') return; console.warn(err); }
