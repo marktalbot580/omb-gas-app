@@ -51,7 +51,7 @@ h2{font-size:13px;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold
 .f>span b{color:var(--gold)}
 .f small{display:block;color:var(--mut);margin-top:5px;font-size:12px}
 input,select,textarea{width:100%;background:#101012;color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:13px 14px;font:inherit;min-height:48px}
-textarea{resize:vertical}
+textarea{resize:none;overflow:hidden}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-offset:0;border-color:var(--gold)}
 .f.bad>span{color:var(--bad)}
 .f.bad input,.f.bad textarea,.f.bad select,.f.bad .seg,.f.bad .sigwrap{border-color:var(--bad)}

@@ -560,6 +560,10 @@ function makeField(path, i, type) {
 const ageUnknown = r => String(r.age || '').trim().toLowerCase() === 'unknown';
 
 /* ---------- screens ---------- */
+/* text boxes grow to fit what is typed, so they never need scrolling */
+function fitBox(t) { t.style.height = 'auto'; t.style.height = (t.scrollHeight + 2) + 'px'; }
+function fitBoxes() { document.querySelectorAll('#view textarea').forEach(fitBox); }
+document.addEventListener('input', e => { if (e.target && e.target.tagName === 'TEXTAREA') fitBox(e.target); });
 function render() {
   const v = $('#view'), nav = $('#nav');
   window.scrollTo(0, 0);
@@ -570,6 +574,7 @@ function render() {
     renderTabs(nav);
   }
   paintSync();
+  fitBoxes();
   PH.hydrate();
   if (ui.view === 'settings') checkVersion();
 }
@@ -757,7 +762,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v107';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v108';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
