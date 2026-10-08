@@ -38,11 +38,12 @@ const isSvc = r => !!r && r.type === 'service';
 const isWarn = r => !!r && r.type === 'warning';
 const isAc = r => !!r && r.type === 'aircon';
 const isCom = r => !!r && r.type === 'commission';
+const isQuo = r => !!r && r.type === 'quote';
 const typeOf = r => (r && r.type) || 'gas';
-const stepsOf = r => (isLeg(r) ? LEG.STEPS : isSvc(r) ? SVC.STEPS : isWarn(r) ? WARN.STEPS : isAc(r) ? AC.STEPS : isCom(r) ? COM.STEPS : STEPS);
-const ORDER = { gas: 0, service: 1, legionella: 2, aircon: 3, commission: 4, warning: 5 };
-const FORM_NAME = { gas: 'Gas safety record', service: 'Boiler service record', legionella: 'Legionella risk assessment', aircon: 'Air conditioning commissioning report', commission: 'Boiler commissioning checklist', warning: 'Danger / Do Not Use warning notice' };
-const FORM_SHORT = { gas: 'Gas check', service: 'Boiler service', legionella: 'Legionella', aircon: 'Air conditioning', commission: 'Boiler commissioning', warning: 'Warning notice' };
+const stepsOf = r => (isLeg(r) ? LEG.STEPS : isSvc(r) ? SVC.STEPS : isWarn(r) ? WARN.STEPS : isAc(r) ? AC.STEPS : isCom(r) ? COM.STEPS : isQuo(r) ? QUO.STEPS : STEPS);
+const ORDER = { gas: 0, service: 1, legionella: 2, aircon: 3, commission: 4, warning: 5, quote: 6 };
+const FORM_NAME = { gas: 'Gas safety record', service: 'Boiler service record', legionella: 'Legionella risk assessment', aircon: 'Air conditioning commissioning report', commission: 'Boiler commissioning checklist', quote: 'Boiler quotation', warning: 'Danger / Do Not Use warning notice' };
+const FORM_SHORT = { gas: 'Gas check', service: 'Boiler service', legionella: 'Legionella', aircon: 'Air conditioning', commission: 'Boiler commissioning', quote: 'Quotation', warning: 'Warning notice' };
 /* copy the customer's email address so it can be pasted into the To box (the iPhone share sheet can't fill it in) */
 function copyEmail(email) {
   email = String(email || '').trim(); if (!email) return;
@@ -66,18 +67,19 @@ function greetName(full) {
   return i >= t.length ? 'there' : `${titles} ${sn[0].toUpperCase()}${sn.slice(1)}`;
 }
 /* wording used in email subjects: "<form> – <first line of the property address>" */
-const SUBJ = { gas: 'Landlord Gas Safety Check', service: 'Boiler Service', legionella: 'Legionella Risk Assessment', aircon: 'Air Conditioning Commissioning', commission: 'Boiler Commissioning Checklist', warning: 'Danger Do Not Use Warning Notice' };
+const SUBJ = { gas: 'Landlord Gas Safety Check', service: 'Boiler Service', legionella: 'Legionella Risk Assessment', aircon: 'Air Conditioning Commissioning', commission: 'Boiler Commissioning Checklist', quote: 'Boiler Quotation', warning: 'Danger Do Not Use Warning Notice' };
 const FORM_DOC = {
   gas: ['Gas Safety Record', 'Your next safety check is due by'],
   service: ['Gas Boiler Service Record', 'Your next boiler service is due by'],
   legionella: ['Legionella Risk Assessment', 'Your next assessment is due by'],
   aircon: ['Air Conditioning Commissioning Report', ''],
   commission: ['Boiler Commissioning Checklist', 'Your next boiler service is due by'],
+  quote: ['Boiler Quotation', ''],
   warning: ['Danger Do Not Use Warning Notice', '']
 };
 /* one line per document in the emails; the warning notice has no due date */
 const docLine = r => (FORM_DOC[typeOf(r)][1] ? `${FORM_DOC[typeOf(r)][0]} (${FORM_DOC[typeOf(r)][1].replace(/^Your /, '').replace(/ is due by$/, '')} due ${ukDate(r.renewal)})` : FORM_DOC[typeOf(r)][0]);
-const billable = m => (m ? m.filter(r => typeOf(r) !== 'warning') : m);
+const billable = m => (m ? m.filter(r => typeOf(r) !== 'warning' && typeOf(r) !== 'quote') : m);
 
 /* appliance type on the gas safety record: "Other" has its own text box (typeOther); older records may hold older type names, which still display */
 const COOK_MAKES = ['Indesit', 'Whirlpool', 'Hotpoint', 'AEG', 'Lamona', 'Bosch', 'Beko'];
@@ -96,7 +98,7 @@ const blankDefect = () => ({ text: '', cls: '', action: '' });
 const DEFAULT_SETTINGS = {
   businessName: '', logo: '', accent: '#c9a24b', refPrefix: 'REC', updated: 0, address: '', phone: '', email: '',
   gasSafeReg: '', engineerName: '', gasSafeId: '', engSig: '', syncUrl: '', syncToken: '', gasSafeLogo: '', gasSafeLogoAR: 1,
-  priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', priceCom: '', discType: '£', discValue: '',
+  priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', priceCom: '', quoteIncluded: QUO.DEFAULT_INCLUDED, quoteTerms: QUO.DEFAULT_TERMS, qItemsText: '', discType: '£', discValue: '',
   invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '', vatQtr: '2', yearDay: '6', yearMonth: '4',
   bankName: '', accName: '', sortCode: '', accNo: '', invFooter: 'Thank you for your business.',
   remText: '', remDays: '56', toolGas: 'on', toolPipe: 'on', toolIv: 'on', toolHeat: 'on'
@@ -176,6 +178,18 @@ function newAcRecord(customer) {
     updated: Date.now(), _dirty: true
   };
 }
+function newQuoRecord(customer) {
+  const d = todayISO();
+  const n = records.filter(r => typeOf(r) === 'quote' && r.inspectionDate === d).length + 1;
+  return {
+    id: uid(), type: 'quote', ref: 'QUO-' + d.replace(/-/g, '') + '-' + String(n).padStart(2, '0'),
+    status: 'draft', inspectionDate: d, renewal: '',
+    customerId: customer?.id || '', customer: { name: customer?.name || '', phone: customer?.phone || '', email: customer?.email || '', billing: customer?.billing || '' },
+    jobAddress: '', ...QUO.blank(),
+    customerPresent: '', customerName: '', customerSig: '', engineerSig: '',
+    updated: Date.now(), _dirty: true
+  };
+}
 function newComRecord(customer) {
   const d = todayISO();
   const n = records.filter(r => typeOf(r) === 'commission' && r.inspectionDate === d).length + 1;
@@ -219,6 +233,7 @@ function newRecord(customer, type) {
   if (type === 'service') return newSvcRecord(customer);
   if (type === 'aircon') return newAcRecord(customer);
   if (type === 'commission') return newComRecord(customer);
+  if (type === 'quote') return newQuoRecord(customer);
   const d = todayISO();
   const n = records.filter(r => typeOf(r) === 'gas' && r.inspectionDate === d).length + 1;
   const rec = {
@@ -316,6 +331,7 @@ function validate(rec) {
   if (isLeg(rec)) return LEG.validate(rec);
   if (isAc(rec)) return AC.validate(rec);
   if (isCom(rec)) return COM.validate(rec);
+  if (isQuo(rec)) return QUO.validate(rec);
   if (isSvc(rec)) return SVC.validate(rec);
   if (isWarn(rec)) return WARN.validate(rec);
   const out = []; const need = (step, path, label, extra = {}) => { if (!String(getP(rec, path) ?? '').trim()) out.push({ step, path, label, ...extra }); };
@@ -354,6 +370,7 @@ function warnings(rec) {
   if (isLeg(rec)) return LEG.warnings(rec, settings);
   if (isAc(rec)) return AC.warnings(rec, settings);
   if (isCom(rec)) return COM.warnings(rec, settings);
+  if (isQuo(rec)) return QUO.warnings(rec, settings);
   if (isSvc(rec)) return SVC.warnings(rec, settings);
   if (isWarn(rec)) return WARN.warnings(rec, settings);
   const w = [];
@@ -621,6 +638,7 @@ function renderHome(v) {
     <div style="height:10px"></div>
     <button class="btn gold block" data-act="newRec" data-type="aircon">+ New air conditioning commissioning</button>
     <div style="height:10px"></div>
+    <button class="btn gold block" data-act="newRec" data-type="quote">+ New boiler quote</button>
     <div style="height:10px"></div>
     ${remHomeBtn()}
     
@@ -738,7 +756,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v94';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v95';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -937,6 +955,12 @@ function renderSettings(v) {
       ${f('discValue', settings.discType === '%' ? 'Discount (%)' : 'Discount (£)', { mode: 'decimal', hint: 'Taken off automatically when two or three services are done on the same visit. You can still change it on each invoice.' })}
       <p class="small muted" style="margin:0">${(() => { const a = numOf(settings.priceGas), b = numOf(settings.priceSvc), c = numOf(settings.priceLeg), all = a + b + c; if (!all) return 'Set the prices above to see an example.'; const d = x => Math.min(settings.discType === '%' ? r2(x * numOf(settings.discValue) / 100) : numOf(settings.discValue), x); return `Example – all three services: ${money(all)} − ${money(d(all))} = <b style="color:var(--txt)">${money(all - d(all))}</b>`; })()}</p>
     </div>
+    <h2>Quotes</h2>
+    <div class="card">
+      ${f('quoteIncluded', 'What is included as standard (one item per line)', { area: 1 })}
+      ${f('qItemsText', 'Saved quote items (one per line: item | price)', { area: 1, hint: 'Items you add to a quote are saved here automatically. You can edit or delete lines.' })}
+      ${f('quoteTerms', 'Terms shown on the quote (one per line)', { area: 1 })}
+    </div>
     <h2>Invoice details</h2>
     <div class="card">
       ${f('invPrefix', 'Invoice number prefix', { cap: 'characters', hint: 'For example INV-. Leave blank for numbers only.' })}
@@ -1035,10 +1059,12 @@ function renderForm(v, nav) {
   let body = '';
   if (s === 0) body = stepCustomer();
   else if (s === last) body = stepReview();
+  else if (s === last - 1 && isQuo(r)) body = quoAccept();
   else if (s === last - 1) body = (job ? `<div class="notice">This sign-off is used on all ${job.length} forms in this visit.</div>` : '') + stepSign();
   else if (t === 'legionella') body = [null, legSystem, legTemps, legTanks, legRisk, legFindings][s]();
   else if (t === 'warning') body = [null, warnFaults][s]();
   else if (t === 'aircon') body = [null, acSystem, acRefrig][s]();
+  else if (t === 'quote') body = [null, quoBoiler, quoExtras][s]();
   else if (t === 'commission') body = [null, comBoiler, comWater, comReadings, comHandover][s]();
   else if (t === 'service') body = [null, svcBoiler, svcChecks, svcSafety, svcOperating, svcFinish][s]();
   else body = [null, stepAppliances, stepInstall, stepAlarms, stepDefects, stepNext][s]();
@@ -1184,7 +1210,7 @@ function stepCustomer() {
       <div id="navBtn">${navBtnHtml(r.jobAddress)}</div>
     </div>
     ${prevCard(r)}
-    <div class="card">${txt('inspectionDate', isLeg(r) ? 'Date of assessment' : isAc(r) || isCom(r) ? 'Date of commissioning' : 'Date of inspection', { type: 'date' })}</div>`;
+    <div class="card">${txt('inspectionDate', isLeg(r) ? 'Date of assessment' : isAc(r) || isCom(r) ? 'Date of commissioning' : isQuo(r) ? 'Date of quotation' : 'Date of inspection', { type: 'date' })}</div>`;
 }
 
 /* Worcester Bosch boilers also get an optional fan speed reading */
@@ -1308,6 +1334,7 @@ function recSummary(r) {
   let rows = dl('Record', r.ref) + dl('Date', ukDate(r.inspectionDate)) + dl('Client', r.customer.name) + dl('Property', r.jobAddress);
   if (t === 'legionella') rows += dl('Temperatures', LEG.temps(r).map(x => `${x.label}: ${x.n === null ? '?' : x.n + '°C'} – ${x.pass === null ? '?' : x.pass ? 'pass' : 'FAIL'}`).join('\n')) + dl('Overall risk', r.overall) + dl('Risks / defects', String(r.defects.length)) + dl('Next assessment', ukDate(r.renewal));
   else if (t === 'aircon') rows += dl('System', [AC.makeText(r), r.indoorModel].filter(Boolean).join(' ')) + dl('Gas', [AC.gasText(r), r.charge ? r.charge + ' g' : ''].filter(Boolean).join(' · ')) + dl('Pressure / vacuum', [r.pressure ? r.pressure + ' bar' : '', r.vacuum ? r.vacuum + ' hrs' : ''].filter(Boolean).join(' · ')) + dl('Drain / electrical', `${r.drain || '?'} / ${r.electrical || '?'}`);
+  else if (t === 'quote') { const T = QUO.totals(r, settings); rows += dl('Boiler', [QUO.makeText(r), r.model, r.kw ? r.kw + ' kW' : ''].filter(Boolean).join(' ')) + dl('Quote total', QUO.money(T.total) + (T.rate ? ' inc. VAT' : '')) + dl('Accepted', r.customerSig ? 'Signed ' + ukDate(r.accepted || r.inspectionDate) : 'Not yet'); }
   else if (t === 'commission') rows += dl('Boiler', [COM.makeText(r), r.model].filter(Boolean).join(' ')) + dl('Type', r.kind) + dl('Max CO / CO₂', [r.maxCo ? r.maxCo + ' ppm' : '', r.maxCo2 ? r.maxCo2 + ' %' : ''].filter(Boolean).join(' · ')) + dl('Next service', ukDate(r.renewal));
   else if (t === 'warning') rows += dl('Faults', r.faults.slice(0, +r.faultCount || 1).map((f, i) => `${i + 1}. ${f.type || '?'} – ${f.cls || '?'}${f.riddor === 'YES' ? ' (RIDDOR)' : ''}`).join('\n'));
   else if (t === 'service') rows += dl('Boiler', [SVC.makeText(r), r.model].filter(Boolean).join(' ')) + dl('Visit', r.reason) + dl('Checks failed', String(SVC.failCount(r))) + dl('Safe to use', r.safe) + dl('Warning notice', r.warning) + dl('Next service', ukDate(r.renewal));
@@ -1431,6 +1458,60 @@ function tapField(key, label) {
 }
 /* ---------- Boiler commissioning checklist steps ---------- */
 const tick = (path, label) => `<button type="button" class="item tog ${getP(ui.rec, path) === 'Yes' ? 'on' : ''}" data-k="${path}" data-v="${getP(ui.rec, path) === 'Yes' ? '' : 'Yes'}"><span class="box"></span><span><span class="t">${label}</span></span></button>`;
+/* ---------- Boiler quotation steps ---------- */
+function quoBoiler() {
+  const r = ui.rec;
+  const mk = QUO_MAKES();
+  const hit = mk.includes(r.make);
+  return `<div class="card">
+    ${choice('kind', 'Boiler type', QUO.KIND, { req: 1, wrap: 1 })}
+    <div class="f ${ui.showErr && !r.make ? 'bad' : ''}" data-f="make"><span>Boiler make <b>*</b></span><div class="seg wrap">${mk.map(x => `<button type="button" class="${r.make === x ? 'on' : ''}" data-k="make" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div></div>
+    ${r.make === 'Other' ? txt('makeOther', 'Boiler make (other)', { req: 1 }) : ''}
+    ${txt('model', 'Boiler model', { req: 1 })}
+    <div class="row">${txt('kw', 'Output (kW)', { mode: 'decimal' })}${txt('boilerPrice', 'Boiler price (£)', { req: 1, mode: 'decimal' })}</div>
+    <div class="f" data-f="warranty"><span>Manufacturer warranty</span><div class="seg wrap">${QUO.WARRANTY.map(x => `<button type="button" class="${r.warranty === x ? 'on' : ''}" data-k="warranty" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div></div>
+  </div>
+  <h2>Flue</h2>
+  <div class="card">
+    ${txt('flueDesc', 'Flue kit', { ph: 'For example horizontal flue kit' })}
+    ${txt('fluePrice', 'Flue price (£)', { mode: 'decimal' })}
+  </div>`;
+}
+const QUO_MAKES = () => SVC.MAKE;
+function quoTotHtml() {
+  const r = ui.rec, T = QUO.totals(r, settings), m = QUO.money;
+  return `<div class="row sp"><span>Subtotal</span><b>${m(T.sub)}</b></div>${T.rate ? `<div class="row sp"><span>VAT at ${T.rate}%</span><b>${m(T.vat)}</b></div>` : ''}<div class="row sp"><span>Total</span><b>${m(T.total)}</b></div>`;
+}
+function quoExtras() {
+  const r = ui.rec, saved = QUO.parseItems(settings.qItemsText);
+  const lines = (r.lines || []).map((l, i) => `<div class="card" style="margin-bottom:10px">
+    ${txt('lines.' + i + '.name', 'Item', { ph: 'For example magnetic filter' })}
+    <div class="row">${txt('lines.' + i + '.qty', 'Qty', { mode: 'numeric' })}${txt('lines.' + i + '.price', 'Price each (£)', { mode: 'decimal' })}</div>
+    <button type="button" class="btn ghost" data-act="qRmLine" data-i="${i}">Remove this item</button></div>`).join('');
+  return `<p class="small muted" style="margin-top:0">Add anything else that goes on the quote. Items you type are remembered, so next time you can just tap them.</p>
+  ${saved.length ? `<div class="seg wrap" style="margin-bottom:12px">${saved.map(x => `<button type="button" data-act="qAddLine" data-name="${esc(x.name)}" data-price="${esc(x.price)}">${esc(x.name)}${x.price ? ' · £' + esc(x.price) : ''}</button>`).join('')}</div>` : ''}
+  ${lines}
+  <button type="button" class="btn block" data-act="qAddLine" data-name="" data-price="">+ Add an item</button>
+  <h2>Labour</h2>
+  <div class="card">
+    ${txt('labourDesc', 'Description')}
+    ${txt('labourPrice', 'Labour price (£)', { req: 1, mode: 'decimal' })}
+  </div>
+  <h2>Specific to this home</h2>
+  <div class="card">${txt('homeNotes', 'Anything customers should know about this job', { area: 1, rows: 3, hint: 'Optional. Shown on the quote.' })}</div>
+  <h2>Total</h2>
+  <div class="card" id="quoTot">${quoTotHtml()}</div>`;
+}
+function quoAccept() {
+  const r = ui.rec;
+  return `<p class="small muted" style="margin-top:0">Optional. If the customer is happy to go ahead there and then, they can sign here. Otherwise skip it, and they can sign the printed quote or say yes later.</p>
+  <div class="card">
+    ${txt('customerName', 'Customer name', { ph: r.customer.name })}
+    <div class="f"><span>Customer signature</span>
+    <div class="sigwrap"><canvas data-sig="customerSig"></canvas><div class="line"></div><div class="ph" data-ph="customerSig">Sign here</div></div>
+    <div class="sigactions"><span class="small muted">Use your finger</span><button data-act="sigClear" data-key="customerSig">Clear</button></div></div>
+  </div>`;
+}
 function comBoiler() {
   const r = ui.rec;
   return `<div class="card">
@@ -2163,6 +2244,8 @@ document.addEventListener('click', async e => {
       if (ui.comOther) { delete ui.comOther[r.id + '.' + p]; delete ui.comOther[r.id + '.' + prod]; }
       ui.pdf = null; persistRec(r); const y = window.scrollY; render(); window.scrollTo(0, y); break;
     }
+    case 'qAddLine': { (r.lines = r.lines || []).push({ name: b.dataset.name || '', qty: '1', price: b.dataset.price || '' }); ui.pdf = null; persistRec(r); const y = window.scrollY; render(); window.scrollTo(0, y); break; }
+    case 'qRmLine': { r.lines.splice(+b.dataset.i, 1); ui.pdf = null; persistRec(r); const y = window.scrollY; render(); window.scrollTo(0, y); break; }
     case 'mfrOther': {
       const cur = String(getP(r, b.dataset.path) ?? '').trim();
       const isBrand = SVC.MAKE.some(x => x !== 'Other' && x.toLowerCase() === cur.toLowerCase());
@@ -2442,6 +2525,13 @@ document.addEventListener('input', e => {
 document.addEventListener('change', async e => {
   if (CLOUD.locked() && ui.view !== 'settings' && e.target.id !== 'custSearch' && e.target.id !== 'helpSearch' && e.target.id !== 'fbText') { lockedMsg(); render(); return; }
   const t = e.target;
+  if (ui.view === 'form' && ui.rec && ui.rec.type === 'quote' && /^lines\.\d+\.(name|price|qty)$/.test(t.dataset.k || '')) {
+    const l = ui.rec.lines[+t.dataset.k.split('.')[1]];
+    if (l && String(l.name || '').trim() && String(l.price || '').trim() && !QUO.parseItems(settings.qItemsText).some(x => x.name.toLowerCase() === l.name.trim().toLowerCase())) {
+      settings.qItemsText = (String(settings.qItemsText || '').trim() + '\n' + l.name.trim() + ' | ' + String(l.price).trim()).trim(); saveSettings();
+    }
+  }
+  if (ui.view === 'form' && ui.rec && ui.rec.type === 'quote') { const tt = document.getElementById('quoTot'); if (tt) tt.innerHTML = quoTotHtml(); }
   if (ui.view === 'form' && ui.rec && ui.rec.type === 'commission' && COM_MEMO.includes(t.dataset.k) && t.value.trim()) {
     const v = t.value.trim(), m = settings.comMemo = settings.comMemo || {}, l = m[t.dataset.k] = m[t.dataset.k] || [];
     if (!l.some(x => x.toLowerCase() === v.toLowerCase())) { l.unshift(v); l.length = Math.min(l.length, 8); saveSettings(); }
@@ -2552,7 +2642,7 @@ function onChoice(path, val) {
 }
 function goNext() {
   const r = ui.rec, s = ui.step;
-  const issues = validate(r).filter(x => x.step === s && (isLeg(r) || isSvc(r) || isWarn(r) || isAc(r) || isCom(r) || s !== 1 || x.app === ui.appTab));
+  const issues = validate(r).filter(x => x.step === s && (isLeg(r) || isSvc(r) || isWarn(r) || isAc(r) || isCom(r) || isQuo(r) || s !== 1 || x.app === ui.appTab));
   if (issues.length) { ui.showErr = true; render(); toast('Please complete the highlighted fields'); const f = document.querySelector('.f.bad'); if (f) f.scrollIntoView({ block: 'center' }); return; }
   ui.showErr = false;
   if (s === 0) commitCustomer(r);
