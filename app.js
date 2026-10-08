@@ -757,7 +757,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v103';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v104';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1539,7 +1539,9 @@ function renderPrices(v) {
 /* make (or category) dropdown + search box + the matching items to tap */
 const QF_LIST = { boiler: () => qOf('Boiler'), extra: qExtraList };
 function qFindRes(kind) {
-  const f = (ui.qf = ui.qf || {})[kind] || {}, list = QF_LIST[kind](), grp = kind === 'boiler' ? 'make' : 'type', words = String(f.q || '').toLowerCase().split(/\s+/).filter(Boolean);
+  const f = (ui.qf = ui.qf || {})[kind] || {}, list = QF_LIST[kind]();
+  if (f.done) return '';
+  const _l = list, grp = kind === 'boiler' ? 'make' : 'type', words = String(f.q || '').toLowerCase().split(/\s+/).filter(Boolean);
   const hits = list.map((x, i) => [x, i]).filter(([x]) => (!f.g || x[grp] === f.g) && words.every(w => (x.make + ' ' + x.name + ' ' + x.kw + 'kw ' + x.kind + ' ' + x.type).toLowerCase().includes(w)));
   if (!f.g && !words.length) return '<p class="small muted" style="margin:6px 0 0">Choose a ' + (kind === 'boiler' ? 'make' : 'category') + ' or start typing to search.</p>';
   if (!hits.length) return '<p class="small muted" style="margin:6px 0 0">Nothing matches. Type the details in yourself below.</p>';
@@ -1592,6 +1594,7 @@ function qPick(kind, idx) {
   } else if (kind === 'flue') { r.flueDesc = x.name; if (QUO.saleText(x, settings)) r.fluePrice = QUO.saleText(x, settings); r.flueCost = x.cost || ''; }
   else if (kind === 'labour') { r.labourDesc = x.name; if (QUO.saleText(x, settings)) r.labourPrice = QUO.saleText(x, settings); r.labourCost = x.cost || ''; }
   else { (r.lines = r.lines || []).push({ name: (x.make ? x.make + ' ' : '') + x.name, qty: '1', price: QUO.saleText(x, settings), cost: x.cost || '' }); }
+  if (kind === 'boiler' || kind === 'extra') (ui.qf = ui.qf || {})[kind] = { done: 1 };
   ui.pdf = null; persistRec(r); const y = window.scrollY; render(); window.scrollTo(0, y);
 }
 function quoTotHtml() {
@@ -2647,7 +2650,7 @@ document.addEventListener('input', e => {
 });
 document.addEventListener('input', e => {
   const t = e.target; if (!t.dataset || !t.dataset.qs) return;
-  (ui.qf = ui.qf || {})[t.dataset.qs] = Object.assign(ui.qf[t.dataset.qs] || {}, { q: t.value });
+  (ui.qf = ui.qf || {})[t.dataset.qs] = Object.assign(ui.qf[t.dataset.qs] || {}, { q: t.value, done: 0 });
   const el = document.getElementById('qres-' + t.dataset.qs); if (el) el.innerHTML = qFindRes(t.dataset.qs);
 });
 document.addEventListener('change', async e => {
@@ -2657,7 +2660,7 @@ document.addEventListener('change', async e => {
   if (t.dataset.pi) { const it = (settings.qList || []).find(x => x.id === t.dataset.id); if (it) { it[t.dataset.pi] = t.value.trim(); if (t.dataset.pi === 'type' && !it.type) it.type = 'Other'; saveSettings(); const y = window.scrollY; if (t.dataset.pi === 'type') ui.pCat = it.type; render(); window.scrollTo(0, y); } return; }
   if (t.dataset.pmk !== undefined) { settings.qMarkup = settings.qMarkup || {}; settings.qMarkup[t.dataset.pmk] = t.value.trim(); saveSettings(); const y = window.scrollY; render(); window.scrollTo(0, y); return; }
   if (t.dataset.s === 'qMarkupDef' && ui.view === 'prices') { const y = window.scrollY; setTimeout(() => { render(); window.scrollTo(0, y); }, 0); }
-  if (t.dataset.qg) { (ui.qf = ui.qf || {})[t.dataset.qg] = Object.assign(ui.qf[t.dataset.qg] || {}, { g: t.value }); const e = document.getElementById('qres-' + t.dataset.qg); if (e) e.innerHTML = qFindRes(t.dataset.qg); return; }
+  if (t.dataset.qg) { (ui.qf = ui.qf || {})[t.dataset.qg] = Object.assign(ui.qf[t.dataset.qg] || {}, { g: t.value, done: 0 }); const e = document.getElementById('qres-' + t.dataset.qg); if (e) e.innerHTML = qFindRes(t.dataset.qg); return; }
   if (t.dataset.qpick) { if (t.value !== '') qPick(t.dataset.qpick, +t.value); return; }
   if (ui.view === 'form' && ui.rec && ui.rec.type === 'quote' && /^lines\.\d+\.(name|price|qty)$/.test(t.dataset.k || '')) {
     const l = ui.rec.lines[+t.dataset.k.split('.')[1]];

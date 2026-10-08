@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v104', items: ['Quotes: once you pick a boiler or an extra from the price list, the list of matches closes up again.'] },
   { v: 'v103', items: ['Quotes: when you type an item and a price on a quote, a Commit to price list tick appears. Tick it to save the item to your price list (under Other). Nothing is added unless you tick it.'] },
   { v: 'v102', items: ['Quotes: an item you type on a quote with a price is now added to your price list (under Other) so you can find it next time. Items saved before are moved into the price list.'] },
   { v: 'v101', items: ['Settings reordered into the order you set things up: business details, branding, Gas Safe logo, engineer, invoice and bank details, prices, quotes, then tools, reminders, backup, sample data and app version.'] },
