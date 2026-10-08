@@ -272,6 +272,7 @@ function roomResHtml(r, i) {
   return `<div id="tlRoomRes-${i}" class="tlrow"><div class="row sp"><span>Heat loss</span><b>${c.lo !== undefined ? Math.round(c.lo) + ' to ' : ''}${Math.round(c.watts)} W</b></div>
     <div class="small muted">${c.lo !== undefined ? 'A range, from well insulated to poorly insulated. Sizes below use the higher figure.' : `Walls, windows, floor and roof ${Math.round(c.fab)} W · draughts and ventilation ${Math.round(c.vent)} W`}</div>
     <div class="row sp" style="margin-top:6px"><span>Radiator needed at your temperatures</span><b>${Math.round(c.watts)} W</b></div>
+    <div class="row sp"><span>Radiator ΔT (mean water − room)</span><b>${re ? tlFmt(re.dT, 0) + '°C' : '–'}</b></div>
     <div class="row sp"><span>Catalogue size (ΔT50) to buy</span><b>${re ? Math.round(re.rated) + ' W' : '–'}</b></div>${TL.work ? heatWork(r) : ''}</div>`;
 }
 function heatSums() {

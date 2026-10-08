@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v94', items: ['Heat loss: each room now shows the radiator ΔT (mean water temperature minus room temperature) for the heating system you picked.'] },
   { v: 'v93', items: ['Heat loss quick form trimmed right back: room type, size, sheltered or exposed and window type only. Room temperature and draughts come from the room type, and the outside temperature and boiler allowance are tucked away in a fold-out.'] },
   { v: 'v92', items: ['Heat loss: new rooms now use a quick form like the other apps (room type, length, width, height, sheltered or exposed, window type) and give a range from well insulated to poorly insulated. The radiator sizes use the higher figure and still follow the heating system you pick. Tap Enter the walls, windows and loft myself on a room for the detailed version.'] },
   { v: 'v91', items: ['Heat loss tool made simpler: Air changes per hour is replaced by a plain Draughts choice (Well sealed, Normal, Draughty), the U-values are gone from the wall, glazing, roof and floor lists, and two boxes have friendlier names (Coldest outside temperature, Boiler allowance).'] },
