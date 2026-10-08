@@ -68,6 +68,7 @@ function ivWork(c) {
   return `<div class="tlwork"><div class="t">Workings</div>${out.join('')}</div>`;
 }
 function heatWork(r) {
+  if (r.quick) return '';
   const o = tlNum(TL.heat.outside), t = tlNum(r.temp), L = tlNum(r.l), W = tlNum(r.w), H = tlNum(r.h), ext = tlNum(r.ext) || 0, win = tlNum(r.win) || 0, ach = achOf(r);
   if (o === null || t === null || !(L > 0 && W > 0 && H > 0)) return '';
   const dT = t - o, wallA = Math.max(0, ext * H - win), area = L * W, vol = area * H, uw = WALLS[+r.wall][1], ug = GLAZ[+r.glaz][1], ur = ROOFS[+r.roof][1], uf = FLOORS[+r.floor][1];
@@ -233,16 +234,30 @@ const SYSTEMS = { cond: ['Condensing boiler (70/50)', 70, 50], cond2: ['Low temp
 /* plain-English draught level: multiplies the room's usual air changes per hour (kept behind the scenes) */
 const DRAUGHT = [['0.6', 'Well sealed'], ['1', 'Normal'], ['1.5', 'Draughty']];
 const achOf = r => (tlNum(r.ach) || 0) * (tlNum(r.draught) || 1);
-const newRoom = () => ({ name: 'Living room', temp: '21', l: '4', w: '4', h: '2.4', ext: '4', wall: '1', win: '2', glaz: '1', roof: '0', floor: '1', ach: '1.5' });
+const newRoom = () => ({ name: 'Living room', temp: '21', l: '4', w: '4', h: '2.4', ext: '4', wall: '1', win: '2', glaz: '1', roof: '0', floor: '1', ach: '1.5', quick: '1', exposure: '1', window: '1' });
 const hlSys = () => { const h = TL.heat, s = SYSTEMS[h.sys]; return s && s[1] ? { flow: s[1], ret: s[2] } : { flow: tlNum(h.flow) || 70, ret: tlNum(h.ret) || 50 }; };
-function roomCalc(r) {
-  const out = tlNum(TL.heat.outside), t = tlNum(r.temp), L = tlNum(r.l), W = tlNum(r.w), H = tlNum(r.h), ext = tlNum(r.ext) || 0, win = tlNum(r.win) || 0, ach = achOf(r);
+/* the sums for one set of room details; the quick form feeds it two guesses (better and worse) to give a range */
+function roomCore(r, p) {
+  const out = tlNum(TL.heat.outside), t = tlNum(r.temp), L = tlNum(r.l), W = tlNum(r.w), H = tlNum(r.h);
   if (out === null || t === null || !(L > 0 && W > 0 && H > 0)) return null;
-  const dT = t - out, wallA = Math.max(0, ext * H - win), area = L * W, vol = area * H;
-  const uw = WALLS[+r.wall][1], ug = GLAZ[+r.glaz][1], ur = ROOFS[+r.roof][1], uf = FLOORS[+r.floor][1];
-  const fab = wallA * uw + win * ug + area * ur + area * uf, vent = 0.33 * (ach || 0) * vol;
-  const watts = (fab + vent) * dT;
-  return { dT, fab: fab * dT, vent: vent * dT, watts, vol };
+  const dT = t - out, wallA = Math.max(0, p.ext * H - p.win), area = L * W, vol = area * H;
+  const fab = wallA * WALLS[p.wall][1] + p.win * GLAZ[p.glaz][1] + area * ROOFS[p.roof][1] + area * FLOORS[p.floor][1], vent = 0.33 * p.ach * vol;
+  return { dT, fab: fab * dT, vent: vent * dT, watts: (fab + vent) * dT, vol };
+}
+const QWIN = [['Single glazing', 0, 0], ['Double glazing', 2, 1], ['Triple glazing', 3, 3]];   // label, better glazing, worse glazing (rows of GLAZ)
+const QEXP = ['Sheltered', 'Normal', 'Exposed'];
+/* quick form: guesses the walls, windows, loft and floor, once on the good side and once on the poor side */
+function quickParams(r, worse) {
+  const L = tlNum(r.l) || 0, W = tlNum(r.w) || 0, H = tlNum(r.h) || 0, e = +r.exposure || 0, w = QWIN[+r.window] || QWIN[1];
+  const ext = e === 0 ? L : e === 1 ? L + W : L + 2 * W;
+  return { ext, win: Math.max(1, ext * H * (worse ? 0.25 : 0.15)), wall: worse ? 1 : 2, glaz: worse ? w[2] : w[1], roof: worse ? 2 : 0, floor: worse ? 2 : 0, ach: (tlNum(r.ach) || 0) * (worse ? 1.2 : 0.9) };
+}
+function roomCalc(r) {
+  if (r.quick) {
+    const hi = roomCore(r, quickParams(r, true)), lo = roomCore(r, quickParams(r, false));
+    return hi && lo ? { ...hi, lo: lo.watts } : null;   // sized on the higher figure
+  }
+  return roomCore(r, { ext: tlNum(r.ext) || 0, win: tlNum(r.win) || 0, wall: +r.wall, glaz: +r.glaz, roof: +r.roof, floor: +r.floor, ach: achOf(r) });
 }
 /* catalogue radiators are rated at mean water 70°C with the room at 20°C (delta T 50); output scales with delta T^1.3 */
 function radEquiv(watts, roomT) {
@@ -254,8 +269,8 @@ function radEquiv(watts, roomT) {
 function roomResHtml(r, i) {
   const c = roomCalc(r); if (!c) return `<div id="tlRoomRes-${i}" class="small muted">Fill in the room size and temperatures.</div>`;
   const re = radEquiv(c.watts, tlNum(r.temp));
-  return `<div id="tlRoomRes-${i}" class="tlrow"><div class="row sp"><span>Heat loss</span><b>${Math.round(c.watts)} W</b></div>
-    <div class="small muted">Walls, windows, floor and roof ${Math.round(c.fab)} W · draughts and ventilation ${Math.round(c.vent)} W</div>
+  return `<div id="tlRoomRes-${i}" class="tlrow"><div class="row sp"><span>Heat loss</span><b>${c.lo !== undefined ? Math.round(c.lo) + ' to ' : ''}${Math.round(c.watts)} W</b></div>
+    <div class="small muted">${c.lo !== undefined ? 'A range, from well insulated to poorly insulated. Sizes below use the higher figure.' : `Walls, windows, floor and roof ${Math.round(c.fab)} W · draughts and ventilation ${Math.round(c.vent)} W`}</div>
     <div class="row sp" style="margin-top:6px"><span>Radiator needed at your temperatures</span><b>${Math.round(c.watts)} W</b></div>
     <div class="row sp"><span>Catalogue size (ΔT50) to buy</span><b>${re ? Math.round(re.rated) + ' W' : '–'}</b></div>${TL.work ? heatWork(r) : ''}</div>`;
 }
@@ -284,11 +299,13 @@ function roomForm(r, i) {
       <button type="button" class="btn ghost" style="margin-left:8px" data-tl="rmRoom" data-v="${i}">Remove</button></div>
     <div class="row">${n('temp', 'Room temperature (°C)')}<div class="grow f"><span>Draughts</span><select data-tl-sel="heat.rooms.${i}.draught">${DRAUGHT.map(([v, l]) => `<option value="${v}" ${String(r.draught || '1') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div></div>
     <div class="row">${n('l', 'Length (m)')}${n('w', 'Width (m)')}${n('h', 'Height (m)')}</div>
-    <div class="row">${n('ext', 'Outside wall length (m)')}${n('win', 'Window and door area (m²)')}</div>
+    ${r.quick ? `<div class="f"><span>Sheltered or exposed</span><select data-tl-sel="heat.rooms.${i}.exposure">${QEXP.map((x, j) => `<option value="${j}" ${String(r.exposure) === String(j) ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
+    <div class="f"><span>Window type</span><select data-tl-sel="heat.rooms.${i}.window">${QWIN.map((x, j) => `<option value="${j}" ${String(r.window) === String(j) ? 'selected' : ''}>${x[0]}</option>`).join('')}</select></div>
+    <button type="button" class="btn ghost" data-tl="moreDetail" data-v="${i}">Enter the walls, windows and loft myself</button>` : `<div class="row">${n('ext', 'Outside wall length (m)')}${n('win', 'Window and door area (m²)')}</div>
     <div class="f"><span>Outside wall type</span>${sel('wall', WALLS)}</div>
     <div class="f"><span>Glazing</span>${sel('glaz', GLAZ)}</div>
     <div class="f"><span>Above the room</span>${sel('roof', ROOFS)}</div>
-    <div class="f"><span>Below the room</span>${sel('floor', FLOORS)}</div>`;
+    <div class="f"><span>Below the room</span>${sel('floor', FLOORS)}</div>`}`;
 }
 function heatView() {
   const h = TL.heat, custom = h.sys === 'custom';
@@ -329,7 +346,7 @@ function tlSections() {
   const h = TL.heat, rooms = h.rooms.map(r => ({ r, c: roomCalc(r) })).filter(x => x.c);
   if (rooms.length && TL.used.heat) { const sy = hlSys(), sm = heatSums(), fct = tlNum(h.factor) || 1.5; out.push({ id: 'heat', title: 'Heat loss and radiator sizing', items: [
     { t: 'kv', rows: [['Heating system', SYSTEMS[h.sys][0] + ': ' + sy.flow + '°C flow, ' + sy.ret + '°C return'], ['Outside design temperature', h.outside + '°C']] },
-    { t: 'table', head: ['Room', 'Temp', 'Heat loss', 'Radiator needed', 'Catalogue size (ΔT50)'], w: [38, 16, 26, 32, 36], a: ['l', 'r', 'r', 'r', 'r'], rows: rooms.map(({ r, c }) => { const re = radEquiv(c.watts, tlNum(r.temp)); return [r.name + ' ' + r.l + '×' + r.w + '×' + r.h + ' m', r.temp + '°C', Math.round(c.watts) + ' W', Math.round(c.watts) + ' W', re ? Math.round(re.rated) + ' W' : '–']; }) },
+    { t: 'table', head: ['Room', 'Temp', 'Heat loss', 'Radiator needed', 'Catalogue size (ΔT50)'], w: [38, 16, 26, 32, 36], a: ['l', 'r', 'r', 'r', 'r'], rows: rooms.map(({ r, c }) => { const re = radEquiv(c.watts, tlNum(r.temp)); return [r.name + ' ' + r.l + '×' + r.w + '×' + r.h + ' m', r.temp + '°C', (c.lo !== undefined ? Math.round(c.lo) + ' to ' : '') + Math.round(c.watts) + ' W', Math.round(c.watts) + ' W', re ? Math.round(re.rated) + ' W' : '–']; }) },
     { t: 'kv', bold: ['Whole-house heat loss'], rows: [['Whole-house heat loss', f2(sm.tot / 1000, 2) + ' kW'], ['Radiators to fit (catalogue ΔT50)', f2(sm.rated / 1000, 2) + ' kW'], ['Boiler, rule of thumb (× ' + f2(fct, 1) + ')', f2(sm.tot * fct / 1000, 1) + ' kW']] },
     { t: 'note', text: 'An estimate using typical U-values and the room-by-room method. Check against a full heat loss calculation for new systems and heat pumps.' }] }); }
   return out;
@@ -474,6 +491,7 @@ document.addEventListener('click', e => {
   else if (a === 'newProp') { if (!confirm('Clear all the calculators and the customer details?')) return; const k = TL.prop.same; TL = TL_DEFAULT(); TL.prop.same = k; tlSave(); ui.toolPdf = null; try { delete ui.calc['tool-gas']; } catch (e) { } tlRepaint(); toast('Cleared'); }
   else if (a === 'pipeBasis') { TL.used.pipe = 1; TL.pipe.basis = v; tlSave(); tlRepaint(); }
   else if (a === 'addRoom') { TL.used.heat = 1; TL.heat.rooms.push(newRoom()); tlSave(); tlRepaint(); }
+  else if (a === 'moreDetail') { const r = TL.heat.rooms[+v], q = quickParams(r, true); Object.assign(r, { ext: String(+q.ext.toFixed(1)), win: String(+q.win.toFixed(1)), wall: String(q.wall), glaz: String(q.glaz), roof: String(q.roof), floor: String(q.floor), quick: '' }); tlSave(); tlRepaint(); }
   else if (a === 'rmRoom') { TL.heat.rooms.splice(+v, 1); tlSave(); tlRepaint(); }
 });
 document.addEventListener('click', e => {
