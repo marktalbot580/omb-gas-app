@@ -1467,7 +1467,7 @@ function quoBoiler() {
   const mk = QUO_MAKES();
   const hit = mk.includes(r.make);
   return `<div class="card">
-    ${qSelect('boiler', 'Choose from your price list', qOf('Boiler'), 'make')}
+    ${qFinder('boiler', 'Find from your price list')}
     ${choice('kind', 'Boiler type', QUO.KIND, { req: 1, wrap: 1 })}
     <div class="f ${ui.showErr && !r.make ? 'bad' : ''}" data-f="make"><span>Boiler make <b>*</b></span><div class="seg wrap">${mk.map(x => `<button type="button" class="${r.make === x ? 'on' : ''}" data-k="make" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div></div>
     ${r.make === 'Other' ? txt('makeOther', 'Boiler make (other)', { req: 1 }) : ''}
@@ -1535,6 +1535,23 @@ function renderPrices(v) {
       <button type="button" class="btn block ghost" data-act="qClearList">Reset to the built-in list</button></div>
     <button class="btn block ghost" data-nav="settings" style="margin-top:14px">Back to settings</button>`;
 }
+/* make (or category) dropdown + search box + the matching items to tap */
+const QF_LIST = { boiler: () => qOf('Boiler'), extra: qExtraList };
+function qFindRes(kind) {
+  const f = (ui.qf = ui.qf || {})[kind] || {}, list = QF_LIST[kind](), grp = kind === 'boiler' ? 'make' : 'type', words = String(f.q || '').toLowerCase().split(/\s+/).filter(Boolean);
+  const hits = list.map((x, i) => [x, i]).filter(([x]) => (!f.g || x[grp] === f.g) && words.every(w => (x.make + ' ' + x.name + ' ' + x.kw + 'kw ' + x.kind + ' ' + x.type).toLowerCase().includes(w)));
+  if (!f.g && !words.length) return '<p class="small muted" style="margin:6px 0 0">Choose a ' + (kind === 'boiler' ? 'make' : 'category') + ' or start typing to search.</p>';
+  if (!hits.length) return '<p class="small muted" style="margin:6px 0 0">Nothing matches. Type the details in yourself below.</p>';
+  return '<div class="qres">' + hits.slice(0, 12).map(([x, i]) => `<button type="button" class="btn ghost" style="display:block;width:100%;text-align:left;margin-bottom:6px" data-act="qFind" data-kind="${kind}" data-i="${i}">${esc((kind === 'extra' && x.make ? x.make + ' ' : '') + x.name + (kind === 'boiler' && x.kind ? ' · ' + x.kind : '') + qPrice(x))}</button>`).join('') + (hits.length > 12 ? `<p class="small muted" style="margin:0">${hits.length - 12} more. Type more to narrow it down.</p>` : '') + '</div>';
+}
+function qFinder(kind, title) {
+  const list = QF_LIST[kind](); if (!list.length) return '';
+  const grp = kind === 'boiler' ? 'make' : 'type', f = (ui.qf = ui.qf || {})[kind] || {}, gs = list.map(x => x[grp] || 'Other').filter((g, i, a) => a.indexOf(g) === i).sort();
+  return `<div class="f"><span>${title}</span>
+    <select data-qg="${kind}"><option value="">${kind === 'boiler' ? 'All makes' : 'All categories'}</option>${gs.map(g => `<option ${f.g === g ? 'selected' : ''}>${esc(g)}</option>`).join('')}</select>
+    <input type="search" data-qs="${kind}" placeholder="Search, e.g. 4000 25 or hive" value="${esc(f.q || '')}" autocomplete="off" style="margin-top:8px">
+    <div id="qres-${kind}">${qFindRes(kind)}</div></div>`;
+}
 async function qLib() {
   if (window.XLSX) return window.XLSX;
   await new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'lib/xlsx.core.min.js'; s.onload = ok; s.onerror = () => no(new Error('Could not load the spreadsheet tool. Check your connection and try again.')); document.head.appendChild(s); });
@@ -1587,7 +1604,7 @@ function quoExtras() {
     <div class="row">${txt('lines.' + i + '.qty', 'Qty', { mode: 'numeric' })}${txt('lines.' + i + '.price', 'Price each (£)', { mode: 'decimal' })}</div>
     <button type="button" class="btn ghost" data-act="qRmLine" data-i="${i}">Remove this item</button></div>`).join('');
   return `<p class="small muted" style="margin-top:0">Add anything else that goes on the quote. Items you type are remembered, so next time you can just tap them.</p>
-  ${qSelect('extra', 'Add from your price list', qExtraList(), 'type')}
+  ${qFinder('extra', 'Add from your price list')}
   ${saved.length ? `<div class="seg wrap" style="margin-bottom:12px">${saved.map(x => `<button type="button" data-act="qAddLine" data-name="${esc(x.name)}" data-price="${esc(x.price)}">${esc(x.name)}${x.price ? ' · £' + esc(x.price) : ''}</button>`).join('')}</div>` : ''}
   ${lines}
   <button type="button" class="btn block" data-act="qAddLine" data-name="" data-price="">+ Add an item</button>
@@ -2262,6 +2279,7 @@ document.addEventListener('click', async e => {
   if (CLOUD.locked() && (LOCKED_WRITES.has(a) || (a === 'makePdf' && r && r.status !== 'complete'))) { lockedMsg(); return; }
   if (a === 'custNoRem') { ui.cust.noRemind = !ui.cust.noRemind; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
   if (a === 'remTest') { remTest(); return; }
+  if (a === 'qFind') { qPick(b.dataset.kind, +b.dataset.i); return; }
   if (a === 'pricesOpen') { qSeed(); ui.pCat = ui.pCat || 'Boiler'; ui.pEdit = ''; ui.view = 'prices'; render(); return; }
   if (a === 'pCat') { ui.pCat = b.dataset.c; ui.pEdit = ''; render(); return; }
   if (a === 'pEdit') { ui.pEdit = ui.pEdit === b.dataset.id ? '' : b.dataset.id; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
@@ -2619,6 +2637,11 @@ document.addEventListener('input', e => {
   if (t.dataset.s) { settings[t.dataset.s] = t.value; saveSettings(); if (/^rem(Auto|Days|Text)$/.test(t.dataset.s)) { syncAll(); if (t.dataset.s === 'remAuto') { const y = window.scrollY; render(); window.scrollTo(0, y); return; } } if (/^inv(Prefix|Next|Digits)$/.test(t.dataset.s)) { const pv = document.getElementById('invPreview'); if (pv) pv.textContent = invNumberFor(settings.invNext); } if (t.dataset.s === 'discValue' || /^price/.test(t.dataset.s)) { clearTimeout(settingsRefresh._t); settingsRefresh._t = setTimeout(settingsRefresh, 900); } return; }
   if (t.dataset.c) { ui.cust[t.dataset.c] = t.value; }
 });
+document.addEventListener('input', e => {
+  const t = e.target; if (!t.dataset || !t.dataset.qs) return;
+  (ui.qf = ui.qf || {})[t.dataset.qs] = Object.assign(ui.qf[t.dataset.qs] || {}, { q: t.value });
+  const el = document.getElementById('qres-' + t.dataset.qs); if (el) el.innerHTML = qFindRes(t.dataset.qs);
+});
 document.addEventListener('change', async e => {
   if (CLOUD.locked() && ui.view !== 'settings' && e.target.id !== 'custSearch' && e.target.id !== 'helpSearch' && e.target.id !== 'fbText') { lockedMsg(); render(); return; }
   const t = e.target;
@@ -2626,6 +2649,7 @@ document.addEventListener('change', async e => {
   if (t.dataset.pi) { const it = (settings.qList || []).find(x => x.id === t.dataset.id); if (it) { it[t.dataset.pi] = t.value.trim(); if (t.dataset.pi === 'type' && !it.type) it.type = 'Other'; saveSettings(); const y = window.scrollY; if (t.dataset.pi === 'type') ui.pCat = it.type; render(); window.scrollTo(0, y); } return; }
   if (t.dataset.pmk !== undefined) { settings.qMarkup = settings.qMarkup || {}; settings.qMarkup[t.dataset.pmk] = t.value.trim(); saveSettings(); const y = window.scrollY; render(); window.scrollTo(0, y); return; }
   if (t.dataset.s === 'qMarkupDef' && ui.view === 'prices') { const y = window.scrollY; setTimeout(() => { render(); window.scrollTo(0, y); }, 0); }
+  if (t.dataset.qg) { (ui.qf = ui.qf || {})[t.dataset.qg] = Object.assign(ui.qf[t.dataset.qg] || {}, { g: t.value }); const e = document.getElementById('qres-' + t.dataset.qg); if (e) e.innerHTML = qFindRes(t.dataset.qg); return; }
   if (t.dataset.qpick) { if (t.value !== '') qPick(t.dataset.qpick, +t.value); return; }
   if (ui.view === 'form' && ui.rec && ui.rec.type === 'quote' && /^lines\.\d+\.(name|price|qty)$/.test(t.dataset.k || '')) {
     const l = ui.rec.lines[+t.dataset.k.split('.')[1]];
