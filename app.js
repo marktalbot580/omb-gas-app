@@ -720,7 +720,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v83';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v84';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1231,13 +1231,15 @@ function stepAlarms() {
     ${r.smokeAlarm === 'Yes' ? choice('smokeAlarmTest', 'Do all smoke alarms work correctly and are they within date?', OPT.pf, { req: 1 }) : ''}
   </div>`;
 }
+/* one-tap answers under a text box (so a box that must be filled can say N/A without typing) */
+const quick = (path, vals) => `<div class="chips" style="margin:-4px 0 12px">${vals.map(v => `<button type="button" class="chip ${getP(ui.rec, path) === v ? 'on' : ''}" data-k="${path}" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div>`;
 function stepDefects() {
   const r = ui.rec, n = +r.defectCount || 0;
   return `<div class="card">${choice('defectCount', 'How many defects are there to note?', OPT.defectCount, { req: 1 })}</div>
   ${Array.from({ length: n }, (_, i) => `<h2>Defect ${i + 1}</h2><div class="card">
     ${txt(`defects.${i}.text`, 'Identified defect', { req: 1, area: 1, rows: 3 })}
     ${choice(`defects.${i}.cls`, 'Classification', OPT.cls, { req: 1 })}
-    ${txt(`defects.${i}.action`, 'Remedial action taken', { req: 1, area: 1, rows: 3 })}
+    ${txt(`defects.${i}.action`, 'Remedial action taken', { req: 1, area: 1, rows: 3 })}${quick(`defects.${i}.action`, ['N/A', 'None taken', 'Customer advised'])}
     ${PH.field(r, `defects.${i}.photos`)}</div>`).join('')}
   ${n ? `<p class="small muted"><b>ID</b> Immediately Dangerous · <b>AR</b> At Risk · <b>NCS</b> Not to Current Standards</p>` : ''}`;
 }
@@ -1486,7 +1488,7 @@ function legFindings() {
   ${r.defects.map((d, i) => `<div class="card">
     ${txt(`defects.${i}.text`, `Risk / defect ${i + 1}`, { req: 1, area: 1, rows: 3 })}
     ${choice(`defects.${i}.cls`, 'Priority', LEG.PRIORITY, { req: 1 })}
-    ${txt(`defects.${i}.action`, 'Recommendation', { req: 1, area: 1, rows: 3 })}
+    ${txt(`defects.${i}.action`, 'Recommendation', { req: 1, area: 1, rows: 3 })}${quick(`defects.${i}.action`, ['N/A', 'None needed'])}
     ${PH.field(r, `defects.${i}.photos`)}
     <button class="btn danger block" data-act="legRmDef" data-i="${i}">Remove this item</button></div>`).join('')}
   <button class="btn block" data-act="legAddDef">+ Add a risk / defect</button>
