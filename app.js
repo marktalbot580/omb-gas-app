@@ -1447,7 +1447,7 @@ function comBoiler() {
   </div>
   <h2>Boiler Plus options</h2>
   <p class="small muted" style="margin-top:0">Tick everything that applies.</p>
-  <div class="card">${COM.PLUS.map(([k, l]) => tick(k, l)).join('')}</div>
+  <div class="card">${COM.plusFor(r).map(([k, l]) => tick(k, l)).join('')}</div>
   <h2>System components</h2>
   <div class="card">${COM.PARTS.map(([k, l]) => choice(k, l, COM.PFN, { req: 1, wrap: 1 })).join('')}</div>`;
 }

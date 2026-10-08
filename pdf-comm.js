@@ -152,7 +152,7 @@ async function drawComPdf(rec, s, lv) {
     ['Boiler type', rec.kind], ['Commissioning date', ukd(rec.inspectionDate)],
     ['Gas Safe registration', s.gasSafeReg || ''], ['Engineer', s.engineerName || '']
   ]);
-  const plus = COM.PLUS.filter(([k]) => rec[k] === 'Yes').map(([, l]) => l);
+  const plus = COM.plusFor(rec).filter(([k]) => rec[k] === 'Yes').map(([, l]) => l);
   grid('COMPLIANCE AND CONTROLS', [
     ['Complies with Building Regulations', yes(rec.regsOk)], ['Building Regs notification no.', rec.regsNo],
     ['Time, temperature control and boiler interlock', yes(rec.interlock)], ['Boiler Plus options', plus.length ? plus.join('; ') : 'None ticked'],

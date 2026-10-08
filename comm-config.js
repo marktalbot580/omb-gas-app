@@ -17,7 +17,7 @@ const COM = (() => {
   const PLUS = [
     ['bpWeather', 'Weather compensation'], ['bpLoad', 'Load compensation'],
     ['bpSmart', 'Smart thermostat with automation and optimisation'], ['bpFlueHr', 'Flue gas heat recovery'],
-    ['bpCyl', 'Cylinder thermostat and programmer / timer'], ['bpHw', 'Combination boiler: time and temperature control to hot water (England)']
+    ['bpCyl', 'Cylinder thermostat and programmer / timer', 'stored'], ['bpHw', 'Combination boiler: time and temperature control to hot water (England)', 'combi']
   ];
   const PARTS = [['zone', 'Zone valves'], ['trv', 'Thermostatic radiator valves'], ['bypass', 'Automatic bypass to system'], ['ufh', 'Underfloor heating']];
 
@@ -29,7 +29,7 @@ const COM = (() => {
       make: '', makeOther: '', model: '', serial: '', gc: '', kind: '',
       regsOk: '', regsNo: '', interlock: '',
       bpWeather: '', bpLoad: '', bpSmart: '', bpFlueHr: '', bpCyl: '', bpHw: '',
-      zone: '', trv: '', bypass: '', ufh: '',
+      zone: 'Not required', trv: 'Not required', bypass: 'Not required', ufh: 'Not required',
       flushed: '', cleanerBrand: '', cleanerProduct: '', inhibBrand: '', inhibProduct: '', filter: '',
       chRate: '', chUnit: 'm³/hr', chFactory: '', chMax: '', chPress: '', chFlow: '', chReturn: '', balanced: '',
       hardWater: '', scale: '', scaleType: '', waterMeter: '', dhwVessel: '', prv: '',
@@ -42,6 +42,8 @@ const COM = (() => {
 
   const makeText = r => (r.make === 'Other' ? r.makeOther : r.make);
   const isCombi = r => r.kind === 'Combination';
+  /* Boiler Plus options that make sense for this boiler type (all of them until the type is chosen) */
+  const plusFor = r => PLUS.filter(([, , w]) => !w || !r.kind || (w === 'combi' ? r.kind === 'Combination' : r.kind !== 'Combination'));
   /* CO/CO2 ratio: CO in ppm over CO2 as a fraction (1% = 10,000 ppm) */
   const ratio = (co, co2) => { const c = num(co), d = num(co2); return c !== null && d !== null && d > 0 ? c / (d * 10000) : null; };
   const ratioText = (co, co2) => { const x = ratio(co, co2); return x === null ? '' : x.toFixed(4); };
@@ -92,5 +94,5 @@ const COM = (() => {
     return w;
   }
 
-  return { STEPS, KIND, YN, PFN, UNIT, TERM, DISP, FLUE, PLUS, PARTS, num, blank, makeText, isCombi, ratio, ratioText, validate, warnings };
+  return { STEPS, KIND, YN, PFN, UNIT, TERM, DISP, FLUE, PLUS, PARTS, num, blank, makeText, isCombi, plusFor, ratio, ratioText, validate, warnings };
 })();
