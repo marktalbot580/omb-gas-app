@@ -740,7 +740,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v88';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v89';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -871,6 +871,11 @@ function renderSettings(v) {
     <button class="btn block" data-act="help" style="margin-bottom:10px">Help guide</button>
     <button class="btn block" data-act="news" style="margin-bottom:10px">What’s new</button>
     <button class="btn block" data-act="feedback" style="margin-bottom:12px">Send feedback</button>
+    <h2>Sample data</h2>
+    <div class="card">
+      <p class="small muted" style="margin-top:0">${SAMPLE.has() ? 'Sample customers and example forms are on this phone, marked “Sample”. Open them to see how the forms and PDFs look.' : 'Adds two made-up customers and an example of every form so you can see how they look.'}</p>
+      ${SAMPLE.has() ? '<button class="btn block" data-act="sampleOff">Remove sample data</button>' : '<button class="btn block" data-act="sampleOn">Add sample data</button>'}
+    </div>
     <h2>App version</h2>
     <div class="card">
       <p class="small muted" style="margin-top:0">This phone is running <b id="verHere" style="color:var(--txt)">${APP_VERSION}</b> · newest online: <b id="verNew" style="color:var(--txt)">checking…</b></p>
@@ -2089,6 +2094,8 @@ document.addEventListener('click', async e => {
   if (CLOUD.locked() && (LOCKED_WRITES.has(a) || (a === 'makePdf' && r && r.status !== 'complete'))) { lockedMsg(); return; }
   if (a === 'custNoRem') { ui.cust.noRemind = !ui.cust.noRemind; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
   if (a === 'remTest') { remTest(); return; }
+  if (a === 'sampleOn') { const n = SAMPLE.add(); render(); toast(n + ' sample forms added'); return; }
+  if (a === 'sampleOff') { if (confirm('Remove the sample customers and forms?')) { SAMPLE.remove(); render(); toast('Sample data removed'); } return; }
   if (a === 'remOpen') { ui.view = 'due'; render(); window.scrollTo(0, 0); return; }
   if (a === 'remSent') { const id = b.dataset.id; setTimeout(() => { const o = remGet(); o.s[id] = todayISO(); remSet(o); if (ui.view === 'due') { const y = window.scrollY; render(); window.scrollTo(0, y); } }, 600); return; }
   if (a === 'remDone') { const rr = records.find(x => x.id === b.dataset.id); if (rr) remSetState(rr, b.dataset.v); toast(b.dataset.v === 'booked' ? 'Marked as booked in' : 'Removed from the list'); render(); return; }

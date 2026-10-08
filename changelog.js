@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v89', items: ['Settings now has Add sample data: two made-up customers and a completed example of every form, so you can open them and see how the forms and PDFs look. Remove sample data clears them again.'] },
   { v: 'v88', items: ['Boiler commissioning checklist: pick the system cleaner and inhibitor from common brands and products (Fernox, Sentinel, Adey), or choose Other and type it. Anything you type is remembered as a button for next time.'] },
   { v: 'v87', items: ['The one-tap button on the forms-for-this-visit screen is now called Landlord visit, so it is clear it ticks just the gas check, boiler service and Legionella forms.'] },
   { v: 'v86', items: ['New form: Boiler commissioning checklist for a new boiler installation. It records compliance and Boiler Plus options, water quality, operating readings, condensate, combustion readings and customer handover, and makes a PDF in the same look as your other certificates. There is a price for it in Settings.'] },
