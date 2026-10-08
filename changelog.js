@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v98', items: ['Fix: + New boiler quote now goes straight into the quote instead of asking you to choose a form. Boiler quote is also on the forms-for-this-visit list when you start from a customer.'] },
   { v: 'v97', items: ['Quotes: the manufacturer warranty now shows as a big dark and gold seal on the front of the proposal (for example 10 YEAR warranty) when you pick one on the boiler step.'] },
   { v: 'v96', items: ['Quotes: the email message now says to reply to the email to go ahead and that you will call to arrange the installation date, and the proposal says the same, so customers can accept with a simple reply.'] },
   { v: 'v95', items: ['New: Boiler quotes. Tap + New boiler quote on the home screen, pick the customer, the boiler and flue, add extras (they are remembered for next time) and labour, and it works out the VAT and makes a proper three-page proposal PDF with a cover, your logo, the price up front, what is included, what happens next and a place for the customer to sign. The what is included list, saved items and terms can be edited in Settings under Quotes.'] },

@@ -307,7 +307,7 @@ function goBack() {
   if (seq) { const q = seq[pos - 1]; goTo(q.rec, q.step); } else { ui.step--; ui.appTab = 0; render(); }
 }
 function startJob() {
-  const pk = ui.pick, types = ['gas', 'service', 'legionella', 'aircon', 'commission'].filter(t => pk.types[t]);
+  const pk = ui.pick, types = ['gas', 'service', 'legionella', 'aircon', 'commission', 'quote'].filter(t => pk.types[t]);
   if (!types.length) { toast('Choose at least one form'); return; }
   const jobId = types.length > 1 ? uid() : '';
   const recs = types.map(t => { const r = newRecord(pk.customer, t); if (jobId) r.jobId = jobId; return r; });
@@ -663,6 +663,7 @@ function renderPick(v) {
     ${opt('service', 'Boiler service record', 'Service or repair of a gas boiler')}
     ${opt('legionella', 'Legionella risk assessment', 'Hot and cold water system checks')}
     ${opt('aircon', 'Air conditioning commissioning', 'Install and commissioning report for an AC system')}
+    ${opt('quote', 'Boiler quote', 'A quotation for a new boiler installation')}
     ${T.gas && !T.service ? `<div class="notice">Doing a gas safety check? Tick <b>Boiler service record</b> as well to complete both forms in one go – the boiler details from the gas check are copied across.</div>` : ''}
     <button class="btn block" data-act="pickAll">Landlord visit: gas check, boiler service &amp; Legionella</button>
     <div style="height:10px"></div>
@@ -756,7 +757,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v97';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v98';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -2197,7 +2198,7 @@ document.addEventListener('click', async e => {
   if (a === 'newsDismiss') { nsSet(); render(); return; }
   if (a === 'helpBack') { ui.view = ui.helpFrom && ui.helpFrom !== 'help' && (ui.helpFrom !== 'form' || ui.rec) ? ui.helpFrom : 'home'; render(); return; }
   switch (a) {
-    case 'newRec': ui.pick = { types: { [b.dataset.type]: true }, customer: null }; ui.view = 'pick'; render(); break;
+    case 'newRec': ui.pick = { types: { [b.dataset.type]: true }, customer: null }; if (b.dataset.type === 'quote') { startJob(); break; } ui.view = 'pick'; render(); break;
     case 'pickToggle': ui.pick.types[b.dataset.t] = !ui.pick.types[b.dataset.t]; render(); break;
     case 'pickAll': ui.pick.types = { gas: true, service: true, legionella: true }; render(); break;
     case 'pickGo': startJob(); break;
