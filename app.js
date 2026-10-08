@@ -757,7 +757,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v99';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v100';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -888,6 +888,14 @@ function renderSettings(v) {
     <button class="btn block" data-act="help" style="margin-bottom:10px">Help guide</button>
     <button class="btn block" data-act="news" style="margin-bottom:10px">What’s new</button>
     <button class="btn block" data-act="feedback" style="margin-bottom:12px">Send feedback</button>
+    <h2>Business (printed on every certificate)</h2>
+    <div class="card">
+      ${f('businessName', 'Business name')}
+      ${addrBox('set', 'address', 'Address')}
+      ${f('phone', 'Telephone', { type: 'tel' })}
+      ${f('email', 'Email', { type: 'email', cap: 'none' })}
+      ${f('gasSafeReg', 'Gas Safe Register number')}
+    </div>
     <h2>Sample data</h2>
     <div class="card">
       <p class="small muted" style="margin-top:0">${SAMPLE.has() ? 'Sample customers and example forms are on this phone, marked “Sample”. Open them to see how the forms and PDFs look.' : 'Adds two made-up customers and an example of every form so you can see how they look.'}</p>
@@ -913,14 +921,6 @@ function renderSettings(v) {
       <label class="f"><span>Send reminders automatically by email</span><select data-s="remAuto"><option value="off" ${settings.remAuto === 'on' ? '' : 'selected'}>Off</option><option value="on" ${settings.remAuto === 'on' ? 'selected' : ''}>On</option></select><small>When on, customers with an email address saved get an email about 8 weeks before their check is due, and again 2 weeks before. It comes from reminders@ombgas.com with your business name, and their replies come to <b>${esc(settings.email || 'your email in Settings')}</b>. Customers you mark Booked in, Not needed or Stop are skipped, and every email has an unsubscribe link. You need to be signed in so it can run.${settings.remAuto === 'on' && !settings.email ? ' <b style="color:var(--gold2)">Add your email address under Business below first, or replies will have nowhere to go.</b>' : ''}</small></label>
       ${settings.remAuto === 'on' ? '<button class="btn block" data-act="remTest">Send me a sample reminder</button><div style="height:8px"></div>' : ''}
       <button class="btn block ghost" data-act="remReset">Put the original wording back</button>
-    </div>
-    <h2>Business (printed on every certificate)</h2>
-    <div class="card">
-      ${f('businessName', 'Business name')}
-      ${addrBox('set', 'address', 'Address')}
-      ${f('phone', 'Telephone', { type: 'tel' })}
-      ${f('email', 'Email', { type: 'email', cap: 'none' })}
-      ${f('gasSafeReg', 'Gas Safe Register number')}
     </div>
     <h2>Your branding</h2>
     <div class="card">
