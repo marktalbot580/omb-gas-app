@@ -757,7 +757,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v105';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v106';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1595,6 +1595,7 @@ function qPick(kind, idx) {
   else if (kind === 'labour') { r.labourDesc = x.name; if (QUO.saleText(x, settings)) r.labourPrice = QUO.saleText(x, settings); r.labourCost = x.cost || ''; }
   else { (r.lines = r.lines || []).push({ name: (x.make ? x.make + ' ' : '') + x.name, qty: '1', price: QUO.saleText(x, settings), cost: x.cost || '' }); }
   if (kind === 'boiler' || kind === 'extra') (ui.qf = ui.qf || {})[kind] = { done: 1 };
+  if (kind === 'extra') (ui.qOpen = ui.qOpen || {}).extra = false;
   ui.pdf = null; persistRec(r); const y = window.scrollY; render(); window.scrollTo(0, y);
 }
 function quoTotHtml() {
@@ -1609,24 +1610,20 @@ function qCommitTick(l, i) {
 }
 function quoExtras() {
   const r = ui.rec; qSeed();
+  const open = !!(ui.qOpen && ui.qOpen.extra);
   const lines = (r.lines || []).map((l, i) => `<div class="card" style="margin-bottom:10px">
-    ${txt('lines.' + i + '.name', 'Item', { ph: 'For example magnetic filter' })}
+    <div style="display:flex;gap:8px;align-items:flex-end"><div style="flex:1">${txt('lines.' + i + '.name', 'Item', { ph: 'For example magnetic filter' })}</div><button type="button" class="btn ghost" data-act="qRmLine" data-i="${i}" aria-label="Remove this item" style="width:auto;min-height:48px;margin-bottom:14px">✕</button></div>
     <div class="row">${txt('lines.' + i + '.qty', 'Qty', { mode: 'numeric' })}${txt('lines.' + i + '.price', 'Price each (£)', { mode: 'decimal' })}</div>
-    ${qCommitTick(l, i)}
-    <button type="button" class="btn ghost" data-act="qRmLine" data-i="${i}">Remove this item</button></div>`).join('');
-  return `<p class="small muted" style="margin-top:0">Add anything else that goes on the quote. Tick Commit to price list on an item you type and it is saved for next time.</p>
-  ${qFinder('extra', 'Add from your price list')}
-  ${lines}
-  <button type="button" class="btn block" data-act="qAddLine" data-name="" data-price="">+ Add an item</button>
+    ${qCommitTick(l, i)}</div>`).join('');
+  return `${lines}
+  ${open ? `<div class="card" style="margin-bottom:10px">${qFinder('extra', 'Add from your price list')}<button type="button" class="btn ghost block" data-act="qOpen" data-k="extra">Close</button></div>` : ''}
+  <div class="row" style="margin-bottom:6px"><button type="button" class="btn grow" data-act="qOpen" data-k="extra">+ From price list</button><button type="button" class="btn ghost grow" data-act="qAddLine" data-name="" data-price="">+ Own item</button></div>
   <h2>Labour</h2>
   <div class="card">
     ${qSelect('labour', 'Choose labour', qOf('Labour'), false)}
-    ${txt('labourDesc', 'Description')}
-    ${txt('labourPrice', 'Labour price (£)', { req: 1, mode: 'decimal' })}
+    <div class="row">${txt('labourDesc', 'Description')}${txt('labourPrice', 'Price (£)', { req: 1, mode: 'decimal' })}</div>
   </div>
-  <h2>Specific to this home</h2>
-  <div class="card">${txt('homeNotes', 'Anything customers should know about this job', { area: 1, rows: 3, hint: 'Optional. Shown on the quote.' })}</div>
-  <h2>Total</h2>
+  <div class="card">${txt('homeNotes', 'Specific to this home (optional, shown on the quote)', { area: 1, rows: 2 })}</div>
   <div class="card" id="quoTot">${quoTotHtml()}</div>`;
 }
 function comBoiler() {
@@ -2290,6 +2287,7 @@ document.addEventListener('click', async e => {
   if (a === 'custNoRem') { ui.cust.noRemind = !ui.cust.noRemind; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
   if (a === 'remTest') { remTest(); return; }
   if (a === 'qCommit') { const l = (ui.rec.lines || [])[+b.dataset.i]; if (l && !qInList(l)) { qSeed(); settings.qList.push({ id: QUO.newId(), type: 'Other', make: '', name: l.name.trim(), kind: '', kw: '', warranty: '', unit: '', cost: String(l.cost || ''), markup: '', price: String(l.price).trim() }); saveSettings(); toast('Added to your price list'); } const y = window.scrollY; render(); window.scrollTo(0, y); return; }
+  if (a === 'qOpen') { ui.qOpen = ui.qOpen || {}; ui.qOpen[b.dataset.k] = !ui.qOpen[b.dataset.k]; if (ui.qf) ui.qf[b.dataset.k] = {}; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
   if (a === 'qFind') { qPick(b.dataset.kind, +b.dataset.i); return; }
   if (a === 'pricesOpen') { qSeed(); ui.pCat = ui.pCat || 'Boiler'; ui.pEdit = ''; ui.view = 'prices'; render(); return; }
   if (a === 'pCat') { ui.pCat = b.dataset.c; ui.pEdit = ''; render(); return; }

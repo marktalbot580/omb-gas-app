@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v106', items: ['Quotes: the Extras and labour page is tidier. Added items are compact with a small ✕ to remove them, the price list search only opens when you tap + From price list and closes after you pick, and the labour and total boxes are slimmer.'] },
   { v: 'v105', items: ['Price list: boilers show their warranty length in the list and in the quote search, and picking one fills in the warranty on the front of the quote. Set it per boiler in the price list (Baxi 600 and 800 are filled in already).'] },
   { v: 'v104', items: ['Quotes: once you pick a boiler or an extra from the price list, the list of matches closes up again.'] },
   { v: 'v103', items: ['Quotes: when you type an item and a price on a quote, a Commit to price list tick appears. Tick it to save the item to your price list (under Other). Nothing is added unless you tick it.'] },
