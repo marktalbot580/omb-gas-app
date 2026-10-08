@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v109', items: ['Fix: the file that lets the app work offline and check its version had been saved empty by mistake in the last few updates, so Settings showed the version as unknown or offline. It is restored.'] },
   { v: 'v108', items: ['Text boxes (addresses, notes and so on) now grow to fit what is in them, so there is no scrolling inside a box.'] },
   { v: 'v107', items: ['Quotes: the writing on the quote is a little bigger as standard, and there is a new Text size choice (Normal or Large) at the bottom of the Extras and labour step for older customers. Both still fit on 3 pages.'] },
   { v: 'v106', items: ['Quotes: the Extras and labour page is tidier. Added items are compact with a small ✕ to remove them, the price list search only opens when you tap + From price list and closes after you pick, and the labour and total boxes are slimmer.'] },
