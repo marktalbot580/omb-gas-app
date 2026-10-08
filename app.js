@@ -757,7 +757,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v100';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v101';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -896,32 +896,6 @@ function renderSettings(v) {
       ${f('email', 'Email', { type: 'email', cap: 'none' })}
       ${f('gasSafeReg', 'Gas Safe Register number')}
     </div>
-    <h2>Sample data</h2>
-    <div class="card">
-      <p class="small muted" style="margin-top:0">${SAMPLE.has() ? 'Sample customers and example forms are on this phone, marked “Sample”. Open them to see how the forms and PDFs look.' : 'Adds two made-up customers and an example of every form so you can see how they look.'}</p>
-      ${SAMPLE.has() ? '<button class="btn block" data-act="sampleOff">Remove sample data</button>' : '<button class="btn block" data-act="sampleOn">Add sample data</button>'}
-    </div>
-    <h2>App version</h2>
-    <div class="card">
-      <p class="small muted" style="margin-top:0">This phone is running <b id="verHere" style="color:var(--txt)">${APP_VERSION}</b> · newest online: <b id="verNew" style="color:var(--txt)">checking…</b></p>
-      <button class="btn block" data-act="forceUpdate">Update app now</button>
-      <p class="small" id="updMsg" style="margin:8px 0 0;font-weight:600"></p>
-      <p class="small muted" style="margin-bottom:0">Clears the saved copy of the app and reloads the newest version. Your records, customers and photos are not touched.</p>
-    </div>
-    ${installCard(true)}
-    <h2>Tools</h2>
-    <div class="card">
-      ${[['toolGas', 'Gas rate calculator'], ['toolPipe', 'Gas pipe sizing'], ['toolIv', 'Tightness test volume'], ['toolHeat', 'Heat loss and radiator sizing']].map(([k, l]) => `<label class="f"><span>${l}</span><select data-s="${k}"><option value="on" ${settings[k] === 'off' ? '' : 'selected'}>Show</option><option value="off" ${settings[k] === 'off' ? 'selected' : ''}>Hide</option></select></label>`).join('')}
-      <small class="muted">Hidden tools disappear from the Tools list. Hide all three and the Tools button leaves the home screen.</small>
-    </div>
-    <h2>Annual check reminders</h2>
-    <div class="card">
-      <label class="f"><span>Message wording</span><textarea data-s="remText" rows="4">${esc(settings.remText || REM_DEFAULT)}</textarea><small>Used for the Text, WhatsApp and Email buttons on the Annual checks due screen. {name}, {business}, {what}, {address} and {date} are filled in for you.</small></label>
-      <label class="f"><span>Start listing checks</span><select data-s="remDays">${[['28', '4 weeks before they are due'], ['42', '6 weeks before they are due'], ['56', '8 weeks before they are due'], ['84', '12 weeks before they are due']].map(([k, l]) => `<option value="${k}" ${String(settings.remDays || '56') === k ? 'selected' : ''}>${l}</option>`).join('')}</select><small>A landlord gas safety check can be done up to 2 months early and keep the same yearly date.</small></label>
-      <label class="f"><span>Send reminders automatically by email</span><select data-s="remAuto"><option value="off" ${settings.remAuto === 'on' ? '' : 'selected'}>Off</option><option value="on" ${settings.remAuto === 'on' ? 'selected' : ''}>On</option></select><small>When on, customers with an email address saved get an email about 8 weeks before their check is due, and again 2 weeks before. It comes from reminders@ombgas.com with your business name, and their replies come to <b>${esc(settings.email || 'your email in Settings')}</b>. Customers you mark Booked in, Not needed or Stop are skipped, and every email has an unsubscribe link. You need to be signed in so it can run.${settings.remAuto === 'on' && !settings.email ? ' <b style="color:var(--gold2)">Add your email address under Business below first, or replies will have nowhere to go.</b>' : ''}</small></label>
-      ${settings.remAuto === 'on' ? '<button class="btn block" data-act="remTest">Send me a sample reminder</button><div style="height:8px"></div>' : ''}
-      <button class="btn block ghost" data-act="remReset">Put the original wording back</button>
-    </div>
     <h2>Your branding</h2>
     <div class="card">
       <div style="text-align:center;margin-bottom:12px"><img src="${settings.logo || placeholderLogo(settings.businessName)}" alt="Company logo" style="height:110px;width:110px;border-radius:10px"></div>
@@ -940,6 +914,27 @@ function renderSettings(v) {
     <div class="card">
       ${f('engineerName', 'Engineer name')}
       ${f('gasSafeId', 'Gas Safe ID card number')}
+    </div>
+    <h2>Invoice details</h2>
+    <div class="card">
+      ${f('invPrefix', 'Invoice number prefix', { cap: 'characters', hint: 'For example INV-. Leave blank for numbers only.' })}
+      ${f('invNext', 'Next invoice number', { mode: 'numeric', hint: 'Start at 1 or any number you like. It goes up by one each time an invoice is created.' })}
+      ${f('invDigits', 'Digits in the number', { mode: 'numeric', hint: '3 gives 001, 4 gives 0001, 1 gives no leading zeros.' })}
+      <div class="notice" style="margin:0 0 14px">Next invoice will be numbered <b id="invPreview">${esc(invNumberFor(settings.invNext))}</b></div>
+      ${f('payDays', 'Payment terms (days)', { mode: 'numeric' })}
+      <button type="button" class="item tog ${settings.vatReg === 'Yes' ? 'on' : ''}" data-act="vatReg"><span class="box"></span><span><span class="t">VAT registered</span><span class="s" style="display:block">${settings.vatReg === 'Yes' ? 'VAT is added to invoices' : 'Tick if the business is VAT registered – VAT will then be added to invoices'}</span></span></button>
+      ${settings.vatReg === 'Yes' ? f('vatRate', 'VAT rate (%)', { mode: 'decimal' }) + f('vatNumber', 'VAT number') + `<label class="f"><span>VAT quarters end in</span><select data-s="vatQtr"><option value="2" ${settings.vatQtr === '2' ? 'selected' : ''}>March, June, September, December</option><option value="0" ${settings.vatQtr === '0' ? 'selected' : ''}>January, April, July, October</option><option value="1" ${settings.vatQtr === '1' ? 'selected' : ''}>February, May, August, November</option></select><small>Used by “Print for accountant” on the Invoices tab. It is on your VAT registration certificate.</small></label>` + '<p class="small muted">Enter your prices above <b>excluding VAT</b>. VAT is added on the invoice and shown as its own line. The VAT number is printed on the invoice, which is then headed “VAT Invoice”.</p>' : ''}
+      <div class="row"><div class="grow">${f('yearDay', 'Tax year starts: day', { mode: 'numeric', maxlen: 2 })}</div><div class="grow"><label class="f"><span>Month</span><select data-s="yearMonth">${['January','February','March','April','May','June','July','August','September','October','November','December'].map((mn, k) => `<option value="${k + 1}" ${String(+settings.yearMonth || 4) === String(k + 1) ? 'selected' : ''}>${mn}</option>`).join('')}</select></label></div></div>
+      <p class="small muted" style="margin-top:-6px">The first day of your company’s tax / accounting year (6 April for sole traders; a company can be different). Used for “This tax year” and “Last tax year” in Print for accountant.</p>
+      ${f('invFooter', 'Message at the bottom of invoices', { area: true })}
+    </div>
+    <h2>Bank details (printed on invoices)</h2>
+    <div class="card">
+      <p class="small muted" style="margin-top:0">Anything filled in here is printed on unpaid invoices so the customer can pay by bank transfer, using the invoice number as the payment reference. Leave blank to print nothing.</p>
+      ${f('bankName', 'Bank')}
+      ${f('accName', 'Account name')}
+      ${f('sortCode', 'Sort code', { mode: 'numeric', maxlen: 8, hint: 'Six digits, for example 20-01-09' })}
+      ${f('accNo', 'Account number', { mode: 'numeric' })}
     </div>
     <h2>Prices (used on invoices)</h2>
     <div class="card">
@@ -965,26 +960,18 @@ function renderSettings(v) {
       ${f('qItemsText', 'Saved quote items (one per line: item | price)', { area: 1, hint: 'Items you add to a quote are saved here automatically. You can edit or delete lines.' })}
       ${f('quoteTerms', 'Terms shown on the quote (one per line)', { area: 1 })}
     </div>
-    <h2>Invoice details</h2>
+    <h2>Tools</h2>
     <div class="card">
-      ${f('invPrefix', 'Invoice number prefix', { cap: 'characters', hint: 'For example INV-. Leave blank for numbers only.' })}
-      ${f('invNext', 'Next invoice number', { mode: 'numeric', hint: 'Start at 1 or any number you like. It goes up by one each time an invoice is created.' })}
-      ${f('invDigits', 'Digits in the number', { mode: 'numeric', hint: '3 gives 001, 4 gives 0001, 1 gives no leading zeros.' })}
-      <div class="notice" style="margin:0 0 14px">Next invoice will be numbered <b id="invPreview">${esc(invNumberFor(settings.invNext))}</b></div>
-      ${f('payDays', 'Payment terms (days)', { mode: 'numeric' })}
-      <button type="button" class="item tog ${settings.vatReg === 'Yes' ? 'on' : ''}" data-act="vatReg"><span class="box"></span><span><span class="t">VAT registered</span><span class="s" style="display:block">${settings.vatReg === 'Yes' ? 'VAT is added to invoices' : 'Tick if the business is VAT registered – VAT will then be added to invoices'}</span></span></button>
-      ${settings.vatReg === 'Yes' ? f('vatRate', 'VAT rate (%)', { mode: 'decimal' }) + f('vatNumber', 'VAT number') + `<label class="f"><span>VAT quarters end in</span><select data-s="vatQtr"><option value="2" ${settings.vatQtr === '2' ? 'selected' : ''}>March, June, September, December</option><option value="0" ${settings.vatQtr === '0' ? 'selected' : ''}>January, April, July, October</option><option value="1" ${settings.vatQtr === '1' ? 'selected' : ''}>February, May, August, November</option></select><small>Used by “Print for accountant” on the Invoices tab. It is on your VAT registration certificate.</small></label>` + '<p class="small muted">Enter your prices above <b>excluding VAT</b>. VAT is added on the invoice and shown as its own line. The VAT number is printed on the invoice, which is then headed “VAT Invoice”.</p>' : ''}
-      <div class="row"><div class="grow">${f('yearDay', 'Tax year starts: day', { mode: 'numeric', maxlen: 2 })}</div><div class="grow"><label class="f"><span>Month</span><select data-s="yearMonth">${['January','February','March','April','May','June','July','August','September','October','November','December'].map((mn, k) => `<option value="${k + 1}" ${String(+settings.yearMonth || 4) === String(k + 1) ? 'selected' : ''}>${mn}</option>`).join('')}</select></label></div></div>
-      <p class="small muted" style="margin-top:-6px">The first day of your company’s tax / accounting year (6 April for sole traders; a company can be different). Used for “This tax year” and “Last tax year” in Print for accountant.</p>
-      ${f('invFooter', 'Message at the bottom of invoices', { area: true })}
+      ${[['toolGas', 'Gas rate calculator'], ['toolPipe', 'Gas pipe sizing'], ['toolIv', 'Tightness test volume'], ['toolHeat', 'Heat loss and radiator sizing']].map(([k, l]) => `<label class="f"><span>${l}</span><select data-s="${k}"><option value="on" ${settings[k] === 'off' ? '' : 'selected'}>Show</option><option value="off" ${settings[k] === 'off' ? 'selected' : ''}>Hide</option></select></label>`).join('')}
+      <small class="muted">Hidden tools disappear from the Tools list. Hide all three and the Tools button leaves the home screen.</small>
     </div>
-    <h2>Bank details (printed on invoices)</h2>
+    <h2>Annual check reminders</h2>
     <div class="card">
-      <p class="small muted" style="margin-top:0">Anything filled in here is printed on unpaid invoices so the customer can pay by bank transfer, using the invoice number as the payment reference. Leave blank to print nothing.</p>
-      ${f('bankName', 'Bank')}
-      ${f('accName', 'Account name')}
-      ${f('sortCode', 'Sort code', { mode: 'numeric', maxlen: 8, hint: 'Six digits, for example 20-01-09' })}
-      ${f('accNo', 'Account number', { mode: 'numeric' })}
+      <label class="f"><span>Message wording</span><textarea data-s="remText" rows="4">${esc(settings.remText || REM_DEFAULT)}</textarea><small>Used for the Text, WhatsApp and Email buttons on the Annual checks due screen. {name}, {business}, {what}, {address} and {date} are filled in for you.</small></label>
+      <label class="f"><span>Start listing checks</span><select data-s="remDays">${[['28', '4 weeks before they are due'], ['42', '6 weeks before they are due'], ['56', '8 weeks before they are due'], ['84', '12 weeks before they are due']].map(([k, l]) => `<option value="${k}" ${String(settings.remDays || '56') === k ? 'selected' : ''}>${l}</option>`).join('')}</select><small>A landlord gas safety check can be done up to 2 months early and keep the same yearly date.</small></label>
+      <label class="f"><span>Send reminders automatically by email</span><select data-s="remAuto"><option value="off" ${settings.remAuto === 'on' ? '' : 'selected'}>Off</option><option value="on" ${settings.remAuto === 'on' ? 'selected' : ''}>On</option></select><small>When on, customers with an email address saved get an email about 8 weeks before their check is due, and again 2 weeks before. It comes from reminders@ombgas.com with your business name, and their replies come to <b>${esc(settings.email || 'your email in Settings')}</b>. Customers you mark Booked in, Not needed or Stop are skipped, and every email has an unsubscribe link. You need to be signed in so it can run.${settings.remAuto === 'on' && !settings.email ? ' <b style="color:var(--gold2)">Add your email address under Business below first, or replies will have nowhere to go.</b>' : ''}</small></label>
+      ${settings.remAuto === 'on' ? '<button class="btn block" data-act="remTest">Send me a sample reminder</button><div style="height:8px"></div>' : ''}
+      <button class="btn block ghost" data-act="remReset">Put the original wording back</button>
     </div>
     <h2>Backup</h2>
     <div class="card">
@@ -998,6 +985,19 @@ function renderSettings(v) {
       <div style="height:8px"></div>
       <label class="btn block ghost" style="text-align:center">Restore from a backup<input id="restoreFile" type="file" accept=".json,application/json" hidden></label>
     </div>
+    <h2>Sample data</h2>
+    <div class="card">
+      <p class="small muted" style="margin-top:0">${SAMPLE.has() ? 'Sample customers and example forms are on this phone, marked “Sample”. Open them to see how the forms and PDFs look.' : 'Adds two made-up customers and an example of every form so you can see how they look.'}</p>
+      ${SAMPLE.has() ? '<button class="btn block" data-act="sampleOff">Remove sample data</button>' : '<button class="btn block" data-act="sampleOn">Add sample data</button>'}
+    </div>
+    <h2>App version</h2>
+    <div class="card">
+      <p class="small muted" style="margin-top:0">This phone is running <b id="verHere" style="color:var(--txt)">${APP_VERSION}</b> · newest online: <b id="verNew" style="color:var(--txt)">checking…</b></p>
+      <button class="btn block" data-act="forceUpdate">Update app now</button>
+      <p class="small" id="updMsg" style="margin:8px 0 0;font-weight:600"></p>
+      <p class="small muted" style="margin-bottom:0">Clears the saved copy of the app and reloads the newest version. Your records, customers and photos are not touched.</p>
+    </div>
+    ${installCard(true)}
     ${CLOUD.on ? accountCard() : ''}`;
 }
 function accountCard() {
