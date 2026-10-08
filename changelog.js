@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v86', items: ['New form: Boiler commissioning checklist for a new boiler installation. It records compliance and Boiler Plus options, water quality, operating readings, condensate, combustion readings and customer handover, and makes a PDF in the same look as your other certificates. There is a price for it in Settings.'] },
   { v: 'v85', items: ['The gas rate calculator now starts blank on each new certificate, so the readings from the last job are not left in the boxes.'] },
   { v: 'v84', items: ['Defects: one-tap N/A, None taken or Customer advised under Remedial action taken (and N/A under a Legionella recommendation), so you do not have to type when there is nothing to say.'] },
   { v: 'v83', items: ['The Tools button in the bottom bar now has a spanner icon.'] },

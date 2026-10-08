@@ -19,6 +19,7 @@ async function buildPdf(rec, s) {
   rec = await PH.resolveRec(rec);   // signatures are kept in the photo store
   if (rec.type === 'legionella') return buildLegPdf(rec, s);
   if (rec.type === 'aircon') return buildAcPdf(rec, s);
+  if (rec.type === 'commission') return buildComPdf(rec, s);
   if (rec.type === 'service') return buildSvcPdf(rec, s);
   if (rec.type === 'warning') return buildWarnPdf(rec, s);
   const gs = s.gasSafeLogo ? { url: s.gasSafeLogo, ar: s.gasSafeLogoAR || 1 } : await getGasSafe().catch(() => null);
