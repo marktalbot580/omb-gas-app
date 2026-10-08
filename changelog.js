@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v90', items: ['The Boiler commissioning checklist has been taken off the menus for now. Anything already saved still opens.'] },
   { v: 'v89', items: ['Settings now has Add sample data: two made-up customers and a completed example of every form, so you can open them and see how the forms and PDFs look. Remove sample data clears them again.'] },
   { v: 'v88', items: ['Boiler commissioning checklist: pick the system cleaner and inhibitor from common brands and products (Fernox, Sentinel, Adey), or choose Other and type it. Anything you type is remembered as a button for next time.'] },
   { v: 'v87', items: ['The one-tap button on the forms-for-this-visit screen is now called Landlord visit, so it is clear it ticks just the gas check, boiler service and Legionella forms.'] },

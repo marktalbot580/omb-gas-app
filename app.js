@@ -621,7 +621,6 @@ function renderHome(v) {
     <div style="height:10px"></div>
     <button class="btn gold block" data-act="newRec" data-type="aircon">+ New air conditioning commissioning</button>
     <div style="height:10px"></div>
-    <button class="btn gold block" data-act="newRec" data-type="commission">+ New boiler commissioning</button>
     <div style="height:10px"></div>
     ${remHomeBtn()}
     
@@ -646,7 +645,6 @@ function renderPick(v) {
     ${opt('service', 'Boiler service record', 'Service or repair of a gas boiler')}
     ${opt('legionella', 'Legionella risk assessment', 'Hot and cold water system checks')}
     ${opt('aircon', 'Air conditioning commissioning', 'Install and commissioning report for an AC system')}
-    ${opt('commission', 'Boiler commissioning', 'Checklist for a new boiler installation')}
     ${T.gas && !T.service ? `<div class="notice">Doing a gas safety check? Tick <b>Boiler service record</b> as well to complete both forms in one go – the boiler details from the gas check are copied across.</div>` : ''}
     <button class="btn block" data-act="pickAll">Landlord visit: gas check, boiler service &amp; Legionella</button>
     <div style="height:10px"></div>
@@ -740,7 +738,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v89';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v90';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -930,7 +928,6 @@ function renderSettings(v) {
       ${f('priceSvc', 'Boiler service (£)', { mode: 'decimal' })}
       ${f('priceLeg', 'Legionella risk assessment (£)', { mode: 'decimal' })}
       ${f('priceAc', 'Air conditioning commissioning (£)', { mode: 'decimal' })}
-      ${f('priceCom', 'Boiler commissioning (£)', { mode: 'decimal' })}
     </div>
     <h2>Combined service discount</h2>
     <div class="card">

@@ -59,7 +59,7 @@ const SAMPLE = (() => {
     if (customers.some(c => c.sample)) return 0;
     const made = CUSTS.map(c => ({ ...c, id: uid(), sample: true, noRemind: true, updated: Date.now() }));
     made.forEach(c => customers.unshift(c)); saveCustomers();
-    const plan = [[0, 'gas'], [0, 'service'], [1, 'legionella'], [1, 'aircon'], [0, 'commission'], [1, 'warning']];
+    const plan = [[0, 'gas'], [0, 'service'], [1, 'legionella'], [1, 'aircon'], [1, 'warning']];
     let n = 0;
     plan.forEach(([ci, type]) => {
       const c = made[ci], r = newRecord(c, type);
