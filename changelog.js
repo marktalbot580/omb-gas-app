@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v85', items: ['The gas rate calculator now starts blank on each new certificate, so the readings from the last job are not left in the boxes.'] },
   { v: 'v84', items: ['Defects: one-tap N/A, None taken or Customer advised under Remedial action taken (and N/A under a Legionella recommendation), so you do not have to type when there is nothing to say.'] },
   { v: 'v83', items: ['The Tools button in the bottom bar now has a spanner icon.'] },
   { v: 'v82', items: ['Tools now has its own button in the bottom bar, between Invoices and Settings. It disappears if you turn all the tools off in Settings.'] },

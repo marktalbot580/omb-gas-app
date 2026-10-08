@@ -720,7 +720,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v84';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v85';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1191,7 +1191,7 @@ function stepAppliances() {
       ${choice(P('test'), 'Which tests can be performed?', OPT.test, { req: 1, wrap: 1 })}
       ${a.test && a.test !== 'Gas Rate' ? txt(P('op'), 'Operating pressure (mbar)', { req: 1, mode: 'decimal', hint: 'Working pressure at the burner or appliance inlet' }) : ''}
       ${isWorcester(a.manufacturer) ? txt(P('fanPress'), 'Fan pressure (mbar)', { mode: 'decimal', hint: 'Worcester Bosch – optional. Enter it as 4.62 and it is recorded as -4.62 mbar' }) : ''}
-      ${a.test && a.test !== 'Operating Pressure' ? txt(P('hi'), 'Gas rate / heat input (kW)', { req: 1, mode: 'decimal' }) + calcPanel('app' + i, P('hi')) : ''}
+      ${a.test && a.test !== 'Operating Pressure' ? txt(P('hi'), 'Gas rate / heat input (kW)', { req: 1, mode: 'decimal' }) + calcPanel(ui.rec.id + '-app' + i, P('hi')) : ''}
       ${choice(P('vent'), 'Ventilation satisfactory?', OPT.pfn, { req: 1 })}
       ${choice(P('terminal'), 'Visual condition of flue and terminal', OPT.pfn, { req: 1 })}
       ${choice(P('flueOp'), 'Flue operation checks', OPT.pfn, { req: 1 })}
@@ -1566,7 +1566,7 @@ function svcOperating() {
   <h2>Gas rate</h2>
   <div class="card">
     ${choice('grTaken', 'Has a gas rate been taken?', SVC.YNNA)}
-    ${r.grTaken === 'YES' ? txt('grValue', 'Gas rate (kW)', { req: 1, mode: 'decimal' }) + calcPanel('svc', 'grValue') + choice('grResult', 'Is the gas rate correct / acceptable?', SVC.PF, { req: 1 }) : ''}
+    ${r.grTaken === 'YES' ? txt('grValue', 'Gas rate (kW)', { req: 1, mode: 'decimal' }) + calcPanel(ui.rec.id + '-svc', 'grValue') + choice('grResult', 'Is the gas rate correct / acceptable?', SVC.PF, { req: 1 }) : ''}
   </div>
   <h2>Flue gas analysis</h2>
   <div class="card">
