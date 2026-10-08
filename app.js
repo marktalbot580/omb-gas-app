@@ -648,7 +648,7 @@ function renderPick(v) {
     ${opt('aircon', 'Air conditioning commissioning', 'Install and commissioning report for an AC system')}
     ${opt('commission', 'Boiler commissioning', 'Checklist for a new boiler installation')}
     ${T.gas && !T.service ? `<div class="notice">Doing a gas safety check? Tick <b>Boiler service record</b> as well to complete both forms in one go – the boiler details from the gas check are copied across.</div>` : ''}
-    <button class="btn block" data-act="pickAll">Do all three: gas check, boiler service &amp; Legionella</button>
+    <button class="btn block" data-act="pickAll">Landlord visit: gas check, boiler service &amp; Legionella</button>
     <div style="height:10px"></div>
     <button class="btn gold block" data-act="pickGo" ${n ? '' : 'disabled'}>${n > 1 ? `Start ${n} forms (${n} PDFs)` : 'Start'}</button>
     <div style="height:10px"></div>
@@ -740,7 +740,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v86';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v87';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
