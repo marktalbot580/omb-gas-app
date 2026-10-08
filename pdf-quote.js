@@ -46,6 +46,23 @@ async function buildQuotePdf(rec, s) {
     doc.setFillColor(...GOLD); doc.circle(bx + 40, by + 56, 2, 'F');
     doc.setFillColor(180, 186, 194); [10, 22, 34, 40].forEach(dx => doc.rect(bx + dx, by + bh, 3.4, 8, 'F')); }
 
+  /* warranty badge on the cover: a selling point, so it is big. Dark disc, gold double ring, like a seal */
+  if (String(rec.warranty || '').trim()) {
+    const cx = 181, cy = 99, R0 = 21, mt = String(rec.warranty).match(/(\d+)/), CREAM = [246, 243, 238], BG = [17, 24, 31];
+    doc.setFillColor(...BG); doc.circle(cx, cy, R0 + 0.8, 'F');
+    doc.setDrawColor(...GOLD); doc.setLineWidth(1); doc.circle(cx, cy, R0, 'S');
+    doc.setDrawColor(112, 100, 80); doc.setLineWidth(0.3); doc.circle(cx, cy, R0 - 3.2, 'S');
+    const ctr = (t, yy, o) => { doc.setFont('helvetica', o.b ? 'bold' : 'normal'); doc.setFontSize(o.fs); doc.setCharSpace(0); const cs = o.cs || 0, w = doc.getTextWidth(String(t)) + cs * (String(t).length - 1); doc.setCharSpace(cs); txt(t, cx - w / 2, yy, o); doc.setCharSpace(0); };
+    ctr('MANUFACTURER', cy - 8.4, { b: 1, fs: 5.4, c: GOLD, cs: 0.55 });
+    if (mt) {
+      ctr(mt[1], cy + 4, { b: 1, fs: 33, c: CREAM });
+      ctr('YEAR', cy + 8.6, { b: 1, fs: 6.8, c: CREAM, cs: 0.9 });
+    } else {
+      wrap(rec.warranty, 24, 11, true).slice(0, 2).forEach((l, i) => ctr(l, cy - 1 + i * 5, { b: 1, fs: 11, c: CREAM }));
+    }
+    doc.setFont('times', 'italic'); doc.setFontSize(10); doc.setTextColor(...GOLD); doc.text('warranty', cx, cy + 14.2, { align: 'center' });
+  }
+
   /* ---------- prepared for ---------- */
   y = 142;
   const c3 = CW / 3;
