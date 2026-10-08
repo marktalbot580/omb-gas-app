@@ -757,7 +757,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v104';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v105';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1509,7 +1509,7 @@ function renderPrices(v) {
     const sale = QUO.saleOf(x, settings), mk = QUO.markupOf(x, settings), open = ui.pEdit === x.id;
     const sub = (QUO.num(x.cost) !== null ? 'cost ' + money(QUO.num(x.cost)) + ' + ' + mk + '% = ' : '') + (sale !== null ? '<b>' + money(sale) + '</b>' : 'no price yet') + (x.unit ? ' / ' + esc(x.unit) : '') + (QUO.num(x.price) !== null ? ' (fixed)' : '');
     const i = (k, l, o = {}) => `<label class="f"><span>${l}</span><input data-pi="${k}" data-id="${x.id}" value="${esc(x[k] || '')}" ${o.mode ? `inputmode="${o.mode}"` : ''} ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} ${o.list ? `list="${o.list}"` : ''}></label>`;
-    return `<div class="card" style="margin-bottom:10px"><button type="button" class="item" data-act="pEdit" data-id="${x.id}" style="width:100%;text-align:left"><span><span class="t">${esc(((x.make ? x.make + ' ' : '') + (x.name || 'New item')) + (x.kw && x.type === 'Boiler' ? ' · ' + x.kw + ' kW' : ''))}</span><span class="s" style="display:block">${sub}</span></span></button>
+    return `<div class="card" style="margin-bottom:10px"><button type="button" class="item" data-act="pEdit" data-id="${x.id}" style="width:100%;text-align:left"><span><span class="t">${esc(((x.make ? x.make + ' ' : '') + (x.name || 'New item')) + (x.kw && x.type === 'Boiler' ? ' · ' + x.kw + ' kW' : '') + (x.warranty && x.type === 'Boiler' ? ' · ' + x.warranty : ''))}</span><span class="s" style="display:block">${sub}</span></span></button>
     ${open ? `<div style="margin-top:12px">
       ${i('type', 'Category', { list: 'pCats' })}${x.type === 'Boiler' || x.make ? '' : ''}
       ${i('make', 'Make')}${i('name', 'Model / item')}
@@ -1545,7 +1545,7 @@ function qFindRes(kind) {
   const hits = list.map((x, i) => [x, i]).filter(([x]) => (!f.g || x[grp] === f.g) && words.every(w => (x.make + ' ' + x.name + ' ' + x.kw + 'kw ' + x.kind + ' ' + x.type).toLowerCase().includes(w)));
   if (!f.g && !words.length) return '<p class="small muted" style="margin:6px 0 0">Choose a ' + (kind === 'boiler' ? 'make' : 'category') + ' or start typing to search.</p>';
   if (!hits.length) return '<p class="small muted" style="margin:6px 0 0">Nothing matches. Type the details in yourself below.</p>';
-  return '<div class="qres">' + hits.slice(0, 12).map(([x, i]) => `<button type="button" class="btn ghost" style="display:block;width:100%;text-align:left;margin-bottom:6px" data-act="qFind" data-kind="${kind}" data-i="${i}">${esc((kind === 'extra' && x.make ? x.make + ' ' : '') + x.name + (kind === 'boiler' && x.kind ? ' · ' + x.kind : '') + qPrice(x))}</button>`).join('') + (hits.length > 12 ? `<p class="small muted" style="margin:0">${hits.length - 12} more. Type more to narrow it down.</p>` : '') + '</div>';
+  return '<div class="qres">' + hits.slice(0, 12).map(([x, i]) => `<button type="button" class="btn ghost" style="display:block;width:100%;text-align:left;margin-bottom:6px" data-act="qFind" data-kind="${kind}" data-i="${i}">${esc((kind === 'extra' && x.make ? x.make + ' ' : '') + x.name + (kind === 'boiler' && x.kind ? ' · ' + x.kind : '') + (kind === 'boiler' && x.warranty ? ' · ' + x.warranty + ' warranty' : '') + qPrice(x))}</button>`).join('') + (hits.length > 12 ? `<p class="small muted" style="margin:0">${hits.length - 12} more. Type more to narrow it down.</p>` : '') + '</div>';
 }
 function qFinder(kind, title) {
   const list = QF_LIST[kind](); if (!list.length) return '';
