@@ -757,7 +757,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v102';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v103';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1598,13 +1598,20 @@ function quoTotHtml() {
   const r = ui.rec, T = QUO.totals(r, settings), m = QUO.money;
   return `<div class="row sp"><span>Subtotal</span><b>${m(T.sub)}</b></div>${T.rate ? `<div class="row sp"><span>VAT at ${T.rate}%</span><b>${m(T.vat)}</b></div>` : ''}<div class="row sp"><span>Total</span><b>${m(T.total)}</b></div>${(() => { const c = QUO.costOf(r); return c === null ? '' : `<p class="small muted" style="margin:10px 0 0">Only you see this. Your cost ${m(c)} · profit ${m(T.sub - c)} (${T.sub ? Math.round((T.sub - c) / T.sub * 100) : 0}%)</p>`; })()}`;
 }
+const qInList = l => (settings.qList || []).some(x => { const n = String(l.name || '').trim().toLowerCase(); return n && (x.name.toLowerCase() === n || ((x.make ? x.make + ' ' : '') + x.name).toLowerCase() === n); });
+function qCommitTick(l, i) {
+  if (!String(l.name || '').trim() || !String(l.price || '').trim()) return '';
+  if (qInList(l)) return `<p class="small muted" data-qtick="${i}" data-kind="in" style="margin:0 0 10px">✓ In your price list</p>`;
+  return `<button type="button" class="item tog" data-act="qCommit" data-qtick="${i}" data-kind="tick" data-i="${i}" style="margin-bottom:10px"><span class="box"></span><span><span class="t">Commit to price list</span><span class="s" style="display:block">Save it so you can pick it on future quotes</span></span></button>`;
+}
 function quoExtras() {
   const r = ui.rec; qSeed();
   const lines = (r.lines || []).map((l, i) => `<div class="card" style="margin-bottom:10px">
     ${txt('lines.' + i + '.name', 'Item', { ph: 'For example magnetic filter' })}
     <div class="row">${txt('lines.' + i + '.qty', 'Qty', { mode: 'numeric' })}${txt('lines.' + i + '.price', 'Price each (£)', { mode: 'decimal' })}</div>
+    ${qCommitTick(l, i)}
     <button type="button" class="btn ghost" data-act="qRmLine" data-i="${i}">Remove this item</button></div>`).join('');
-  return `<p class="small muted" style="margin-top:0">Add anything else that goes on the quote. Items you type with a price are added to your price list automatically.</p>
+  return `<p class="small muted" style="margin-top:0">Add anything else that goes on the quote. Tick Commit to price list on an item you type and it is saved for next time.</p>
   ${qFinder('extra', 'Add from your price list')}
   ${lines}
   <button type="button" class="btn block" data-act="qAddLine" data-name="" data-price="">+ Add an item</button>
@@ -2279,6 +2286,7 @@ document.addEventListener('click', async e => {
   if (CLOUD.locked() && (LOCKED_WRITES.has(a) || (a === 'makePdf' && r && r.status !== 'complete'))) { lockedMsg(); return; }
   if (a === 'custNoRem') { ui.cust.noRemind = !ui.cust.noRemind; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
   if (a === 'remTest') { remTest(); return; }
+  if (a === 'qCommit') { const l = (ui.rec.lines || [])[+b.dataset.i]; if (l && !qInList(l)) { qSeed(); settings.qList.push({ id: QUO.newId(), type: 'Other', make: '', name: l.name.trim(), kind: '', kw: '', warranty: '', unit: '', cost: String(l.cost || ''), markup: '', price: String(l.price).trim() }); saveSettings(); toast('Added to your price list'); } const y = window.scrollY; render(); window.scrollTo(0, y); return; }
   if (a === 'qFind') { qPick(b.dataset.kind, +b.dataset.i); return; }
   if (a === 'pricesOpen') { qSeed(); ui.pCat = ui.pCat || 'Boiler'; ui.pEdit = ''; ui.view = 'prices'; render(); return; }
   if (a === 'pCat') { ui.pCat = b.dataset.c; ui.pEdit = ''; render(); return; }
@@ -2653,13 +2661,8 @@ document.addEventListener('change', async e => {
   if (t.dataset.qpick) { if (t.value !== '') qPick(t.dataset.qpick, +t.value); return; }
   if (ui.view === 'form' && ui.rec && ui.rec.type === 'quote' && /^lines\.\d+\.(name|price|qty)$/.test(t.dataset.k || '')) {
     const l = ui.rec.lines[+t.dataset.k.split('.')[1]];
-    if (l && String(l.name || '').trim() && String(l.price || '').trim()) {
-      qSeed();
-      const nm = l.name.trim().toLowerCase();
-      if (!settings.qList.some(x => ((x.make ? x.make + ' ' : '') + x.name).toLowerCase() === nm || x.name.toLowerCase() === nm)) {
-        settings.qList.push({ id: QUO.newId(), type: 'Other', make: '', name: l.name.trim(), kind: '', kw: '', warranty: '', unit: '', cost: String(l.cost || ''), markup: '', price: String(l.price).trim() }); saveSettings();
-      }
-    }
+    const i = +t.dataset.k.split('.')[1], card = document.querySelector('[data-qtick="' + i + '"]'), h = l ? qCommitTick(l, i) : '';
+    if ((card ? card.dataset.kind : '') !== (h.includes('data-kind="in"') ? 'in' : h ? 'tick' : '')) { const y = window.scrollY; render(); window.scrollTo(0, y); }
   }
   if (ui.view === 'form' && ui.rec && ui.rec.type === 'quote') { const tt = document.getElementById('quoTot'); if (tt) tt.innerHTML = quoTotHtml(); }
   if (ui.view === 'form' && ui.rec && ui.rec.type === 'commission' && COM_MEMO.includes(t.dataset.k) && t.value.trim()) {
