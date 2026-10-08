@@ -297,7 +297,7 @@ function roomForm(r, i) {
   return `<div class="card tlroom">
     <div class="row sp"><div class="grow f" style="margin:0"><span>Room</span><select data-tl-sel="heat.rooms.${i}.type">${Object.keys(ROOMT).map(k => `<option ${r.name === k ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select></div>
       <button type="button" class="btn ghost" style="margin-left:8px" data-tl="rmRoom" data-v="${i}">Remove</button></div>
-    <div class="row">${n('temp', 'Room temperature (°C)')}<div class="grow f"><span>Draughts</span><select data-tl-sel="heat.rooms.${i}.draught">${DRAUGHT.map(([v, l]) => `<option value="${v}" ${String(r.draught || '1') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div></div>
+    ${r.quick ? '' : `<div class="row">${n('temp', 'Room temperature (°C)')}<div class="grow f"><span>Draughts</span><select data-tl-sel="heat.rooms.${i}.draught">${DRAUGHT.map(([v, l]) => `<option value="${v}" ${String(r.draught || '1') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div></div>`}
     <div class="row">${n('l', 'Length (m)')}${n('w', 'Width (m)')}${n('h', 'Height (m)')}</div>
     ${r.quick ? `<div class="f"><span>Sheltered or exposed</span><select data-tl-sel="heat.rooms.${i}.exposure">${QEXP.map((x, j) => `<option value="${j}" ${String(r.exposure) === String(j) ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
     <div class="f"><span>Window type</span><select data-tl-sel="heat.rooms.${i}.window">${QWIN.map((x, j) => `<option value="${j}" ${String(r.window) === String(j) ? 'selected' : ''}>${x[0]}</option>`).join('')}</select></div>
@@ -314,8 +314,10 @@ function heatView() {
     <div class="card">
       <div class="f"><span>Heating system</span><select data-tl-sel="heat.sys">${Object.keys(SYSTEMS).map(k => `<option value="${k}" ${h.sys === k ? 'selected' : ''}>${esc(SYSTEMS[k][0])}</option>`).join('')}</select></div>
       ${custom ? `<div class="row"><div class="grow f"><span>Flow (°C)</span><input data-tl-in="heat.flow" type="text" inputmode="decimal" value="${esc(h.flow)}" autocomplete="off"></div><div class="grow f"><span>Return (°C)</span><input data-tl-in="heat.ret" type="text" inputmode="decimal" value="${esc(h.ret)}" autocomplete="off"></div></div>` : ''}
+      <details class="small" style="margin-top:8px"><summary class="muted">Outside temperature and boiler allowance (normally leave as they are)</summary>
       <div class="row"><div class="grow f"><span>Coldest outside temperature (°C)</span><input data-tl-in="heat.outside" type="text" inputmode="decimal" value="${esc(h.outside)}" autocomplete="off"></div>
         <div class="grow f"><span>Boiler allowance ×</span><input data-tl-in="heat.factor" type="text" inputmode="decimal" value="${esc(h.factor)}" autocomplete="off"></div></div>
+      </details>
     </div>
     <div id="tlRooms">${h.rooms.map((r, i) => roomForm(r, i) + roomResHtml(r, i) + '</div>').join('')}</div>
     <button type="button" class="btn gold block" data-tl="addRoom">+ Add a room</button>
