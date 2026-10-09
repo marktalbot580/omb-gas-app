@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v111', items: ['Quotes are no longer marked Requires invoice. A finished quote now shows Awaiting reply, and on the Ready to send card you can tick Accepted or Declined (like Paid). After 14 days with no answer it turns red as Chase up, the home screen tells you, and there are Chase by email and Chase by text buttons with a ready-written message.'] },
   { v: 'v110', items: ['There is now an Edit button next to Open on each finished record (quotes included), so you can go back in and change it, then make the PDF again.'] },
   { v: 'v109', items: ['Fix: the file that lets the app work offline and check its version had been saved empty by mistake in the last few updates, so Settings showed the version as unknown or offline. It is restored.'] },
   { v: 'v108', items: ['Text boxes (addresses, notes and so on) now grow to fit what is in them, so there is no scrolling inside a box.'] },

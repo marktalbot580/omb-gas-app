@@ -594,7 +594,18 @@ function renderTabs(nav) {
 }
 
 /* invoice reminder shown on completed records: green once the invoice has been sent, otherwise a reminder */
+/* a quote is not invoiced: it is waiting for an answer, accepted or declined, and gets chased after two weeks */
+const qAge = r => Math.max(0, Math.round((Date.parse(todayISO()) - Date.parse(r.inspectionDate || todayISO())) / 864e5));
+const qWaiting = r => typeOf(r) === 'quote' && r.status === 'complete' && !r.qStatus;
+const qChase = r => qWaiting(r) && qAge(r) >= 14;
+function quoBadge(r) {
+  if (r.status !== 'complete') return '';
+  if (r.qStatus === 'accepted') return '<span class="badge paid">Accepted</span>';
+  if (r.qStatus === 'declined') return '<span class="badge declined">Declined</span>';
+  return qChase(r) ? '<span class="badge overdue">Chase up · ' + qAge(r) + ' days</span>' : '<span class="badge unpaid">Awaiting reply</span>';
+}
 function invBadge(r) {
+  if (typeOf(r) === 'quote') return quoBadge(r);
   if (r.status !== 'complete' || typeOf(r) === 'warning' || r.noInvoice) return '';
   const inv = invoices.find(i => (i.recIds || []).includes(r.id));
   if (inv && inv.paid) return '<span class="badge paid">Paid</span>';
@@ -634,6 +645,7 @@ function renderHome(v) {
     ${trialBanner()}
     ${bkBanner()}
     ${newsBanner()}
+    ${(() => { const c = records.filter(qChase).sort((a, b) => (a.inspectionDate || '').localeCompare(b.inspectionDate || '')); return c.length ? `<button type="button" class="notice" style="display:block;width:100%;text-align:left" data-act="openRec" data-id="${c[0].id}"><b>${c.length} quote${c.length > 1 ? 's' : ''} sent over 2 weeks ago with no answer.</b> Tap to chase ${esc(c[0].customer.name || 'the oldest')}.</button>` : ''; })()}
     ${missing ? `<div class="notice">Add the business address, Gas Safe register number and engineer details in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a> before issuing certificates.</div>` : ''}
     <button class="btn gold block" data-act="newRec" data-type="gas">+ New gas safety record</button>
     <div style="height:10px"></div>
@@ -762,7 +774,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v110';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v111';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1369,9 +1381,16 @@ function sendCard(m) {
     if (selOn(inv.id)) paid = `<button type="button" class="item tog ${inv.paid ? 'on' : ''}" data-act="invPaidVisit" style="margin-bottom:10px"><span class="box"></span><span><span class="t">Paid</span><span class="s" style="display:block">${inv.paid ? 'Paid ' + ukDate(inv.paidDate) + ' – PAID stamp on the invoice' : 'Tick if paid on the day – adds a PAID stamp'}</span></span></button>${methodSeg(inv)}`;
   } else if (bm.length && noInv(m)) invRow = `<div class="notice" style="margin:0 0 10px">No invoice for this job – it counts as complete.</div><button class="btn block" style="margin-bottom:10px" data-act="invUndoNone">Add an invoice after all</button>`;
   else if (bm.length) invRow = `<button class="btn block" style="margin-bottom:10px" data-act="invFromVisit">Add an invoice</button><button class="btn ghost block" style="margin-bottom:10px" data-act="invNoneVisit">Invoice not required</button>`;
+  const quoteRows = m.filter(x => typeOf(x) === 'quote').map(q => {
+    const first = String((q.customer || {}).name || '').trim().split(/\s+/)[0], can = (q.customer || {}).email || (q.customer || {}).phone;
+    const tg = (v, label) => `<button type="button" class="item tog grow ${q.qStatus === v ? 'on' : ''}" style="margin:0" data-act="qOutcome" data-id="${q.id}" data-v="${v}"><span class="box"></span><span><span class="t">${label}</span></span></button>`;
+    return `<div style="margin-bottom:10px"><div class="small muted" style="margin-bottom:6px">Quote outcome${q.qStatus ? ' · ' + (q.qStatus === 'accepted' ? 'accepted' : 'declined') + ' ' + ukDate(q.qDate) : ' · sent ' + qAge(q) + ' day' + (qAge(q) === 1 ? '' : 's') + ' ago, no answer yet'}</div>
+      <div class="row" style="gap:8px">${tg('accepted', 'Accepted')}${tg('declined', 'Declined')}</div>
+      ${qWaiting(q) && can ? `<div class="row" style="gap:8px;margin-top:8px">${q.customer.email ? `<button type="button" class="btn grow" data-act="qChase" data-id="${q.id}" data-how="email">Chase by email</button>` : ''}${q.customer.phone ? `<button type="button" class="btn grow" data-act="qChase" data-id="${q.id}" data-how="text">Chase by text</button>` : ''}</div>` : ''}</div>`;
+  }).join('');
   const n = m.filter(x => selOn(x.id)).length + (inv && selOn(inv.id) ? 1 : 0);
   return `<div class="card pdfok" style="margin-top:12px"><div style="font-weight:700;margin-bottom:10px">Ready to send</div>
-    ${recRows}${invRow}${paid}
+    ${recRows}${quoteRows}${invRow}${paid}
     <button class="btn gold block" data-act="sendSel" ${n ? '' : 'disabled'}>${n ? `Email / share ${n} document${n > 1 ? 's' : ''}` : 'Tick something to send'}</button>
     <p class="small muted" style="margin-bottom:0">Opens your phone’s share sheet with the ticked PDFs attached – pick any app – Outlook, Gmail, WhatsApp…${m[0].customer.email ? ' The customer’s email address (' + esc(m[0].customer.email) + ') is copied for you – long-press the To box and paste it.' : ''}</p></div>`;
 }
@@ -2580,6 +2599,14 @@ document.addEventListener('click', async e => {
       inv.payMethod = inv.payMethod === b.dataset.m ? '' : b.dataset.m; persistInv(inv);
       if (toVisit) { try { ui.invPdf = { id: inv.id, blob: await buildInvPdf(inv, settings), name: invFileName(inv) }; } catch (err) { ui.invPdf = null; } } else ui.invPdf = null;
       render(); window.scrollTo(0, y); break;
+    }
+    case 'qOutcome': { const q = records.find(x => x.id === b.dataset.id); if (!q) break; q.qStatus = q.qStatus === b.dataset.v ? '' : b.dataset.v; q.qDate = q.qStatus ? todayISO() : ''; persistRec(q); const y = window.scrollY; render(); window.scrollTo(0, y); break; }
+    case 'qChase': {
+      const q = records.find(x => x.id === b.dataset.id); if (!q) break;
+      const first = String(q.customer.name || '').trim().split(/\s+/)[0] || 'there', addr = q.jobAddress ? ' for ' + q.jobAddress : '';
+      const body = `Hi ${first},\n\nI just wanted to check that you received my quote for your new boiler${addr}. If you have any questions, or would like to go ahead, just let me know and I will arrange a date for the installation.\n\nKind regards,\n${signOff()}`;
+      const url = b.dataset.how === 'email' ? `mailto:${mailAddr(q.customer.email)}?subject=${encodeURIComponent('Your boiler quote ' + q.ref)}&body=${encodeURIComponent(body)}` : `sms:${String(q.customer.phone).replace(/\s+/g, '')}?&body=${encodeURIComponent(body)}`;
+      const a = document.createElement('a'); a.href = url; document.body.appendChild(a); a.click(); a.remove(); break;
     }
     case 'invPaidVisit': { const inv = invForVisit(jobRecs() || [ui.rec]); inv.paid = !inv.paid; inv.paidDate = inv.paid ? todayISO() : ''; if (!inv.paid) inv.payMethod = ''; persistInv(inv); const y = window.scrollY; try { ui.invPdf = { id: inv.id, blob: await buildInvPdf(inv, settings), name: invFileName(inv) }; } catch (err) { console.error(err); ui.invPdf = null; } render(); window.scrollTo(0, y); toast(inv.paid ? 'Marked as paid' : 'Marked as unpaid'); break; }
     case 'invPrep': { const inv = invForVisit(jobRecs() || [ui.rec]); try { ui.invPdf = { id: inv.id, blob: await buildInvPdf(inv, settings), name: invFileName(inv) }; render(); } catch (err) { toast('Could not create the invoice PDF: ' + err.message); } break; }

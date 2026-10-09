@@ -261,3 +261,5 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 4px rgba(217,178,95,.14
 .item.crow .toolbtn{background:transparent;border:0;border-radius:0;text-align:left;padding:16px 16px;font-size:16px;font-weight:600;color:var(--txt)}
 .item.crow .toolbtn:active{background:#201b0e}
 .clock{font-size:20px;letter-spacing:0;white-space:nowrap}
+
+.badge.declined{background:#26282c;color:#9aa0a8}
