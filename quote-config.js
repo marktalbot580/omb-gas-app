@@ -102,7 +102,7 @@ const QUO = (() => {
   /* sale price of an item: a fixed price if one is typed, otherwise cost + mark-up % (the item's own, else its category's, else the default) */
   const markupOf = (x, s) => { const m = num(x.markup); if (m !== null) return m; const c = num(((s && s.qMarkup) || {})[x.type]); if (c !== null) return c; const d = num(s && s.qMarkupDef); return d === null ? 0 : d; };
   const saleOf = (x, s) => { const p = num(x.price); if (p !== null) return p; const c = num(x.cost); return c === null ? null : Math.round(c * (1 + markupOf(x, s) / 100) * 100) / 100; };
-  const saleText = (x, s) => { const v = saleOf(x, s); return v === null ? '' : String(v); };
+  const saleText = (x, s) => { const v = saleOf(x, s); return v === null ? '' : v % 1 ? v.toFixed(2) : String(v); };
   /* the total cost price of a quote, when the cost prices are known */
   function costOf(rec) {
     let c = 0, any = false;

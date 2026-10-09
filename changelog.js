@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v113', items: ['Price list: prices that work out to part pounds now show two decimals (for example £1427.40, not £1427.4).'] },
   { v: 'v112', items: ['Addresses: the first letter of each word is now a capital automatically in every address box (customer, job, invoice and your own business address). The postcode is still all capitals.'] },
   { v: 'v111', items: ['Quotes are no longer marked Requires invoice. A finished quote now shows Awaiting reply, and on the Ready to send card you can tick Accepted or Declined (like Paid). After 14 days with no answer it turns red as Chase up, the home screen tells you, and there are Chase by email and Chase by text buttons with a ready-written message.'] },
   { v: 'v110', items: ['There is now an Edit button next to Open on each finished record (quotes included), so you can go back in and change it, then make the PDF again.'] },
