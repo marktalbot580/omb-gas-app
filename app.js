@@ -777,7 +777,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v113';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v114';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1818,7 +1818,7 @@ function legTemps() {
   </div>
   ${LEG.hasTank(r) || LEG.hasCyl(r) ? '<h2>Storage</h2><div class="card">' +
     (LEG.hasTank(r) ? reading('tankTemp', 'Water in cold tank (°C)', 'Should be below 20°C.') : '') +
-    (LEG.hasCyl(r) ? reading('cylTemp', 'Stored hot water at cylinder (°C)', r.hotType === 'Other' ? 'Leave blank if there is no stored hot water. Should be 60°C or above.' : 'Should be 60°C or above.') : '') + '</div>' : ''}`;
+    (LEG.hasCyl(r) ? reading('cylTemp', 'Temperature setting of stored hot water (°C)', r.hotType === 'Other' ? 'Leave blank if there is no stored hot water. Should be 60°C or above.' : 'Should be 60°C or above.') : '') + '</div>' : ''}`;
 }
 function legYN(list) { return list.map(c => choice(c.k, c.q, LEG.YN3, { req: 1, yn: 1 })).join(''); }
 function legTanks() {
