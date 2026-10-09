@@ -502,11 +502,14 @@ function addrBox(src, path, label, o = {}) {
   const v = (src === 'rec' ? getP(ui.rec, path) : src === 'inv' ? getP(ui.inv, path) : src === 'set' ? settings[path] : src === 'cprop' ? (ui.cust.properties || [])[+path] : ui.cust[path]) ?? '';
   const { addr, pc } = splitAddr(v);
   return `<div class="f addrw ${src === 'rec' && bad(o, v) ? 'bad' : ''}" data-f="${path}" data-src="${src}" data-path="${path}"><span>${label}${o.req ? ' <b>*</b>' : ''}</span>
-    <textarea rows="${o.rows || 3}" placeholder="${esc(o.ph || '')}">${esc(addr)}</textarea>
+    <textarea rows="${o.rows || 3}" placeholder="${esc(o.ph || '')}" autocapitalize="words">${esc(addr)}</textarea>
     <input class="pc" type="text" placeholder="Postcode" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Postcode" value="${esc(pc)}">${o.hint ? `<small>${o.hint}</small>` : ''}</div>`;
 }
+/* first letter of every word in an address is a capital (a letter after an apostrophe, like John's, is left alone) */
+const capWords = v => v.replace(/(^|[\s\-\/(,.])([a-z])/g, (m, a, b) => a + b.toUpperCase());
 function addrInput(w, t) {
   if (t.classList.contains('pc')) t.value = t.value.toUpperCase();
+  else if (t.tagName === 'TEXTAREA') { const c = capWords(t.value); if (c !== t.value) { const p = t.selectionStart; t.value = c; try { t.setSelectionRange(p, p); } catch (e) { } } }
   const v = joinAddr(w.querySelector('textarea').value, w.querySelector('.pc').value), src = w.dataset.src, path = w.dataset.path;
   if (src === 'rec') {
     setP(ui.rec, path, v); ui.pdf = null; persistRecSoon();
@@ -774,7 +777,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v111';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v112';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
