@@ -777,7 +777,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v114';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v115';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1472,7 +1472,6 @@ function legSystem() {
     ${choice('hotType', 'Hot water system', LEG.HOT_TYPE, { req: 1, wrap: 1 })}
     ${r.hotType === 'Other' ? txt('hotOther', 'Describe the hot water system', { req: 1 }) : ''}
     ${LEG.hasCyl(r) && !['Other', 'Immersion cylinder'].includes(r.hotType) ? choice('cylHeat', 'How is the cylinder heated?', LEG.CYL_HEAT, { req: 1, wrap: 1 }) : ''}
-    ${choice('showers', 'Showers fitted', LEG.SHOWERS, { req: 1, wrap: 1 })}
   </div>
   ${note ? `<div class="notice">${esc(note)}</div>` : ''}`;
 }
@@ -1829,8 +1828,8 @@ function legTanks() {
 }
 function legRisk() {
   const r = ui.rec;
-  return `<div class="card">${legYN(LEG.riskList(r))}</div>
-  ${LEG.hasShower(r) ? '' : '<p class="small muted">No shower is fitted, so shower head checks are skipped.</p>'}`;
+  return `<div class="card">${choice('showers', 'Showers fitted', LEG.SHOWERS, { req: 1, wrap: 1 })}${legYN(LEG.riskList(r))}</div>
+  ${r.showers && !LEG.hasShower(r) ? '<p class="small muted">No shower is fitted, so the shower head check is skipped.</p>' : ''}`;
 }
 function legFindings() {
   const r = ui.rec, f = LEG.failCount(r);

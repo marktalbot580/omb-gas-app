@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v115', items: ['Legionella: the Showers fitted question has moved to sit directly above the shower head check, on the risk checks page. If you choose None, the shower head check is hidden.'] },
   { v: 'v114', items: ['Legionella: the stored hot water box is now called Temperature setting of stored hot water.'] },
   { v: 'v113', items: ['Price list: prices that work out to part pounds now show two decimals (for example £1427.40, not £1427.4).'] },
   { v: 'v112', items: ['Addresses: the first letter of each word is now a capital automatically in every address box (customer, job, invoice and your own business address). The postcode is still all capitals.'] },

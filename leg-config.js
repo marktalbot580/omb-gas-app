@@ -99,13 +99,14 @@ const LEG = (() => {
     };
     need(0, 'customer.name', 'Customer name'); need(0, 'jobAddress', 'Job address');
     need(1, 'susceptible', 'Susceptible person'); need(1, 'occupancy', 'Property occupancy');
-    need(1, 'coldSupply', 'Cold water supply'); need(1, 'hotType', 'Hot water system'); need(1, 'showers', 'Showers fitted');
+    need(1, 'coldSupply', 'Cold water supply'); need(1, 'hotType', 'Hot water system');
     if (hasCyl(rec) && !['Other', 'Immersion cylinder'].includes(rec.hotType)) need(1, 'cylHeat', 'How the cylinder is heated');
     if (rec.hotType === 'Other') need(1, 'hotOther', 'Hot water system description');
     numeric(2, 'coldTemp', 'Cold water temperature at outlet'); numeric(2, 'hotTemp', 'Hot water temperature at outlet');
     if (hasTank(rec)) numeric(2, 'tankTemp', 'Cold tank water temperature');
     if (hasCyl(rec) && rec.hotType !== 'Other') numeric(2, 'cylTemp', 'Cylinder stored temperature');
     [...tankList(rec), ...cylList(rec)].forEach(c => need(3, c.k, c.q.replace(/\?$/, '')));
+    need(4, 'showers', 'Showers fitted');
     riskList(rec).forEach(c => need(4, c.k, c.q.replace(/\?$/, '')));
     need(5, 'overall', 'Overall risk rating'); need(5, 'renewal', 'Next assessment due date');
     rec.defects.forEach((d, i) => {
