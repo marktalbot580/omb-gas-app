@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v116', items: ['Price list: more common boilers added. Worcester Greenstar 2000 and 8000 Style (plus the 30kW 8000 Life), Ideal Logic Air, Vaillant ecoFIT pure and sustain (plus the 38kW ecoTEC plus), Viessmann Vitodens 050-W, Alpha E-Tec and E-Tec Plus, and Potterton Assure. If you already have a saved price list they are added to it once, with the cost left blank for you to fill in. Your own prices are not touched.'] },
   { v: 'v115', items: ['Legionella: the Showers fitted question has moved to sit directly above the shower head check, on the risk checks page. If you choose None, the shower head check is hidden.'] },
   { v: 'v114', items: ['Legionella: the stored hot water box is now called Temperature setting of stored hot water.'] },
   { v: 'v113', items: ['Price list: prices that work out to part pounds now show two decimals (for example £1427.40, not £1427.4).'] },

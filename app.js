@@ -777,7 +777,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v115';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v116';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1522,6 +1522,13 @@ function qSelect(kind, title, list, group) {
 }
 function qSeed() {
   if (!settings.qList || !settings.qList.length) settings.qList = QUO.itemsFromRows([QUO.SHEET_HEAD].concat(QUO.STARTER));
+  /* one-off top-up: a price list saved before v116 gets the newly added boiler models (existing items and prices are untouched) */
+  else if (settings.qStarterV !== 2) {
+    const have = new Set(settings.qList.filter(i => i.type === 'Boiler').map(i => (i.make + '|' + i.name).toLowerCase()));
+    QUO.itemsFromRows([QUO.SHEET_HEAD].concat(QUO.STARTER.filter(s => s[0] === 'Boiler'))).forEach(i => { if (!have.has((i.make + '|' + i.name).toLowerCase())) settings.qList.push(i); });
+    settings.qStarterV = 2; saveSettings();
+  }
+  if (settings.qStarterV !== 2) { settings.qStarterV = 2; saveSettings(); }
   const old = QUO.parseItems(settings.qItemsText);
   if (old.length) { old.forEach(o => { if (!settings.qList.some(x => x.name.toLowerCase() === o.name.toLowerCase())) settings.qList.push({ id: QUO.newId(), type: 'Other', make: '', name: o.name, kind: '', kw: '', warranty: '', unit: '', cost: '', markup: '', price: String(o.price || '') }); }); settings.qItemsText = ''; saveSettings(); }
   let ch = false; settings.qList.forEach(x => { if (!x.id) { x.id = QUO.newId(); ch = true; } }); if (ch) saveSettings();
