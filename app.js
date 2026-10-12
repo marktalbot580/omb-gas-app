@@ -101,7 +101,7 @@ const DEFAULT_SETTINGS = {
   priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', priceCom: '', quoteIncluded: QUO.DEFAULT_INCLUDED, quoteTerms: QUO.DEFAULT_TERMS, qItemsText: '', qList: [], qMarkup: {}, qMarkupDef: '30', discType: '£', discValue: '',
   invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '', vatQtr: '2', yearDay: '6', yearMonth: '4',
   bankName: '', accName: '', sortCode: '', accNo: '', invFooter: 'Thank you for your business.',
-  remText: '', qChaseText: '', invRemText: '', invAsk: 'on', remDays: '56', toolGas: 'on', toolPipe: 'on', toolIv: 'on', toolHeat: 'on'
+  remText: '', qChaseText: '', invRemText: '', invAsk: 'on', recGas: 'on', recService: 'on', recLeg: 'on', recAc: 'on', recQuote: 'on', remDays: '56', toolGas: 'on', toolPipe: 'on', toolIv: 'on', toolHeat: 'on'
 };
 let settings = Object.assign({}, DEFAULT_SETTINGS, LS.get('omb_settings', {}));
 let customers = LS.get('omb_customers', []);
@@ -653,16 +653,7 @@ function renderHome(v) {
     ${(() => { const c = records.filter(qChase).sort((a, b) => (a.inspectionDate || '').localeCompare(b.inspectionDate || '')); return c.length ? `<button type="button" class="notice" style="display:block;width:100%;text-align:left" data-act="openRec" data-id="${c[0].id}"><b>${c.length} quote${c.length > 1 ? 's' : ''} sent over 2 weeks ago with no answer.</b> Tap to chase ${esc(c[0].customer.name || 'the oldest')}.</button>` : ''; })()}
     ${(() => { const c = invOverdueAsk(); return c.length ? `<button type="button" class="notice" style="display:block;width:100%;text-align:left" data-act="invAsk"><b>${c.length} overdue invoice${c.length > 1 ? 's' : ''}.</b> Tap to send ${esc(c[0].customer.name || 'a customer')} a payment reminder.</button>` : ''; })()}
     ${missing ? `<div class="notice">Add the business address, Gas Safe register number and engineer details in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a> before issuing certificates.</div>` : ''}
-    <button class="btn gold block" data-act="newRec" data-type="gas">+ New gas safety record</button>
-    <div style="height:10px"></div>
-    <button class="btn gold block" data-act="newRec" data-type="service">+ New boiler service record</button>
-    <div style="height:10px"></div>
-    <button class="btn gold block" data-act="newRec" data-type="legionella">+ New Legionella risk assessment</button>
-    <div style="height:10px"></div>
-    <button class="btn gold block" data-act="newRec" data-type="aircon">+ New air conditioning commissioning</button>
-    <div style="height:10px"></div>
-    <button class="btn gold block" data-act="newRec" data-type="quote">+ New boiler quote</button>
-    <div style="height:10px"></div>
+    ${REC_HOME.filter(([t]) => recOn(t)).map(([t, l]) => `<button class="btn gold block" data-act="newRec" data-type="${t}">${l}</button><div style="height:10px"></div>`).join('')}
     ${remHomeBtn()}
     
     <h2>Recent</h2>
@@ -682,13 +673,13 @@ function renderPick(v) {
     <h1>Forms for this visit</h1>
     <p class="small muted" style="margin-top:0">Tick everything you are doing at this property today. The customer and address are entered once and shared across the forms, and you get a separate PDF for each.</p>
     ${pk.customer ? `<div class="card"><div class="t">${esc(pk.customer.name)}</div></div>` : ''}
-    ${opt('gas', 'Gas safety record', 'Landlord gas safety check')}
-    ${opt('service', 'Boiler service record', 'Service or repair of a gas boiler')}
-    ${opt('legionella', 'Legionella risk assessment', 'Hot and cold water system checks')}
-    ${opt('aircon', 'Air conditioning commissioning', 'Install and commissioning report for an AC system')}
-    ${opt('quote', 'Boiler quote', 'A quotation for a new boiler installation')}
+    ${!recOn('gas') ? '' : opt('gas', 'Gas safety record', 'Landlord gas safety check')}
+    ${!recOn('service') ? '' : opt('service', 'Boiler service record', 'Service or repair of a gas boiler')}
+    ${!recOn('legionella') ? '' : opt('legionella', 'Legionella risk assessment', 'Hot and cold water system checks')}
+    ${!recOn('aircon') ? '' : opt('aircon', 'Air conditioning commissioning', 'Install and commissioning report for an AC system')}
+    ${!recOn('quote') ? '' : opt('quote', 'Boiler quote', 'A quotation for a new boiler installation')}
     ${T.gas && !T.service ? `<div class="notice">Doing a gas safety check? Tick <b>Boiler service record</b> as well to complete both forms in one go – the boiler details from the gas check are copied across.</div>` : ''}
-    <button class="btn block" data-act="pickAll">Landlord visit: gas check, boiler service &amp; Legionella</button>
+    ${recOn('gas') && recOn('service') && recOn('legionella') ? `<button class="btn block" data-act="pickAll">Landlord visit: gas check, boiler service &amp; Legionella</button>` : ''}
     <div style="height:10px"></div>
     <button class="btn gold block" data-act="pickGo" ${n ? '' : 'disabled'}>${n > 1 ? `Start ${n} forms (${n} PDFs)` : 'Start'}</button>
     <div style="height:10px"></div>
@@ -780,7 +771,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v128';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v129';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1016,6 +1007,11 @@ function renderSettings(v) {
     </div>
     </div>
     <div data-stab="app" ${(ui.sTab || 'business') === 'app' ? '' : 'hidden'}>
+    <h2>Records to show</h2>
+    <div class="card">
+      ${[['recGas', 'Gas safety record'], ['recService', 'Boiler service record'], ['recLeg', 'Legionella risk assessment'], ['recAc', 'Air conditioning commissioning'], ['recQuote', 'Boiler quote']].map(([k, l]) => `<label class="f"><span>${l}</span><select data-s="${k}"><option value="on" ${settings[k] === 'off' ? '' : 'selected'}>Show</option><option value="off" ${settings[k] === 'off' ? 'selected' : ''}>Hide</option></select></label>`).join('')}
+      <small class="muted">Hidden types leave the home screen and the “Forms for this visit” list. Records you have already made stay in your list. Turn one back on any time.</small>
+    </div>
     <h2>Backup</h2>
     <div class="card">
       <p class="small muted" style="margin-top:0">Customers and records are stored on this phone. Keep a copy somewhere safe. The app reminds you once a month. A backup holds your customers' details, so keep it somewhere private. You can add a password to it. Bank details are never included.</p>
@@ -1439,6 +1435,10 @@ async function sendSel() {
 }
 /* open the email app without leaving the page (a plain location change leaves a blank screen in some browsers, e.g. Firefox with no mail app set) */
 const mailAddr = a => encodeURIComponent(String(a || '').trim()).replace(/%40/g, '@').replace(/%2C/g, ',');
+/* which record types show on the home screen and in the visit picker (Settings → Business → Records to show) */
+const REC_KEYS = { gas: 'recGas', service: 'recService', legionella: 'recLeg', aircon: 'recAc', quote: 'recQuote' };
+const recOn = t => settings[REC_KEYS[t]] !== 'off';
+const REC_HOME = [['gas', '+ New Gas Safety Record'], ['service', '+ New Boiler Service Record'], ['legionella', '+ New Legionella Risk Assessment'], ['aircon', '+ New Air Conditioning Commissioning'], ['quote', '+ New Boiler Quote']];
 /* wording of the quote chase email / text (editable in Settings → Quotes). {name} {address} {ref} {business} {signoff} are filled in */
 const QCHASE_DEFAULT = 'Hi {name},\n\nI just wanted to check that you received my quote for your new boiler at {address}. If you have any questions, or would like to go ahead, just let me know and I will arrange a date for the installation.\n\nKind regards,\n{signoff}';
 function chaseText(q) {

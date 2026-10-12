@@ -271,3 +271,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 4px rgba(217,178,95,.14
 .stabs button.on{background:var(--gold2);border-color:var(--gold2);color:#111}
 [data-stab][hidden]{display:none}
 #askBox{position:fixed;left:0;right:0;bottom:0;z-index:96;padding:12px 12px calc(12px + env(safe-area-inset-bottom));animation:instUp .35s ease both}
+
+/* every button label: a capital letter on each word (record choices such as Yes/No and make names are left as they are) */
+.btn,.chip,.stabs button,.tabs button{text-transform:capitalize}
+.qres .btn{text-transform:none}
