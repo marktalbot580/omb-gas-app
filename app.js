@@ -617,6 +617,12 @@ function renderTabs(nav) {
 const qAge = r => Math.max(0, Math.round((Date.parse(todayISO()) - Date.parse(r.inspectionDate || todayISO())) / 864e5));
 const qWaiting = r => typeOf(r) === 'quote' && r.status === 'complete' && !r.qStatus;
 const qChase = r => qWaiting(r) && qAge(r) >= 14;
+/* an accepted quote: a button to put the job in the calendar, or the date it is booked for */
+function quoSched(r, cls) {
+  if (r.qStatus !== 'accepted' || !calOn()) return '';
+  if (r.qBooked) return `<div class="small" style="color:var(--gold2);font-weight:700;margin:6px 0">Booked in for ${esc(dayShort(r.qBooked))}</div>`;
+  return `<button type="button" class="btn gold block ${cls || ''}" data-act="quoBook" data-id="${r.id}" style="margin:8px 0 0">Schedule into the calendar</button>`;
+}
 function quoBadge(r) {
   if (r.status !== 'complete') return '';
   if (r.qStatus === 'accepted') return '<span class="badge paid">Accepted</span>';
@@ -803,7 +809,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v155';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v156';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1492,6 +1498,7 @@ function sendCard(m) {
     const tg = (v, label) => `<button type="button" class="item tog grow ${q.qStatus === v ? 'on' : ''}" style="margin:0" data-act="qOutcome" data-id="${q.id}" data-v="${v}"><span class="box"></span><span><span class="t">${label}</span></span></button>`;
     return `<div style="margin-bottom:10px"><div class="small muted" style="margin-bottom:6px">Quote outcome${q.qStatus ? ' · ' + (q.qStatus === 'accepted' ? 'accepted' : 'declined') + ' ' + ukDate(q.qDate) : ' · sent ' + qAge(q) + ' day' + (qAge(q) === 1 ? '' : 's') + ' ago, no answer yet'}</div>
       <div class="row" style="gap:8px">${tg('accepted', 'Accepted')}${tg('declined', 'Declined')}</div>
+      ${quoSched(q)}
       ${qWaiting(q) && can ? `<div class="row" style="gap:8px;margin-top:8px">${q.customer.email ? `<button type="button" class="btn grow" data-act="qChase" data-id="${q.id}" data-how="email">Chase by email</button>` : ''}${q.customer.phone ? `<button type="button" class="btn grow" data-act="qChase" data-id="${q.id}" data-how="text">Chase by text</button>` : ''}</div>` : ''}</div>`;
   }).join('');
   const n = m.filter(x => selOn(x.id)).length + (inv && selOn(inv.id) ? 1 : 0);
@@ -2215,11 +2222,11 @@ function invTabs() {
 function renderQuotes(v) {
   const f = ui.qFilter || 'all';
   const all = records.filter(r => typeOf(r) === 'quote').sort((a, b) => (b.inspectionDate || '').localeCompare(a.inspectionDate || '') || (b.updated || 0) - (a.updated || 0));
-  const waiting = all.filter(qWaiting), chase = all.filter(qChase);
+  const waiting = all.filter(qWaiting), chase = all.filter(qChase), toSched = calOn() ? all.filter(r => r.qStatus === 'accepted' && !r.qBooked) : [];
   const val = r => { try { return QUO.totals(r, settings).total; } catch (e) { return 0; } };
   const pend = waiting.reduce((a, r) => a + val(r), 0);
   const pass = {
-    all: () => true, waiting: r => qWaiting(r), chase: qChase, accepted: r => r.qStatus === 'accepted', declined: r => r.qStatus === 'declined', draft: r => r.status === 'draft'
+    all: () => true, waiting: r => qWaiting(r), chase: qChase, accepted: r => r.qStatus === 'accepted', sched: r => r.qStatus === 'accepted' && !r.qBooked, declined: r => r.qStatus === 'declined', draft: r => r.status === 'draft'
   };
   const shown = all.filter(pass[f] || pass.all);
   const chip = (k, l) => `<button class="chip ${f === k ? 'on' : ''}" data-act="qFilter" data-f="${k}">${l}</button>`;
@@ -2227,17 +2234,17 @@ function renderQuotes(v) {
     <h1>Quotes</h1>
     ${invTabs()}
     <div class="card"><div class="row sp"><div><div class="small muted">Waiting for an answer</div><div style="font-size:24px;font-weight:700;color:var(--gold2)">${money(pend)}</div></div>
-      <div style="text-align:right"><div class="small muted">${waiting.length} awaiting reply</div>${chase.length ? `<div class="small" style="color:var(--bad);font-weight:700">${chase.length} to chase up</div>` : ''}</div></div></div>
+      <div style="text-align:right"><div class="small muted">${waiting.length} awaiting reply</div>${chase.length ? `<div class="small" style="color:var(--bad);font-weight:700">${chase.length} to chase up</div>` : ''}${toSched.length ? `<div class="small" style="color:var(--gold2);font-weight:700">${toSched.length} to schedule</div>` : ''}</div></div></div>
     ${recOn('quote') ? `<button class="btn gold block" data-act="newRec" data-type="quote">+ New boiler quote</button><div style="height:8px"></div>` : ''}
     ${recOn('gquote') ? `<button class="btn gold block" data-act="newRec" data-type="gquote">+ New quote (any job)</button><div style="height:8px"></div>` : ''}
     <div style="height:6px"></div>
-    <div class="chips">${chip('all', 'All')}${chip('waiting', 'Awaiting reply')}${chase.length ? chip('chase', 'Chase up (' + chase.length + ')') : ''}${chip('accepted', 'Accepted')}${chip('declined', 'Declined')}${all.some(r => r.status === 'draft') ? chip('draft', 'Drafts') : ''}</div>
+    <div class="chips">${chip('all', 'All')}${chip('waiting', 'Awaiting reply')}${chase.length ? chip('chase', 'Chase up (' + chase.length + ')') : ''}${toSched.length ? chip('sched', 'To schedule (' + toSched.length + ')') : ''}${chip('accepted', 'Accepted')}${chip('declined', 'Declined')}${all.some(r => r.status === 'draft') ? chip('draft', 'Drafts') : ''}</div>
     ${shown.length ? shown.map(r => `${r.status === 'draft' ? '<div class="itemw">' : ''}
       <button class="item" data-act="openRec" data-id="${r.id}">
         <div class="row sp"><span class="t">${esc(r.customer.name || 'No customer yet')}</span><span class="badges">${r.status === 'draft' ? '<span class="badge draft">draft</span>' : quoBadge(r)}</span></div>
         <div class="s">${esc(r.general ? (r.title || 'Quote') : 'Boiler quote')} · ${esc(addrFirst(r.jobAddress || '') || 'No address yet')}</div>
         <div class="row sp"><span class="s">${esc(r.ref)} · ${ukDate(r.inspectionDate)}</span><span class="t">${val(r) ? money(val(r)) : ''}</span></div>
-      </button>${r.status === 'draft' ? `<button class="draftdel" data-act="delDraft" data-id="${r.id}">Delete draft</button></div>` : ''}`).join('') : `<div class="empty">${all.length ? 'No quotes in this view.' : 'No quotes yet.<br>Tap a button above to make one.'}</div>`}`;
+      </button>${r.status === 'draft' ? `<button class="draftdel" data-act="delDraft" data-id="${r.id}">Delete draft</button></div>` : quoSched(r) ? `<div style="margin:-4px 0 14px">${quoSched(r)}</div>` : ''}`).join('') : `<div class="empty">${all.length ? 'No quotes in this view.' : 'No quotes yet.<br>Tap a button above to make one.'}</div>`}`;
 }
 function renderInvoices(v) {
   if (ui.invTab === 'quotes') return renderQuotes(v);

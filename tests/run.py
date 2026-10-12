@@ -533,6 +533,27 @@ def run():
         check('no page errors on the Sales tab', not errs, errs)
         ctx.close()
 
+        # ---------- 12u. accepted quote: schedule into the calendar ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "ui.pick={types:{gquote:true},customer:null}; startJob(); ui.rec.title='Bath'; ui.rec.customer.name='Ann Lee'; ui.rec.jobAddress='1 Road'; ui.rec.status='complete'; ui.rec.labourPrice='100'; persistRec(ui.rec); ui.view='invoices'; ui.invTab='quotes'; render()")
+        check('no schedule button until the quote is accepted', ev(pg, "!document.querySelector('[data-act=quoBook]')"))
+        ev(pg, "records[0].qStatus='accepted'; render()")
+        ev(pg, "ui.qFilter='all'; render()")
+        chip = ev(pg, "[...document.querySelectorAll('.chip')].map(c=>c.innerText)")
+        check('To schedule filter shows accepted quotes not in the calendar', any('to schedule' in c.lower() and '(1)' in c for c in chip), chip)
+        pg.click('[data-f=sched]'); pg.wait_for_timeout(100)
+        check('To schedule filter lists the quote', ev(pg, "document.querySelectorAll('#view .item[data-act=openRec]').length") == 1)
+        pg.click('[data-act=quoBook]'); pg.wait_for_timeout(150)
+        bk = ev(pg, "[ui.view, ui.book.name, ui.book.address, ui.book.other, ui.book.types.join()]")
+        check('Schedule button opens a booking filled in from the quote', bk == ['book', 'Ann Lee', '1 Road', 'Bath', 'other'], bk)
+        pg.click('[data-act=bookSave]'); pg.wait_for_timeout(200)
+        st = ev(pg, "[ui.view, ui.invTab, !!records[0].qBooked, bookings.length, !!document.querySelector('[data-act=quoBook]')]")
+        check('saving the booking marks the quote booked and returns to Quotes', st == ['invoices', 'quotes', True, 1, False], st)
+        ev(pg, "ui.qFilter='all'; render()")
+        check('To schedule filter disappears once booked', not ev(pg, "!!document.querySelector('[data-f=sched]')"))
+        check('no page errors scheduling a quote', not errs, errs)
+        ctx.close()
+
         # ---------- 12s. settings cog in the header ----------
         ctx, pg, errs = fresh(b)
         ev(pg, "ui.view='home'; render()")

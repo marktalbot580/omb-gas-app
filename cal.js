@@ -124,7 +124,7 @@ function renderBook(v) {
       <div style="height:10px"></div><button class="btn block ghost" data-act="bookDel">Delete appointment</button>`}
     <div style="height:10px"></div><button class="btn ghost block" data-act="bookBack">${isNew ? 'Cancel' : 'Back'}</button>`;
 }
-function bkBack() { ui.book = null; if (ui.bookFrom === 'due') ui.view = 'due'; else if (ui.bookFrom === 'pick' && ui.pick) ui.view = 'pick'; else ui.view = ui.bookFrom === 'home' ? 'home' : 'cal'; render(); }
+function bkBack() { ui.book = null; if (ui.bookFrom === 'quotes') { ui.view = 'invoices'; ui.invTab = 'quotes'; } else if (ui.bookFrom === 'form' && ui.rec) ui.view = 'form'; else if (ui.bookFrom === 'due') ui.view = 'due'; else if (ui.bookFrom === 'pick' && ui.pick) ui.view = 'pick'; else ui.view = ui.bookFrom === 'home' ? 'home' : 'cal'; render(); }
 function bkFill(B, c) { if (!c) return; B.addrNew = false; B.customerId = c.id; B.name = c.name || ''; B.phone = c.phone || ''; B.email = c.email || ''; const ps = (c.properties || []).filter(Boolean); B.address = ps.length === 1 ? ps[0] : (ps.includes(B.address) ? B.address : ''); }
 function bkValid(B) {
   if (!B.types.length) { toast('Choose what the job is'); return false; }
@@ -180,6 +180,12 @@ async function calAct(a, b) {
     case 'calMonth': { const s = calState(), [y, m] = s.m.split('-').map(Number), d = new Date(y, m - 1 + (+b.dataset.n), 1); s.m = localISO(d).slice(0, 7); render(); return true; }
     case 'calDay': { const s = calState(); s.d = b.dataset.d; s.m = s.d.slice(0, 7); ui.calMode = 'month'; if (ui.view === 'home') ui.view = 'cal'; render(); window.scrollTo(0, 0); return true; }
     case 'bookNew': ui.book = newBook({ base: { date: b.dataset.d || localISO() } }); ui.bookFrom = ui.view === 'home' ? 'home' : 'cal'; ui.view = 'book'; render(); return true;
+    case 'quoBook': {
+      const r = records.find(x => x.id === b.dataset.id); if (!r) return true;
+      const cu = customers.find(c => c.id === r.customerId) || null, cd = r.customer || {};
+      ui.book = newBook({ customer: cu, base: { types: ['other'], other: r.general ? (r.title || 'Quoted job') : 'Boiler installation', date: localISO(), address: r.jobAddress || '', name: (cu && cu.name) || cd.name || '', phone: (cu && cu.phone) || cd.phone || '', email: (cu && cu.email) || cd.email || '', notes: 'Quote ' + (r.ref || ''), fromQuote: r.id } });
+      ui.bookFrom = ui.view === 'invoices' ? 'quotes' : 'form'; ui.view = 'book'; render(); window.scrollTo(0, 0); return true;
+    }
     case 'remBook': {
       const r = records.find(x => x.id === b.dataset.id); if (!r) return true;
       const cu = customers.find(c => c.id === r.customerId) || null, cd = r.customer || {}, t = typeOf(r);
@@ -212,7 +218,7 @@ async function calAct(a, b) {
     case 'calJobRm': { settings.calJobs = calJobs().filter((_, i) => i !== +b.dataset.i); saveSettings(); const y = window.scrollY; render(); window.scrollTo(0, y); return true; }
     case 'bookType': { const T = ui.book.types, i = T.indexOf(b.dataset.t); if (i >= 0) T.splice(i, 1); else T.push(b.dataset.t); const y = window.scrollY; render(); window.scrollTo(0, y); return true; }
     case 'bookOpen': { const x = bookings.find(z => z.id === b.dataset.id); if (x) { ui.book = { ...x, types: [...(x.types || [])] }; ui.bookFrom = ui.view === 'home' ? 'home' : 'cal'; ui.view = 'book'; render(); } return true; }
-    case 'bookSave': { if (!bkSave()) return true; const B0 = ui.book, d = ui.book.date, t = ui.book.time; ui.pick = ui.bookFrom === 'pick' ? null : ui.pick; ui.cal = { m: d.slice(0, 7), d }; ui.calMode = 'month'; ui.book = null; ui.view = ui.bookFrom === 'due' ? 'due' : ui.bookFrom === 'home' ? 'home' : 'cal'; if (ui.bookFrom === 'due' && B0.fromRem) { const rr = records.find(x => x.id === B0.fromRem); if (rr) remSetState(rr, 'booked'); } ui.bookFrom = ''; toast('Booked in for ' + dayShort(d) + ' at ' + t); render(); return true; }
+    case 'bookSave': { if (!bkSave()) return true; const B0 = ui.book, d = ui.book.date, t = ui.book.time; ui.pick = ui.bookFrom === 'pick' ? null : ui.pick; ui.cal = { m: d.slice(0, 7), d }; ui.calMode = 'month'; ui.book = null; ui.view = ui.bookFrom === 'due' ? 'due' : ui.bookFrom === 'home' ? 'home' : 'cal'; if (B0.fromQuote) { const qq = records.find(x => x.id === B0.fromQuote); if (qq) { qq.qBooked = d; persistRec(qq); } if (ui.bookFrom === 'quotes') { ui.view = 'invoices'; ui.invTab = 'quotes'; } else if (ui.bookFrom === 'form' && ui.rec) ui.view = 'form'; } if (ui.bookFrom === 'due' && B0.fromRem) { const rr = records.find(x => x.id === B0.fromRem); if (rr) remSetState(rr, 'booked'); } ui.bookFrom = ''; toast('Booked in for ' + dayShort(d) + ' at ' + t); render(); return true; }
     case 'bookDone': { ui.book.status = ui.book.status === 'done' ? 'booked' : 'done'; if (bkSave()) { toast(ui.book.status === 'done' ? 'Marked as done' : 'Marked as not done'); render(); } return true; }
     case 'bookDel': if (confirm('Delete this appointment?')) { deleteRemote('booking', ui.book.id); bookings = bookings.filter(x => x.id !== ui.book.id); saveBookings(); syncAll(); toast('Appointment deleted'); bkBack(); } return true;
     case 'bookBack': bkBack(); return true;
