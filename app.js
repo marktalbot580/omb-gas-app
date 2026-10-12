@@ -101,7 +101,7 @@ const DEFAULT_SETTINGS = {
   priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', priceCom: '', quoteIncluded: QUO.DEFAULT_INCLUDED, quoteTerms: QUO.DEFAULT_TERMS, qItemsText: '', qList: [], qMarkup: {}, qMarkupDef: '30', discType: '£', discValue: '',
   invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '', vatQtr: '2', yearDay: '6', yearMonth: '4',
   bankName: '', accName: '', sortCode: '', accNo: '', invFooter: 'Thank you for your business.',
-  remText: '', qChaseText: '', invRemText: '', invAsk: 'on', logoBg: 'clear', recGas: 'on', recService: 'on', recLeg: 'on', recAc: 'on', recQuote: 'on', remDays: '56', toolGas: 'on', toolPipe: 'on', toolIv: 'on', toolHeat: 'on'
+  remText: '', qChaseText: '', invRemText: '', invAsk: 'on', logoBg: 'white', recGas: 'on', recService: 'on', recLeg: 'on', recAc: 'on', recQuote: 'on', remDays: '56', toolGas: 'on', toolPipe: 'on', toolIv: 'on', toolHeat: 'on'
 };
 let settings = Object.assign({}, DEFAULT_SETTINGS, LS.get('omb_settings', {}));
 let customers = LS.get('omb_customers', []);
@@ -132,7 +132,7 @@ function applyBrand() {
   const key = [settings.logo && settings.logo.length, settings.businessName, settings.logoBg].join('|');
   if (key === _brandKey) return; _brandKey = key;
   const name = settings.businessName || 'OMB Gas Service', img = document.querySelector('.bar-logo'), st = document.querySelector('.bar-title strong');
-  if (img) { img.src = settings.logo || placeholderLogo(settings.businessName); img.style.background = settings.logo && settings.logoBg === 'white' ? '#fff' : ''; }
+  if (img) { img.src = settings.logo || placeholderLogo(settings.businessName); img.style.background = settings.logo && settings.logoBg !== 'clear' ? (settings.logoBg === 'black' ? '#000' : '#fff') : ''; }
   if (st) st.textContent = name;
   document.title = name;
   const a = '#c9a24b';   // the gold theme is fixed
@@ -771,7 +771,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v132';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v133';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -922,9 +922,9 @@ function renderSettings(v) {
     </div>
     <h2>Your branding</h2>
     <div class="card">
-      <div style="text-align:center;margin-bottom:12px"><img src="${settings.logo || placeholderLogo(settings.businessName)}" alt="Company logo" style="height:110px;width:110px;border-radius:10px;${settings.logo && settings.logoBg === 'white' ? 'background:#fff' : ''}"></div>
+      <div style="text-align:center;margin-bottom:12px"><img src="${settings.logo || placeholderLogo(settings.businessName)}" alt="Company logo" style="height:110px;width:110px;border-radius:10px;${settings.logo && settings.logoBg !== 'clear' ? (settings.logoBg === 'black' ? 'background:#000' : 'background:#fff') : ''}"></div>
       <label class="btn block" style="text-align:center">${settings.logo ? 'Change company logo' : 'Upload company logo'}<input id="coLogo" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,.pdf" hidden></label>
-      ${settings.logo ? `<label class="f" style="margin-top:10px"><span>Logo background</span><select data-s="logoBg"><option value="clear" ${settings.logoBg === 'white' ? '' : 'selected'}>Clear (the logo sits on the dark header)</option><option value="white" ${settings.logoBg === 'white' ? 'selected' : ''}>White</option></select><small>If your logo is dark and hard to see on the dark header, choose White.</small></label>` : ''}
+      ${settings.logo ? `<label class="f" style="margin-top:10px"><span>Logo background</span><select data-s="logoBg"><option value="white" ${settings.logoBg === 'clear' || settings.logoBg === 'black' ? '' : 'selected'}>White (a white tile behind the logo)</option><option value="black" ${settings.logoBg === 'black' ? 'selected' : ''}>Black (a black tile behind the logo)</option><option value="clear" ${settings.logoBg === 'clear' ? 'selected' : ''}>Clear (the logo sits straight on the dark header)</option></select><small>The logo is trimmed and sized to fill the tile either way.</small></label>` : ''}
       ${settings.logo ? '<div style="height:8px"></div><button class="btn block" data-act="rmCoLogo">Remove logo</button>' : ''}
       <div class="hint" style="margin:10px 0 4px">Your logo appears at the top of the app and on every PDF.</div>
       ${f('refPrefix', 'Record number prefix', { cap: 'characters', hint: 'Up to 5 letters, for example ABC gives ABC-20261004-01.' })}

@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v133', items: ['Company logo: it goes back to sitting on a white tile (your logo is still trimmed and sized to fill the tile). The Logo background setting under your logo lets you pick White, Black or Clear.'] },
   { v: 'v132', items: ['Uploading your company or Gas Safe logo now opens the phone’s Files picker instead of going straight to the photo gallery.'] },
   { v: 'v131', items: ['Company logo: when you upload a logo that sits in a white box, the white is now cleared (so the logo fills the tile with no white edging) and it is trimmed to fill the box. Re-upload your logo to use this. There is a Logo background setting (Clear or White) in case a dark logo is hard to see on the dark header.'] },
   { v: 'v130', items: ['Settings: the tabs are now stacked in two rows of three, so Tools and App are no longer hidden off the side of the screen on a phone.', 'Settings: the Payment reminders section was showing on every tab; it now only shows under Invoicing.'] },

@@ -5,11 +5,12 @@
 let _logoW = { k: '', v: '' };
 async function getLogo() {
   if (!settings.logo) return placeholderLogo(settings.businessName);
-  if (settings.logoBg !== 'white') return settings.logo;
-  const k = settings.logo.length + '|w'; if (_logoW.k === k) return _logoW.v;   // white behind the logo: draw it onto white first
+  if (settings.logoBg === 'clear') return settings.logo;
+  const bg = settings.logoBg === 'black' ? '#000' : '#fff';
+  const k = settings.logo.length + '|' + bg; if (_logoW.k === k) return _logoW.v;   // white behind the logo: draw it onto white first
   const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = settings.logo; });
   const cv = document.createElement('canvas'); cv.width = img.naturalWidth || 400; cv.height = img.naturalHeight || 400;
-  const c = cv.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, cv.width, cv.height); c.drawImage(img, 0, 0);
+  const c = cv.getContext('2d'); c.fillStyle = bg; c.fillRect(0, 0, cv.width, cv.height); c.drawImage(img, 0, 0);
   _logoW = { k, v: cv.toDataURL('image/png') }; return _logoW.v;
 }
 
