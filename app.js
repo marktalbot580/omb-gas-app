@@ -101,7 +101,7 @@ const DEFAULT_SETTINGS = {
   priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', priceCom: '', quoteIncluded: QUO.DEFAULT_INCLUDED, quoteTerms: QUO.DEFAULT_TERMS, qItemsText: '', qList: [], qMarkup: {}, qMarkupDef: '30', discType: '£', discValue: '',
   invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '', vatQtr: '2', yearDay: '6', yearMonth: '4',
   bankName: '', accName: '', sortCode: '', accNo: '', invFooter: 'Thank you for your business.',
-  remText: '', qChaseText: '', invRemText: '', invAsk: 'on', logoBg: 'white', calHome: 'on', calMins: '60', recGas: 'on', recService: 'on', recLeg: 'on', recAc: 'on', recQuote: 'on', remDays: '56', toolGas: 'on', toolPipe: 'on', toolIv: 'on', toolHeat: 'on'
+  remText: '', qChaseText: '', invRemText: '', invAsk: 'on', logoBg: 'white', calOn: 'on', calHome: 'on', calMins: '60', recGas: 'on', recService: 'on', recLeg: 'on', recAc: 'on', recQuote: 'on', remDays: '56', toolGas: 'on', toolPipe: 'on', toolIv: 'on', toolHeat: 'on'
 };
 let settings = Object.assign({}, DEFAULT_SETTINGS, LS.get('omb_settings', {}));
 let customers = LS.get('omb_customers', []);
@@ -686,8 +686,8 @@ function renderPick(v) {
     <div style="height:10px"></div>
     <button class="btn gold block" data-act="pickGo" ${n ? '' : 'disabled'}>${n > 1 ? `Start ${n} forms (${n} PDFs)` : 'Start'}</button>
     <div style="height:10px"></div>
-    <button class="btn block" data-act="bookFromPick" ${n ? '' : 'disabled'}>Schedule in</button>
-    <div style="height:10px"></div>
+    ${calOn() ? `<button class="btn block" data-act="bookFromPick" ${n ? '' : 'disabled'}>Schedule in</button>
+    <div style="height:10px"></div>` : ''}
     <button class="btn ghost block" data-act="pickCancel">Cancel</button>`;
 }
 
@@ -752,6 +752,7 @@ function custJobs(c) {
       <div class="s">${esc(r.ref)} · ${ukDate(r.inspectionDate)}</div></button>`).join('') : '<p class="small muted">No jobs yet for this customer.</p>');
 }
 function custAppts(c) {
+  if (!calOn()) return '';
   const t = localISO(), l = bookings.filter(b => b.customerId === c.id && b.date >= t && b.status !== 'done').sort((x, y) => (x.date + x.time).localeCompare(y.date + y.time));
   return l.length ? '<h2 style="margin-top:0">Booked in</h2>' + l.map(b => bkItem(b, true)).join('') : '';
 }
@@ -789,7 +790,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v139';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v140';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1020,6 +1021,9 @@ function renderSettings(v) {
     <div data-stab="calendar" ${(ui.sTab || 'business') === 'calendar' ? '' : 'hidden'}>
     <h2>Calendar</h2>
     <div class="card">
+      <label class="f"><span>Use the calendar</span><select data-s="calOn"><option value="on" ${calOn() ? 'selected' : ''}>On</option><option value="off" ${calOn() ? '' : 'selected'}>Off</option></select><small>Turn it off if you do not book jobs in the app. The calendar, the Schedule in button and the appointment lists disappear. Any appointments you have saved are kept.</small></label>
+    </div>
+    ${calOn() ? `<div class="card">
       <label class="f"><span>Show the calendar on the home screen</span><select data-s="calHome"><option value="on" ${settings.calHome === 'off' ? '' : 'selected'}>Yes</option><option value="off" ${settings.calHome === 'off' ? 'selected' : ''}>No</option></select><small>Shows today’s appointments and the month under your record buttons.</small></label>
       <label class="f"><span>Usual appointment length</span><select data-s="calMins">${[['30', '30 minutes'], ['60', '1 hour'], ['90', '1½ hours'], ['120', '2 hours'], ['180', '3 hours']].map(([m, l]) => `<option value="${m}" ${String(settings.calMins || '60') === m ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <button class="btn block" data-act="calOpen">Open the calendar</button>
@@ -1037,7 +1041,7 @@ function renderSettings(v) {
       <button class="btn block" data-act="calExport">Export to a calendar (.ics)</button>
       <div style="height:8px"></div>
       <button class="btn block" data-act="calExportCsv">Export as a spreadsheet</button>
-    </div>
+    </div>` : ''}
     </div>
     <div data-stab="tools" ${(ui.sTab || 'business') === 'tools' ? '' : 'hidden'}>
     <h2>Tools</h2>
@@ -3160,6 +3164,7 @@ async function restoreBackup(file) {
 
 /* ---------- calendar: appointments kept on this phone ---------- */
 const BK_TYPES = [['gas', 'Gas safety check'], ['service', 'Boiler service'], ['legionella', 'Legionella risk assessment'], ['aircon', 'Air conditioning'], ['quote', 'Boiler quote'], ['other', 'Other job']];
+const calOn = () => settings.calOn !== 'off';
 const calJobs = () => (Array.isArray(settings.calJobs) ? settings.calJobs : ['Bathroom install', 'Radiator install']);
 const bkLabel = b => (b.types || []).map(t => t === 'other' ? (String(b.other || '').trim() || 'Other job') : (BK_TYPES.find(x => x[0] === t) || [0, t])[1]).join(' + ') || 'Appointment';
 const localISO = d => { d = d || new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
@@ -3184,7 +3189,7 @@ function calGrid(sel, month) {
 }
 const calHead = month => `<div class="calhd"><button type="button" data-act="calMonth" data-n="-1" aria-label="Previous month">‹</button><b>${monthLong(month)}</b><button type="button" data-act="calMonth" data-n="1" aria-label="Next month">›</button></div>`;
 function calHomeHtml() {
-  if (settings.calHome === 'off') return '';
+  if (!calOn() || settings.calHome === 'off') return '';
   const t = localISO(), td = bkOn(t), s = calState();
   return `<h2>Today</h2>
     ${td.length ? td.map(b => bkItem(b)).join('') : '<div class="empty" style="padding:14px">Nothing booked in today.</div>'}
@@ -3324,7 +3329,9 @@ document.addEventListener('input', e => {
   if (k === 'name') { if (ui.book.customerId) { const c = customers.find(x => x.id === ui.book.customerId); if (!c || c.name !== t.value) { ui.book.customerId = ''; ui.book.addrNew = false; } } const el = document.getElementById('bkNameSug'); if (el) el.innerHTML = nameSugHtml(ui.book, t.value, 'bookPickCust'); }
 });
 document.addEventListener('change', e => {
-  const t = e.target, k = t && t.dataset && t.dataset.bk; if (!k || !ui.book) return;
+  const t = e.target;
+  if (t && t.dataset && t.dataset.s === 'calOn') { settings.calOn = t.value; saveSettings(); const y = window.scrollY; render(); window.scrollTo(0, y); return; }
+  const k = t && t.dataset && t.dataset.bk; if (!k || !ui.book) return;
   const B = ui.book, y = window.scrollY;
   if (k === 'propPick') { const c = customers.find(x => x.id === B.customerId), ps = c ? (c.properties || []).filter(Boolean) : []; if (t.value === '__new') { B.addrNew = true; B.address = ''; } else if (t.value !== '') { B.addrNew = false; B.address = ps[+t.value] || ''; } render(); window.scrollTo(0, y); }
   else B[k] = t.value;
