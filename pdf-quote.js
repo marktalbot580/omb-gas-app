@@ -98,7 +98,7 @@ async function buildQuotePdf(rec, s) {
     y += fh + 6; }
 
   /* ---------- the price lines ---------- */
-  { const need = 20 + 8 + R.reduce((a, r) => a + wrap(r.d, W - M - 70 - M - 12, 9, true).length * 4 * SC + 4, 0) + 34; ensure(need); }
+  { const need = 20 + 8 + R.reduce((a, r) => a + wrap(r.d, W - M - 70 - M - 12, 9, true).length * 4 * SC + 4, 0) + 30 + 6 * SC; if (need <= H - 18 - 25) ensure(need); else ensure(Math.min(need, 90)); }
   heading('YOUR QUOTATION', 'Your investment');
   { const xq = W - M - 70, xp = W - M - 36, xt = W - M;
     label('ITEM', M, y); label('QTY', xq, y); label('PRICE', xt - 27, y, null, 'right'); label('TOTAL', xt, y, null, 'right'); doc.setDrawColor(...GOLD); doc.setLineWidth(0.5); doc.line(M, y + 2, W - M, y + 2); y += 8;
@@ -220,7 +220,10 @@ async function buildGeneralQuotePdf1(rec, s, extra, info) {
   if (inc.length) { heading('THE WORK', 'What is included'); inc.forEach(l => { const h = wrap(l, CW - 8, 9).length * 9 * SC * 0.43 + 2.4; ensure(h); doc.setFillColor(...GOLD); doc.rect(M, y - 2.4, 2.4, 2.4, 'F'); para(l, M + 6, y, CW - 8, 9, { c: INK }); y += h; }); y += 5; }
 
   /* priced lines */
-  { const need = 28 + R.reduce((a, r) => a + wrap(r.d, W - M - 70 - M - 12, 9, true).length * 4 * SC + 4, 0) + 30; ensure(Math.min(need, 90)); }
+  { /* the price table and totals stay together on one page when they can: if they would be split, they all move to the next page */
+    const need = 28 + R.reduce((a, r) => a + wrap(r.d, W - M - 70 - M - 12, 9, true).length * 4 * SC + 4, 0) + 30 + 6 * SC;
+    if (need <= H - 18 - 25) { if (y + (extra ? extra : 0) + need > H - 18) { if (doc.getNumberOfPages() === 1 && info.left === undefined) info.left = H - 18 - y; newPage(); } }
+    else ensure(Math.min(need, 90)); }
   heading('YOUR QUOTATION', 'The price');
   { const xq = W - M - 70, xp = W - M - 36, xt = W - M;
     label('ITEM', M, y); label('QTY', xq, y); label('PRICE', xt - 27, y, null, 'right'); label('TOTAL', xt, y, null, 'right'); doc.setDrawColor(...GOLD); doc.setLineWidth(0.5); doc.line(M, y + 2, W - M, y + 2); y += 8;
