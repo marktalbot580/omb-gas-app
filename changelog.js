@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v120', items: ['When you go back into a finished record, the button now says Open documents instead of Create documents, because they have already been made. New records still say Create documents.'] },
   { v: 'v119', items: ['The Serial number boxes now have a Copy button too, next to the Gas Council number one.'] },
   { v: 'v118', items: ['Gas Council (GC) number boxes now have a Copy button beside them, so you can paste the number straight into another app to look up the readings.'] },
   { v: 'v117', items: ['Emailing from a PC or Mac: after the PDF is saved, a box now walks you through opening the email and attaching it from your Downloads folder, with a note on setting your default email program. On phones it works as before.'] },

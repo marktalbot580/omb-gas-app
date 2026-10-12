@@ -779,7 +779,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v119';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v120';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1458,8 +1458,8 @@ function stepReview() {
       ${issues.map(x => `<button class="issue" data-act="goIssue" data-id="${x.rec.id}" data-step="${x.step}" data-app="${x.app ?? ''}">${multi ? esc(FORM_SHORT[typeOf(x.rec)]) + ': ' : ''}${esc(x.label)}</button>`).join('')}</div>` : ''}
     ${w.map(x => `<div class="notice">${esc(x)}</div>`).join('')}
     ${m.map(r => `<div class="card">${multi ? `<div class="t" style="font-weight:700;color:var(--gold2);margin-bottom:8px">${esc(FORM_NAME[typeOf(r)])}</div>` : ''}<dl class="kv">${recSummary(r)}</dl></div>`).join('')}
-    ${made ? sendCard(m) : `<button class="btn gold block" data-act="makePdf" ${issues.length || needWarn.length ? 'disabled' : ''}>Create documents</button>
-      <p class="small muted">Makes the signed PDF${multi ? 's' : ''}${billable(m).length ? ' and the invoice' : ''}, ready to send.</p>`}
+    ${made ? sendCard(m) : `<button class="btn gold block" data-act="makePdf" ${issues.length || needWarn.length ? 'disabled' : ''}>${ui.rec.status === 'draft' ? 'Create documents' : 'Open documents'}</button>
+      <p class="small muted">${ui.rec.status === 'draft' ? `Makes the signed PDF${multi ? 's' : ''}${billable(m).length ? ' and the invoice' : ''}, ready to send.` : `Your finished document${multi ? 's are' : ' is'} already saved. This opens ${multi ? 'them' : 'it'} ready to view and send.`}</p>`}
     <div style="height:14px"></div>
     <button class="btn block" data-act="done">Done – back to records</button>
     <details class="adv"><summary>More options</summary>
