@@ -800,7 +800,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v150';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v151';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1664,6 +1664,12 @@ function qSeed() {
     settings.qStarterV = 2; saveSettings();
   }
   if (settings.qStarterV !== 2) { settings.qStarterV = 2; saveSettings(); }
+  /* one-off: every price list gets an Hourly rate and a Day rate under Labour (prices left blank; deleting them is respected afterwards) */
+  if (!settings.qRates) {
+    settings.qRates = 1;
+    [['Day rate', 'day'], ['Hourly rate', 'hour']].forEach(([n, u]) => { if (!settings.qList.some(x => x.type === 'Labour' && x.name.toLowerCase() === n.toLowerCase())) settings.qList.unshift({ id: QUO.newId(), type: 'Labour', make: '', name: n, kind: '', kw: '', warranty: '', unit: u, cost: '', markup: '', price: '' }); });
+    saveSettings();
+  }
   const old = QUO.parseItems(settings.qItemsText);
   if (old.length) { old.forEach(o => { if (!settings.qList.some(x => x.name.toLowerCase() === o.name.toLowerCase())) settings.qList.push({ id: QUO.newId(), type: 'Other', make: '', name: o.name, kind: '', kw: '', warranty: '', unit: '', cost: '', markup: '', price: String(o.price || '') }); }); settings.qItemsText = ''; saveSettings(); }
   let ch = false; settings.qList.forEach(x => { if (!x.id) { x.id = QUO.newId(); ch = true; } }); if (ch) saveSettings();

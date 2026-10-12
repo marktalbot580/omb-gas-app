@@ -450,7 +450,7 @@ def run():
 
         # ---------- 12n. labour by the hour or day ----------
         ctx, pg, errs = fresh(b)
-        ev(pg, "settings.qList=[{id:'lb1',type:'Labour',make:'',name:'Hourly rate',kind:'',kw:'',cost:'',markup:'',price:'45',unit:'hour'}]; saveSettings(); ui.pCat='Labour'; ui.pEdit='lb1'; ui.view='prices'; render()")
+        ev(pg, "settings.qList=[{id:'lb1',type:'Labour',make:'',name:'Hourly rate',kind:'',kw:'',cost:'',markup:'',price:'45',unit:'hour'}]; settings.qRates=1; saveSettings(); ui.pCat='Labour'; ui.pEdit='lb1'; ui.view='prices'; render()")
         f = ev(pg, "[!!document.querySelector('[data-pi=make]'), !!document.querySelector('[data-pi=unit]'), document.querySelector('#view').innerText.includes('Rate name')]")
         check('labour price list item has no make or model, just a name and charged per', f == [False, True, True], f)
         ev(pg, "ui.pick={types:{gquote:true},customer:null}; startJob(); ui.step=2; render(); qPick('labour', 0)")
@@ -484,6 +484,15 @@ def run():
         ev(pg, "settings.calView=''; ui.view='home'; render(); document.querySelector('.tabs [data-act=calOpen]').click()"); pg.wait_for_timeout(300)
         check('calendar opens on the view chosen in settings (week, month, default today)', w == ['cal', 'week', 7] and mth == ['month', True] and ev(pg, "ui.calMode") == 'today', [w, mth])
         check('no page errors in calendar default view', not errs, errs)
+        ctx.close()
+
+        # ---------- 12q. hourly and day rates in an existing labour price list ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "settings.qList=[{id:'x1',type:'Labour',make:'',name:'Installation labour: Combi swap',kind:'',kw:'',cost:'',markup:'',price:'600'}]; delete settings.qRates; saveSettings(); qSeed()")
+        L = ev(pg, "settings.qList.filter(x=>x.type==='Labour').map(x=>x.name+':'+x.unit)")
+        ev(pg, "settings.qList=settings.qList.filter(x=>x.name!=='Day rate'); saveSettings(); qSeed()")
+        check('existing price lists get an Hourly rate and a Day rate once, and deleting one sticks', L[:2] == ['Hourly rate:hour', 'Day rate:day'] and len(L) == 3 and ev(pg, "settings.qList.filter(x=>x.name==='Day rate').length") == 0, L)
+        check('no page errors adding labour rates', not errs, errs)
         ctx.close()
 
         # ---------- 13. offline (service worker) ----------
