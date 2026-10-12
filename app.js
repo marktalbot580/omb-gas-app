@@ -790,7 +790,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v140';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v141';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1027,6 +1027,12 @@ function renderSettings(v) {
       <label class="f"><span>Show the calendar on the home screen</span><select data-s="calHome"><option value="on" ${settings.calHome === 'off' ? '' : 'selected'}>Yes</option><option value="off" ${settings.calHome === 'off' ? 'selected' : ''}>No</option></select><small>Shows today’s appointments and the month under your record buttons.</small></label>
       <label class="f"><span>Usual appointment length</span><select data-s="calMins">${[['30', '30 minutes'], ['60', '1 hour'], ['90', '1½ hours'], ['120', '2 hours'], ['180', '3 hours']].map(([m, l]) => `<option value="${m}" ${String(settings.calMins || '60') === m ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <button class="btn block" data-act="calOpen">Open the calendar</button>
+    </div>
+    <h2>On my way text</h2>
+    <div class="card">
+      <label class="f"><span>Show the “I’m on my way” button on appointments</span><select data-s="calOtwOn"><option value="on" ${settings.calOtwOn === 'off' ? '' : 'selected'}>Yes</option><option value="off" ${settings.calOtwOn === 'off' ? 'selected' : ''}>No</option></select></label>
+      <label class="f"><span>Message wording</span><textarea data-s="calOtw" rows="4">${esc(settings.calOtw || OTW_DEFAULT)}</textarea><small>Opens a text to the customer, ready to send. {name} {time} {address} {business} are filled in for you.</small></label>
+      <button class="btn block ghost" data-act="calOtwReset">Put the original wording back</button>
     </div>
     <h2>Other jobs</h2>
     <div class="card">
@@ -3165,6 +3171,12 @@ async function restoreBackup(file) {
 /* ---------- calendar: appointments kept on this phone ---------- */
 const BK_TYPES = [['gas', 'Gas safety check'], ['service', 'Boiler service'], ['legionella', 'Legionella risk assessment'], ['aircon', 'Air conditioning'], ['quote', 'Boiler quote'], ['other', 'Other job']];
 const calOn = () => settings.calOn !== 'off';
+/* the "on my way" text: {name} {time} {address} {business} are filled in (wording editable in Settings → Calendar) */
+const OTW_DEFAULT = 'Hi {name}, just to let you know I am on my way for your {time} appointment. See you shortly.\n{business}';
+function otwText(b) {
+  const first = String(b.name || '').trim().split(/\s+/)[0] || 'there', map = { name: first, time: b.time || '', address: String(b.address || '').replace(/\s*\n+\s*/g, ', '), business: settings.businessName || '' };
+  return String(settings.calOtw || OTW_DEFAULT).replace(/\{(\w+)\}/g, (m, k) => (k in map ? map[k] : m)).replace(/\n{3,}/g, '\n\n').trim();
+}
 const calJobs = () => (Array.isArray(settings.calJobs) ? settings.calJobs : ['Bathroom install', 'Radiator install']);
 const bkLabel = b => (b.types || []).map(t => t === 'other' ? (String(b.other || '').trim() || 'Other job') : (BK_TYPES.find(x => x[0] === t) || [0, t])[1]).join(' + ') || 'Appointment';
 const localISO = d => { d = d || new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
@@ -3244,7 +3256,8 @@ function renderBook(v) {
     </div>
     <h2>Notes</h2><div class="card">${f('notes', 'Anything to remember', { area: 1 })}</div>
     <button class="btn gold block" data-act="bookSave">${isNew ? 'Add to calendar' : 'Save changes'}</button>
-    ${isNew ? '' : `<div style="height:10px"></div><button class="btn block" data-act="bookStart">Start the forms for this job</button>
+    ${isNew ? '' : `${settings.calOtwOn === 'off' ? '' : '<div style="height:10px"></div><button class="btn block" data-act="bookOtw">Text: I’m on my way</button>'}
+      <div style="height:10px"></div><button class="btn block" data-act="bookStart">Start the forms for this job</button>
       <div style="height:10px"></div><button class="btn block" data-act="bookDone">${B.status === 'done' ? 'Mark as not done' : 'Mark as done'}</button>
       <div style="height:10px"></div><button class="btn block" data-act="bookIcs">Add to my phone’s calendar</button>
       <div style="height:10px"></div><button class="btn block ghost" data-act="bookDel">Delete appointment</button>`}
@@ -3307,6 +3320,15 @@ async function calAct(a, b) {
     case 'bookNew': ui.book = newBook({ base: { date: b.dataset.d || localISO() } }); ui.bookFrom = ui.view === 'home' ? 'home' : 'cal'; ui.view = 'book'; render(); return true;
     case 'bookFromPick': { const pk = ui.pick; ui.book = newBook({ customer: pk.customer, base: { types: Object.keys(pk.types).filter(k => pk.types[k]) } }); ui.bookFrom = 'pick'; ui.view = 'book'; render(); return true; }
     case 'bookPickCust': { const c = customers.find(x => x.id === b.dataset.id); if (c) { bkFill(ui.book, c); render(); } return true; }
+    case 'bookOtw': {
+      const B = ui.book, ph = String(B.phone || '').replace(/[^\d+]/g, '');
+      if (ph.replace(/\D/g, '').length < 10) { toast('Add a mobile number for this customer first'); return true; }
+      const body = otwText(B);
+      if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) { const el = document.createElement('a'); el.href = 'sms:' + ph + '?&body=' + encodeURIComponent(body); document.body.appendChild(el); el.click(); el.remove(); }
+      else { try { await navigator.clipboard.writeText(body); toast('Message copied. Paste it into a text to ' + B.phone); } catch (e) { toast('Texts open on a phone. Use this on your phone to send it.'); } }
+      return true;
+    }
+    case 'calOtwReset': settings.calOtw = ''; saveSettings(); { const y = window.scrollY; render(); window.scrollTo(0, y); } return true;
     case 'bookOther': { ui.book.other = calJobs()[+b.dataset.i] || ''; const y = window.scrollY; render(); window.scrollTo(0, y); return true; }
     case 'calJobAdd': { const el = document.getElementById('calJobNew'), v = el ? el.value.trim() : ''; if (!v) { toast('Type the job first'); return true; } const l = [...calJobs()]; if (!l.some(x => x.toLowerCase() === v.toLowerCase())) l.push(v); settings.calJobs = l; saveSettings(); const y = window.scrollY; render(); window.scrollTo(0, y); return true; }
     case 'calJobRm': { settings.calJobs = calJobs().filter((_, i) => i !== +b.dataset.i); saveSettings(); const y = window.scrollY; render(); window.scrollTo(0, y); return true; }

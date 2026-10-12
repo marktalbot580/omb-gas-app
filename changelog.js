@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v141', items: ['Calendar: open an appointment and tap Text: I’m on my way. Your texting app opens with a message to the customer ready to send (on a computer the message is copied instead). Change the wording, or hide the button, in Settings → Calendar.'] },
   { v: 'v140', items: ['Settings → Calendar → Use the calendar: switch the whole calendar on or off. Off removes the calendar, the Schedule in button and the appointment lists, and keeps any appointments you have saved. The separate Show the calendar on the home screen switch is still there for when you want the calendar but not on the front page.'] },
   { v: 'v139', items: ['Calendar: on a booking, the customer is now a search box. Start typing a name, phone number or email and your saved customers come up to tap; or just type the details of someone new.'] },
   { v: 'v138', items: ['The Help guide is brought up to date: new topics on the calendar, boiler quotes, the price list, overdue invoice reminders and Tools, and the existing topics now point to the right Settings tabs.'] },
