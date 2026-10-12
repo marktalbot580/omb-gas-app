@@ -409,6 +409,17 @@ def run():
         check('no page errors keeping position', not errs, errs)
         ctx.close()
 
+        # ---------- 12k. quote for any job: start from a previous job ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "ui.pick={types:{gquote:true},customer:null}; startJob(); ui.rec.title='Bathroom installation'; ui.rec.scope='Strip out\\nFit suite'; ui.rec.status='complete'; persistRec(ui.rec); ui.pick={types:{gquote:true},customer:null}; startJob(); ui.step=1; render()")
+        n = ev(pg, "document.querySelectorAll('[data-qprev] option').length")
+        pg.select_option('[data-qprev]', index=1)
+        pg.wait_for_timeout(200)
+        r = ev(pg, "[ui.rec.title, ui.rec.scope]")
+        check('previous job list brings in the title and what is included', n == 2 and r == ['Bathroom installation', 'Strip out\nFit suite'], [n, r])
+        check('no page errors in previous job list', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()

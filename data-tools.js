@@ -135,6 +135,11 @@ async function dataAct(a, b) {
   }
   return false;
 }
+document.addEventListener('change', e => {
+  const t = e.target; if (!t || !t.dataset || !t.dataset.qprev || !ui.rec || !t.value) return;
+  const p = records.find(x => x.id === t.value); if (!p) return;
+  ui.rec.title = p.title; ui.rec.scope = p.scope || ''; persistRec(ui.rec); ui.pdfs = {}; render(); toast('Brought in ' + p.title);
+});
 document.addEventListener('input', e => {
   const t = e.target; if (!t || t.id !== 'invPlQ' || !ui.invPl) return;
   ui.invPl.q = t.value; const el = document.getElementById('invPlRes'); if (el) el.innerHTML = plResults(t.value);

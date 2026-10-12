@@ -1600,8 +1600,17 @@ function tapField(key, label) {
 /* ---------- Boiler commissioning checklist steps ---------- */
 const tick = (path, label) => `<button type="button" class="item tog ${getP(ui.rec, path) === 'Yes' ? 'on' : ''}" data-k="${path}" data-v="${getP(ui.rec, path) === 'Yes' ? '' : 'Yes'}"><span class="box"></span><span><span class="t">${label}</span></span></button>`;
 /* ---------- quote for any job ---------- */
+/* earlier quotes for other work, newest first, one per job title: lets a repeat job bring its title and what is included */
+function quoPrevJobs() {
+  const seen = new Set();
+  return records.filter(x => x.type === 'quote' && x.general && String(x.title || '').trim() && x.id !== ui.rec.id)
+    .sort((a, b) => String(b.inspectionDate).localeCompare(String(a.inspectionDate)) || (b.updated || 0) - (a.updated || 0))
+    .filter(x => { const k = x.title.trim().toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
+}
 function quoJob() {
+  const prev = quoPrevJobs();
   return `<div class="card">
+    ${prev.length ? `<label class="f"><span>Start from a previous job</span><select data-qprev="1"><option value="">Choose a job you have quoted before</option>${prev.map(x => `<option value="${x.id}">${esc(x.title)}</option>`).join('')}</select><small>Brings in the job title and what is included. You can change them.</small></label>` : ''}
     ${txt('title', 'What is the job?', { req: 1, ph: 'For example: Bathroom installation' })}
     ${txt('scope', 'What is included (one point per line)', { area: 1, rows: 6, ph: 'Strip out the old suite\nSupply and fit the new bath, toilet and basin\nTiling and making good' })}
   </div>`;
