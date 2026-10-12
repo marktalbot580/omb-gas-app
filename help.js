@@ -111,7 +111,7 @@ const HELP = [
 <p><b>Settings → Calendar:</b> switch the whole calendar <b>On</b> or <b>Off</b> (off removes it from the app and keeps your saved appointments), show or hide it on the home screen, set your usual appointment length, change the wording of the on my way text, add or remove your <b>Other jobs</b> list (bathroom install, radiator install and so on), and export every appointment as an <b>.ics</b> file (Google, Apple or Outlook calendar) or a spreadsheet.</p>
 <p>Appointments sync between every device you are signed in on. If one is missing, open the calendar and tap <b>Sync now</b>.</p>
 <p><b>Today, Week and Month:</b> use the buttons at the top of the calendar. The week view lists each day with an <b>+ Add</b> button. To move an appointment, open it and change the date or time, then <b>Save changes</b>.</p>
-<p><b>Remind customers:</b> tomorrow’s appointments show under <b>Tomorrow: remind customers</b> with <b>Text</b> and <b>Email</b> buttons. Your messaging app opens with the message ready and you tap send. Change the wording or switch it off in Settings → Calendar.</p>
+<p><b>Remind customers:</b> tomorrow’s appointments show under <b>Tomorrow: remind customers</b> with <b>Text</b> and <b>Email</b> buttons. Your messaging app opens with the message ready and you tap send. Tap <b>Text next customer</b> to open each customer’s message in turn: send it, come back, and tap again. Change the wording or switch it off in Settings → Calendar.</p>
 <p><b>Annual checks:</b> on each due check, <b>Book it in</b> opens a booking for that customer, address and job. Saving it marks the check as booked in.</p>` },
 
   { t: 'Invoices', k: 'invoice create new bill price line item vat discount sent paid due no invoice needed overdue reminder',

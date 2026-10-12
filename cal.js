@@ -19,10 +19,12 @@ function remindText(b) {
   const first = String(b.name || '').trim().split(/\s+/)[0] || 'there', map = { name: first, time: b.time || '', job: bkLabel(b).toLowerCase(), address: String(b.address || '').replace(/\s*\n+\s*/g, ', '), business: settings.businessName || '' };
   return String(settings.calRemText || CALREM_DEFAULT).replace(/\{(\w+)\}/g, (m, k) => (k in map ? map[k] : m)).replace(/\n{3,}/g, '\n\n').trim();
 }
+const remPending = () => bkOn(addDays(localISO(), 1)).filter(b => b.status !== 'done' && !b.remindedAt && isMobileNo(b.phone));
 function tomorrowHtml() {
   if (settings.calRemOn === 'off') return '';
   const list = bkOn(addDays(localISO(), 1)).filter(b => b.status !== 'done'); if (!list.length) return '';
-  return `<h2>Tomorrow: remind customers</h2>` + list.map(b => {
+  const left = remPending().length;
+  return `<h2>Tomorrow: remind customers</h2>` + (left ? `<button class="btn gold block" data-act="calRemAll" style="margin-bottom:10px">Text next customer (${left} left)</button>` : '') + list.map(b => {
     const body = encodeURIComponent(remindText(b)), sms = isMobileNo(b.phone), ph = String(b.phone || '').replace(/[^\d+]/g, '');
     const ways = [sms ? `<a class="btn" data-act="calRemSent" data-id="${b.id}" href="sms:${ph}?&body=${body}">Text</a>` : '', b.email ? `<a class="btn" data-act="calRemSent" data-id="${b.id}" href="mailto:${encodeURIComponent(b.email)}?subject=${encodeURIComponent((settings.businessName || 'Appointment') + ': your appointment tomorrow')}&body=${body}">Email</a>` : ''].join('');
     return `<div class="card remc"><div class="row sp"><span class="t">${esc(b.time)} · ${esc(b.name || 'No name')}</span>${b.remindedAt ? '<span class="badge complete">reminded</span>' : ''}</div><div class="s">${esc(bkLabel(b))}</div>
@@ -195,6 +197,14 @@ async function calAct(a, b) {
       return true;
     }
     case 'calRemSent': { const id = b.dataset.id; setTimeout(() => { const x = bookings.find(z => z.id === id); if (x) { x.remindedAt = Date.now(); x.updated = Date.now(); saveBookings(); syncAll(); const y = window.scrollY; render(); window.scrollTo(0, y); } }, 600); return true; }
+    case 'calRemAll': {
+      const x = remPending()[0]; if (!x) { toast('Everyone with a mobile number has been reminded'); return true; }
+      x.remindedAt = Date.now(); x.updated = Date.now(); saveBookings(); syncAll();
+      const body = remindText(x), y = window.scrollY;
+      if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) { const el = document.createElement('a'); el.href = 'sms:' + String(x.phone).replace(/[^\d+]/g, '') + '?&body=' + encodeURIComponent(body); document.body.appendChild(el); el.click(); el.remove(); }
+      else { try { await navigator.clipboard.writeText(body); toast('Message for ' + (x.name || 'customer') + ' copied. Paste it into a text to ' + x.phone); } catch (e) { toast('Texts open on a phone. Use this on your phone.'); } }
+      render(); window.scrollTo(0, y); return true;
+    }
     case 'calRemReset': settings.calRemText = ''; saveSettings(); { const y = window.scrollY; render(); window.scrollTo(0, y); } return true;
     case 'calOtwReset': settings.calOtw = ''; saveSettings(); { const y = window.scrollY; render(); window.scrollTo(0, y); } return true;
     case 'bookOther': { ui.book.other = calJobs()[+b.dataset.i] || ''; const y = window.scrollY; render(); window.scrollTo(0, y); return true; }
