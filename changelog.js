@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v154', items: ['Import customers from a spreadsheet has moved to Settings → App → Backup, next to Export customers. It is no longer at the bottom of the Customers list.'] },
   { v: 'v153', items: ['Quote for any job: Start from a previous job now also brings in the items, labour and prices from that quote, so a repeat job needs little typing. Change anything you like.', 'Settings is now the cog at the top right, next to the Help button, which frees up space on the bottom bar. The cog lights up while you are in Settings.'] },
   { v: 'v152', items: ['Customer names now get a capital letter on each word automatically (jane smith becomes Jane Smith), when you type them, import them or book an appointment. Names already saved are tidied once. Names that already have capitals, such as McDonald, are left alone.'] },
   { v: 'v151', items: ['Price list → Labour: an Hourly rate and a Day rate are now there for you. Open them, type your rate, and use them on quotes by entering how many hours or days. Add as many more rates as you like.'] },

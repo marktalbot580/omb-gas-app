@@ -707,7 +707,6 @@ function renderCustomers(v) {
     <input class="search" id="custSearch" placeholder="Search name, phone, address, invoice or cert no." value="${esc(ui.search)}">
     <div class="seg custsort" style="margin-bottom:12px">${[['az', 'A–Z'], ['used', 'Most used'], ['fav', '♥ Favourites']].map(([k, l]) => `<button type="button" data-act="custSort" data-s="${k}" class="${custSort() === k ? 'on' : ''}">${l}</button>`).join('')}</div>
     <div id="custList"></div>
-    <button class="btn block ghost" data-act="impOpen" style="margin-top:14px">Import customers from a spreadsheet</button>
     <button class="btn gold fab" data-act="newCust">+ Customer</button>`;
   paintCustList();
 }
@@ -801,7 +800,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v153';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v154';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1093,6 +1092,8 @@ function renderSettings(v) {
       <p class="small" style="margin:0 0 10px">Last full backup: <b>${bkGet().last ? ukDate(bkGet().last) : 'none yet'}</b></p>
       ${(() => { if (OMBSTORE.has('omb_records')) return `<p class="small" style="margin:0 0 10px">Your records are kept in this device’s database: <b>${(OMBSTORE.bytes() / 1048576).toFixed(1)} MB</b> so far. There is room for many thousands of jobs.</p>`; const u = storageUsed(); return `<p class="small" style="margin:0 0 10px">Space used on this device: <b style="${u >= 70 ? 'color:var(--warn)' : ''}">${u}%</b>${u >= 70 ? '. It is getting full. Back up now, then tell support at support@ombgas.com so we can help before it fills.' : ''}</p>`; })()}
       <button class="btn block" data-act="expCust">Export customers (spreadsheet)</button>
+      <div style="height:8px"></div>
+      <button class="btn block" data-act="impOpen">Import customers from a spreadsheet</button>
       <div style="height:8px"></div>
       <button class="btn block" data-act="expInv">Export invoices (spreadsheet)</button>
       <div style="height:8px"></div>

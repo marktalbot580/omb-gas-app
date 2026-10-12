@@ -85,7 +85,7 @@ function renderImport(v) {
       ${I.blank ? `<div class="row sp"><span>Rows with no name (skipped)</span><b>${I.blank}</b></div>` : ''}
       ${I.fresh.length ? `<p class="small muted">For example: ${I.fresh.slice(0, 3).map(c => esc(c.name)).join(', ')}${I.fresh.length > 3 ? '…' : ''}</p>` : '<p class="small muted">Nothing new to add. Check the file has a column called name (or first name and last name).</p>'}
       ${I.fresh.length ? `<button class="btn gold block" data-act="impGo">Add ${I.fresh.length} customer${I.fresh.length === 1 ? '' : 's'}</button>` : ''}</div>` : ''}
-    <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back to customers</button>`;
+    <div style="height:10px"></div><button class="btn ghost block" data-nav="settings">Back to settings</button>`;
 }
 
 /* ---------- yearly summary ---------- */

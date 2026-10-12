@@ -299,6 +299,11 @@ def run():
         check('yearly summary adds up invoices, VAT and paid', S[0] == 2 and S[1] == 200 and S[2] == 20 and S[3] == 220 and S[4] == 120 and S[5], S)
         c = ev(pg, "sumCsv(ui.sumYear)")
         check('accounts export has a header and one row per invoice', c.count('\r\n') == 2 and 'Invoice date' in c and '100.00' in c and '"Zed"' in c, c[:120])
+        ev(pg, "ui.view='settings'; ui.sTab='app'; render()")
+        pg.click('[data-act=impOpen]'); pg.wait_for_timeout(200)
+        check('customer import is opened from Settings > App', ev(pg, "ui.view")=='import')
+        ev(pg, "ui.view='customers'; render()")
+        check('customer list no longer has the import button', not ev(pg, "!!document.querySelector('#view [data-act=impOpen]')"))
         check('no page errors in import/summary', not errs, errs)
         ctx.close()
 
