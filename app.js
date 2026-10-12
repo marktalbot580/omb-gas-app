@@ -780,7 +780,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v126';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v127';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -2149,6 +2149,8 @@ function renderInvEdit(v) {
   v.innerHTML = `
     <div class="row sp"><h1 style="margin-bottom:6px">${esc(i.number)}</h1><span class="badge ${invStatus(i)}">${invStatus(i)}</span></div>
     <button type="button" class="btn block" data-act="invOpenNow" style="margin:6px 0 12px">View invoice (PDF)</button>
+    <button type="button" class="item tog ${i.paid ? 'on' : ''}" data-act="invPaid"><span class="box"></span><span><span class="t">Paid</span><span class="s" style="display:block">${i.paid ? 'Paid on ' + ukDate(i.paidDate) + ' – a PAID stamp is shown on the invoice' : 'Tick once paid – a PAID stamp is then shown on the invoice'}</span></span></button>
+    ${methodSeg(i)}
     ${numOf(i.vatRate) > 0 && !String(i.vatNumber || '').trim() ? `<div class="notice">No VAT number on this invoice. Add it in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a> or type it in the VAT box below.</div>` : ''}
     ${blankPrice ? `<div class="notice">A line has no price. Type it below, or set standard prices in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a>.</div>` : ''}
     <h2>Customer</h2>
@@ -2183,8 +2185,6 @@ function renderInvEdit(v) {
       ${inf('notes', 'Note on the invoice (optional)', { area: 1, rows: 3 })}
     </div>
     <div class="card" id="invTotals">${invTotalsHtml(i)}</div>
-    <button type="button" class="item tog ${i.paid ? 'on' : ''}" data-act="invPaid"><span class="box"></span><span><span class="t">Paid</span><span class="s" style="display:block">${i.paid ? 'Paid on ' + ukDate(i.paidDate) + ' – a PAID stamp is shown on the invoice' : 'Tick once paid – a PAID stamp is then shown on the invoice'}</span></span></button>
-    ${methodSeg(i)}
     <div style="height:14px"></div>
     <div id="invPdfBox">${invPdfHtml()}</div>
     <div style="height:14px"></div>
