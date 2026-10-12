@@ -3,6 +3,7 @@
 'use strict';
 const QUO = (() => {
   const STEPS = ['Customer', 'Boiler & flue', 'Extras & labour', 'Review'];
+  const STEPS_GEN = ['Customer', 'The job', 'Items & labour', 'Review'];
   const KIND = ['Combination', 'System', 'Heat only'];
   const WARRANTY = ['5 years', '7 years', '10 years', '12 years'];
   const DEFAULT_INCLUDED = [
@@ -118,6 +119,7 @@ const QUO = (() => {
     const out = [];
     const need = (step, path, label) => { if (!String(getP(rec, path) ?? '').trim()) out.push({ step, path, label }); };
     need(0, 'customer.name', 'Customer name'); need(0, 'jobAddress', 'Job address');
+    if (rec.general) { need(1, 'title', 'What the job is'); if (!rows(rec).length) out.push({ step: 2, path: 'labourPrice', label: 'At least one priced item' }); return out; }
     need(1, 'kind', 'Boiler type'); need(1, 'make', 'Boiler make'); if (rec.make === 'Other') need(1, 'makeOther', 'Boiler make (other)');
     need(1, 'model', 'Boiler model');
     if (num(rec.boilerPrice) === null) out.push({ step: 1, path: 'boilerPrice', label: 'Boiler price' });
@@ -131,5 +133,5 @@ const QUO = (() => {
     if (s.vatReg === 'Yes' && !n0(s.vatRate)) w.push('VAT registered is on but no VAT rate is set in Settings.');
     return w;
   }
-  return { SHEET_HEAD, STARTER, TYPES, MAIN, newId, markupOf, saleOf, saleText, itemsFromRows, rowsFromItems, itemsOf, label, costOf, STEPS, KIND, WARRANTY, DEFAULT_INCLUDED, DEFAULT_TERMS, num, blank, makeText, rows, totals, money, parseItems, validate, warnings };
+  return { STEPS_GEN, SHEET_HEAD, STARTER, TYPES, MAIN, newId, markupOf, saleOf, saleText, itemsFromRows, rowsFromItems, itemsOf, label, costOf, STEPS, KIND, WARRANTY, DEFAULT_INCLUDED, DEFAULT_TERMS, num, blank, makeText, rows, totals, money, parseItems, validate, warnings };
 })();

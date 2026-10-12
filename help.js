@@ -63,8 +63,9 @@ const HELP = [
 <p>Each form in a visit gets its own PDF. Completed records are listed under the customer. Open one and the button says <b>Open documents</b>, because they are already made. Tap <b>Edit</b> next to <b>Open</b> to go back in and change a finished record, then make the PDF again.</p>
 <p><b>On a computer:</b> sharing saves the PDF and shows a short box of steps: open your email (it opens in a new tab), then drag the PDF in from your Downloads folder. Set your default email program in your computer’s settings if the wrong one opens.</p>` },
 
-  { t: 'Boiler quotes', k: 'quote quotation boiler proposal chase accepted declined price extras labour warranty',
-    h: `<p>Tap <b>+ New Boiler Quote</b> on the home screen, pick the customer, then work through the steps: the boiler and flue, extras and labour. The app works out the VAT and makes a three-page proposal PDF with your logo, the price up front, what is included, what happens next and a place for the customer to sign.</p>
+  { t: 'Boiler quotes', k: 'quote quotation any job bathroom radiator boiler proposal chase accepted declined price extras labour warranty',
+    h: `<p><b>Quotes for other work:</b> tap <b>+ New Quote (any job)</b> for a bathroom, radiators, repairs or anything else. Give the job a title and what is included, then add items from your price list or your own items, and labour. You get a quotation PDF with your logo, and the Accepted / Declined and chase reminders work the same way. You can hide this button in Settings.</p>
+<p>For a boiler, tap <b>+ New Boiler Quote</b> on the home screen, pick the customer, then work through the steps: the boiler and flue, extras and labour. The app works out the VAT and makes a three-page proposal PDF with your logo, the price up front, what is included, what happens next and a place for the customer to sign.</p>
 <ul><li>Pick boilers and extras from your <b>Price list</b>. The manufacturer warranty fills in from the boiler you pick.</li>
 <li>Type an item and price that is not on the list and tick <b>Commit to price list</b> to save it for next time.</li>
 <li>Choose <b>Normal</b> or <b>Large</b> text at the bottom of the extras step for older customers.</li></ul>
@@ -81,7 +82,7 @@ const HELP = [
 
   { t: 'Annual check reminders', k: 'reminder due annual renewal gas safety service text whatsapp email overdue booked chase landlord',
     h: `<p>Gas safety checks, boiler services and Legionella assessments are all tracked yearly. The app keeps track for you.</p>
-<ol><li>On the <b>Records</b> screen tap <b>Annual checks due</b>. The number shows how many are coming up.</li>
+<ol><li>Tap <b>Calendar</b> on the bottom bar, then <b>Due</b>. The number shows how many are coming up. (If you have switched the calendar off, it is the <b>Annual checks due</b> button on the Records screen.)</li>
 <li>Each customer shows when their check is due (or how many days overdue).</li>
 <li>Tap <b>Text</b>, <b>WhatsApp</b> or <b>Email</b>. Your phone opens a message that is already written, using their number or email. Check it, then press send. Nothing is ever sent without you.</li>
 <li>When they reply, tap <b>Booked in</b> or <b>Not needed</b> to take them off the list. Tap <b>Stop for this property</b> if they should never be reminded.</li></ol>
@@ -112,7 +113,7 @@ const HELP = [
 <p>Appointments sync between every device you are signed in on. If one is missing, open the calendar and tap <b>Sync now</b>.</p>
 <p><b>Today, Week and Month:</b> use the buttons at the top of the calendar. The week view lists each day with an <b>+ Add</b> button. To move an appointment, open it and change the date or time, then <b>Save changes</b>.</p>
 <p><b>Remind customers:</b> tomorrow’s appointments show under <b>Tomorrow: remind customers</b> with <b>Text</b> and <b>Email</b> buttons. Your messaging app opens with the message ready and you tap send. Tap <b>Text next customer</b> to open each customer’s message in turn: send it, come back, and tap again. Change the wording or switch it off in Settings → Calendar.</p>
-<p><b>Annual checks:</b> on each due check, <b>Book it in</b> opens a booking for that customer, address and job. Saving it marks the check as booked in.</p>` },
+<p><b>Annual checks:</b> the <b>Due</b> button next to Today, Week and Month lists them. On each due check, <b>Book it in</b> opens a booking for that customer, address and job. Saving it marks the check as booked in.</p>` },
 
   { t: 'Invoices', k: 'invoice create new bill price line item vat discount sent paid due no invoice needed overdue reminder',
     h: `<p>When a record is complete it shows <b>Requires invoice</b> until you deal with it.</p>

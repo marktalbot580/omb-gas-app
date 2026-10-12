@@ -55,6 +55,7 @@ function calGrid(sel, month) {
   return h + '</div>';
 }
 const calHead = month => `<div class="calhd"><button type="button" data-act="calMonth" data-n="-1" aria-label="Previous month">‹</button><b>${monthLong(month)}</b><button type="button" data-act="calMonth" data-n="1" aria-label="Next month">›</button></div>`;
+const calSeg = mode => `<div class="seg cals" style="margin-bottom:14px">${[['today', 'Today'], ['week', 'Week'], ['month', 'Month']].map(([k, l]) => `<button type="button" data-act="calMode" data-m="${k}" class="${mode === k ? 'on' : ''}">${l}</button>`).join('')}<button type="button" data-act="remOpen" class="${mode === 'due' ? 'on' : ''}">Due${remCount() ? ' (' + remCount() + ')' : ''}</button></div>`;
 function calHomeHtml() {
   if (!calOn() || settings.calHome === 'off') return '';
   const t = localISO(), td = bkOn(t), s = calState();
@@ -62,7 +63,8 @@ function calHomeHtml() {
     ${td.length ? td.map(b => bkItem(b)).join('') : '<div class="empty" style="padding:14px">Nothing booked in today.</div>'}
     <button class="btn block" data-act="bookNew" data-d="${t}">+ Schedule an appointment</button>
     <h2>Calendar</h2>${calHead(s.m)}${calGrid('', s.m)}
-    <button class="btn block ghost" data-act="calOpen">Open the full calendar</button>`;
+    <button class="btn block ghost" data-act="calOpen">Open the full calendar</button>
+    ${remCount() ? `<button class="btn block sec" data-act="remOpen" style="margin-top:10px">Annual checks due (${remCount()})</button>` : ''}`;
 }
 function renderCal(v) {
   const s = calState(), t = localISO(), mode = ui.calMode || 'today';
@@ -87,7 +89,7 @@ function renderCal(v) {
       <button class="btn gold block" data-act="bookNew" data-d="${s.d}">+ Appointment on this day</button>`;
   }
   v.innerHTML = `<h1>Calendar</h1>
-    <div class="seg" style="margin-bottom:14px">${[['today', 'Today'], ['week', 'Week'], ['month', 'Month']].map(([k, l]) => `<button type="button" data-act="calMode" data-m="${k}" class="${mode === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+    ${calSeg(mode)}
     ${body}
     <div style="height:10px"></div><button class="btn block" data-act="syncNow">Sync now</button>
     <div style="height:10px"></div><button class="btn ghost block" data-nav="home">Back to records</button>`;

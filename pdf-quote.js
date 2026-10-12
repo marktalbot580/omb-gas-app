@@ -3,6 +3,7 @@
 'use strict';
 
 async function buildQuotePdf(rec, s) {
+  if (rec.general) return buildGeneralQuotePdf(rec, s);
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const W = 210, H = 297, M = 16, CW = W - 2 * M;
@@ -156,5 +157,90 @@ async function buildQuotePdf(rec, s) {
     txt(rec.ref + '  ·  Page ' + p + ' of ' + pages, W - M, H - 6, { fs: 7, c: GREY, align: 'right', raw: 1 });
   }
   doc.setProperties({ title: 'Quotation ' + rec.ref, subject: rec.jobAddress, author: s.businessName || 'Your business' });
+  return doc.output('blob');
+}
+
+/* A quotation for any job (bathroom, radiators, repairs ...): title, what is included, the priced lines, terms. */
+async function buildGeneralQuotePdf(rec, s) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const W = 210, H = 297, M = 16, CW = W - 2 * M;
+  const GOLD = [201, 162, 75], DARK = [14, 16, 18], INK = [30, 32, 36], GREY = [110, 114, 120], LINE = [222, 224, 228], SOFT = [246, 244, 239];
+  const logo = await getLogo();
+  const ukd = iso => (iso ? iso.split('-').reverse().join('/') : '');
+  const T = QUO.totals(rec, s), R = QUO.rows(rec), money = QUO.money;
+  const first = String(rec.customer.name || '').trim().split(/\s+/)[0] || 'there';
+  const SC = rec.textSize === 'Large' ? 1.26 : 1.1;
+  let y = 0;
+  const txt = (t, x, yy, o = {}) => { doc.setFont('helvetica', o.b ? 'bold' : 'normal'); doc.setFontSize((o.fs || 9) * (o.raw ? 1 : SC)); doc.setTextColor(...(o.c || INK)); doc.text(String(t), x, yy, o.align ? { align: o.align } : undefined); };
+  const wrap = (t, w, fs, b) => { doc.setFont('helvetica', b ? 'bold' : 'normal'); doc.setFontSize(fs * SC); return String(t ?? '').split('\n').flatMap(l => doc.splitTextToSize(l || ' ', w)); };
+  const para = (t, x, yy, w, fs, o = {}) => { const lines = wrap(t, w, fs, o.b), lh = fs * SC * 0.43; lines.forEach((l, i) => txt(l, x, yy + i * lh, { ...o, fs })); return lines.length * lh; };
+  const label = (t, x, yy, c, align) => { doc.setCharSpace(0.6); txt(t, x, yy, { b: 1, fs: 6.8, c: c || GOLD, align, raw: 1 }); doc.setCharSpace(0); };
+  const ensure = h => { if (y + h > H - 18) newPage(); };
+  const heading = (small, big) => { ensure(24); label(small, M, y); txt(big, M, y + 8, { b: 1, fs: 16, c: DARK, raw: 1 }); doc.setFillColor(...GOLD); doc.rect(M, y + 11, 12, 0.9, 'F'); y += 19; };
+  function newPage() { doc.addPage(); doc.setFillColor(...DARK); doc.rect(0, 0, W, 11, 'F'); doc.setFillColor(...GOLD); doc.rect(0, 11, W, 0.7, 'F'); txt('QUOTATION', M, 7.2, { b: 1, fs: 7.5, c: [255, 255, 255], raw: 1 }); txt(rec.ref, W - M, 7.2, { fs: 7.5, c: GOLD, align: 'right', raw: 1 }); y = 24; }
+
+  /* header band */
+  const titleLines = wrap(rec.title || 'Quotation', CW - 6, 22, true).slice(0, 3), bh = 58 + (titleLines.length - 1) * 9 * SC;
+  doc.setFillColor(...DARK); doc.rect(0, 0, W, bh, 'F'); doc.setFillColor(...GOLD); doc.rect(0, bh, W, 1.2, 'F');
+  doc.setFillColor(255, 255, 255); doc.roundedRect(M, 12, 20, 20, 2, 2, 'F'); doc.addImage(logo, 'PNG', M + 1, 13, 18, 18);
+  txt(s.businessName || '', M + 25, 20, { b: 1, fs: 11, c: [255, 255, 255], raw: 1 });
+  txt([s.phone, s.email].filter(Boolean).join('   '), M + 25, 26, { fs: 8, c: [190, 194, 200], raw: 1 });
+  label('QUOTATION', W - M, 20, GOLD, 'right');
+  titleLines.forEach((l, i) => txt(l, M, 46 + i * 9 * SC, { b: 1, fs: 22, c: [255, 255, 255], raw: 0 }));
+
+  /* prepared for */
+  y = bh + 14; const c3 = CW / 3;
+  label('PREPARED FOR', M, y); label('QUOTE REFERENCE', M + c3 + 4, y); label('FROM', M + 2 * c3 + 8, y);
+  txt(rec.customer.name || '', M, y + 6.5, { b: 1, fs: 11, c: DARK });
+  const ah = para(rec.jobAddress || '', M, y + 5 + 6.5 * SC, c3 - 4, 8.2, { c: GREY });
+  txt(rec.ref, M + c3 + 4, y + 6.5, { b: 1, fs: 11, c: DARK });
+  const vu = new Date(rec.inspectionDate + 'T12:00:00'); vu.setDate(vu.getDate() + 30);
+  txt('Date: ' + ukd(rec.inspectionDate), M + c3 + 4, y + 5 + 6.5 * SC, { fs: 8.2, c: GREY }); txt('Valid until: ' + ukd(vu.toISOString().slice(0, 10)), M + c3 + 4, y + 5 + 11 * SC, { fs: 8.2, c: GREY });
+  txt(s.engineerName || s.businessName || '', M + 2 * c3 + 8, y + 6.5, { b: 1, fs: 11, c: DARK }); if (s.phone) txt(s.phone, M + 2 * c3 + 8, y + 5 + 6.5 * SC, { fs: 8.2, c: GREY });
+  y += Math.max(18 + 6 * SC, 8 + ah + 6 * SC);
+  doc.setDrawColor(...LINE); doc.setLineWidth(0.3); doc.line(M, y, W - M, y); y += 8 + 2 * SC;
+  txt('Dear ' + first + ',', M, y, { b: 1, fs: 10, c: DARK }); y += 4 + 2 * SC;
+  y += para('Thank you for the chance to quote. Here is exactly what is included and what it costs, so there are no surprises. If you have any questions at all, please just ask.', M, y, CW, 9, { c: GREY }) + 6;
+
+  /* what is included */
+  const inc = String(rec.scope || '').split('\n').map(x => x.trim()).filter(Boolean);
+  if (inc.length) { heading('THE WORK', 'What is included'); inc.forEach(l => { const h = wrap(l, CW - 8, 9).length * 9 * SC * 0.43 + 2.4; ensure(h); doc.setFillColor(...GOLD); doc.rect(M, y - 2.4, 2.4, 2.4, 'F'); para(l, M + 6, y, CW - 8, 9, { c: INK }); y += h; }); y += 5; }
+
+  /* priced lines */
+  { const need = 28 + R.reduce((a, r) => a + wrap(r.d, W - M - 70 - M - 12, 9, true).length * 4 * SC + 4, 0) + 30; ensure(Math.min(need, 90)); }
+  heading('YOUR QUOTATION', 'The price');
+  { const xq = W - M - 70, xp = W - M - 36, xt = W - M;
+    label('ITEM', M, y); label('QTY', xq, y); label('PRICE', xt - 27, y, null, 'right'); label('TOTAL', xt, y, null, 'right'); doc.setDrawColor(...GOLD); doc.setLineWidth(0.5); doc.line(M, y + 2, W - M, y + 2); y += 8;
+    R.forEach(r => { const lines = wrap(r.d, xq - M - 12, 9, true), rh = lines.length * 4 * SC + 4; ensure(rh + 2);
+      lines.forEach((l, i) => txt(l, M, y + i * 4 * SC, { b: 1, fs: 9, c: DARK })); txt(String(r.q), xq, y, { fs: 9, c: GREY }); txt(money(r.p), xt - 27, y, { fs: 9, c: GREY, align: 'right' }); txt(money(r.q * r.p), xt, y, { b: 1, fs: 9, c: DARK, align: 'right' });
+      doc.setDrawColor(...LINE); doc.setLineWidth(0.25); doc.line(M, y + rh - 3, W - M, y + rh - 3); y += rh; });
+    ensure(30); y += 3;
+    const row = (l, v) => { txt(l, xp - 14, y, { fs: 9, c: GREY }); txt(v, xt, y, { fs: 9, c: DARK, align: 'right' }); y += 5 + SC; };
+    row('Subtotal', money(T.sub)); if (T.rate) row('VAT at ' + T.rate + '%', money(T.vat));
+    doc.setFillColor(...DARK); doc.roundedRect(xp - 18, y - 4.5, xt - xp + 18, 6 + 4 * SC, 2, 2, 'F'); txt('TOTAL', xp - 14, y + 0.8 + SC, { b: 1, fs: 9, c: GOLD }); txt(money(T.total), xt - 3, y + 0.8 + SC, { b: 1, fs: 11, c: [255, 255, 255], align: 'right' });
+    y += 14 + 4 * SC; }
+
+  if (String(rec.homeNotes || '').trim()) {
+    const h = wrap(rec.homeNotes, CW - 14, 9).length * 3.9 * SC + 14; ensure(h + 4);
+    doc.setFillColor(...SOFT); doc.roundedRect(M, y, CW, h, 2, 2, 'F'); doc.setFillColor(...GOLD); doc.rect(M, y, 2, h, 'F');
+    label('NOTES', M + 8, y + 6.5); para(rec.homeNotes, M + 8, y + 12.5, CW - 14, 9, { c: INK }); y += h + 8;
+  }
+
+  /* acceptance + terms */
+  ensure(36); heading('ACCEPTANCE', 'Ready to go ahead?');
+  y += para('To accept this quotation, simply reply to the email we sent it with. We will then call you to arrange a date for the work.', M, y, CW, 9, { c: GREY }) + 3;
+  txt(rec.ref + '  ·  ' + money(T.total) + (T.rate ? ' inc. VAT' : ''), M, y + 2, { b: 1, fs: 8.5, c: DARK }); y += 12;
+  const terms = String(s.quoteTerms || QUO.DEFAULT_TERMS).split('\n').map(x => x.trim()).filter(x => x && !/boiler warranty/i.test(x));
+  if (terms.length) { const hh = terms.reduce((a, t) => a + wrap(t, CW, 7.6).length * 7.6 * SC * 0.43 + 1.6, 0); ensure(hh + 12);
+    label('TERMS OF THIS QUOTATION', M, y); y += 5; terms.forEach(t => { y += para(t, M, y, CW, 7.6, { c: GREY }) + 1.6; }); }
+
+  const pages = doc.getNumberOfPages();
+  for (let p = 1; p <= pages; p++) {
+    doc.setPage(p); doc.setDrawColor(...LINE); doc.setLineWidth(0.25); doc.line(M, H - 11.5, W - M, H - 11.5);
+    txt(s.businessName || '', M, H - 6, { fs: 7, c: GREY, raw: 1 }); txt([s.phone, s.email].filter(Boolean).join('  ·  '), W / 2, H - 6, { fs: 7, c: GREY, align: 'center', raw: 1 });
+    txt(rec.ref + '  ·  Page ' + p + ' of ' + pages, W - M, H - 6, { fs: 7, c: GREY, align: 'right', raw: 1 });
+  }
+  doc.setProperties({ title: 'Quotation ' + rec.ref, subject: rec.title || rec.jobAddress, author: s.businessName || 'Your business' });
   return doc.output('blob');
 }

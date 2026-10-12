@@ -40,9 +40,10 @@ const isAc = r => !!r && r.type === 'aircon';
 const isCom = r => !!r && r.type === 'commission';
 const isQuo = r => !!r && r.type === 'quote';
 const typeOf = r => (r && r.type) || 'gas';
-const stepsOf = r => (isLeg(r) ? LEG.STEPS : isSvc(r) ? SVC.STEPS : isWarn(r) ? WARN.STEPS : isAc(r) ? AC.STEPS : isCom(r) ? COM.STEPS : isQuo(r) ? QUO.STEPS : STEPS);
+const stepsOf = r => (isLeg(r) ? LEG.STEPS : isSvc(r) ? SVC.STEPS : isWarn(r) ? WARN.STEPS : isAc(r) ? AC.STEPS : isCom(r) ? COM.STEPS : isQuo(r) ? (r.general ? QUO.STEPS_GEN : QUO.STEPS) : STEPS);
 const ORDER = { gas: 0, service: 1, legionella: 2, aircon: 3, commission: 4, warning: 5, quote: 6 };
 const FORM_NAME = { gas: 'Gas safety record', service: 'Boiler service record', legionella: 'Legionella risk assessment', aircon: 'Air conditioning commissioning report', commission: 'Boiler commissioning checklist', quote: 'Boiler quotation', warning: 'Danger / Do Not Use warning notice' };
+const formName = r => (r.general ? 'Quotation' : FORM_NAME[typeOf(r)]);
 const FORM_SHORT = { gas: 'Gas check', service: 'Boiler service', legionella: 'Legionella', aircon: 'Air conditioning', commission: 'Boiler commissioning', quote: 'Quotation', warning: 'Warning notice' };
 /* copy the customer's email address so it can be pasted into the To box (the iPhone share sheet can't fill it in) */
 function copyEmail(email) {
@@ -238,6 +239,7 @@ function newRecord(customer, type) {
   if (type === 'aircon') return newAcRecord(customer);
   if (type === 'commission') return newComRecord(customer);
   if (type === 'quote') return newQuoRecord(customer);
+  if (type === 'gquote') { const q = newQuoRecord(customer); q.general = true; q.title = ''; q.scope = ''; q.labourDesc = 'Labour'; return q; }
   const d = todayISO();
   const n = records.filter(r => typeOf(r) === 'gas' && r.inspectionDate === d).length + 1;
   const rec = {
@@ -311,7 +313,7 @@ function goBack() {
   if (seq) { const q = seq[pos - 1]; goTo(q.rec, q.step); } else { ui.step--; ui.appTab = 0; render(); }
 }
 function startJob() {
-  const pk = ui.pick, types = ['gas', 'service', 'legionella', 'aircon', 'commission', 'quote'].filter(t => pk.types[t]);
+  const pk = ui.pick, types = ['gas', 'service', 'legionella', 'aircon', 'commission', 'quote', 'gquote'].filter(t => pk.types[t]);
   if (!types.length) { toast('Choose at least one form'); return; }
   const jobId = types.length > 1 ? uid() : '';
   const recs = types.map(t => { const r = newRecord(pk.customer, t); if (jobId) r.jobId = jobId; return r; });
@@ -589,6 +591,7 @@ function render() {
 }
 PH.tidy(records).then(n => { if (n) saveRecords(); }).catch(() => { });
 const ICON = {
+  cal: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
   rec: '<svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>',
   cust: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
   inv: '<svg viewBox="0 0 24 24"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>',
@@ -598,7 +601,7 @@ const ICON = {
 function renderTabs(nav) {
   nav.className = 'tabs';
   const t = (id, label, ic, on) => `<button data-nav="${id}" class="${on ? 'on' : ''}">${ic}${label}</button>`;
-  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick' || ui.view === 'due' || ui.view === 'cal' || ui.view === 'book') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit' || ui.view === 'import') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' || ui.view === 'summary') + (['gas', 'pipe', 'iv', 'heat'].some(toolOn) ? `<button data-act="toolsOpen" class="${ui.view === 'tools' ? 'on' : ''}">${ICON.tools}Tools</button>` : '') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'prices' || ui.view === 'admin' || ui.view === 'help' || ui.view === 'news' || ui.view === 'feedback');
+  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick' || (!calOn() && ui.view === 'due')) + (calOn() ? `<button data-act="calOpen" class="${ui.view === 'cal' || ui.view === 'book' || ui.view === 'due' ? 'on' : ''}">${ICON.cal}Calendar</button>` : '') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit' || ui.view === 'import') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' || ui.view === 'summary') + (['gas', 'pipe', 'iv', 'heat'].some(toolOn) ? `<button data-act="toolsOpen" class="${ui.view === 'tools' ? 'on' : ''}">${ICON.tools}Tools</button>` : '') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'prices' || ui.view === 'admin' || ui.view === 'help' || ui.view === 'news' || ui.view === 'feedback');
   $('#barSub').textContent = ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' ? 'Invoices' : 'Gas & Legionella records';
 }
 
@@ -658,7 +661,7 @@ function renderHome(v) {
     ${(() => { const c = invOverdueAsk(); return c.length ? `<button type="button" class="notice" style="display:block;width:100%;text-align:left" data-act="invAsk"><b>${c.length} overdue invoice${c.length > 1 ? 's' : ''}.</b> Tap to send ${esc(c[0].customer.name || 'a customer')} a payment reminder.</button>` : ''; })()}
     ${missing ? `<div class="notice">Add the business address, Gas Safe register number and engineer details in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a> before issuing certificates.</div>` : ''}
     ${REC_HOME.filter(([t]) => recOn(t)).map(([t, l]) => `<button class="btn gold block" data-act="newRec" data-type="${t}">${l}</button><div style="height:10px"></div>`).join('')}
-    ${remHomeBtn()}
+    ${calOn() ? '' : remHomeBtn()}
     ${calHomeHtml()}
     
     <h2>Recent</h2>
@@ -683,6 +686,7 @@ function renderPick(v) {
     ${!recOn('legionella') ? '' : opt('legionella', 'Legionella risk assessment', 'Hot and cold water system checks')}
     ${!recOn('aircon') ? '' : opt('aircon', 'Air conditioning commissioning', 'Install and commissioning report for an AC system')}
     ${!recOn('quote') ? '' : opt('quote', 'Boiler quote', 'A quotation for a new boiler installation')}
+    ${!recOn('gquote') ? '' : opt('gquote', 'Quote for any job', 'Bathrooms, radiators, repairs and any other work')}
     ${T.gas && !T.service ? `<div class="notice">Doing a gas safety check? Tick <b>Boiler service record</b> as well to complete both forms in one go – the boiler details from the gas check are copied across.</div>` : ''}
     ${recOn('gas') && recOn('service') && recOn('legionella') ? `<button class="btn block" data-act="pickAll">Landlord visit: gas check, boiler service &amp; Legionella</button>` : ''}
     <div style="height:10px"></div>
@@ -793,7 +797,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v147';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v148';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1069,7 +1073,7 @@ function renderSettings(v) {
     <div data-stab="app" ${(ui.sTab || 'business') === 'app' ? '' : 'hidden'}>
     <h2>Records to show</h2>
     <div class="card">
-      ${[['recGas', 'Gas safety record'], ['recService', 'Boiler service record'], ['recLeg', 'Legionella risk assessment'], ['recAc', 'Air conditioning commissioning'], ['recQuote', 'Boiler quote']].map(([k, l]) => `<label class="f"><span>${l}</span><select data-s="${k}"><option value="on" ${settings[k] === 'off' ? '' : 'selected'}>Show</option><option value="off" ${settings[k] === 'off' ? 'selected' : ''}>Hide</option></select></label>`).join('')}
+      ${[['recGas', 'Gas safety record'], ['recService', 'Boiler service record'], ['recLeg', 'Legionella risk assessment'], ['recAc', 'Air conditioning commissioning'], ['recQuote', 'Boiler quote'], ['recGQuote', 'Quote for any job']].map(([k, l]) => `<label class="f"><span>${l}</span><select data-s="${k}"><option value="on" ${settings[k] === 'off' ? '' : 'selected'}>Show</option><option value="off" ${settings[k] === 'off' ? 'selected' : ''}>Hide</option></select></label>`).join('')}
       <small class="muted">Hidden types leave the home screen and the “Forms for this visit” list. Records you have already made stay in your list. Turn one back on any time.</small>
     </div>
     <h2>Backup</h2>
@@ -1158,7 +1162,7 @@ function renderForm(v, nav) {
   const total = seq ? seq.length : steps.length;
   const nextRec = seq && pos < seq.length - 1 ? seq[pos + 1].rec : null;
   $('#barSub').textContent = r.ref;
-  const tag = job ? `<div class="formtag">${esc(FORM_NAME[t])} · form ${job.indexOf(r) + 1} of ${job.length}</div>` : '';
+  const tag = job ? `<div class="formtag">${esc(formName(r))} · form ${job.indexOf(r) + 1} of ${job.length}</div>` : '';
   const prog = `<div class="prog">${Array.from({ length: total }, (_, i) => `<i class="${i <= pos ? 'on' : ''}"></i>`).join('')}</div>${tag}
     <div class="steptitle"><h1>${steps[s]}</h1><span>Step ${pos + 1} of ${total}</span></div>`;
   const last = steps.length - 1;
@@ -1169,7 +1173,7 @@ function renderForm(v, nav) {
   else if (t === 'legionella') body = [null, legSystem, legTemps, legTanks, legRisk, legFindings][s]();
   else if (t === 'warning') body = [null, warnFaults][s]();
   else if (t === 'aircon') body = [null, acSystem, acRefrig][s]();
-  else if (t === 'quote') body = [null, quoBoiler, quoExtras][s]();
+  else if (t === 'quote') body = [null, r.general ? quoJob : quoBoiler, quoExtras][s]();
   else if (t === 'commission') body = [null, comBoiler, comWater, comReadings, comHandover][s]();
   else if (t === 'service') body = [null, svcBoiler, svcChecks, svcSafety, svcOperating, svcFinish][s]();
   else body = [null, stepAppliances, stepInstall, stepAlarms, stepDefects, stepNext][s]();
@@ -1439,7 +1443,7 @@ function recSummary(r) {
   let rows = dl('Record', r.ref) + dl('Date', ukDate(r.inspectionDate)) + dl('Client', r.customer.name) + dl('Property', r.jobAddress);
   if (t === 'legionella') rows += dl('Temperatures', LEG.temps(r).map(x => `${x.label}: ${x.n === null ? '?' : x.n + '°C'} – ${x.pass === null ? '?' : x.pass ? 'pass' : 'FAIL'}`).join('\n')) + dl('Overall risk', r.overall) + dl('Risks / defects', String(r.defects.length)) + dl('Next assessment', ukDate(r.renewal));
   else if (t === 'aircon') rows += dl('System', [AC.makeText(r), r.indoorModel].filter(Boolean).join(' ')) + dl('Gas', [AC.gasText(r), r.charge ? r.charge + ' g' : ''].filter(Boolean).join(' · ')) + dl('Pressure / vacuum', [r.pressure ? r.pressure + ' bar' : '', r.vacuum ? r.vacuum + ' hrs' : ''].filter(Boolean).join(' · ')) + dl('Drain / electrical', `${r.drain || '?'} / ${r.electrical || '?'}`);
-  else if (t === 'quote') { const T = QUO.totals(r, settings); rows += dl('Boiler', [QUO.makeText(r), r.model, r.kw ? r.kw + ' kW' : ''].filter(Boolean).join(' ')) + dl('Quote total', QUO.money(T.total) + (T.rate ? ' inc. VAT' : '')); }
+  else if (t === 'quote') { const T = QUO.totals(r, settings); rows += dl(r.general ? 'Job' : 'Boiler', r.general ? r.title : [QUO.makeText(r), r.model, r.kw ? r.kw + ' kW' : ''].filter(Boolean).join(' ')) + dl('Quote total', QUO.money(T.total) + (T.rate ? ' inc. VAT' : '')); }
   else if (t === 'commission') rows += dl('Boiler', [COM.makeText(r), r.model].filter(Boolean).join(' ')) + dl('Type', r.kind) + dl('Max CO / CO₂', [r.maxCo ? r.maxCo + ' ppm' : '', r.maxCo2 ? r.maxCo2 + ' %' : ''].filter(Boolean).join(' · ')) + dl('Next service', ukDate(r.renewal));
   else if (t === 'warning') rows += dl('Faults', r.faults.slice(0, +r.faultCount || 1).map((f, i) => `${i + 1}. ${f.type || '?'} – ${f.cls || '?'}${f.riddor === 'YES' ? ' (RIDDOR)' : ''}`).join('\n'));
   else if (t === 'service') rows += dl('Boiler', [SVC.makeText(r), r.model].filter(Boolean).join(' ')) + dl('Visit', r.reason) + dl('Checks failed', String(SVC.failCount(r))) + dl('Safe to use', r.safe) + dl('Warning notice', r.warning) + dl('Next service', ukDate(r.renewal));
@@ -1459,7 +1463,7 @@ function sendCard(m) {
   const inv = invForVisit(m), bm = billable(m);
   const row = (id, title, sub, extra) => `<div class="row" style="margin-bottom:10px;align-items:stretch"><button type="button" class="item tog grow ${selOn(id) ? 'on' : ''}" style="margin:0;min-width:0" data-act="selToggle" data-id="${id}"><span class="box"></span><span><span class="t">${title}</span><span class="s" style="display:block">${sub}</span></span></button>${extra}</div>`;
   const side = (act, id, label) => `<button type="button" class="btn" style="flex:none;min-width:76px" data-act="${act}" ${id ? `data-id="${id}"` : ''}>${label}</button>`;
-  const recRows = m.map(x => row(x.id, esc(FORM_NAME[typeOf(x)]), typeOf(x) === 'quote' ? 'Quote PDF ready' : 'Signed PDF ready', `<div style="display:flex;gap:8px;flex:none">${side('viewPdf', x.id, 'Open')}${side('editRec', x.id, 'Edit')}</div>`)).join('');
+  const recRows = m.map(x => row(x.id, esc(formName(x)), typeOf(x) === 'quote' ? 'Quote PDF ready' : 'Signed PDF ready', `<div style="display:flex;gap:8px;flex:none">${side('viewPdf', x.id, 'Open')}${side('editRec', x.id, 'Edit')}</div>`)).join('');
   let invRow = '', paid = '';
   if (inv) {
     const T = invTotals(inv);
@@ -1497,14 +1501,14 @@ async function sendSel() {
 /* open the email app without leaving the page (a plain location change leaves a blank screen in some browsers, e.g. Firefox with no mail app set) */
 const mailAddr = a => encodeURIComponent(String(a || '').trim()).replace(/%40/g, '@').replace(/%2C/g, ',');
 /* which record types show on the home screen and in the visit picker (Settings → Business → Records to show) */
-const REC_KEYS = { gas: 'recGas', service: 'recService', legionella: 'recLeg', aircon: 'recAc', quote: 'recQuote' };
+const REC_KEYS = { gas: 'recGas', service: 'recService', legionella: 'recLeg', aircon: 'recAc', quote: 'recQuote', gquote: 'recGQuote' };
 const recOn = t => settings[REC_KEYS[t]] !== 'off';
-const REC_HOME = [['gas', '+ New Gas Safety Record'], ['service', '+ New Boiler Service Record'], ['legionella', '+ New Legionella Risk Assessment'], ['aircon', '+ New Air Conditioning Commissioning'], ['quote', '+ New Boiler Quote']];
+const REC_HOME = [['gas', '+ New Gas Safety Record'], ['service', '+ New Boiler Service Record'], ['legionella', '+ New Legionella Risk Assessment'], ['aircon', '+ New Air Conditioning Commissioning'], ['quote', '+ New Boiler Quote'], ['gquote', '+ New Quote (any job)']];
 /* wording of the quote chase email / text (editable in Settings → Quotes). {name} {address} {ref} {business} {signoff} are filled in */
 const QCHASE_DEFAULT = 'Hi {name},\n\nI just wanted to check that you received my quote for your new boiler at {address}. If you have any questions, or would like to go ahead, just let me know and I will arrange a date for the installation.\n\nKind regards,\n{signoff}';
 function chaseText(q) {
   const first = String(q.customer.name || '').trim().split(/\s+/)[0] || 'there', map = { name: first, address: q.jobAddress ? String(q.jobAddress).replace(/\s*\n+\s*/g, ', ') : 'your property', ref: q.ref || '', business: settings.businessName || '', signoff: signOff() };
-  return (settings.qChaseText || QCHASE_DEFAULT).replace(/\{(name|address|ref|business|signoff)\}/gi, (m, k) => map[k.toLowerCase()]);
+  return (settings.qChaseText || QCHASE_DEFAULT).replace(/\{(name|address|ref|business|signoff)\}/gi, (m, k) => map[k.toLowerCase()]).replace(/your new boiler/gi, q.general ? (q.title ? 'your ' + q.title.toLowerCase() : 'the work') : '$&');
 }
 /* Chrome on a Mac only offers AirDrop and Messages when sharing a PDF (no Mail), so there we skip the share menu and use the save-then-attach steps instead */
 const macChrome = /Mac/i.test(navigator.platform || '') && !(navigator.maxTouchPoints > 1) && /Chrome\//.test(navigator.userAgent);
@@ -1552,7 +1556,7 @@ function stepReview() {
     ${issues.length ? `<div class="card" style="border-color:#5a2a26"><div class="t" style="color:#ff9b92;font-weight:700;margin-bottom:8px">${issues.length} item${issues.length > 1 ? 's' : ''} to complete</div>
       ${issues.map(x => `<button class="issue" data-act="goIssue" data-id="${x.rec.id}" data-step="${x.step}" data-app="${x.app ?? ''}">${multi ? esc(FORM_SHORT[typeOf(x.rec)]) + ': ' : ''}${esc(x.label)}</button>`).join('')}</div>` : ''}
     ${w.map(x => `<div class="notice">${esc(x)}</div>`).join('')}
-    ${m.map(r => `<div class="card">${multi ? `<div class="t" style="font-weight:700;color:var(--gold2);margin-bottom:8px">${esc(FORM_NAME[typeOf(r)])}</div>` : ''}<dl class="kv">${recSummary(r)}</dl></div>`).join('')}
+    ${m.map(r => `<div class="card">${multi ? `<div class="t" style="font-weight:700;color:var(--gold2);margin-bottom:8px">${esc(formName(r))}</div>` : ''}<dl class="kv">${recSummary(r)}</dl></div>`).join('')}
     ${made ? sendCard(m) : `<button class="btn gold block" data-act="makePdf" ${issues.length || needWarn.length ? 'disabled' : ''}>${ui.rec.status === 'draft' ? 'Create documents' : 'Open documents'}</button>
       <p class="small muted">${ui.rec.status === 'draft' ? `Makes the signed PDF${multi ? 's' : ''}${billable(m).length ? ' and the invoice' : ''}, ready to send.` : `Your finished document${multi ? 's are' : ' is'} already saved. This opens ${multi ? 'them' : 'it'} ready to view and send.`}</p>`}
     <div style="height:14px"></div>
@@ -1592,6 +1596,13 @@ function tapField(key, label) {
 }
 /* ---------- Boiler commissioning checklist steps ---------- */
 const tick = (path, label) => `<button type="button" class="item tog ${getP(ui.rec, path) === 'Yes' ? 'on' : ''}" data-k="${path}" data-v="${getP(ui.rec, path) === 'Yes' ? '' : 'Yes'}"><span class="box"></span><span><span class="t">${label}</span></span></button>`;
+/* ---------- quote for any job ---------- */
+function quoJob() {
+  return `<div class="card">
+    ${txt('title', 'What is the job?', { req: 1, ph: 'For example: Bathroom installation' })}
+    ${txt('scope', 'What is included (one point per line)', { area: 1, rows: 6, ph: 'Strip out the old suite\nSupply and fit the new bath, toilet and basin\nTiling and making good' })}
+  </div>`;
+}
 /* ---------- Boiler quotation steps ---------- */
 function quoBoiler() {
   const r = ui.rec;
@@ -2514,7 +2525,7 @@ document.addEventListener('click', async e => {
   if (a === 'helpBack') { ui.view = ui.helpFrom && ui.helpFrom !== 'help' && (ui.helpFrom !== 'form' || ui.rec) ? ui.helpFrom : 'home'; render(); return; }
   if (await calAct(a, b) || await dataAct(a, b)) return;
   switch (a) {
-    case 'newRec': ui.pick = { types: { [b.dataset.type]: true }, customer: null }; if (b.dataset.type === 'quote') { startJob(); break; } ui.view = 'pick'; render(); break;
+    case 'newRec': ui.pick = { types: { [b.dataset.type]: true }, customer: null }; if (b.dataset.type === 'quote' || b.dataset.type === 'gquote') { startJob(); break; } ui.view = 'pick'; render(); break;
     case 'pickToggle': ui.pick.types[b.dataset.t] = !ui.pick.types[b.dataset.t]; render(); break;
     case 'pickAll': ui.pick.types = { gas: true, service: true, legionella: true }; render(); break;
     case 'pickGo': startJob(); break;
@@ -2782,7 +2793,7 @@ document.addEventListener('click', async e => {
     case 'qChase': {
       const q = records.find(x => x.id === b.dataset.id); if (!q) break;
       const body = chaseText(q);
-      const url = b.dataset.how === 'email' ? `mailto:${mailAddr(q.customer.email)}?subject=${encodeURIComponent('Your boiler quote ' + q.ref)}&body=${encodeURIComponent(body)}` : `sms:${String(q.customer.phone).replace(/\s+/g, '')}?&body=${encodeURIComponent(body)}`;
+      const url = b.dataset.how === 'email' ? `mailto:${mailAddr(q.customer.email)}?subject=${encodeURIComponent((q.general ? 'Your quote ' : 'Your boiler quote ') + q.ref)}&body=${encodeURIComponent(body)}` : `sms:${String(q.customer.phone).replace(/\s+/g, '')}?&body=${encodeURIComponent(body)}`;
       const a = document.createElement('a'); a.href = url; if (!/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) { a.target = '_blank'; a.rel = 'noopener'; } document.body.appendChild(a); a.click(); a.remove(); break;
     }
     case 'invPaidVisit': { const inv = invForVisit(jobRecs() || [ui.rec]); inv.paid = !inv.paid; inv.paidDate = inv.paid ? todayISO() : ''; if (!inv.paid) inv.payMethod = ''; persistInv(inv); const y = window.scrollY; try { ui.invPdf = { id: inv.id, blob: await buildInvPdf(inv, settings), name: invFileName(inv) }; } catch (err) { console.error(err); ui.invPdf = null; } render(); window.scrollTo(0, y); toast(inv.paid ? 'Marked as paid' : 'Marked as unpaid'); break; }
@@ -3022,7 +3033,7 @@ function saveCust(silent) {
 }
 
 /* ---------- PDF ---------- */
-const pdfName = r => `${FORM_DOC[typeOf(r)][0]} - ${(r.customer.name || 'Customer').replace(/[^\w ]+/g, '')} - ${r.inspectionDate}.pdf`;
+const pdfName = r => `${r.general ? 'Quotation' : FORM_DOC[typeOf(r)][0]} - ${(r.customer.name || 'Customer').replace(/[^\w ]+/g, '')} - ${r.inspectionDate}.pdf`;
 async function makePdf() {
   const m = jobRecs() || [ui.rec];
   commitCustomer(m[0]);
@@ -3045,8 +3056,8 @@ async function sharePdf(r) {
   const { blob, name } = ui.pdfs[r.id], [doc, due] = FORM_DOC[typeOf(r)];
   const file = new File([blob], name, { type: 'application/pdf' });
   const first = greetName(r.customer.name), addr = addrLine(r.jobAddress || '');
-  const subject = `${SUBJ[typeOf(r)]} – ${addrFirst(r.jobAddress || '')}`;
-  const text = isQuo(r) ? `Hi ${first},\n\nThank you for the chance to quote. Please find attached your quotation for ${addr}. It is valid for 30 days.\n\nIf you would like to go ahead, just reply to this email and I will call you to arrange a date for the installation.\n\nKind regards,\n${signOff()}`
+  const subject = `${r.general ? 'Quotation' : SUBJ[typeOf(r)]} – ${addrFirst(r.jobAddress || '')}`;
+  const text = isQuo(r) ? `Hi ${first},\n\nThank you for the chance to quote. Please find attached your quotation for ${addr}. It is valid for 30 days.\n\nIf you would like to go ahead, just reply to this email and I will call you to arrange a date for the ${r.general ? 'work' : 'installation'}.\n\nKind regards,\n${signOff()}`
     : `Hi ${first},\n\nPlease find attached your ${doc} for ${addr}, carried out on ${ukDate(r.inspectionDate)}.${due ? '\n' + due + ' ' + ukDate(r.renewal) + '.' : ''}\n\nKind regards,\n${signOff()}`;
   try {
     if (canShareFiles({ files: [file] })) { await navigator.share({ files: [file], title: subject, text }); return; }

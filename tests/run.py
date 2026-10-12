@@ -367,6 +367,35 @@ def run():
         check('no page errors in invoice heading', not errs, errs)
         ctx.close()
 
+        # ---------- 12h. quote for any job ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "document.querySelector('[data-act=newRec][data-type=gquote]').click()")
+        pg.wait_for_timeout(300)
+        g = ev(pg, "({g:ui.rec.general,v:ui.view,steps:stepsOf(ui.rec).join('|'),issues:validate(ui.rec).map(x=>x.label)})")
+        check('Quote for any job starts with its own steps and asks for the job', g['g'] and g['v'] == 'form' and g['steps'] == 'Customer|The job|Items & labour|Review' and 'What the job is' in g['issues'] and 'Boiler make' not in g['issues'], g)
+        ev(pg, "ui.rec.customer.name='Mr Test'; ui.rec.jobAddress='1 A St\\nLincoln'; ui.rec.title='Bathroom installation'; ui.rec.scope='Strip out old suite\\nFit new suite'; ui.rec.lines=[{name:'Bath',qty:'1',price:'300'},{name:'Basin',qty:'2',price:'80'}]; ui.step=1; render()")
+        check('quote for any job form shows the job title box', 'What is the job?' in ev(pg, "document.querySelector('#view').innerText"))
+        ok = ev(pg, "validate(ui.rec).length")
+        check('quote for any job is valid with a title and priced items, no boiler needed', ok == 0, ok)
+        n = ev(pg, "buildPdf(ui.rec, settings).then(b=>b.size)")
+        check('quote for any job builds a PDF', n > 5000, n)
+        ev(pg, "ui.step=3; render()")
+        check('quote review shows the job and total', 'Bathroom installation' in ev(pg, "document.querySelector('#view').innerText") and 'quote total' in ev(pg, "document.querySelector('#view').innerText").lower())
+        check('no page errors in quote for any job', not errs, errs)
+        ctx.close()
+
+        # ---------- 12i. calendar tab and annual checks inside the calendar ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "SAMPLE.add(); const r=records.find(x=>typeOf(x)==='service'); r.status='complete'; r.inspectionDate=localISO(); r.renewal=addDays(localISO(),10); persistRec(r); ui.view='home'; render()")
+        check('bottom bar has a Calendar tab', 'Calendar' in ev(pg, "[...document.querySelectorAll('.tabs button')].map(b=>b.innerText).join(',')"))
+        check('Annual checks due is a single row inside the calendar block on home, not a separate button', ev(pg, "document.querySelectorAll('#view [data-act=remOpen]').length") == 1)
+        pg.click('.tabs [data-act=calOpen]'); pg.click('.cals [data-act=remOpen]')
+        check('Due button in the calendar lists the annual checks', ev(pg, "ui.view==='due'&&!!document.querySelector('[data-act=remBook]')&&!!document.querySelector('.cals')"))
+        ev(pg, "settings.calOn='off'; ui.view='home'; render()")
+        check('with the calendar off, Annual checks due is back on Records and no Calendar tab', 'Calendar' not in ev(pg, "[...document.querySelectorAll('.tabs button')].map(b=>b.innerText).join(',')") and ev(pg, "!!document.querySelector('[data-act=remOpen]')"))
+        check('no page errors in calendar tab', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()
