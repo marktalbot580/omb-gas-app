@@ -771,7 +771,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v129';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v130';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -902,7 +902,7 @@ function renderSettings(v) {
     <button class="btn block" data-act="help" style="margin-bottom:10px">Help guide</button>
     <button class="btn block" data-act="news" style="margin-bottom:10px">What’s new</button>
     <button class="btn block" data-act="feedback" style="margin-bottom:12px">Send feedback</button>
-    <div class="stabs">${[['business', 'Business'], ['invoicing', 'Invoicing'], ['quotes', 'Quotes'], ['reminders', 'Reminders'], ['tools', 'Tools'], ['app', 'App']].map(([k, l]) => `<button type="button" class="${(ui.sTab || 'business') === k ? 'on' : ''}" data-act="sTab" data-t="${k}">${l}</button>`).join('')}</div>
+    <div class="stabs grid">${[['business', 'Business'], ['invoicing', 'Invoicing'], ['quotes', 'Quotes'], ['reminders', 'Reminders'], ['tools', 'Tools'], ['app', 'App']].map(([k, l]) => `<button type="button" class="${(ui.sTab || 'business') === k ? 'on' : ''}" data-act="sTab" data-t="${k}">${l}</button>`).join('')}</div>
     <div data-stab="business" ${(ui.sTab || 'business') === 'business' ? '' : 'hidden'}>
     <h2>Business (printed on every certificate)</h2>
     <div class="card">
@@ -968,7 +968,6 @@ function renderSettings(v) {
         <button type="button" class="${settings.discType === '%' ? 'on' : ''}" data-act="discType" data-t="%">% off the total</button></div></div>
       ${f('discValue', settings.discType === '%' ? 'Discount (%)' : 'Discount (£)', { mode: 'decimal', hint: 'Taken off automatically when two or three services are done on the same visit. You can still change it on each invoice.' })}
       <p class="small muted" style="margin:0">${(() => { const a = numOf(settings.priceGas), b = numOf(settings.priceSvc), c = numOf(settings.priceLeg), all = a + b + c; if (!all) return 'Set the prices above to see an example.'; const d = x => Math.min(settings.discType === '%' ? r2(x * numOf(settings.discValue) / 100) : numOf(settings.discValue), x); return `Example – all three services: ${money(all)} − ${money(d(all))} = <b style="color:var(--txt)">${money(all - d(all))}</b>`; })()}</p>
-    </div>
     </div>
     <h2>Payment reminders</h2>
     <div class="card">

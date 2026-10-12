@@ -275,3 +275,6 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 4px rgba(217,178,95,.14
 /* every button label: a capital letter on each word (record choices such as Yes/No and make names are left as they are) */
 .btn,.chip,.stabs button,.tabs button{text-transform:capitalize}
 .qres .btn{text-transform:none}
+
+.stabs.grid{display:grid;grid-template-columns:repeat(3,1fr);overflow:visible;margin:0 0 14px;padding:0}
+.stabs.grid button{padding:10px 6px;text-align:center}
