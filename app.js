@@ -777,7 +777,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v116';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v117';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1416,9 +1416,18 @@ function openMail(url) {
   /* this browser could not hand the PDFs to the share sheet, so say so clearly instead of jumping straight into an email with nothing attached */
   const old = document.getElementById('mailBox'); if (old) old.remove();
   const d = document.createElement('div'); d.id = 'mailBox';
-  d.innerHTML = `<div class="instbox"><div class="insthead"><div><b>PDFs saved to your phone</b><span>This browser can’t attach them for you</span></div></div>
+  const phone = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent), mac = /Mac/i.test(navigator.platform || navigator.userAgent);
+  const head = phone ? `<div class="instbox"><div class="insthead"><div><b>PDFs saved to your phone</b><span>This browser can’t attach them for you</span></div></div>
     <p class="small">They are in your <b>Downloads</b> folder. Open the email, then tap the paperclip and choose them. For one-tap sharing with the PDFs attached (WhatsApp, Outlook, Gmail…), open this app in <b>Chrome</b>.</p>
-    <a class="btn gold block" style="text-align:center;text-decoration:none" href="${url.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}" rel="noopener" id="mailGo">Open the email</a>
+`:`<div class="instbox"><div class="insthead"><div><b>PDF saved to your computer</b><span>Now attach it to the email</span></div></div>
+    <ol class="small" style="margin:0 0 12px;padding-left:20px;line-height:1.6">
+      <li>Click <b>Open the email</b> below. Your email program opens with the customer’s address, subject and message already filled in.</li>
+      <li>Attach the PDF: click the <b>paperclip</b> / <b>Attach</b> button and pick it from your <b>Downloads</b> folder (the newest file), or just drag it into the email.</li>
+      <li>Check it, then press Send.</li>
+    </ol>
+    <p class="small muted" style="margin-top:0">${mac ? 'On a Mac, open Finder → Downloads. If Mail is not your usual email program, change it in Mail → Settings → Default email reader.' : 'If the wrong program opens, go to Windows Settings → Apps → Default apps → Email and pick the one you use.'}</p>
+`;
+  d.innerHTML = head + `    <a class="btn gold block" style="text-align:center;text-decoration:none" href="${url.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}" rel="noopener" id="mailGo">Open the email</a>
     <div class="instrow"><button class="btn ghost" id="mailX">Close</button></div></div>`;
   document.body.appendChild(d);
   d.querySelector('#mailX').onclick = () => d.remove(); d.querySelector('#mailGo').onclick = () => setTimeout(() => d.remove(), 600);
