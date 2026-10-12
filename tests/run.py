@@ -554,6 +554,10 @@ def run():
         check('saving the booking marks the quote booked and returns to Quotes', st == ['invoices', 'quotes', True, 1, False], st)
         ev(pg, "ui.qFilter='all'; render()")
         check('To schedule filter disappears once booked', not ev(pg, "!!document.querySelector('[data-f=sched]')"))
+        ev(pg, "ui.book={...bookings[0]}; ui.view='book'; render()")
+        pg.click('[data-act=bookQuote]'); pg.wait_for_timeout(150)
+        oq = ev(pg, "[ui.view, ui.rec && ui.rec.id === records[0].id]")
+        check('an appointment made from a quote can open that quote', oq == ['form', True], oq)
         check('no page errors scheduling a quote', not errs, errs)
         ctx.close()
 

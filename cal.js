@@ -118,6 +118,7 @@ function renderBook(v) {
     </div>
     <h2>Notes</h2><div class="card">${f('notes', 'Anything to remember', { area: 1 })}</div>
     <button class="btn gold block" data-act="bookSave">${isNew ? 'Add to calendar' : 'Save changes'}</button>
+    ${!isNew && B.fromQuote && records.some(x => x.id === B.fromQuote) ? `<div style="height:10px"></div><button class="btn block" data-act="bookQuote">Open the quote</button>` : ''}
     ${isNew ? '' : `<div style="height:10px"></div><button class="btn block" data-act="bookStart">Start the forms for this job</button>
       <div style="height:10px"></div><button class="btn block" data-act="bookDone">${B.status === 'done' ? 'Mark as not done' : 'Mark as done'}</button>
       <div style="height:10px"></div><button class="btn block" data-act="bookIcs">Add to my phone’s calendar</button>
@@ -180,6 +181,10 @@ async function calAct(a, b) {
     case 'calMonth': { const s = calState(), [y, m] = s.m.split('-').map(Number), d = new Date(y, m - 1 + (+b.dataset.n), 1); s.m = localISO(d).slice(0, 7); render(); return true; }
     case 'calDay': { const s = calState(); s.d = b.dataset.d; s.m = s.d.slice(0, 7); ui.calMode = 'month'; if (ui.view === 'home') ui.view = 'cal'; render(); window.scrollTo(0, 0); return true; }
     case 'bookNew': ui.book = newBook({ base: { date: b.dataset.d || localISO() } }); ui.bookFrom = ui.view === 'home' ? 'home' : 'cal'; ui.view = 'book'; render(); return true;
+    case 'bookQuote': {
+      const q = records.find(x => x.id === (ui.book || {}).fromQuote); if (!q) return true;
+      ui.book = null; ui.job = null; ui.rec = q; ui.step = q.status === 'complete' ? stepsOf(q).length - 1 : 0; ui.appTab = 0; ui.showErr = false; ui.pdfs = {}; ui.view = 'form'; render(); window.scrollTo(0, 0); return true;
+    }
     case 'quoBook': {
       const r = records.find(x => x.id === b.dataset.id); if (!r) return true;
       const cu = customers.find(c => c.id === r.customerId) || null, cd = r.customer || {};
