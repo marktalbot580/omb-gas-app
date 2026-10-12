@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v119', items: ['The Serial number boxes now have a Copy button too, next to the Gas Council number one.'] },
   { v: 'v118', items: ['Gas Council (GC) number boxes now have a Copy button beside them, so you can paste the number straight into another app to look up the readings.'] },
   { v: 'v117', items: ['Emailing from a PC or Mac: after the PDF is saved, a box now walks you through opening the email and attaching it from your Downloads folder, with a note on setting your default email program. On phones it works as before.'] },
   { v: 'v116', items: ['Price list: more common boilers added. Worcester Greenstar 2000 and 8000 Style (plus the 30kW 8000 Life), Ideal Logic Air, Vaillant ecoFIT pure and sustain (plus the 38kW ecoTEC plus), Viessmann Vitodens 050-W, Alpha E-Tec and E-Tec Plus, and Potterton Assure. If you already have a saved price list they are added to it once, with the cost left blank for you to fill in. Your own prices are not touched.'] },

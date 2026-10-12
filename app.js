@@ -779,7 +779,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v118';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v119';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1115,7 +1115,7 @@ function warnFaults() {
       ${choice(P('type'), 'Appliance type', WARN.TYPES, { req: 1, wrap: 1 })}
       ${txt(P('make'), 'Make', { req: 1 })}
       ${txt(P('model'), 'Model', { req: 1 })}
-      ${txt(P('serial'), 'Serial number', { req: 1, cap: 'characters' })}
+      ${txt(P('serial'), 'Serial number', { req: 1, cap: 'characters', copy: 1 })}
       ${choice(P('cls'), 'Has the appliance / installation been assessed as Immediately Dangerous (ID) or At Risk (AR)?', WARN.CLS, { req: 1 })}
       <p class="small muted" style="margin:-8px 0 14px"><b>ID</b> Immediately Dangerous · <b>AR</b> At Risk</p>
       ${choice(P('riddor'), 'Is this required to be notified to the Health & Safety Executive via RIDDOR?', ['YES', 'NO'], { req: 1 })}
@@ -1677,7 +1677,7 @@ function comBoiler() {
     ${choice('make', 'Boiler make', SVC.MAKE, { req: 1, wrap: 1 })}
     ${r.make === 'Other' ? txt('makeOther', 'Make', { req: 1 }) : ''}
     ${txt('model', 'Boiler model', { req: 1 })}
-    ${txt('serial', 'Serial number', { req: 1, cap: 'characters' })}
+    ${txt('serial', 'Serial number', { req: 1, cap: 'characters', copy: 1 })}
     ${txt('gc', 'Gas Council number', { cap: 'characters', copy: 1 })}
     ${choice('kind', 'Boiler type', COM.KIND, { req: 1, wrap: 1 })}
   </div>
@@ -1887,7 +1887,7 @@ function svcBoiler() {
     ${txt('model', 'Appliance model', { req: 1 })}
     ${choice('systemType', 'System type', SVC.SYSTEM, { req: 1, wrap: 1 })}
     ${r.systemType === 'Other' ? txt('systemOther', 'Describe the system type', { req: 1 }) : ''}
-    ${txt('serial', 'Serial number', { req: 1, cap: 'characters' })}
+    ${txt('serial', 'Serial number', { req: 1, cap: 'characters', copy: 1 })}
     ${txt('gc', 'Gas Council number', { cap: 'characters', copy: 1 })}
     ${choice('flue', 'Flue type', SVC.FLUE, { req: 1, wrap: 1 })}
   </div>
