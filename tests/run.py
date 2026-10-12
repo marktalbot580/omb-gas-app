@@ -342,6 +342,21 @@ def run():
         check('no page errors adding from the price list', not errs, errs)
         ctx.close()
 
+        # ---------- 12f. invoice discount in pounds or percent ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "ui.inv=newInvoice(null); ui.inv.lines=[{d:'a',q:'2',p:'100'}]; ui.inv.vatRate='20'; invoices.push(ui.inv); ui.view='invEdit'; render()")
+        ev(pg, "document.querySelector('[data-act=invDiscMode][data-m=\"%\"]').click()")
+        ev(pg, "ui.inv.disc='10'; render()")
+        T = ev(pg, "invTotals(ui.inv)")
+        check('percent discount comes off the subtotal before VAT', T['sub'] == 200 and T['disc'] == 20 and T['net'] == 180 and T['vat'] == 36, T)
+        check('percent discount is named on the invoice', ev(pg, "discName(ui.inv)") == 'Discount (10%)')
+        ev(pg, "document.querySelector('[data-act=invDiscMode][data-m=\"£\"]').click()")
+        pg.wait_for_timeout(200)
+        ev(pg, "ui.inv.disc='15'")
+        check('pound discount still works and switching clears the old value', ev(pg, "invTotals(ui.inv).disc") == 15 and ev(pg, "discName(ui.inv)") == 'Discount')
+        check('no page errors in discount types', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()

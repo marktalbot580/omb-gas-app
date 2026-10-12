@@ -793,7 +793,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v145';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v146';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -2138,7 +2138,7 @@ async function sharePack(sel) {
 function invTotalsHtml(i) {
   const T = invTotals(i);
   const row = (k, v, c) => `<dt>${k}</dt><dd style="text-align:right;${c ? 'color:' + c : ''}">${v}</dd>`;
-  return `<dl class="kv" style="grid-template-columns:1fr auto">${row('Subtotal', money(T.sub))}${T.disc > 0 ? row(esc(i.discLabel || 'Discount'), '-' + money(T.disc), 'var(--ok)') : ''}${T.rate > 0 ? row(`VAT (${T.rate}%)`, money(T.vat)) : ''}
+  return `<dl class="kv" style="grid-template-columns:1fr auto">${row('Subtotal', money(T.sub))}${T.disc > 0 ? row(esc(discName(i)), '-' + money(T.disc), 'var(--ok)') : ''}${T.rate > 0 ? row(`VAT (${T.rate}%)`, money(T.vat)) : ''}
     <dt style="color:var(--gold2);font-weight:700">Total ${i.paid ? 'paid' : 'due'}</dt><dd style="text-align:right;font-weight:700;font-size:18px">${money(T.total)}</dd></dl>`;
 }
 function invPdfHtml() {
@@ -2231,7 +2231,8 @@ function renderInvEdit(v) {
     <div class="card">
       ${inf('vatRate', 'VAT rate (%)', { mode: 'decimal', hint: 'Enter prices excluding VAT – VAT is added on top. Use 0 for no VAT.' })}
       ${inf('vatNumber', 'VAT number')}
-      ${inf('disc', 'Discount (£)', { mode: 'decimal', hint: i.discLabel ? esc(i.discLabel) + ' – change or clear it here.' : 'Leave blank for no discount.' })}
+      <div class="f"><span>Discount type</span><div class="seg">${['£', '%'].map(m => `<button type="button" data-act="invDiscMode" data-m="${m}" class="${(i.discMode === '%' ? '%' : '£') === m ? 'on' : ''}">${m === '£' ? '£ off' : '% off'}</button>`).join('')}</div></div>
+      ${inf('disc', i.discMode === '%' ? 'Discount (%)' : 'Discount (£)', { mode: 'decimal', hint: i.discLabel ? esc(i.discLabel) + ' – change or clear it here.' : 'Leave blank for no discount.' })}
       ${inf('notes', 'Note on the invoice (optional)', { area: 1, rows: 3 })}
     </div>
     <div class="card" id="invTotals">${invTotalsHtml(i)}</div>
@@ -2437,7 +2438,7 @@ function initSigs() {
 
 /* ---------- events ---------- */
 /* when the subscription has ended the app is read-only: look, download and export, but no new or changed records */
-const LOCKED_WRITES = new Set(['invPlPick', 'impGo', 'bookSave', 'bookStart', 'bookFromPick', 'custNoRem', 'newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'sameName', 'engSigTog', 'engSigUse', 'invNone', 'invNoneVisit', 'invUndoNone', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod', 'invPickCust', 'invPickProp', 'invPickSug']);
+const LOCKED_WRITES = new Set(['invDiscMode', 'invPlPick', 'impGo', 'bookSave', 'bookStart', 'bookFromPick', 'custNoRem', 'newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'sameName', 'engSigTog', 'engSigUse', 'invNone', 'invNoneVisit', 'invUndoNone', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod', 'invPickCust', 'invPickProp', 'invPickSug']);
 const lockedMsg = () => toast('Your subscription has ended. Subscribe to create or change records.');
 document.addEventListener('click', async e => {
   /* tap the logo / name at the top to go back to the home screen – a form you are part way through is kept as a draft */
@@ -2703,6 +2704,7 @@ document.addEventListener('click', async e => {
       if (CLOUD.st.state === 'error' && !confirm('The last sync did not finish, so recent changes could be lost. Log out anyway?')) break;
       await CLOUD.signOut(true); break;
     case 'expInv': exportInvoices(); break;
+    case 'invDiscMode': { const y = window.scrollY; if ((ui.inv.discMode || '£') !== b.dataset.m) { ui.inv.discMode = b.dataset.m; ui.inv.disc = ''; ui.inv.discLabel = ''; ui.invPdf = null; persistInv(ui.inv); } render(); window.scrollTo(0, y); break; }
     case 'discType': { const y = window.scrollY; settings.discType = b.dataset.t; saveSettings(); render(); window.scrollTo(0, y); break; }
     case 'vatReg': { const y = window.scrollY; settings.vatReg = settings.vatReg === 'Yes' ? 'No' : 'Yes'; saveSettings(); render(); window.scrollTo(0, y); break; }
     case 'invSentVisit': { const inv = invForVisit(jobRecs() || [ui.rec]); if (inv) { inv.sent = Date.now(); persistInv(inv); const y = window.scrollY; render(); window.scrollTo(0, y); } break; }

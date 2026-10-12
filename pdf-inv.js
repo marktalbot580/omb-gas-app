@@ -5,10 +5,12 @@ const money = n => '£' + (Math.round((+n || 0) * 100) / 100).toLocaleString('en
 const numOf = v => { const n = parseFloat(String(v ?? '').replace(/[£,\s]/g, '')); return isFinite(n) ? n : 0; };
 const r2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
 
+/* the discount's name on the invoice: its own label, or Discount (10%) when it is a percentage */
+const discName = inv => inv.discLabel || (inv.discMode === '%' && numOf(inv.disc) > 0 ? `Discount (${numOf(inv.disc)}%)` : 'Discount');
 /* subtotal, discount, VAT and total for an invoice (all rounded to the penny) */
 function invTotals(inv) {
   const sub = r2((inv.lines || []).reduce((a, l) => a + r2(numOf(l.q || 1) * numOf(l.p)), 0));
-  const disc = Math.min(Math.max(r2(numOf(inv.disc)), 0), Math.max(sub, 0));
+  const entered = Math.max(numOf(inv.disc), 0), disc = Math.min(Math.max(inv.discMode === '%' ? r2(sub * Math.min(entered, 100) / 100) : r2(entered), 0), Math.max(sub, 0));
   const net = r2(sub - disc);
   const rate = numOf(inv.vatRate);
   const vat = rate > 0 ? r2(net * rate / 100) : 0;
@@ -135,7 +137,7 @@ async function buildInvPdf(inv, s, ext) {
 
   /* totals */
   const rows = [['Subtotal', money(T.sub)]];
-  if (T.disc > 0) rows.push([inv.discLabel || 'Discount', '-' + money(T.disc), GREEN]);
+  if (T.disc > 0) rows.push([discName(inv), '-' + money(T.disc), GREEN]);
   if (vatOn) { if (T.disc > 0) rows.push(['Total before VAT', money(T.net)]); rows.push([`VAT at ${T.rate % 1 ? T.rate : Math.round(T.rate)}%`, money(T.vat)]); }
   const tw = 78, tx = W - M - tw;
   ensure(rows.length * 7 + 20);
