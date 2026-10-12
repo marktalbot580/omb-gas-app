@@ -92,7 +92,7 @@ function renderCal(v) {
     ${calSeg(mode)}
     ${body}
     <div style="height:10px"></div><button class="btn block" data-act="syncNow">Sync now</button>
-    <div style="height:10px"></div><button class="btn ghost block" data-nav="home">Back to records</button>`;
+    <div style="height:10px"></div><button class="btn ghost block" data-nav="home">Back to services</button>`;
 }
 function newBook(o) {
   const c = o.customer || null;

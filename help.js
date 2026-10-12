@@ -19,9 +19,9 @@ const HELP = [
 <ol><li>Open app.ombgas.com in Chrome.</li><li>Tap the three dots at the top right.</li><li>Tap <b>Install app</b> (or <b>Add to Home screen</b>).</li></ol>` },
 
   { t: 'Starting a new record', k: 'new gas safety boiler service legionella air conditioning quote visit forms draft hide records',
-    h: `<p>On the <b>Records</b> screen tap the type of job you are doing:</p>
+    h: `<p>On the <b>Services</b> screen tap the type of job you are doing:</p>
 <ul><li><b>Gas safety record</b> (landlord gas safety check)</li><li><b>Boiler service record</b></li><li><b>Legionella risk assessment</b></li><li><b>Air conditioning commissioning</b></li><li><b>Boiler quote</b> (see <i>Boiler quotes</i>)</li></ul>
-<p>Not doing air conditioning yet? Hide any you do not use in <b>Settings → App → Records to show</b>. Turn them back on whenever you like.</p>
+<p>Not doing air conditioning yet? Hide any you do not use in <b>Settings → App → Services to show</b>. Turn them back on whenever you like.</p>
 <p>The next screen lets you tick <b>everything you are doing at that property today</b>. The customer and address are entered once and shared across the forms, and you get a separate PDF for each. Tap <b>Start</b> to begin, or <b>Schedule in</b> to book the job in the calendar for later.</p>
 <p>Work through the steps using <b>Next</b> and <b>Back</b>. Your work is saved as you go. If you leave part way through it is kept as a <b>draft</b> on the home screen, and you can open it again or delete it.</p>` },
 
@@ -82,7 +82,7 @@ const HELP = [
 
   { t: 'Annual check reminders', k: 'reminder due annual renewal gas safety service text whatsapp email overdue booked chase landlord',
     h: `<p>Gas safety checks, boiler services and Legionella assessments are all tracked yearly. The app keeps track for you.</p>
-<ol><li>Tap <b>Calendar</b> on the bottom bar, then <b>Due</b>. The number shows how many are coming up. (If you have switched the calendar off, it is the <b>Annual checks due</b> button on the Records screen.)</li>
+<ol><li>Tap <b>Calendar</b> on the bottom bar, then <b>Due</b>. The number shows how many are coming up. (If you have switched the calendar off, it is the <b>Annual checks due</b> button on the Services screen.)</li>
 <li>Each customer shows when their check is due (or how many days overdue).</li>
 <li>Tap <b>Text</b>, <b>WhatsApp</b> or <b>Email</b>. Your phone opens a message that is already written, using their number or email. Check it, then press send. Nothing is ever sent without you.</li>
 <li>When they reply, tap <b>Booked in</b> or <b>Not needed</b> to take them off the list. Tap <b>Stop for this property</b> if they should never be reminded.</li></ol>

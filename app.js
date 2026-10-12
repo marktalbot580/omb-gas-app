@@ -601,7 +601,7 @@ const ICON = {
 function renderTabs(nav) {
   nav.className = 'tabs';
   const t = (id, label, ic, on) => `<button data-nav="${id}" class="${on ? 'on' : ''}">${ic}${label}</button>`;
-  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick' || (!calOn() && ui.view === 'due')) + (calOn() ? `<button data-act="calOpen" class="${ui.view === 'cal' || ui.view === 'book' || ui.view === 'due' ? 'on' : ''}">${ICON.cal}Calendar</button>` : '') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit' || ui.view === 'import') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' || ui.view === 'summary') + (['gas', 'pipe', 'iv', 'heat'].some(toolOn) ? `<button data-act="toolsOpen" class="${ui.view === 'tools' ? 'on' : ''}">${ICON.tools}Tools</button>` : '') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'prices' || ui.view === 'admin' || ui.view === 'help' || ui.view === 'news' || ui.view === 'feedback');
+  nav.innerHTML = t('home', 'Services', ICON.rec, ui.view === 'home' || ui.view === 'pick' || (!calOn() && ui.view === 'due')) + (calOn() ? `<button data-act="calOpen" class="${ui.view === 'cal' || ui.view === 'book' || ui.view === 'due' ? 'on' : ''}">${ICON.cal}Calendar</button>` : '') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit' || ui.view === 'import') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' || ui.view === 'summary') + (['gas', 'pipe', 'iv', 'heat'].some(toolOn) ? `<button data-act="toolsOpen" class="${ui.view === 'tools' ? 'on' : ''}">${ICON.tools}Tools</button>` : '') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'prices' || ui.view === 'admin' || ui.view === 'help' || ui.view === 'news' || ui.view === 'feedback');
   $('#barSub').textContent = ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' ? 'Invoices' : 'Gas & Legionella records';
 }
 
@@ -653,7 +653,7 @@ function renderHome(v) {
   const missing = !settings.address || !settings.gasSafeReg || !settings.engineerName || !settings.gasSafeId;
   const list = [...records].sort((a, b) => b.updated - a.updated);
   v.innerHTML = `
-    <h1>Records</h1>
+    <h1>Services</h1>
     ${trialBanner()}
     ${bkBanner()}
     ${newsBanner()}
@@ -852,7 +852,7 @@ function _instEvt0() { return !!_installEvt; }
 function instPopShow() {
   if (isStandalone() || LS.get('omb_noinstall', false) || +LS.get('omb_instsnooze', 0) > Date.now()) return;
   if (document.getElementById('gate')) return;                 // wait until they are past the log-in screen
-  if (ui.view !== 'home') return;                              // only on the Records screen, never over a form
+  if (ui.view !== 'home') return;                              // only on the Services screen, never over a form
   let p = document.getElementById('instPop');
   if (!p) { p = document.createElement('div'); p.id = 'instPop'; document.body.appendChild(p); }
   p.innerHTML = instPopHtml();
@@ -1071,7 +1071,7 @@ function renderSettings(v) {
     </div>
     </div>
     <div data-stab="app" ${(ui.sTab || 'business') === 'app' ? '' : 'hidden'}>
-    <h2>Records to show</h2>
+    <h2>Services to show</h2>
     <div class="card">
       ${[['recGas', 'Gas safety record'], ['recService', 'Boiler service record'], ['recLeg', 'Legionella risk assessment'], ['recAc', 'Air conditioning commissioning'], ['recQuote', 'Boiler quote'], ['recGQuote', 'Quote for any job']].map(([k, l]) => `<label class="f"><span>${l}</span><select data-s="${k}"><option value="on" ${settings[k] === 'off' ? '' : 'selected'}>Show</option><option value="off" ${settings[k] === 'off' ? 'selected' : ''}>Hide</option></select></label>`).join('')}
       <small class="muted">Hidden types leave the home screen and the “Forms for this visit” list. Records you have already made stay in your list. Turn one back on any time.</small>
@@ -1500,7 +1500,7 @@ async function sendSel() {
 }
 /* open the email app without leaving the page (a plain location change leaves a blank screen in some browsers, e.g. Firefox with no mail app set) */
 const mailAddr = a => encodeURIComponent(String(a || '').trim()).replace(/%40/g, '@').replace(/%2C/g, ',');
-/* which record types show on the home screen and in the visit picker (Settings → Business → Records to show) */
+/* which record types show on the home screen and in the visit picker (Settings → Business → Services to show) */
 const REC_KEYS = { gas: 'recGas', service: 'recService', legionella: 'recLeg', aircon: 'recAc', quote: 'recQuote', gquote: 'recGQuote' };
 const recOn = t => settings[REC_KEYS[t]] !== 'off';
 const REC_HOME = [['gas', '+ New Gas Safety Record'], ['service', '+ New Boiler Service Record'], ['legionella', '+ New Legionella Risk Assessment'], ['aircon', '+ New Air Conditioning Commissioning'], ['quote', '+ New Boiler Quote'], ['gquote', '+ New Quote (any job)']];
@@ -1560,7 +1560,7 @@ function stepReview() {
     ${made ? sendCard(m) : `<button class="btn gold block" data-act="makePdf" ${issues.length || needWarn.length ? 'disabled' : ''}>${ui.rec.status === 'draft' ? 'Create documents' : 'Open documents'}</button>
       <p class="small muted">${ui.rec.status === 'draft' ? `Makes the signed PDF${multi ? 's' : ''}${billable(m).length ? ' and the invoice' : ''}, ready to send.` : `Your finished document${multi ? 's are' : ' is'} already saved. This opens ${multi ? 'them' : 'it'} ready to view and send.`}</p>`}
     <div style="height:14px"></div>
-    <button class="btn block" data-act="done">Done – back to records</button>
+    <button class="btn block" data-act="done">Done – back to services</button>
     <details class="adv"><summary>More options</summary>
       ${made ? `<button class="btn block" data-act="dlSel">Download selected</button><div style="height:8px"></div>
       <button class="btn block" data-act="makePdf" ${issues.length || needWarn.length ? 'disabled' : ''}>Re-create documents</button><div style="height:8px"></div>` : ''}
