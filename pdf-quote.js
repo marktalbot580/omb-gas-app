@@ -139,7 +139,7 @@ async function buildQuotePdf(rec, s) {
   y += 4;
 
   /* ---------- acceptance ---------- */
-  ensure(40); heading('ACCEPTANCE', 'Ready to go ahead?');
+  ensure(50 + 10 * SC); heading('ACCEPTANCE', 'Ready to go ahead?');
   { const al = wrap('To accept this quotation, simply reply to the email we sent it with. We will then call you to arrange a date for the installation.', CW - 14, 9).length, ah = 14 + al * 9 * SC * 0.43 + 4 * SC; doc.setDrawColor(...GOLD); doc.setLineWidth(0.6); doc.roundedRect(M, y - 2, CW, ah, 3, 3, 'S');
     para('To accept this quotation, simply reply to the email we sent it with. We will then call you to arrange a date for the installation.', M + 7, y + 5, CW - 14, 9, { c: GREY });
     txt(rec.ref + '  ·  ' + money(T.total) + (T.rate ? ' inc. VAT' : ''), M + 7, y + 6 + al * 9 * SC * 0.43 + 4 * SC, { b: 1, fs: 8.5, c: DARK });
@@ -230,7 +230,7 @@ async function buildGeneralQuotePdf(rec, s) {
   }
 
   /* acceptance + terms */
-  ensure(36); heading('ACCEPTANCE', 'Ready to go ahead?');
+  ensure(36 + 10 * SC); heading('ACCEPTANCE', 'Ready to go ahead?');
   y += para('To accept this quotation, simply reply to the email we sent it with. We will then call you to arrange a date for the work.', M, y, CW, 9, { c: GREY }) + 3;
   txt(rec.ref + '  ·  ' + money(T.total) + (T.rate ? ' inc. VAT' : ''), M, y + 2, { b: 1, fs: 8.5, c: DARK }); y += 12;
   const terms = String(s.quoteTerms || QUO.DEFAULT_TERMS).split('\n').map(x => x.trim()).filter(x => x && !/boiler warranty/i.test(x));
