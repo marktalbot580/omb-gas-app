@@ -779,7 +779,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v121';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v122';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -910,6 +910,8 @@ function renderSettings(v) {
     <button class="btn block" data-act="help" style="margin-bottom:10px">Help guide</button>
     <button class="btn block" data-act="news" style="margin-bottom:10px">What’s new</button>
     <button class="btn block" data-act="feedback" style="margin-bottom:12px">Send feedback</button>
+    <div class="stabs">${[['business', 'Business'], ['invoicing', 'Invoicing'], ['quotes', 'Quotes'], ['reminders', 'Reminders'], ['app', 'App']].map(([k, l]) => `<button type="button" class="${(ui.sTab || 'business') === k ? 'on' : ''}" data-act="sTab" data-t="${k}">${l}</button>`).join('')}</div>
+    <div data-stab="business" ${(ui.sTab || 'business') === 'business' ? '' : 'hidden'}>
     <h2>Business (printed on every certificate)</h2>
     <div class="card">
       ${f('businessName', 'Business name')}
@@ -917,6 +919,14 @@ function renderSettings(v) {
       ${f('phone', 'Telephone', { type: 'tel' })}
       ${f('email', 'Email', { type: 'email', cap: 'none' })}
       ${f('gasSafeReg', 'Gas Safe Register number')}
+    </div>
+    <h2>Bank details (printed on invoices)</h2>
+    <div class="card">
+      <p class="small muted" style="margin-top:0">Anything filled in here is printed on unpaid invoices so the customer can pay by bank transfer, using the invoice number as the payment reference. Leave blank to print nothing.</p>
+      ${f('bankName', 'Bank')}
+      ${f('accName', 'Account name')}
+      ${f('sortCode', 'Sort code', { mode: 'numeric', maxlen: 8, hint: 'Six digits, for example 20-01-09' })}
+      ${f('accNo', 'Account number', { mode: 'numeric' })}
     </div>
     <h2>Your branding</h2>
     <div class="card">
@@ -937,6 +947,8 @@ function renderSettings(v) {
       ${f('engineerName', 'Engineer name')}
       ${f('gasSafeId', 'Gas Safe ID card number')}
     </div>
+    </div>
+    <div data-stab="invoicing" ${(ui.sTab || 'business') === 'invoicing' ? '' : 'hidden'}>
     <h2>Invoice details</h2>
     <div class="card">
       ${f('invPrefix', 'Invoice number prefix', { cap: 'characters', hint: 'For example INV-. Leave blank for numbers only.' })}
@@ -949,14 +961,6 @@ function renderSettings(v) {
       <div class="row"><div class="grow">${f('yearDay', 'Tax year starts: day', { mode: 'numeric', maxlen: 2 })}</div><div class="grow"><label class="f"><span>Month</span><select data-s="yearMonth">${['January','February','March','April','May','June','July','August','September','October','November','December'].map((mn, k) => `<option value="${k + 1}" ${String(+settings.yearMonth || 4) === String(k + 1) ? 'selected' : ''}>${mn}</option>`).join('')}</select></label></div></div>
       <p class="small muted" style="margin-top:-6px">The first day of your company’s tax / accounting year (6 April for sole traders; a company can be different). Used for “This tax year” and “Last tax year” in Print for accountant.</p>
       ${f('invFooter', 'Message at the bottom of invoices', { area: true })}
-    </div>
-    <h2>Bank details (printed on invoices)</h2>
-    <div class="card">
-      <p class="small muted" style="margin-top:0">Anything filled in here is printed on unpaid invoices so the customer can pay by bank transfer, using the invoice number as the payment reference. Leave blank to print nothing.</p>
-      ${f('bankName', 'Bank')}
-      ${f('accName', 'Account name')}
-      ${f('sortCode', 'Sort code', { mode: 'numeric', maxlen: 8, hint: 'Six digits, for example 20-01-09' })}
-      ${f('accNo', 'Account number', { mode: 'numeric' })}
     </div>
     <h2>Prices (used on invoices)</h2>
     <div class="card">
@@ -973,6 +977,8 @@ function renderSettings(v) {
       ${f('discValue', settings.discType === '%' ? 'Discount (%)' : 'Discount (£)', { mode: 'decimal', hint: 'Taken off automatically when two or three services are done on the same visit. You can still change it on each invoice.' })}
       <p class="small muted" style="margin:0">${(() => { const a = numOf(settings.priceGas), b = numOf(settings.priceSvc), c = numOf(settings.priceLeg), all = a + b + c; if (!all) return 'Set the prices above to see an example.'; const d = x => Math.min(settings.discType === '%' ? r2(x * numOf(settings.discValue) / 100) : numOf(settings.discValue), x); return `Example – all three services: ${money(all)} − ${money(d(all))} = <b style="color:var(--txt)">${money(all - d(all))}</b>`; })()}</p>
     </div>
+    </div>
+    <div data-stab="quotes" ${(ui.sTab || 'business') === 'quotes' ? '' : 'hidden'}>
     <h2>Quotes</h2>
     <div class="card">
       <div class="f"><span>Price list</span>
@@ -981,11 +987,8 @@ function renderSettings(v) {
       ${f('quoteIncluded', 'What is included as standard (one item per line)', { area: 1 })}
       ${f('quoteTerms', 'Terms shown on the quote (one per line)', { area: 1 })}
     </div>
-    <h2>Tools</h2>
-    <div class="card">
-      ${[['toolGas', 'Gas rate calculator'], ['toolPipe', 'Gas pipe sizing'], ['toolIv', 'Tightness test volume'], ['toolHeat', 'Heat loss and radiator sizing']].map(([k, l]) => `<label class="f"><span>${l}</span><select data-s="${k}"><option value="on" ${settings[k] === 'off' ? '' : 'selected'}>Show</option><option value="off" ${settings[k] === 'off' ? 'selected' : ''}>Hide</option></select></label>`).join('')}
-      <small class="muted">Hidden tools disappear from the Tools list. Hide all three and the Tools button leaves the home screen.</small>
     </div>
+    <div data-stab="reminders" ${(ui.sTab || 'business') === 'reminders' ? '' : 'hidden'}>
     <h2>Annual check reminders</h2>
     <div class="card">
       <label class="f"><span>Message wording</span><textarea data-s="remText" rows="4">${esc(settings.remText || REM_DEFAULT)}</textarea><small>Used for the Text, WhatsApp and Email buttons on the Annual checks due screen. {name}, {business}, {what}, {address} and {date} are filled in for you.</small></label>
@@ -994,6 +997,13 @@ function renderSettings(v) {
       ${settings.remAuto === 'on' ? '<button class="btn block" data-act="remTest">Send me a sample reminder</button><div style="height:8px"></div>' : ''}
       <button class="btn block ghost" data-act="remReset">Put the original wording back</button>
     </div>
+    <h2>Tools</h2>
+    <div class="card">
+      ${[['toolGas', 'Gas rate calculator'], ['toolPipe', 'Gas pipe sizing'], ['toolIv', 'Tightness test volume'], ['toolHeat', 'Heat loss and radiator sizing']].map(([k, l]) => `<label class="f"><span>${l}</span><select data-s="${k}"><option value="on" ${settings[k] === 'off' ? '' : 'selected'}>Show</option><option value="off" ${settings[k] === 'off' ? 'selected' : ''}>Hide</option></select></label>`).join('')}
+      <small class="muted">Hidden tools disappear from the Tools list. Hide all three and the Tools button leaves the home screen.</small>
+    </div>
+    </div>
+    <div data-stab="app" ${(ui.sTab || 'business') === 'app' ? '' : 'hidden'}>
     <h2>Backup</h2>
     <div class="card">
       <p class="small muted" style="margin-top:0">Customers and records are stored on this phone. Keep a copy somewhere safe. The app reminds you once a month. A backup holds your customers' details, so keep it somewhere private. You can add a password to it. Bank details are never included.</p>
@@ -1019,7 +1029,9 @@ function renderSettings(v) {
       <p class="small muted" style="margin-bottom:0">Clears the saved copy of the app and reloads the newest version. Your records, customers and photos are not touched.</p>
     </div>
     ${installCard(true)}
-    ${CLOUD.on ? accountCard() : ''}`;
+    ${CLOUD.on ? accountCard() : ''}
+    </div>
+`;
 }
 function accountCard() {
   const a = CLOUD.access(), sub = CLOUD.sub();
@@ -2466,6 +2478,7 @@ document.addEventListener('click', async e => {
       if (!on && !nm) { toast('Enter the customer’s name on the first screen'); break; }
       r.customerName = on ? '' : nm; persistRec(r); ui.pdf = null; const y = window.scrollY; render(); window.scrollTo(0, y); break;
     }
+    case 'sTab': ui.sTab = b.dataset.t; render(); window.scrollTo(0, 0); break;
     case 'copyVal': {
       const v = (b.closest('label').querySelector('input') || {}).value || '';
       if (!v.trim()) { toast('Nothing to copy yet'); break; }
