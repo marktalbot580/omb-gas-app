@@ -101,12 +101,14 @@ const DEFAULT_SETTINGS = {
   priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', priceCom: '', quoteIncluded: QUO.DEFAULT_INCLUDED, quoteTerms: QUO.DEFAULT_TERMS, qItemsText: '', qList: [], qMarkup: {}, qMarkupDef: '30', discType: '£', discValue: '',
   invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '', vatQtr: '2', yearDay: '6', yearMonth: '4',
   bankName: '', accName: '', sortCode: '', accNo: '', invFooter: 'Thank you for your business.',
-  remText: '', qChaseText: '', invRemText: '', invAsk: 'on', logoBg: 'white', recGas: 'on', recService: 'on', recLeg: 'on', recAc: 'on', recQuote: 'on', remDays: '56', toolGas: 'on', toolPipe: 'on', toolIv: 'on', toolHeat: 'on'
+  remText: '', qChaseText: '', invRemText: '', invAsk: 'on', logoBg: 'white', calHome: 'on', calMins: '60', recGas: 'on', recService: 'on', recLeg: 'on', recAc: 'on', recQuote: 'on', remDays: '56', toolGas: 'on', toolPipe: 'on', toolIv: 'on', toolHeat: 'on'
 };
 let settings = Object.assign({}, DEFAULT_SETTINGS, LS.get('omb_settings', {}));
 let customers = LS.get('omb_customers', []);
 let records = LS.get('omb_records', []);
 let invoices = LS.get('omb_invoices', []);
+let bookings = LS.get('omb_bookings', []);
+const saveBookings = () => LS.set('omb_bookings', bookings);
 records.forEach(r => (r.appliances || []).forEach(a => { if (a.test === 'Burner Pressure') a.test = 'Operating Pressure'; }));
 /* 200109 or 20 01 09 -> 20-01-09 */
 const fmtSort = v => (String(v || '').replace(/\D/g, '').slice(0, 6).match(/.{1,2}/g) || []).join('-');
@@ -575,7 +577,7 @@ function render() {
   if (ui.view !== 'home' && typeof instPopClose === 'function') instPopClose();   // the install pop-up must never cover the Next / Back buttons
   if (ui.view === 'form') { renderForm(v, nav); }
   else {
-    ({ home: renderHome, pick: renderPick, customers: renderCustomers, custEdit: renderCustEdit, settings: renderSettings, invoices: renderInvoices, invEdit: renderInvEdit, invPrint: renderInvPrint, admin: renderAdmin, prices: renderPrices, help: renderHelp, news: renderNews, feedback: renderFeedback, due: renderDue, tools: renderTools }[ui.view])(v);
+    ({ home: renderHome, pick: renderPick, customers: renderCustomers, custEdit: renderCustEdit, settings: renderSettings, invoices: renderInvoices, invEdit: renderInvEdit, invPrint: renderInvPrint, admin: renderAdmin, prices: renderPrices, help: renderHelp, news: renderNews, feedback: renderFeedback, due: renderDue, tools: renderTools, cal: renderCal, book: renderBook }[ui.view])(v);
     renderTabs(nav);
   }
   paintSync();
@@ -594,7 +596,7 @@ const ICON = {
 function renderTabs(nav) {
   nav.className = 'tabs';
   const t = (id, label, ic, on) => `<button data-nav="${id}" class="${on ? 'on' : ''}">${ic}${label}</button>`;
-  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick' || ui.view === 'due') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint') + (['gas', 'pipe', 'iv', 'heat'].some(toolOn) ? `<button data-act="toolsOpen" class="${ui.view === 'tools' ? 'on' : ''}">${ICON.tools}Tools</button>` : '') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'prices' || ui.view === 'admin' || ui.view === 'help' || ui.view === 'news' || ui.view === 'feedback');
+  nav.innerHTML = t('home', 'Records', ICON.rec, ui.view === 'home' || ui.view === 'pick' || ui.view === 'due' || ui.view === 'cal' || ui.view === 'book') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint') + (['gas', 'pipe', 'iv', 'heat'].some(toolOn) ? `<button data-act="toolsOpen" class="${ui.view === 'tools' ? 'on' : ''}">${ICON.tools}Tools</button>` : '') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'prices' || ui.view === 'admin' || ui.view === 'help' || ui.view === 'news' || ui.view === 'feedback');
   $('#barSub').textContent = ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' ? 'Invoices' : 'Gas & Legionella records';
 }
 
@@ -655,6 +657,7 @@ function renderHome(v) {
     ${missing ? `<div class="notice">Add the business address, Gas Safe register number and engineer details in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a> before issuing certificates.</div>` : ''}
     ${REC_HOME.filter(([t]) => recOn(t)).map(([t, l]) => `<button class="btn gold block" data-act="newRec" data-type="${t}">${l}</button><div style="height:10px"></div>`).join('')}
     ${remHomeBtn()}
+    ${calHomeHtml()}
     
     <h2>Recent</h2>
     ${list.length ? list.slice(0, 5).map(r => `${r.status === 'draft' ? '<div class="itemw">' : ''}
@@ -682,6 +685,8 @@ function renderPick(v) {
     ${recOn('gas') && recOn('service') && recOn('legionella') ? `<button class="btn block" data-act="pickAll">Landlord visit: gas check, boiler service &amp; Legionella</button>` : ''}
     <div style="height:10px"></div>
     <button class="btn gold block" data-act="pickGo" ${n ? '' : 'disabled'}>${n > 1 ? `Start ${n} forms (${n} PDFs)` : 'Start'}</button>
+    <div style="height:10px"></div>
+    <button class="btn block" data-act="bookFromPick" ${n ? '' : 'disabled'}>Schedule in</button>
     <div style="height:10px"></div>
     <button class="btn ghost block" data-act="pickCancel">Cancel</button>`;
 }
@@ -771,7 +776,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v133';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v134';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -902,7 +907,7 @@ function renderSettings(v) {
     <button class="btn block" data-act="help" style="margin-bottom:10px">Help guide</button>
     <button class="btn block" data-act="news" style="margin-bottom:10px">What’s new</button>
     <button class="btn block" data-act="feedback" style="margin-bottom:12px">Send feedback</button>
-    <div class="stabs grid">${[['business', 'Business'], ['invoicing', 'Invoicing'], ['quotes', 'Quotes'], ['reminders', 'Reminders'], ['tools', 'Tools'], ['app', 'App']].map(([k, l]) => `<button type="button" class="${(ui.sTab || 'business') === k ? 'on' : ''}" data-act="sTab" data-t="${k}">${l}</button>`).join('')}</div>
+    <div class="stabs grid">${[['business', 'Business'], ['invoicing', 'Invoicing'], ['quotes', 'Quotes'], ['reminders', 'Reminders'], ['calendar', 'Calendar'], ['tools', 'Tools'], ['app', 'App']].map(([k, l]) => `<button type="button" class="${(ui.sTab || 'business') === k ? 'on' : ''}" data-act="sTab" data-t="${k}">${l}</button>`).join('')}</div>
     <div data-stab="business" ${(ui.sTab || 'business') === 'business' ? '' : 'hidden'}>
     <h2>Business (printed on every certificate)</h2>
     <div class="card">
@@ -997,6 +1002,21 @@ function renderSettings(v) {
       <label class="f"><span>Send reminders automatically by email</span><select data-s="remAuto"><option value="off" ${settings.remAuto === 'on' ? '' : 'selected'}>Off</option><option value="on" ${settings.remAuto === 'on' ? 'selected' : ''}>On</option></select><small>When on, customers with an email address saved get an email about 8 weeks before their check is due, and again 2 weeks before. It comes from reminders@ombgas.com with your business name, and their replies come to <b>${esc(settings.email || 'your email in Settings')}</b>. Customers you mark Booked in, Not needed or Stop are skipped, and every email has an unsubscribe link. You need to be signed in so it can run.${settings.remAuto === 'on' && !settings.email ? ' <b style="color:var(--gold2)">Add your email address under Business first, or replies will have nowhere to go.</b>' : ''}</small></label>
       ${settings.remAuto === 'on' ? '<button class="btn block" data-act="remTest">Send me a sample reminder</button><div style="height:8px"></div>' : ''}
       <button class="btn block ghost" data-act="remReset">Put the original wording back</button>
+    </div>
+    </div>
+    <div data-stab="calendar" ${(ui.sTab || 'business') === 'calendar' ? '' : 'hidden'}>
+    <h2>Calendar</h2>
+    <div class="card">
+      <label class="f"><span>Show the calendar on the home screen</span><select data-s="calHome"><option value="on" ${settings.calHome === 'off' ? '' : 'selected'}>Yes</option><option value="off" ${settings.calHome === 'off' ? 'selected' : ''}>No</option></select><small>Shows today’s appointments and the month under your record buttons.</small></label>
+      <label class="f"><span>Usual appointment length</span><select data-s="calMins">${[['30', '30 minutes'], ['60', '1 hour'], ['90', '1½ hours'], ['120', '2 hours'], ['180', '3 hours']].map(([m, l]) => `<option value="${m}" ${String(settings.calMins || '60') === m ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <button class="btn block" data-act="calOpen">Open the calendar</button>
+    </div>
+    <h2>Export</h2>
+    <div class="card">
+      <p class="small muted" style="margin-top:0">Your appointments are kept on this phone (${bookings.length} so far). Export them to add to Google Calendar, Apple Calendar or Outlook.</p>
+      <button class="btn block" data-act="calExport">Export to a calendar (.ics)</button>
+      <div style="height:8px"></div>
+      <button class="btn block" data-act="calExportCsv">Export as a spreadsheet</button>
     </div>
     </div>
     <div data-stab="tools" ${(ui.sTab || 'business') === 'tools' ? '' : 'hidden'}>
@@ -2394,7 +2414,7 @@ function initSigs() {
 
 /* ---------- events ---------- */
 /* when the subscription has ended the app is read-only: look, download and export, but no new or changed records */
-const LOCKED_WRITES = new Set(['custNoRem', 'newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'sameName', 'engSigTog', 'engSigUse', 'invNone', 'invNoneVisit', 'invUndoNone', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod', 'invPickCust', 'invPickProp', 'invPickSug']);
+const LOCKED_WRITES = new Set(['bookSave', 'bookStart', 'bookFromPick', 'custNoRem', 'newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'sameName', 'engSigTog', 'engSigUse', 'invNone', 'invNoneVisit', 'invUndoNone', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod', 'invPickCust', 'invPickProp', 'invPickSug']);
 const lockedMsg = () => toast('Your subscription has ended. Subscribe to create or change records.');
 document.addEventListener('click', async e => {
   /* tap the logo / name at the top to go back to the home screen – a form you are part way through is kept as a draft */
@@ -2467,6 +2487,7 @@ document.addEventListener('click', async e => {
   if (a === 'adminFbStatus') { try { await CLOUD.rpc('admin_feedback_status', { target: b.dataset.id, val: b.dataset.v }); toast('Updated'); } catch (e) { toast('Could not update: ' + e.message); } adminLoad(); return; }
   if (a === 'newsDismiss') { nsSet(); render(); return; }
   if (a === 'helpBack') { ui.view = ui.helpFrom && ui.helpFrom !== 'help' && (ui.helpFrom !== 'form' || ui.rec) ? ui.helpFrom : 'home'; render(); return; }
+  if (await calAct(a, b)) return;
   switch (a) {
     case 'newRec': ui.pick = { types: { [b.dataset.type]: true }, customer: null }; if (b.dataset.type === 'quote') { startJob(); break; } ui.view = 'pick'; render(); break;
     case 'pickToggle': ui.pick.types[b.dataset.t] = !ui.pick.types[b.dataset.t]; render(); break;
@@ -3089,7 +3110,7 @@ async function exportBackup() {
   const strip = o => { const c = { ...o }; delete c._dirty; return c; };
   const photos = {};
   for (const r of records) for (const id of PH.allIds(r)) { if (!photos[id]) { const p = await PH.get(id); if (p) photos[id] = p; } }
-  const data = { app: 'omb-gas', version: 1, exported: new Date().toISOString(), settings: keep, customers: customers.map(strip), records: records.map(strip), invoices, photos };
+  const data = { app: 'omb-gas', version: 1, exported: new Date().toISOString(), settings: keep, customers: customers.map(strip), records: records.map(strip), invoices, bookings, photos };
   let out = JSON.stringify(data);
   if (pw) { try { out = await lockBackup(out, pw); } catch (e) { toast('Could not lock the backup on this device'); return; } }
   if (await saveFile(out, `OMB backup ${todayISO()}${pw ? ' (password)' : ''}.json`, 'application/json')) { bkSet({ last: todayISO(), snooze: '' }); if (ui.view === 'home' || ui.view === 'settings') render(); }
@@ -3106,6 +3127,8 @@ async function restoreBackup(file) {
     for (const [id, p] of Object.entries(d.photos || {})) { if (!(await PH.get(id))) await PH.put(id, p); }
     (d.invoices || []).forEach(i => { const l = invoices.find(x => x.id === i.id); if (!l) invoices.push(i); else if ((i.updated || 0) > (l.updated || 0)) Object.assign(l, i); });
     saveInvoices();
+    (d.bookings || []).forEach(x => { const l = bookings.find(z => z.id === x.id); if (!l) bookings.push(x); else if ((x.updated || 0) > (l.updated || 0)) Object.assign(l, x); });
+    saveBookings();
     (d.customers || []).forEach(c => { const l = customers.find(x => x.id === c.id); if (!l) { customers.push(c); addC++; } else if ((c.updated || 0) > (l.updated || 0)) Object.assign(l, c); });
     (d.records || []).forEach(r => { const l = records.find(x => x.id === r.id); if (!l) { records.push(r); addR++; } else if ((r.updated || 0) > (l.updated || 0)) Object.assign(l, r); });
     Object.entries(d.settings || {}).forEach(([k, v]) => { if (k !== 'syncToken' && v && !settings[k]) settings[k] = v; });
@@ -3113,6 +3136,168 @@ async function restoreBackup(file) {
     toast(`Restored ${addC} customer${addC === 1 ? '' : 's'} and ${addR} record${addR === 1 ? '' : 's'}` + (settings.accNo ? '' : '. Bank details are not kept in backups, so add them again in Settings'));
   } catch (err) { toast('That file is not a valid backup'); }
 }
+
+/* ---------- calendar: appointments kept on this phone ---------- */
+const BK_TYPES = [['gas', 'Gas safety check'], ['service', 'Boiler service'], ['legionella', 'Legionella risk assessment'], ['aircon', 'Air conditioning'], ['quote', 'Boiler quote'], ['other', 'Other job']];
+const bkLabel = b => (b.types || []).map(t => (BK_TYPES.find(x => x[0] === t) || [0, t])[1]).join(' + ') || 'Appointment';
+const localISO = d => { d = d || new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const toMin = t => { const m = /^(\d{1,2}):(\d{2})/.exec(t || ''); return m ? (+m[1]) * 60 + (+m[2]) : 0; };
+const fromMin = n => String(Math.floor(n / 60) % 24).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0');
+const bkEnd = b => fromMin(toMin(b.time) + (+b.mins || 60));
+const dayLong = iso => new Date(iso + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+const dayShort = iso => new Date(iso + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+const monthLong = m => new Date(m + '-01T12:00:00').toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+const calState = () => (ui.cal = ui.cal || { m: localISO().slice(0, 7), d: localISO() });
+const bkOn = date => bookings.filter(b => b.date === date).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+function bkItem(b, withDate) {
+  return `<button type="button" class="item" data-act="bookOpen" data-id="${b.id}"><div class="row sp"><span class="t">${withDate ? esc(dayShort(b.date)) + ' · ' : ''}${esc(b.time)}–${esc(bkEnd(b))} · ${esc(b.name || 'No name')}</span>${b.status === 'done' ? '<span class="badge complete">done</span>' : ''}</div>
+    <div class="s">${esc(bkLabel(b))}</div>${b.address ? `<div class="s">${esc(addrFirst(b.address))}</div>` : ''}</button>`;
+}
+function calGrid(sel, month) {
+  const [y, m] = month.split('-').map(Number), lead = (new Date(y, m - 1, 1).getDay() + 6) % 7, dim = new Date(y, m, 0).getDate(), t = localISO();
+  let h = '<div class="calg">' + ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(d => `<div class="dn">${d}</div>`).join('');
+  for (let i = 0; i < lead; i++) h += '<span></span>';
+  for (let d = 1; d <= dim; d++) { const iso = month + '-' + String(d).padStart(2, '0'); h += `<button type="button" data-act="calDay" data-d="${iso}" class="${iso === t ? 'today ' : ''}${iso === sel ? 'sel' : ''}">${d}${bkOn(iso).length ? '<i></i>' : ''}</button>`; }
+  return h + '</div>';
+}
+const calHead = month => `<div class="calhd"><button type="button" data-act="calMonth" data-n="-1" aria-label="Previous month">‹</button><b>${monthLong(month)}</b><button type="button" data-act="calMonth" data-n="1" aria-label="Next month">›</button></div>`;
+function calHomeHtml() {
+  if (settings.calHome === 'off') return '';
+  const t = localISO(), td = bkOn(t), s = calState();
+  return `<h2>Today</h2>
+    ${td.length ? td.map(b => bkItem(b)).join('') : '<div class="empty" style="padding:14px">Nothing booked in today.</div>'}
+    <button class="btn block" data-act="bookNew" data-d="${t}">+ Schedule an appointment</button>
+    <h2>Calendar</h2>${calHead(s.m)}${calGrid('', s.m)}
+    <button class="btn block ghost" data-act="calOpen">Open the full calendar</button>`;
+}
+function renderCal(v) {
+  const s = calState(), t = localISO(), mode = ui.calMode || 'today';
+  let body;
+  if (mode === 'today') {
+    const up = bookings.filter(b => b.date > t && b.date <= addDays(t, 7)).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+    const td = bkOn(t);
+    body = `<h2 style="margin-top:0">${dayLong(t)}</h2>
+      ${td.length ? td.map(b => bkItem(b)).join('') : '<div class="empty" style="padding:14px">Nothing booked in today.</div>'}
+      <button class="btn gold block" data-act="bookNew" data-d="${t}">+ Appointment today</button>
+      ${up.length ? '<h2>Coming up this week</h2>' + up.map(b => bkItem(b, true)).join('') : ''}`;
+  } else {
+    const day = bkOn(s.d);
+    body = `${calHead(s.m)}${calGrid(s.d, s.m)}
+      <h2 style="margin-top:0">${dayLong(s.d)}</h2>
+      ${day.length ? day.map(b => bkItem(b)).join('') : '<div class="empty" style="padding:14px">Nothing booked this day.</div>'}
+      <button class="btn gold block" data-act="bookNew" data-d="${s.d}">+ Appointment on this day</button>`;
+  }
+  v.innerHTML = `<h1>Calendar</h1>
+    <div class="seg" style="margin-bottom:14px">${[['today', 'Today'], ['month', 'Month']].map(([k, l]) => `<button type="button" data-act="calMode" data-m="${k}" class="${mode === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+    ${body}
+    <div style="height:10px"></div><button class="btn ghost block" data-nav="home">Back to records</button>`;
+}
+function newBook(o) {
+  const c = o.customer || null;
+  return Object.assign({ id: uid(), date: localISO(), time: '09:00', mins: String(settings.calMins || '60'), types: [], customerId: c ? c.id : '', name: c ? c.name : '', phone: c ? c.phone || '' : '', email: c ? c.email || '' : '', address: c && (c.properties || []).length === 1 ? c.properties[0] : '', notes: '', status: 'booked' }, o.base || {});
+}
+function renderBook(v) {
+  const B = ui.book, isNew = !bookings.some(x => x.id === B.id), c = customers.find(x => x.id === B.customerId);
+  const sorted = [...customers].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  const f = (k, l, o = {}) => `<label class="f"><span>${l}</span>${o.area ? `<textarea data-bk="${k}" rows="2">${esc(B[k])}</textarea>` : `<input data-bk="${k}" value="${esc(B[k])}" ${o.type ? `type="${o.type}"` : ''} autocomplete="off">`}</label>`;
+  v.innerHTML = `<h1>${isNew ? 'Schedule in' : 'Appointment'}</h1>
+    <h2 style="margin-top:0">What is the job?</h2>
+    ${BK_TYPES.filter(([k]) => k === 'other' || recOn(k) || B.types.includes(k)).map(([k, l]) => `<button type="button" class="item tog ${B.types.includes(k) ? 'on' : ''}" data-act="bookType" data-t="${k}"><span class="box"></span><span class="t">${l}</span></button>`).join('')}
+    <h2>When</h2>
+    <div class="card">${f('date', 'Date', { type: 'date' })}${f('time', 'Start time', { type: 'time' })}
+      <label class="f"><span>How long</span><select data-bk="mins">${[['30', '30 minutes'], ['45', '45 minutes'], ['60', '1 hour'], ['90', '1½ hours'], ['120', '2 hours'], ['180', '3 hours'], ['240', '4 hours'], ['480', 'All day']].map(([m, l]) => `<option value="${m}" ${String(B.mins) === m ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
+    <h2>Customer</h2>
+    <div class="card">
+      ${sorted.length ? `<label class="f"><span>Customer</span><select data-bk="customerId"><option value="">New customer (type the details below)</option>${sorted.map(x => `<option value="${x.id}" ${x.id === B.customerId ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>` : ''}
+      ${c && (c.properties || []).length > 1 ? `<label class="f"><span>Property</span><select data-bk="propPick"><option value="">Choose a property</option>${c.properties.map((p, i) => `<option value="${i}" ${p === B.address ? 'selected' : ''}>${esc(addrFirst(p))}</option>`).join('')}</select></label>` : ''}
+      ${f('name', 'Name')}${f('phone', 'Phone', { type: 'tel' })}${f('email', 'Email', { type: 'email' })}${f('address', 'Address of the job', { area: 1 })}
+    </div>
+    <h2>Notes</h2><div class="card">${f('notes', 'Anything to remember', { area: 1 })}</div>
+    <button class="btn gold block" data-act="bookSave">${isNew ? 'Add to calendar' : 'Save changes'}</button>
+    ${isNew ? '' : `<div style="height:10px"></div><button class="btn block" data-act="bookStart">Start the forms for this job</button>
+      <div style="height:10px"></div><button class="btn block" data-act="bookDone">${B.status === 'done' ? 'Mark as not done' : 'Mark as done'}</button>
+      <div style="height:10px"></div><button class="btn block" data-act="bookIcs">Add to my phone’s calendar</button>
+      <div style="height:10px"></div><button class="btn block ghost" data-act="bookDel">Delete appointment</button>`}
+    <div style="height:10px"></div><button class="btn ghost block" data-act="bookBack">${isNew ? 'Cancel' : 'Back'}</button>`;
+}
+function bkBack() { ui.book = null; if (ui.bookFrom === 'pick' && ui.pick) ui.view = 'pick'; else ui.view = ui.bookFrom === 'home' ? 'home' : 'cal'; render(); }
+function bkFill(B, c) { if (!c) return; B.customerId = c.id; B.name = c.name || ''; B.phone = c.phone || ''; B.email = c.email || ''; B.address = (c.properties || []).length === 1 ? c.properties[0] : ((c.properties || []).includes(B.address) ? B.address : ''); }
+function bkValid(B) {
+  if (!B.types.length) { toast('Choose what the job is'); return false; }
+  if (!B.date || !B.time) { toast('Set the date and time'); return false; }
+  if (!String(B.name || '').trim()) { toast('Add the customer’s name'); return false; }
+  const s = toMin(B.time), e = s + (+B.mins || 60);
+  const ov = bookings.find(x => x.id !== B.id && x.date === B.date && toMin(x.time) < e && s < toMin(x.time) + (+x.mins || 60));
+  if (ov && !confirm('You already have ' + (ov.name || 'an appointment') + ' at ' + ov.time + '. Book this one anyway?')) return false;
+  return true;
+}
+function bkSave() {
+  const B = ui.book; if (!bkValid(B)) return false;
+  B.updated = Date.now(); const i = bookings.findIndex(x => x.id === B.id);
+  if (i >= 0) bookings[i] = { ...B }; else bookings.push({ ...B });
+  saveBookings(); return true;
+}
+function icsDT(date, min) { const [y, m, d] = date.split('-').map(Number), dt = new Date(y, m - 1, d, Math.floor(min / 60), min % 60), p = n => String(n).padStart(2, '0'); return dt.getFullYear() + p(dt.getMonth() + 1) + p(dt.getDate()) + 'T' + p(dt.getHours()) + p(dt.getMinutes()) + '00'; }
+function icsFor(list) {
+  const esc2 = s => String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n'), stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+  const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//OMB Gas Service//Calendar//EN', 'CALSCALE:GREGORIAN'];
+  list.forEach(b => {
+    const s = toMin(b.time), desc = [b.phone && 'Phone: ' + b.phone, b.email && 'Email: ' + b.email, b.notes].filter(Boolean).join('\n');
+    L.push('BEGIN:VEVENT', 'UID:' + b.id + '@ombgas.com', 'DTSTAMP:' + stamp, 'DTSTART:' + icsDT(b.date, s), 'DTEND:' + icsDT(b.date, s + (+b.mins || 60)),
+      'SUMMARY:' + esc2(bkLabel(b) + ' – ' + (b.name || '')), 'LOCATION:' + esc2(String(b.address || '').replace(/\s*\n+\s*/g, ', ')), 'DESCRIPTION:' + esc2(desc), 'END:VEVENT');
+  });
+  L.push('END:VCALENDAR'); return L.join('\r\n');
+}
+function bkCsv() {
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""').replace(/\r?\n/g, ', ') + '"';
+  const rows = [['Date', 'Start', 'End', 'Customer', 'Phone', 'Email', 'Address', 'Job', 'Status', 'Notes']].concat([...bookings].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)).map(b => [ukDate(b.date), b.time, bkEnd(b), b.name, b.phone, b.email, b.address, bkLabel(b), b.status === 'done' ? 'Done' : 'Booked', b.notes]));
+  return '\ufeff' + rows.map(r => r.map(q).join(',')).join('\r\n');
+}
+function bkStart() {
+  const B = ui.book, types = B.types.filter(t => t !== 'other');
+  if (!types.length) { toast('There is no form for “Other job”'); return; }
+  if (!bkSave()) return;
+  let cu = customers.find(x => x.id === B.customerId);
+  if (!cu) { cu = { id: uid(), name: B.name.trim(), phone: B.phone, email: B.email, billing: '', properties: [], updated: Date.now(), _dirty: true }; customers.unshift(cu); }
+  const a = String(B.address || '').trim();
+  if (a && !(cu.properties || []).includes(a)) (cu.properties = cu.properties || []).push(a);
+  saveCustomers();
+  const bk = bookings.find(x => x.id === B.id); if (bk) { bk.customerId = cu.id; bk.status = 'done'; saveBookings(); }
+  ui.pick = { types: Object.fromEntries(types.map(t => [t, true])), customer: cu }; ui.book = null; startJob();
+  if (a) { (jobRecs() || [ui.rec]).forEach(r => { r.jobAddress = a; persistRec(r); }); render(); }
+}
+async function calAct(a, b) {
+  switch (a) {
+    case 'calOpen': ui.cal = null; calState(); ui.calMode = 'today'; ui.view = 'cal'; render(); return true;
+    case 'calMode': ui.calMode = b.dataset.m; if (b.dataset.m === 'today') ui.cal = null; render(); return true;
+    case 'calMonth': { const s = calState(), [y, m] = s.m.split('-').map(Number), d = new Date(y, m - 1 + (+b.dataset.n), 1); s.m = localISO(d).slice(0, 7); render(); return true; }
+    case 'calDay': { const s = calState(); s.d = b.dataset.d; s.m = s.d.slice(0, 7); ui.calMode = 'month'; if (ui.view === 'home') ui.view = 'cal'; render(); window.scrollTo(0, 0); return true; }
+    case 'bookNew': ui.book = newBook({ base: { date: b.dataset.d || localISO() } }); ui.bookFrom = ui.view === 'home' ? 'home' : 'cal'; ui.view = 'book'; render(); return true;
+    case 'bookFromPick': { const pk = ui.pick; ui.book = newBook({ customer: pk.customer, base: { types: Object.keys(pk.types).filter(k => pk.types[k]) } }); ui.bookFrom = 'pick'; ui.view = 'book'; render(); return true; }
+    case 'bookType': { const T = ui.book.types, i = T.indexOf(b.dataset.t); if (i >= 0) T.splice(i, 1); else T.push(b.dataset.t); const y = window.scrollY; render(); window.scrollTo(0, y); return true; }
+    case 'bookOpen': { const x = bookings.find(z => z.id === b.dataset.id); if (x) { ui.book = { ...x, types: [...(x.types || [])] }; ui.bookFrom = ui.view === 'home' ? 'home' : 'cal'; ui.view = 'book'; render(); } return true; }
+    case 'bookSave': { if (!bkSave()) return true; const d = ui.book.date, t = ui.book.time; ui.pick = ui.bookFrom === 'pick' ? null : ui.pick; ui.cal = { m: d.slice(0, 7), d }; ui.calMode = 'month'; ui.book = null; ui.view = ui.bookFrom === 'home' ? 'home' : 'cal'; ui.bookFrom = ''; toast('Booked in for ' + dayShort(d) + ' at ' + t); render(); return true; }
+    case 'bookDone': { ui.book.status = ui.book.status === 'done' ? 'booked' : 'done'; if (bkSave()) { toast(ui.book.status === 'done' ? 'Marked as done' : 'Marked as not done'); render(); } return true; }
+    case 'bookDel': if (confirm('Delete this appointment?')) { bookings = bookings.filter(x => x.id !== ui.book.id); saveBookings(); toast('Appointment deleted'); bkBack(); } return true;
+    case 'bookBack': bkBack(); return true;
+    case 'bookStart': bkStart(); return true;
+    case 'bookIcs': if (bkValid(ui.book)) saveFile(icsFor([ui.book]), 'Appointment ' + ui.book.date + '.ics', 'text/calendar'); return true;
+    case 'calExport': if (!bookings.length) { toast('No appointments to export yet'); return true; } saveFile(icsFor(bookings), 'Appointments ' + localISO() + '.ics', 'text/calendar'); return true;
+    case 'calExportCsv': if (!bookings.length) { toast('No appointments to export yet'); return true; } saveFile(bkCsv(), 'Appointments ' + localISO() + '.csv', 'text/csv'); return true;
+  }
+  return false;
+}
+document.addEventListener('input', e => {
+  const t = e.target, k = t && t.dataset && t.dataset.bk; if (!k || !ui.book || t.tagName === 'SELECT') return;
+  ui.book[k] = t.value;
+});
+document.addEventListener('change', e => {
+  const t = e.target, k = t && t.dataset && t.dataset.bk; if (!k || !ui.book) return;
+  const B = ui.book, y = window.scrollY;
+  if (k === 'customerId') { const c = customers.find(x => x.id === t.value); if (c) bkFill(B, c); else B.customerId = ''; render(); window.scrollTo(0, y); }
+  else if (k === 'propPick') { const c = customers.find(x => x.id === B.customerId); if (c && t.value !== '') B.address = c.properties[+t.value]; render(); window.scrollTo(0, y); }
+  else B[k] = t.value;
+});
 
 /* ---------- cloud sync (see cloud.js) ---------- */
 const paintSync = () => CLOUD.paint();

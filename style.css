@@ -278,3 +278,15 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 4px rgba(217,178,95,.14
 
 .stabs.grid{display:grid;grid-template-columns:repeat(3,1fr);overflow:visible;margin:0 0 14px;padding:0}
 .stabs.grid button{padding:10px 6px;text-align:center}
+
+/* calendar */
+.calhd{display:flex;align-items:center;justify-content:space-between;margin:4px 0 10px}
+.calhd b{font-size:17px}
+.calhd button{width:44px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--txt);font:inherit;font-size:22px;line-height:1}
+.calg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:14px}
+.calg .dn{text-align:center;font-size:11px;color:var(--mut);padding:2px 0}
+.calg button{position:relative;aspect-ratio:1/1;min-height:42px;padding:0;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--txt);font:inherit;font-size:14px;font-weight:600}
+.calg button.today{border-color:var(--gold2);color:var(--gold2)}
+.calg button.sel{background:var(--gold2);border-color:var(--gold2);color:#111}
+.calg button i{position:absolute;left:50%;bottom:5px;width:6px;height:6px;margin-left:-3px;border-radius:50%;background:var(--gold2)}
+.calg button.sel i{background:#111}
