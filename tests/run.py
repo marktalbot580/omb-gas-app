@@ -241,6 +241,39 @@ def run():
         check('no page errors in validation', not errs, errs)
         ctx.close()
 
+        # ---------- 12b. calendar extras: book from annual checks, tomorrow reminders, week view ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        ev(pg, 'SAMPLE.add()')
+        r = ev(pg, """(()=>{
+          const rec=records.find(x=>typeOf(x)==='service'); rec.status='complete'; rec.inspectionDate=localISO(); rec.renewal=addDays(localISO(),10); rec.customerId=''; persistRec(rec);
+          ui.view='due'; render();
+          const btn=document.querySelector('[data-act=remBook]'); if(!btn) return 'no button';
+          btn.click(); return null})()""")
+        pg.wait_for_timeout(300)
+        r2 = ev(pg, "({v:ui.view,from:ui.bookFrom,types:ui.book&&ui.book.types,fr:ui.book&&ui.book.fromRem,d:ui.book&&ui.book.date})")
+        check('Book it in opens a booking for the due check', r is None and r2['v'] == 'book' and r2['from'] == 'due' and r2['types'] == ['service'] and r2['fr'], [r, r2])
+        ev(pg, "ui.book.name='Mrs Test'; ui.book.phone='07700900123'; render(); document.querySelector('[data-act=bookSave]').click()")
+        pg.wait_for_timeout(300)
+        r3 = ev(pg, "({v:ui.view,n:bookings.length,st:remStateOf(records.find(x=>x.id===(bookings[bookings.length-1]||{}).fromRem))})")
+        check('saving returns to Annual checks and marks it booked in', r3['v'] == 'due' and r3['n'] >= 1 and r3['st'] == 'booked', r3)
+        ev(pg, "bookings.push({id:'tm1',date:addDays(localISO(),1),time:'10:00',mins:'60',types:['service'],name:'Bob Smith',phone:'07700900456',email:'b@x.com',address:'1 A St',status:'booked'}); ui.view='cal'; ui.calMode='today'; render()")
+        h = ev(pg, "document.querySelector('#view').innerHTML")
+        check('tomorrow reminder shows Text and Email buttons', 'sms:07700900456' in h and 'mailto:b%40x.com' in h and 'tomorrow%20at%2010%3A00' in h, h[:80])
+        ev(pg, "document.querySelector('[data-act=calRemSent]').addEventListener('click',e=>e.preventDefault()); document.querySelector('[data-act=calRemSent]').click()")
+        pg.wait_for_timeout(1000)
+        check('sending a reminder marks it reminded', ev(pg, "!!bookings.find(x=>x.id==='tm1').remindedAt") and 'reminded' in ev(pg, "document.querySelector('#view').innerText").lower())
+        ev(pg, "settings.calRemOn='off'; render()")
+        check('tomorrow reminders can be switched off', 'sms:07700900456' not in ev(pg, "document.querySelector('#view').innerHTML"))
+        ev(pg, "settings.calRemOn='on'; ui.calMode='week'; ui.cal=null; render()")
+        w = ev(pg, "(()=>{const t=document.querySelector('#view').innerText;return [t.includes('Add'),document.querySelectorAll('.wkd').length,document.querySelectorAll('[data-act=bookOpen]').length>=0]})()")
+        check('week view lists seven days', w[1] == 7, w)
+        ev(pg, "document.querySelector('[data-act=calWeek][data-n=\"1\"]').click()")
+        check('week view moves to next week', ev(pg, "ui.cal.w===addDays(mondayOf(localISO()),7)"))
+        ev(pg, "ui.book=null; document.querySelector('.wkd [data-act=bookNew]').click()")
+        check('week view + Add starts a booking for that day', ev(pg, "ui.view==='book'&&ui.book.date===addDays(mondayOf(localISO()),7)"))
+        check('no page errors in calendar extras', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()

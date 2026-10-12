@@ -73,6 +73,7 @@ function remCard(it, st) {
     ${emailed(id)}
     ${ways ? `<div class="remways">${ways}</div>` : `<p class="small muted" style="margin:8px 0 0">No mobile number or email saved for this customer.</p>`}
     <div class="remways">
+      ${calOn() ? `<button class="btn" data-act="remBook" data-id="${id}">Book it in</button>` : ''}
       <button class="btn ghost" data-act="remDone" data-id="${id}" data-v="booked">Booked in</button>
       <button class="btn ghost" data-act="remDone" data-id="${id}" data-v="skip">Not needed</button>
       <button class="btn ghost" data-act="remStop" data-id="${id}" data-key="${esc(it.key)}">Stop for this property</button>

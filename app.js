@@ -1036,6 +1036,12 @@ function renderSettings(v) {
       <label class="f"><span>Message wording</span><textarea data-s="calOtw" rows="4">${esc(settings.calOtw || OTW_DEFAULT)}</textarea><small>Opens a text to the customer, ready to send. {name} {time} {address} {business} are filled in for you.</small></label>
       <button class="btn block ghost" data-act="calOtwReset">Put the original wording back</button>
     </div>
+    <h2>Appointment reminders</h2>
+    <div class="card">
+      <label class="f"><span>Show tomorrow’s appointments to remind</span><select data-s="calRemOn"><option value="on" ${settings.calRemOn === 'off' ? '' : 'selected'}>Yes</option><option value="off" ${settings.calRemOn === 'off' ? 'selected' : ''}>No</option></select><small>Tomorrow’s appointments show with Text and Email buttons. You tap send yourself. Nothing goes automatically.</small></label>
+      <label class="f"><span>Message wording</span><textarea data-s="calRemText" rows="4">${esc(settings.calRemText || CALREM_DEFAULT)}</textarea><small>{name} {time} {job} {address} {business} are filled in for you.</small></label>
+      <button class="btn block ghost" data-act="calRemReset">Put the original wording back</button>
+    </div>
     <h2>Other jobs</h2>
     <div class="card">
       <p class="small muted" style="margin-top:0">Jobs you can pick when you choose “Other job” on an appointment.</p>

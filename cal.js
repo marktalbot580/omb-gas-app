@@ -13,6 +13,22 @@ function otwText(b) {
   const first = String(b.name || '').trim().split(/\s+/)[0] || 'there', map = { name: first, time: b.time || '', address: String(b.address || '').replace(/\s*\n+\s*/g, ', '), business: settings.businessName || '' };
   return String(settings.calOtw || OTW_DEFAULT).replace(/\{(\w+)\}/g, (m, k) => (k in map ? map[k] : m)).replace(/\n{3,}/g, '\n\n').trim();
 }
+/* day-before reminder: tap-to-send text / email for tomorrow's appointments (nothing is sent automatically) */
+const CALREM_DEFAULT = 'Hi {name}, just a reminder that I am booked in to see you tomorrow at {time} for your {job}.\n{business}';
+function remindText(b) {
+  const first = String(b.name || '').trim().split(/\s+/)[0] || 'there', map = { name: first, time: b.time || '', job: bkLabel(b).toLowerCase(), address: String(b.address || '').replace(/\s*\n+\s*/g, ', '), business: settings.businessName || '' };
+  return String(settings.calRemText || CALREM_DEFAULT).replace(/\{(\w+)\}/g, (m, k) => (k in map ? map[k] : m)).replace(/\n{3,}/g, '\n\n').trim();
+}
+function tomorrowHtml() {
+  if (settings.calRemOn === 'off') return '';
+  const list = bkOn(addDays(localISO(), 1)).filter(b => b.status !== 'done'); if (!list.length) return '';
+  return `<h2>Tomorrow: remind customers</h2>` + list.map(b => {
+    const body = encodeURIComponent(remindText(b)), sms = isMobileNo(b.phone), ph = String(b.phone || '').replace(/[^\d+]/g, '');
+    const ways = [sms ? `<a class="btn" data-act="calRemSent" data-id="${b.id}" href="sms:${ph}?&body=${body}">Text</a>` : '', b.email ? `<a class="btn" data-act="calRemSent" data-id="${b.id}" href="mailto:${encodeURIComponent(b.email)}?subject=${encodeURIComponent((settings.businessName || 'Appointment') + ': your appointment tomorrow')}&body=${body}">Email</a>` : ''].join('');
+    return `<div class="card remc"><div class="row sp"><span class="t">${esc(b.time)} · ${esc(b.name || 'No name')}</span>${b.remindedAt ? '<span class="badge complete">reminded</span>' : ''}</div><div class="s">${esc(bkLabel(b))}</div>
+      ${ways ? `<div class="remways">${ways}</div>` : '<p class="small muted" style="margin:8px 0 0">No mobile number or email saved.</p>'}</div>`;
+  }).join('');
+}
 const calJobs = () => (Array.isArray(settings.calJobs) ? settings.calJobs : ['Bathroom install', 'Radiator install']);
 const bkLabel = b => (b.types || []).map(t => t === 'other' ? (String(b.other || '').trim() || 'Other job') : (BK_TYPES.find(x => x[0] === t) || [0, t])[1]).join(' + ') || 'Appointment';
 const localISO = d => { d = d || new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
@@ -22,6 +38,7 @@ const bkEnd = b => fromMin(toMin(b.time) + (+b.mins || 60));
 const dayLong = iso => new Date(iso + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 const dayShort = iso => new Date(iso + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 const monthLong = m => new Date(m + '-01T12:00:00').toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+const mondayOf = iso => addDays(iso, -((new Date(iso + 'T12:00:00').getDay() + 6) % 7));
 const calState = () => (ui.cal = ui.cal || { m: localISO().slice(0, 7), d: localISO() });
 const bkOn = date => bookings.filter(b => b.date === date).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 function bkItem(b, withDate) {
@@ -39,7 +56,7 @@ const calHead = month => `<div class="calhd"><button type="button" data-act="cal
 function calHomeHtml() {
   if (!calOn() || settings.calHome === 'off') return '';
   const t = localISO(), td = bkOn(t), s = calState();
-  return `<h2>Today</h2>
+  return `${tomorrowHtml()}<h2>Today</h2>
     ${td.length ? td.map(b => bkItem(b)).join('') : '<div class="empty" style="padding:14px">Nothing booked in today.</div>'}
     <button class="btn block" data-act="bookNew" data-d="${t}">+ Schedule an appointment</button>
     <h2>Calendar</h2>${calHead(s.m)}${calGrid('', s.m)}
@@ -54,7 +71,12 @@ function renderCal(v) {
     body = `<h2 style="margin-top:0">${dayLong(t)}</h2>
       ${td.length ? td.map(b => bkItem(b)).join('') : '<div class="empty" style="padding:14px">Nothing booked in today.</div>'}
       <button class="btn gold block" data-act="bookNew" data-d="${t}">+ Appointment today</button>
+      ${tomorrowHtml()}
       ${up.length ? '<h2>Coming up this week</h2>' + up.map(b => bkItem(b, true)).join('') : ''}`;
+  } else if (mode === 'week') {
+    const w = s.w || (s.w = mondayOf(localISO())), days = Array.from({ length: 7 }, (_, i) => addDays(w, i));
+    body = `<div class="calhd"><button type="button" data-act="calWeek" data-n="-1" aria-label="Previous week">‹</button><b>${esc(dayShort(w))} – ${esc(dayShort(addDays(w, 6)))}</b><button type="button" data-act="calWeek" data-n="1" aria-label="Next week">›</button></div>`
+      + days.map(d => { const l = bkOn(d); return `<div class="row sp wkd"><h2 style="margin:14px 0 6px${d === t ? ';color:var(--gold2)' : ''}">${esc(dayShort(d))}</h2><button type="button" class="btn ghost" data-act="bookNew" data-d="${d}" style="min-height:36px;padding:4px 12px" aria-label="Add on ${esc(dayShort(d))}">+ Add</button></div>` + (l.length ? l.map(b => bkItem(b)).join('') : '<p class="small muted" style="margin:0 0 4px">Nothing booked.</p>'); }).join('');
   } else {
     const day = bkOn(s.d);
     body = `${calHead(s.m)}${calGrid(s.d, s.m)}
@@ -63,7 +85,7 @@ function renderCal(v) {
       <button class="btn gold block" data-act="bookNew" data-d="${s.d}">+ Appointment on this day</button>`;
   }
   v.innerHTML = `<h1>Calendar</h1>
-    <div class="seg" style="margin-bottom:14px">${[['today', 'Today'], ['month', 'Month']].map(([k, l]) => `<button type="button" data-act="calMode" data-m="${k}" class="${mode === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+    <div class="seg" style="margin-bottom:14px">${[['today', 'Today'], ['week', 'Week'], ['month', 'Month']].map(([k, l]) => `<button type="button" data-act="calMode" data-m="${k}" class="${mode === k ? 'on' : ''}">${l}</button>`).join('')}</div>
     ${body}
     <div style="height:10px"></div><button class="btn block" data-act="syncNow">Sync now</button>
     <div style="height:10px"></div><button class="btn ghost block" data-nav="home">Back to records</button>`;
@@ -100,7 +122,7 @@ function renderBook(v) {
       <div style="height:10px"></div><button class="btn block ghost" data-act="bookDel">Delete appointment</button>`}
     <div style="height:10px"></div><button class="btn ghost block" data-act="bookBack">${isNew ? 'Cancel' : 'Back'}</button>`;
 }
-function bkBack() { ui.book = null; if (ui.bookFrom === 'pick' && ui.pick) ui.view = 'pick'; else ui.view = ui.bookFrom === 'home' ? 'home' : 'cal'; render(); }
+function bkBack() { ui.book = null; if (ui.bookFrom === 'due') ui.view = 'due'; else if (ui.bookFrom === 'pick' && ui.pick) ui.view = 'pick'; else ui.view = ui.bookFrom === 'home' ? 'home' : 'cal'; render(); }
 function bkFill(B, c) { if (!c) return; B.addrNew = false; B.customerId = c.id; B.name = c.name || ''; B.phone = c.phone || ''; B.email = c.email || ''; const ps = (c.properties || []).filter(Boolean); B.address = ps.length === 1 ? ps[0] : (ps.includes(B.address) ? B.address : ''); }
 function bkValid(B) {
   if (!B.types.length) { toast('Choose what the job is'); return false; }
@@ -152,9 +174,16 @@ async function calAct(a, b) {
   switch (a) {
     case 'calOpen': syncAll(); ui.cal = null; calState(); ui.calMode = 'today'; ui.view = 'cal'; render(); return true;
     case 'calMode': ui.calMode = b.dataset.m; if (b.dataset.m === 'today') ui.cal = null; render(); return true;
+    case 'calWeek': { const s = calState(); s.w = addDays(s.w || mondayOf(localISO()), 7 * (+b.dataset.n)); const y = window.scrollY; render(); window.scrollTo(0, y); return true; }
     case 'calMonth': { const s = calState(), [y, m] = s.m.split('-').map(Number), d = new Date(y, m - 1 + (+b.dataset.n), 1); s.m = localISO(d).slice(0, 7); render(); return true; }
     case 'calDay': { const s = calState(); s.d = b.dataset.d; s.m = s.d.slice(0, 7); ui.calMode = 'month'; if (ui.view === 'home') ui.view = 'cal'; render(); window.scrollTo(0, 0); return true; }
     case 'bookNew': ui.book = newBook({ base: { date: b.dataset.d || localISO() } }); ui.bookFrom = ui.view === 'home' ? 'home' : 'cal'; ui.view = 'book'; render(); return true;
+    case 'remBook': {
+      const r = records.find(x => x.id === b.dataset.id); if (!r) return true;
+      const cu = customers.find(c => c.id === r.customerId) || null, cd = r.customer || {}, t = typeOf(r);
+      ui.book = newBook({ customer: cu, base: { types: [t], date: r.renewal && r.renewal >= localISO() ? r.renewal : localISO(), address: r.jobAddress || '', name: (cu && cu.name) || cd.name || '', phone: (cu && cu.phone) || cd.phone || '', email: (cu && cu.email) || cd.email || '', fromRem: r.id } });
+      ui.bookFrom = 'due'; ui.view = 'book'; render(); window.scrollTo(0, 0); return true;
+    }
     case 'bookFromPick': { const pk = ui.pick; ui.book = newBook({ customer: pk.customer, base: { types: Object.keys(pk.types).filter(k => pk.types[k]) } }); ui.bookFrom = 'pick'; ui.view = 'book'; render(); return true; }
     case 'bookPickCust': { const c = customers.find(x => x.id === b.dataset.id); if (c) { const y = window.scrollY; bkFill(ui.book, c); render(); window.scrollTo(0, y); } return true; }
     case 'bookOtw': {
@@ -165,13 +194,15 @@ async function calAct(a, b) {
       else { try { await navigator.clipboard.writeText(body); toast('Message copied. Paste it into a text to ' + B.phone); } catch (e) { toast('Texts open on a phone. Use this on your phone to send it.'); } }
       return true;
     }
+    case 'calRemSent': { const id = b.dataset.id; setTimeout(() => { const x = bookings.find(z => z.id === id); if (x) { x.remindedAt = Date.now(); x.updated = Date.now(); saveBookings(); syncAll(); const y = window.scrollY; render(); window.scrollTo(0, y); } }, 600); return true; }
+    case 'calRemReset': settings.calRemText = ''; saveSettings(); { const y = window.scrollY; render(); window.scrollTo(0, y); } return true;
     case 'calOtwReset': settings.calOtw = ''; saveSettings(); { const y = window.scrollY; render(); window.scrollTo(0, y); } return true;
     case 'bookOther': { ui.book.other = calJobs()[+b.dataset.i] || ''; const y = window.scrollY; render(); window.scrollTo(0, y); return true; }
     case 'calJobAdd': { const el = document.getElementById('calJobNew'), v = el ? el.value.trim() : ''; if (!v) { toast('Type the job first'); return true; } const l = [...calJobs()]; if (!l.some(x => x.toLowerCase() === v.toLowerCase())) l.push(v); settings.calJobs = l; saveSettings(); const y = window.scrollY; render(); window.scrollTo(0, y); return true; }
     case 'calJobRm': { settings.calJobs = calJobs().filter((_, i) => i !== +b.dataset.i); saveSettings(); const y = window.scrollY; render(); window.scrollTo(0, y); return true; }
     case 'bookType': { const T = ui.book.types, i = T.indexOf(b.dataset.t); if (i >= 0) T.splice(i, 1); else T.push(b.dataset.t); const y = window.scrollY; render(); window.scrollTo(0, y); return true; }
     case 'bookOpen': { const x = bookings.find(z => z.id === b.dataset.id); if (x) { ui.book = { ...x, types: [...(x.types || [])] }; ui.bookFrom = ui.view === 'home' ? 'home' : 'cal'; ui.view = 'book'; render(); } return true; }
-    case 'bookSave': { if (!bkSave()) return true; const d = ui.book.date, t = ui.book.time; ui.pick = ui.bookFrom === 'pick' ? null : ui.pick; ui.cal = { m: d.slice(0, 7), d }; ui.calMode = 'month'; ui.book = null; ui.view = ui.bookFrom === 'home' ? 'home' : 'cal'; ui.bookFrom = ''; toast('Booked in for ' + dayShort(d) + ' at ' + t); render(); return true; }
+    case 'bookSave': { if (!bkSave()) return true; const B0 = ui.book, d = ui.book.date, t = ui.book.time; ui.pick = ui.bookFrom === 'pick' ? null : ui.pick; ui.cal = { m: d.slice(0, 7), d }; ui.calMode = 'month'; ui.book = null; ui.view = ui.bookFrom === 'due' ? 'due' : ui.bookFrom === 'home' ? 'home' : 'cal'; if (ui.bookFrom === 'due' && B0.fromRem) { const rr = records.find(x => x.id === B0.fromRem); if (rr) remSetState(rr, 'booked'); } ui.bookFrom = ''; toast('Booked in for ' + dayShort(d) + ' at ' + t); render(); return true; }
     case 'bookDone': { ui.book.status = ui.book.status === 'done' ? 'booked' : 'done'; if (bkSave()) { toast(ui.book.status === 'done' ? 'Marked as done' : 'Marked as not done'); render(); } return true; }
     case 'bookDel': if (confirm('Delete this appointment?')) { deleteRemote('booking', ui.book.id); bookings = bookings.filter(x => x.id !== ui.book.id); saveBookings(); syncAll(); toast('Appointment deleted'); bkBack(); } return true;
     case 'bookBack': bkBack(); return true;
