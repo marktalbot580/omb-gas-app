@@ -140,6 +140,7 @@ const CLOUD = (() => {
     customers.forEach(c => { const d = { ...c }; delete d._dirty; out.push({ kind: 'customer', id: c.id, data: d, updated: c.updated || 0 }); });
     records.forEach(r => { const d = { ...r }; delete d._dirty; out.push({ kind: 'record', id: r.id, data: d, updated: r.updated || 0 }); });
     invoices.forEach(i => out.push({ kind: 'invoice', id: i.id, data: i, updated: i.updated || 0 }));
+    bookings.forEach(b => out.push({ kind: 'booking', id: b.id, data: b, updated: b.updated || 0 }));
     if (settings.updated) out.push({ kind: 'settings', id: 'main', data: settingsDoc(), updated: settings.updated });
     return out;
   }
@@ -153,8 +154,9 @@ const CLOUD = (() => {
       if (d.kind === 'customer') customers = customers.filter(x => x.id !== d.id);
       if (d.kind === 'record') records = records.filter(x => x.id !== d.id);
       if (d.kind === 'invoice') invoices = invoices.filter(x => x.id !== d.id);
+      if (d.kind === 'booking') bookings = bookings.filter(x => x.id !== d.id);
     } else {
-      const arr = d.kind === 'customer' ? customers : d.kind === 'record' ? records : invoices, l = find(arr);
+      const arr = d.kind === 'customer' ? customers : d.kind === 'record' ? records : d.kind === 'booking' ? bookings : invoices, l = find(arr);
       if (l && synced[k] !== (l.updated || 0) && (l.updated || 0) > (d.updated || 0)) return;   // this phone has a newer unsynced edit: it wins and gets pushed
       putIn(arr, d.id, d.kind === 'record' ? { ...d.data, _dirty: false } : d.kind === 'customer' ? { ...d.data, _dirty: false } : d.data);
     }
@@ -169,7 +171,7 @@ const CLOUD = (() => {
       rows.forEach(applyRemote); n += rows.length; since = rows[rows.length - 1].server_at; ls.set(KP, since);
       if (rows.length < 500) break;
     }
-    if (n) { saveCustomers(); saveRecords(); saveInvoices(); }
+    if (n) { saveCustomers(); saveRecords(); saveInvoices(); saveBookings(); }
     return n;
   }
   async function push() {
@@ -214,7 +216,7 @@ const CLOUD = (() => {
       const pulled = await pull(), pushed = a.ok ? await push() : 0;
       if (a.ok) await pushFiles(); const files = await pullFiles();
       st.state = 'ok'; st.msg = 'Synced ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      if (pulled || files) { applyBrand(); if (ui.view === 'home' || ui.view === 'customers' || ui.view === 'invoices' || ui.view === 'settings') render(); }
+      if (pulled || files) { applyBrand(); if (ui.view === 'home' || ui.view === 'customers' || ui.view === 'invoices' || ui.view === 'settings' || ui.view === 'cal') render(); }
       if (manual) toast(pushed || pulled ? 'Synced' : 'Everything is up to date');
     } catch (e) {
       console.warn(e); st.state = 'error'; st.msg = (navigator.onLine === false ? 'Offline – will sync when you are back online' : 'Sync failed: ' + e.message);

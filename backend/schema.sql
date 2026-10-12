@@ -3,7 +3,7 @@
 -- 1. One row per customer / record / invoice / settings document, private to its owner
 create table if not exists public.docs (
   user_id uuid not null references auth.users(id) on delete cascade,
-  kind    text not null check (kind in ('customer','record','invoice','settings')),
+  kind    text not null check (kind in ('customer','record','invoice','settings','booking')),
   id      text not null,
   data    jsonb not null default '{}'::jsonb,
   updated bigint not null default 0,          -- client timestamp (ms) used to decide which edit is newer
@@ -131,3 +131,7 @@ grant execute on function public.admin_extend_trial(uuid, int) to authenticated;
 
 -- make yourself the admin (change the email if yours is different)
 insert into public.admins (user_id) select id from auth.users where lower(email) = 'marktalbot2000@hotmail.com' on conflict do nothing;
+
+-- 6. Calendar appointments sync as 'booking' documents (for databases created before v134)
+alter table public.docs drop constraint if exists docs_kind_check;
+alter table public.docs add constraint docs_kind_check check (kind in ('customer','record','invoice','settings','booking'));

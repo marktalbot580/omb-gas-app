@@ -751,10 +751,16 @@ function custJobs(c) {
       <div class="s">${esc(addrFirst(r.jobAddress || '') || 'No address')}</div>
       <div class="s">${esc(r.ref)} · ${ukDate(r.inspectionDate)}</div></button>`).join('') : '<p class="small muted">No jobs yet for this customer.</p>');
 }
+function custAppts(c) {
+  const t = localISO(), l = bookings.filter(b => b.customerId === c.id && b.date >= t && b.status !== 'done').sort((x, y) => (x.date + x.time).localeCompare(y.date + y.time));
+  return l.length ? '<h2 style="margin-top:0">Booked in</h2>' + l.map(b => bkItem(b, true)).join('') : '';
+}
 function renderCustEdit(v) {
-  const c = ui.cust;
+  const c = ui.cust, cTab = c._new ? 'cust' : (ui.cTab || 'cust');
   v.innerHTML = `
     <h1>${c._new ? 'New customer' : 'Edit customer'}</h1>
+    ${c._new ? '' : `<div class="stabs grid">${[['cust', 'Customer'], ['nav', 'Navigate'], ['jobs', 'Previous jobs']].map(([k, l]) => `<button type="button" class="${cTab === k ? 'on' : ''}" data-act="cTab" data-t="${k}">${l}</button>`).join('')}</div>`}
+    <div data-ctab="cust" ${cTab === 'cust' ? '' : 'hidden'}>
     <div class="card">
       <label class="f"><span>Name <b>*</b></span><input data-c="name" value="${esc(c.name)}" autocomplete="off"></label>
       <label class="f"><span>Phone</span><input data-c="phone" type="tel" inputmode="tel" value="${esc(c.phone)}"></label>
@@ -769,10 +775,17 @@ function renderCustEdit(v) {
     <button class="btn gold block" data-act="saveCust">Save customer</button>
     ${c._new ? '' : `<div style="height:10px"></div><button class="btn block" data-act="recForCust">Start forms for this customer</button>
       ${toolOn('gas') || toolOn('pipe') || toolOn('iv') || toolOn('heat') ? '<div style="height:10px"></div><button class="btn block" data-act="custTools">Tools and calculation report</button>' : ''}
-    ${(c.properties || []).length && (c.properties || []).length <= 8 ? `<h2>Navigate</h2>` + c.properties.map(p => `<a class="item" style="display:block;text-decoration:none;color:inherit" href="${esc(mapsUrl(p))}" target="_blank" rel="noopener"><div class="t">&#128205; ${esc(addrFirst(p))}</div><div class="s">${esc(p.split('\n').slice(1).join(', ') || 'Open in Google Maps')}</div></a>`).join('') : ''}
+    <div style="height:10px"></div><button class="btn danger block" data-act="delCust">Delete customer</button>`}
+    </div>
+    ${c._new ? '' : `<div data-ctab="nav" ${cTab === 'nav' ? '' : 'hidden'}>
+    <h2 style="margin-top:0">Navigate</h2>
+${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties.map(p => `<a class="item" style="display:block;text-decoration:none;color:inherit" href="${esc(mapsUrl(p))}" target="_blank" rel="noopener"><div class="t">&#128205; ${esc(addrFirst(p))}</div><div class="s">${esc(p.split('\n').slice(1).join(', ') || 'Open in Google Maps')}</div></a>`).join('') : '<div class="empty">No property addresses yet. Add one on the Customer tab.</div>'}
+    </div>`}
+    ${c._new ? '' : `<div data-ctab="jobs" ${cTab === 'jobs' ? '' : 'hidden'}>
+    ${custAppts(c)}
     ${custReports(c)}
     ${custJobs(c)}
-    <div style="height:10px"></div><button class="btn danger block" data-act="delCust">Delete customer</button>`}
+    </div>`}
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
@@ -2586,6 +2599,7 @@ document.addEventListener('click', async e => {
       if (!on && !nm) { toast('Enter the customer’s name on the first screen'); break; }
       r.customerName = on ? '' : nm; persistRec(r); ui.pdf = null; const y = window.scrollY; render(); window.scrollTo(0, y); break;
     }
+    case 'cTab': ui.cTab = b.dataset.t; render(); window.scrollTo(0, 0); break;
     case 'sTab': ui.sTab = b.dataset.t; render(); window.scrollTo(0, 0); break;
     case 'copyVal': {
       const v = (b.closest('label').querySelector('input') || {}).value || '';
@@ -2638,7 +2652,7 @@ document.addEventListener('click', async e => {
     case 'custSort': try { localStorage.setItem('omb_custsort', b.dataset.s); } catch (e) { } render(); break;
     case 'favCust': { const c = customers.find(x => x.id === b.dataset.id); if (c) { c.fav = !c.fav; c.updated = Date.now(); c._dirty = true; saveCustomers(); paintCustList(); } break; }
     case 'newCust': ui.cust = { _new: true, id: uid(), name: '', phone: '', email: '', billing: '', properties: [] }; ui.view = 'custEdit'; render(); break;
-    case 'editCust': ui.cust = JSON.parse(JSON.stringify(customers.find(c => c.id === b.dataset.id))); ui.view = 'custEdit'; render(); break;
+    case 'editCust': ui.cTab = 'cust'; ui.cust = JSON.parse(JSON.stringify(customers.find(c => c.id === b.dataset.id))); ui.view = 'custEdit'; render(); break;
     case 'addCustProp': ui.cust.properties = (ui.cust.properties || []).concat(['']); render(); break;
     case 'rmCustProp': { const ps = (ui.cust.properties || []).slice(); ps.splice(+b.dataset.i, 1); ui.cust.properties = ps; render(); break; }
     case 'saveCust': saveCust(); break;
@@ -3235,7 +3249,7 @@ function bkSave() {
   const B = ui.book; if (!bkValid(B)) return false;
   B.updated = Date.now(); const i = bookings.findIndex(x => x.id === B.id);
   if (i >= 0) bookings[i] = { ...B }; else bookings.push({ ...B });
-  saveBookings(); return true;
+  saveBookings(); syncAll(); return true;
 }
 function icsDT(date, min) { const [y, m, d] = date.split('-').map(Number), dt = new Date(y, m - 1, d, Math.floor(min / 60), min % 60), p = n => String(n).padStart(2, '0'); return dt.getFullYear() + p(dt.getMonth() + 1) + p(dt.getDate()) + 'T' + p(dt.getHours()) + p(dt.getMinutes()) + '00'; }
 function icsFor(list) {
@@ -3262,7 +3276,7 @@ function bkStart() {
   const a = String(B.address || '').trim();
   if (a && !(cu.properties || []).includes(a)) (cu.properties = cu.properties || []).push(a);
   saveCustomers();
-  const bk = bookings.find(x => x.id === B.id); if (bk) { bk.customerId = cu.id; bk.status = 'done'; saveBookings(); }
+  const bk = bookings.find(x => x.id === B.id); if (bk) { bk.customerId = cu.id; bk.status = 'done'; bk.updated = Date.now(); saveBookings(); syncAll(); }
   ui.pick = { types: Object.fromEntries(types.map(t => [t, true])), customer: cu }; ui.book = null; startJob();
   if (a) { (jobRecs() || [ui.rec]).forEach(r => { r.jobAddress = a; persistRec(r); }); render(); }
 }
@@ -3278,7 +3292,7 @@ async function calAct(a, b) {
     case 'bookOpen': { const x = bookings.find(z => z.id === b.dataset.id); if (x) { ui.book = { ...x, types: [...(x.types || [])] }; ui.bookFrom = ui.view === 'home' ? 'home' : 'cal'; ui.view = 'book'; render(); } return true; }
     case 'bookSave': { if (!bkSave()) return true; const d = ui.book.date, t = ui.book.time; ui.pick = ui.bookFrom === 'pick' ? null : ui.pick; ui.cal = { m: d.slice(0, 7), d }; ui.calMode = 'month'; ui.book = null; ui.view = ui.bookFrom === 'home' ? 'home' : 'cal'; ui.bookFrom = ''; toast('Booked in for ' + dayShort(d) + ' at ' + t); render(); return true; }
     case 'bookDone': { ui.book.status = ui.book.status === 'done' ? 'booked' : 'done'; if (bkSave()) { toast(ui.book.status === 'done' ? 'Marked as done' : 'Marked as not done'); render(); } return true; }
-    case 'bookDel': if (confirm('Delete this appointment?')) { bookings = bookings.filter(x => x.id !== ui.book.id); saveBookings(); toast('Appointment deleted'); bkBack(); } return true;
+    case 'bookDel': if (confirm('Delete this appointment?')) { deleteRemote('booking', ui.book.id); bookings = bookings.filter(x => x.id !== ui.book.id); saveBookings(); syncAll(); toast('Appointment deleted'); bkBack(); } return true;
     case 'bookBack': bkBack(); return true;
     case 'bookStart': bkStart(); return true;
     case 'bookIcs': if (bkValid(ui.book)) saveFile(icsFor([ui.book]), 'Appointment ' + ui.book.date + '.ics', 'text/calendar'); return true;
