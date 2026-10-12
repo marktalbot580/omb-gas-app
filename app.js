@@ -789,7 +789,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v134';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v135';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -3204,6 +3204,7 @@ function renderCal(v) {
   v.innerHTML = `<h1>Calendar</h1>
     <div class="seg" style="margin-bottom:14px">${[['today', 'Today'], ['month', 'Month']].map(([k, l]) => `<button type="button" data-act="calMode" data-m="${k}" class="${mode === k ? 'on' : ''}">${l}</button>`).join('')}</div>
     ${body}
+    <div style="height:10px"></div><button class="btn block" data-act="syncNow">Sync now</button>
     <div style="height:10px"></div><button class="btn ghost block" data-nav="home">Back to records</button>`;
 }
 function newBook(o) {
@@ -3282,7 +3283,7 @@ function bkStart() {
 }
 async function calAct(a, b) {
   switch (a) {
-    case 'calOpen': ui.cal = null; calState(); ui.calMode = 'today'; ui.view = 'cal'; render(); return true;
+    case 'calOpen': syncAll(); ui.cal = null; calState(); ui.calMode = 'today'; ui.view = 'cal'; render(); return true;
     case 'calMode': ui.calMode = b.dataset.m; if (b.dataset.m === 'today') ui.cal = null; render(); return true;
     case 'calMonth': { const s = calState(), [y, m] = s.m.split('-').map(Number), d = new Date(y, m - 1 + (+b.dataset.n), 1); s.m = localISO(d).slice(0, 7); render(); return true; }
     case 'calDay': { const s = calState(); s.d = b.dataset.d; s.m = s.d.slice(0, 7); ui.calMode = 'month'; if (ui.view === 'home') ui.view = 'cal'; render(); window.scrollTo(0, 0); return true; }
@@ -3341,5 +3342,11 @@ window.addEventListener('online', () => syncAll());
 window.__app = { invoices: () => invoices, newInvoice, invTotals, buildInvPdf, ui, get settings() { return settings; }, get records() { return records; }, get customers() { return customers; }, render, validate, buildPdf, newRecord, blankAppliance, blankDefect, mates, jobRecs, jobSeq, startJob, goTo, SVC, LEG };
 applyBrand();
 render();
+/* v135 clean-up: older versions of the app filed a synced appointment among the invoices. Remove any, and re-read everything from the account once. */
+(function () {
+  const bad = invoices.filter(i => Array.isArray(i.types) && i.date && !Array.isArray(i.lines));
+  if (bad.length) { invoices = invoices.filter(i => !bad.includes(i)); saveInvoices(); bad.forEach(i => deleteRemote('invoice', i.id)); }
+  try { if (!localStorage.getItem('omb_bkfix')) { localStorage.removeItem('omb_pull'); localStorage.setItem('omb_bkfix', '1'); } } catch (e) { }
+})();
 CLOUD.start();
 setTimeout(() => { fbFlush(); }, 6000);
