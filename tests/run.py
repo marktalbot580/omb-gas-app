@@ -204,7 +204,7 @@ def run():
         check('cloud sync handles bookings (push, pull, delete)',
               "kind: 'booking'" in src and "d.kind === 'booking'" in src and 'saveBookings()' in src)
         ev(pg, "localStorage.setItem('omb_invoices',JSON.stringify([{id:'bk1',date:'2026-10-12',time:'09:00',types:['gas']},{id:'i1',lines:[{d:'x',q:'1',p:'5'}],customer:{name:'A'}}]));localStorage.removeItem('omb_bkfix')")
-        pg.reload(); pg.evaluate("document.querySelector('#gate') && document.querySelector('#gate').remove()")
+        pg.reload(); pg.wait_for_function("typeof APP_VERSION==='string' && !!document.querySelector('#view')"); pg.evaluate("document.querySelector('#gate') && document.querySelector('#gate').remove()")
         check('stray appointment is removed from invoices on start-up', ev(pg, "invoices.length===1 && invoices[0].id==='i1'"))
         ctx.close()
 
@@ -326,6 +326,20 @@ def run():
         ev(pg, "customers.push({id:'f1',name:'Fallback',phone:'',email:'',billing:'',properties:[],updated:1}); saveCustomers()")
         pg.reload(); pg.wait_for_function("typeof APP_VERSION==='string' && !!document.querySelector('#view')")
         check('with no database available the app falls back to localStorage', ev(pg, "customers.some(c=>c.name==='Fallback')") and not errs, errs)
+        ctx.close()
+
+        # ---------- 12e. invoice: add from price list ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "settings.qList=[{id:'pl1',type:'Other',make:'',name:'Room thermostat',kind:'',kw:'',cost:'20',markup:'50',price:''},{id:'pl2',type:'Other',make:'',name:'Copper pipe 15mm',kind:'',kw:'',cost:'',markup:'',price:'4.50'}]; saveSettings(); ui.inv=newInvoice(null); invoices.push(ui.inv); ui.view='invEdit'; render()")
+        ev(pg, "document.querySelector('[data-act=invPl]').click()")
+        pg.fill('#invPlQ', 'thermo')
+        n = ev(pg, "document.querySelectorAll('[data-act=invPlPick]').length")
+        ev(pg, "document.querySelector('[data-act=invPlPick]').click()")
+        L = ev(pg, "ui.inv.lines")
+        check('invoice price list search finds the item and adds it at the sale price', n == 1 and len(L) == 1 and L[0]['d'] == 'Room thermostat' and L[0]['p'] == '30', [n, L])
+        ev(pg, "document.querySelector('[data-act=invPl]').click()"); pg.fill('#invPlQ', 'copper'); ev(pg, "document.querySelector('[data-act=invPlPick]').click()")
+        check('a second price list item is added as another line', ev(pg, "ui.inv.lines.map(l=>l.p).join()") == '30,4.50')
+        check('no page errors adding from the price list', not errs, errs)
         ctx.close()
 
         # ---------- 13. offline (service worker) ----------

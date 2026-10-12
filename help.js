@@ -118,7 +118,7 @@ const HELP = [
     h: `<p>When a record is complete it shows <b>Requires invoice</b> until you deal with it.</p>
 <ol><li>On the last screen of a finished visit tap <b>Create invoice</b>, or start one from the <b>Invoices</b> tab.</li>
 <li>Start typing the client name and tap a saved customer to fill in their details. Tap one of their saved properties for the address, or type a new one. Prices from Settings are filled in for you.</li>
-<li>Tap <b>+ Add a line</b> for parts, call-out or extras. The cursor jumps to the new line.</li>
+<li>Tap <b>+ Add a line</b> for parts, call-out or extras. The cursor jumps to the new line. Or tap <b>+ Add from my price list</b>, search, and tap an item to add it at its sale price.</li>
 <li>Set the VAT rate (use 0 for no VAT). Enter prices excluding VAT.</li>
 <li>Tap <b>View invoice (PDF)</b> to check it, then send it.</li></ol>
 <p>The <b>Paid</b> tick is at the top of the invoice, under the View invoice button. Tap <b>Mark invoice as sent</b> when you send it. If a job does not need an invoice, tap <b>Invoice not required</b> and the reminder goes away.</p>` },

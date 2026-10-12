@@ -105,7 +105,24 @@ function renderSummary(v) {
     <button class="btn ghost block" data-nav="invoices">Back to invoices</button>`;
 }
 
+/* ---------- invoice: add a line from the price list (at its sale price) ---------- */
+function plResults(q) {
+  q = String(q || '').toLowerCase().trim();
+  const hit = qAll().filter(x => QUO.saleOf(x, settings) !== null && (!q || (x.make + ' ' + x.name + ' ' + x.type).toLowerCase().includes(q))).slice(0, 12);
+  return hit.map(x => `<button type="button" class="item" data-act="invPlPick" data-id="${esc(x.id)}"><div class="row sp"><span class="t">${esc(QUO.label(x))}</span><b>${sumMoney(QUO.saleOf(x, settings))}</b></div><div class="s">${esc(x.type)}</div></button>`).join('') || '<p class="small muted">Nothing found in your price list.</p>';
+}
+const plPanel = () => (ui.invPl ? `<div class="card"><label class="f"><span>Search your price list</span><input id="invPlQ" placeholder="For example: thermostat, copper, labour" autocomplete="off" value="${esc(ui.invPl.q)}"></label><div id="invPlRes">${plResults(ui.invPl.q)}</div></div>` : '');
 async function dataAct(a, b) {
+  switch (a) {
+    case 'invPl': ui.invPl = ui.invPl ? null : { q: '' }; { const y = window.scrollY; render(); window.scrollTo(0, y); } return true;
+    case 'invPlPick': {
+      const x = qAll().find(z => z.id === b.dataset.id), inv = ui.inv; if (!x || !inv) return true;
+      const line = { d: QUO.label(x), q: '1', p: QUO.saleText(x, settings) }, L = inv.lines;
+      if (L.length === 1 && !String(L[0].d).trim() && !String(L[0].p).trim()) L[0] = line; else L.push(line);
+      ui.invPl = null; ui.invPdf = null; persistInv(inv); render(); toast('Added ' + line.d); return true;
+    }
+    default: break;
+  }
   switch (a) {
     case 'impOpen': ui.imp = null; ui.view = 'import'; render(); window.scrollTo(0, 0); return true;
     case 'impGo': {
@@ -118,6 +135,10 @@ async function dataAct(a, b) {
   }
   return false;
 }
+document.addEventListener('input', e => {
+  const t = e.target; if (!t || t.id !== 'invPlQ' || !ui.invPl) return;
+  ui.invPl.q = t.value; const el = document.getElementById('invPlRes'); if (el) el.innerHTML = plResults(t.value);
+});
 document.addEventListener('change', async e => {
   const t = e.target; if (!t || t.id !== 'impFile' || !t.files || !t.files[0]) return;
   const f = t.files[0]; t.value = '';
