@@ -517,6 +517,22 @@ def run():
         check('no page errors tidying names', not errs, errs)
         ctx.close()
 
+        # ---------- 12t. Sales tab: invoices and quotes ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "ui.pick={types:{gquote:true},customer:null}; startJob(); ui.rec.title='Bath'; ui.rec.customer.name='Ann Lee'; ui.rec.status='complete'; ui.rec.labourPrice='100'; persistRec(ui.rec); ui.view='home'; render()")
+        lab = ev(pg, "document.querySelector('nav.tabs').innerText.toLowerCase()")
+        check('bottom tab is called Sales', 'sales' in lab and 'invoices' not in lab, lab)
+        pg.click('nav.tabs button[data-nav=invoices]'); pg.wait_for_timeout(150)
+        check('Sales opens on Invoices with a Quotes tab', ev(pg, "!!document.querySelector('[data-act=invTab][data-t=quotes]') && document.querySelector('#view h1').innerText==='Invoices'"))
+        pg.click('[data-act=invTab][data-t=quotes]'); pg.wait_for_timeout(150)
+        txt_ = ev(pg, "document.querySelector('#view').innerText")
+        check('Quotes tab lists the quote with its status', 'Ann Lee' in txt_ and 'Awaiting reply' in txt_.replace('AWAITING REPLY','Awaiting reply') or 'awaiting reply' in txt_.lower(), txt_[:300])
+        pg.click('#view .item[data-act=openRec]'); pg.wait_for_timeout(150)
+        ev(pg, "exitForm()"); pg.wait_for_timeout(150)
+        check('Back from a quote returns to the Quotes list', ev(pg, "ui.view==='invoices' && ui.invTab==='quotes'"))
+        check('no page errors on the Sales tab', not errs, errs)
+        ctx.close()
+
         # ---------- 12s. settings cog in the header ----------
         ctx, pg, errs = fresh(b)
         ev(pg, "ui.view='home'; render()")

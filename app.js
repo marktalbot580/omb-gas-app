@@ -146,7 +146,7 @@ function applyBrand() {
 
 const ui = {
   view: 'home', step: 0, appTab: 0, rec: null, showErr: false, search: '',
-  cust: null, syncState: '', job: null, pick: null, pdfs: {}, inv: null, invFilter: 'all', invPdf: null, invFrom: 'invoices', calc: {}
+  cust: null, syncState: '', job: null, pick: null, pdfs: {}, inv: null, invFilter: 'all', invTab: 'inv', qFilter: 'all', invPdf: null, invFrom: 'invoices', calc: {}
 };
 /* ui.pdf is the PDF of the record on screen; setting it to null forgets every PDF made so far (something was edited) */
 Object.defineProperty(ui, 'pdf', {
@@ -305,7 +305,8 @@ function goTo(rec, step) {
 function exitForm() {
   const m = jobRecs() || [ui.rec];
   commitCustomer(m[0]); m.forEach(persistRec);
-  ui.job = null; ui.view = 'home'; render(); syncAll();
+  const toQ = ui.quoFrom && typeOf(m[0]) === 'quote'; ui.quoFrom = false;
+  ui.job = null; ui.view = toQ ? 'invoices' : 'home'; render(); syncAll();
 }
 function goBack() {
   const { seq, pos } = seqPos();
@@ -604,10 +605,10 @@ const ICON = {
 function renderTabs(nav) {
   nav.className = 'tabs';
   const t = (id, label, ic, on) => `<button data-nav="${id}" class="${on ? 'on' : ''}">${ic}${label}</button>`;
-  nav.innerHTML = t('home', 'Services', ICON.rec, ui.view === 'home' || ui.view === 'pick' || (!calOn() && ui.view === 'due')) + (calOn() ? `<button data-act="calOpen" class="${ui.view === 'cal' || ui.view === 'book' || ui.view === 'due' ? 'on' : ''}">${ICON.cal}Calendar</button>` : '') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit' || ui.view === 'import') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' || ui.view === 'summary') + (['gas', 'pipe', 'iv', 'heat'].some(toolOn) ? `<button data-act="toolsOpen" class="${ui.view === 'tools' ? 'on' : ''}">${ICON.tools}Tools</button>` : '');
+  nav.innerHTML = t('home', 'Services', ICON.rec, ui.view === 'home' || ui.view === 'pick' || (!calOn() && ui.view === 'due')) + (calOn() ? `<button data-act="calOpen" class="${ui.view === 'cal' || ui.view === 'book' || ui.view === 'due' ? 'on' : ''}">${ICON.cal}Calendar</button>` : '') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit' || ui.view === 'import') + t('invoices', 'Sales', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' || ui.view === 'summary') + (['gas', 'pipe', 'iv', 'heat'].some(toolOn) ? `<button data-act="toolsOpen" class="${ui.view === 'tools' ? 'on' : ''}">${ICON.tools}Tools</button>` : '');
   { const sb = $('#setBtn'); if (sb) sb.classList.toggle('on', ['settings', 'prices', 'admin', 'help', 'news', 'feedback'].includes(ui.view)); }
   { const v = ui.view, in_ = a => a.includes(v);
-    $('#barSub').textContent = in_(['invoices', 'invEdit', 'invPrint', 'summary']) ? 'Invoices' : in_(['customers', 'custEdit', 'import']) ? 'Customers' : in_(['cal', 'book', 'due']) ? 'Calendar' : v === 'tools' ? 'Tools'
+    $('#barSub').textContent = in_(['invoices', 'invEdit', 'invPrint', 'summary']) ? (v === 'invoices' && ui.invTab === 'quotes' ? 'Quotes' : 'Invoices') : in_(['customers', 'custEdit', 'import']) ? 'Customers' : in_(['cal', 'book', 'due']) ? 'Calendar' : v === 'tools' ? 'Tools'
       : in_(['settings', 'prices', 'admin', 'news', 'feedback']) ? 'Settings' : v === 'help' ? 'Help' : 'Services'; }
 }
 
@@ -2206,7 +2207,40 @@ function inf(path, label, o = {}) {
   return `<label class="f"><span>${label}</span>${el}${o.hint ? `<small>${o.hint}</small>` : ''}</label>`;
 }
 
+/* Invoices and Quotes share one tab: this is the switch at the top of both */
+function invTabs() {
+  const nq = records.filter(r => typeOf(r) === 'quote').length;
+  return `<div class="seg" style="margin-bottom:12px"><button type="button" class="${ui.invTab === 'quotes' ? '' : 'on'}" data-act="invTab" data-t="inv">Invoices</button><button type="button" class="${ui.invTab === 'quotes' ? 'on' : ''}" data-act="invTab" data-t="quotes">Quotes${nq ? ' (' + nq + ')' : ''}</button></div>`;
+}
+function renderQuotes(v) {
+  const f = ui.qFilter || 'all';
+  const all = records.filter(r => typeOf(r) === 'quote').sort((a, b) => (b.inspectionDate || '').localeCompare(a.inspectionDate || '') || (b.updated || 0) - (a.updated || 0));
+  const waiting = all.filter(qWaiting), chase = all.filter(qChase);
+  const val = r => { try { return QUO.totals(r, settings).total; } catch (e) { return 0; } };
+  const pend = waiting.reduce((a, r) => a + val(r), 0);
+  const pass = {
+    all: () => true, waiting: r => qWaiting(r), chase: qChase, accepted: r => r.qStatus === 'accepted', declined: r => r.qStatus === 'declined', draft: r => r.status === 'draft'
+  };
+  const shown = all.filter(pass[f] || pass.all);
+  const chip = (k, l) => `<button class="chip ${f === k ? 'on' : ''}" data-act="qFilter" data-f="${k}">${l}</button>`;
+  v.innerHTML = `
+    <h1>Quotes</h1>
+    ${invTabs()}
+    <div class="card"><div class="row sp"><div><div class="small muted">Waiting for an answer</div><div style="font-size:24px;font-weight:700;color:var(--gold2)">${money(pend)}</div></div>
+      <div style="text-align:right"><div class="small muted">${waiting.length} awaiting reply</div>${chase.length ? `<div class="small" style="color:var(--bad);font-weight:700">${chase.length} to chase up</div>` : ''}</div></div></div>
+    ${recOn('quote') ? `<button class="btn gold block" data-act="newRec" data-type="quote">+ New boiler quote</button><div style="height:8px"></div>` : ''}
+    ${recOn('gquote') ? `<button class="btn gold block" data-act="newRec" data-type="gquote">+ New quote (any job)</button><div style="height:8px"></div>` : ''}
+    <div style="height:6px"></div>
+    <div class="chips">${chip('all', 'All')}${chip('waiting', 'Awaiting reply')}${chase.length ? chip('chase', 'Chase up (' + chase.length + ')') : ''}${chip('accepted', 'Accepted')}${chip('declined', 'Declined')}${all.some(r => r.status === 'draft') ? chip('draft', 'Drafts') : ''}</div>
+    ${shown.length ? shown.map(r => `${r.status === 'draft' ? '<div class="itemw">' : ''}
+      <button class="item" data-act="openRec" data-id="${r.id}">
+        <div class="row sp"><span class="t">${esc(r.customer.name || 'No customer yet')}</span><span class="badges">${r.status === 'draft' ? '<span class="badge draft">draft</span>' : quoBadge(r)}</span></div>
+        <div class="s">${esc(r.general ? (r.title || 'Quote') : 'Boiler quote')} · ${esc(addrFirst(r.jobAddress || '') || 'No address yet')}</div>
+        <div class="row sp"><span class="s">${esc(r.ref)} · ${ukDate(r.inspectionDate)}</span><span class="t">${val(r) ? money(val(r)) : ''}</span></div>
+      </button>${r.status === 'draft' ? `<button class="draftdel" data-act="delDraft" data-id="${r.id}">Delete draft</button></div>` : ''}`).join('') : `<div class="empty">${all.length ? 'No quotes in this view.' : 'No quotes yet.<br>Tap a button above to make one.'}</div>`}`;
+}
 function renderInvoices(v) {
+  if (ui.invTab === 'quotes') return renderQuotes(v);
   const f = ui.invFilter, list = [...invoices].sort((a, b) => (b.date + b.number).localeCompare(a.date + a.number));
   const open = invoices.filter(i => !i.paid), late = open.filter(i => invStatus(i) === 'overdue');
   const owed = open.reduce((a, i) => a + invTotals(i).total, 0);
@@ -2215,6 +2249,7 @@ function renderInvoices(v) {
   const chip = (k, l) => `<button class="chip ${f === k ? 'on' : ''}" data-act="invFilter" data-f="${k}">${l}</button>`;
   v.innerHTML = `
     <h1>Invoices</h1>
+    ${invTabs()}
     <div class="card"><div class="row sp"><div><div class="small muted">Outstanding</div><div style="font-size:24px;font-weight:700;color:var(--gold2)">${money(owed)}</div></div>
       <div style="text-align:right"><div class="small muted">${open.length} unpaid</div>${late.length ? `<div class="small" style="color:var(--bad);font-weight:700">${late.length} overdue</div>` : ''}</div></div></div>
     <button class="btn gold block" data-act="newInvBlank">+ New invoice</button>
@@ -2508,6 +2543,7 @@ document.addEventListener('click', async e => {
   if (dtb) { const n = dtb.querySelector('.dth'); try { n.showPicker(); } catch (err) { /* the tap itself opens it on phones */ } return; }
   const b = e.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act, r = ui.rec;
+  if (a === 'openRec' || a === 'newRec') ui.quoFrom = ui.view === 'invoices' && ui.invTab === 'quotes';   // so Back returns to the Quotes list
   if (CLOUD.locked() && (LOCKED_WRITES.has(a) || (a === 'makePdf' && r && r.status !== 'complete'))) { lockedMsg(); return; }
   if (a === 'custNoRem') { ui.cust.noRemind = !ui.cust.noRemind; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
   if (a === 'remTest') { remTest(); return; }
@@ -2774,6 +2810,8 @@ document.addEventListener('click', async e => {
     case 'newInvBlank': { const inv = newInvoice(null); persistInv(inv); invGo(inv, 'invoices'); break; }
     case 'openInv': invGo(invoices.find(x => x.id === b.dataset.id), 'invoices'); break;
     case 'invFilter': ui.invFilter = b.dataset.f; render(); break;
+    case 'invTab': ui.invTab = b.dataset.t; render(); window.scrollTo(0, 0); break;
+    case 'qFilter': ui.qFilter = b.dataset.f; render(); break;
     case 'prtOpen': ui.prt = ui.prt || { preset: 'q1', from: '', to: '', basis: 'inv', status: 'all', mode: 'compact' }; prtApplyPreset(ui.prt.preset === 'custom' ? 'q1' : ui.prt.preset); ui.view = 'invPrint'; render(); break;
     case 'prtPreset': { const y = window.scrollY; prtApplyPreset(b.dataset.k); render(); window.scrollTo(0, y); break; }
     case 'prtSet': { const y = window.scrollY; ui.prt[b.dataset.pk] = b.dataset.pv; ui.prtPdf = null; render(); window.scrollTo(0, y); break; }

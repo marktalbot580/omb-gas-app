@@ -116,7 +116,8 @@ const HELP = [
 <p><b>Annual checks:</b> the <b>Due</b> button next to Today, Week and Month lists them. On each due check, <b>Book it in</b> opens a booking for that customer, address and job. Saving it marks the check as booked in.</p>` },
 
   { t: 'Invoices', k: 'invoice create new bill price line item vat discount sent paid due no invoice needed overdue reminder',
-    h: `<p>When a record is complete it shows <b>Requires invoice</b> until you deal with it.</p>
+    h: `<p>Tap <b>Sales</b> on the bottom bar. It has two tabs at the top: <b>Invoices</b> and <b>Quotes</b>. The Quotes tab lists every quote you have made, shows how much is waiting for an answer, and lets you start a new one.</p>
+<p>When a record is complete it shows <b>Requires invoice</b> until you deal with it.</p>
 <ol><li>On the last screen of a finished visit tap <b>Create invoice</b>, or start one from the <b>Invoices</b> tab.</li>
 <li>Start typing the client name and tap a saved customer to fill in their details. Tap one of their saved properties for the address, or type a new one. Prices from Settings are filled in for you.</li>
 <li>Tap <b>+ Add a line</b> for parts, call-out or extras. The cursor jumps to the new line. Or tap <b>+ Add from my price list</b>, search, and tap an item to add it at its sale price.</li>
