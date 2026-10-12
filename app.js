@@ -779,7 +779,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v122';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v123';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1444,7 +1444,7 @@ function openMail(url) {
     </ol>
     <p class="small muted" style="margin-top:0">${mac ? 'On a Mac, open Finder → Downloads. If Mail is not your usual email program, change it in Mail → Settings → Default email reader.' : 'If the wrong program opens, go to Windows Settings → Apps → Default apps → Email and pick the one you use.'}</p>
 `;
-  d.innerHTML = head + `    <a class="btn gold block" style="text-align:center;text-decoration:none" href="${url.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}" rel="noopener" id="mailGo">Open the email</a>
+  d.innerHTML = head + `    <a class="btn gold block" style="text-align:center;text-decoration:none" href="${url.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}" rel="noopener" ${phone ? '' : 'target="_blank"'} id="mailGo">Open the email</a>
     <div class="instrow"><button class="btn ghost" id="mailX">Close</button></div></div>`;
   document.body.appendChild(d);
   d.querySelector('#mailX').onclick = () => d.remove(); d.querySelector('#mailGo').onclick = () => setTimeout(() => d.remove(), 600);
@@ -2649,7 +2649,7 @@ document.addEventListener('click', async e => {
       const first = String(q.customer.name || '').trim().split(/\s+/)[0] || 'there', addr = q.jobAddress ? ' for ' + q.jobAddress : '';
       const body = `Hi ${first},\n\nI just wanted to check that you received my quote for your new boiler${addr}. If you have any questions, or would like to go ahead, just let me know and I will arrange a date for the installation.\n\nKind regards,\n${signOff()}`;
       const url = b.dataset.how === 'email' ? `mailto:${mailAddr(q.customer.email)}?subject=${encodeURIComponent('Your boiler quote ' + q.ref)}&body=${encodeURIComponent(body)}` : `sms:${String(q.customer.phone).replace(/\s+/g, '')}?&body=${encodeURIComponent(body)}`;
-      const a = document.createElement('a'); a.href = url; document.body.appendChild(a); a.click(); a.remove(); break;
+      const a = document.createElement('a'); a.href = url; if (!/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) { a.target = '_blank'; a.rel = 'noopener'; } document.body.appendChild(a); a.click(); a.remove(); break;
     }
     case 'invPaidVisit': { const inv = invForVisit(jobRecs() || [ui.rec]); inv.paid = !inv.paid; inv.paidDate = inv.paid ? todayISO() : ''; if (!inv.paid) inv.payMethod = ''; persistInv(inv); const y = window.scrollY; try { ui.invPdf = { id: inv.id, blob: await buildInvPdf(inv, settings), name: invFileName(inv) }; } catch (err) { console.error(err); ui.invPdf = null; } render(); window.scrollTo(0, y); toast(inv.paid ? 'Marked as paid' : 'Marked as unpaid'); break; }
     case 'invPrep': { const inv = invForVisit(jobRecs() || [ui.rec]); try { ui.invPdf = { id: inv.id, blob: await buildInvPdf(inv, settings), name: invFileName(inv) }; render(); } catch (err) { toast('Could not create the invoice PDF: ' + err.message); } break; }
