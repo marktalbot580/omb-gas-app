@@ -31,8 +31,9 @@ async function buildQuotePdf(rec, s) {
   doc.setFillColor(...DARK); doc.rect(0, 0, W, 128, 'F');
   doc.setDrawColor(40, 44, 48); doc.setLineWidth(0.5); [60, 84, 108].forEach(r => doc.circle(160, 70, r / 2.4, 'S'));
   doc.setFillColor(255, 255, 255); doc.roundedRect(M, 14, 20, 20, 2, 2, 'F'); doc.addImage(logo, 'PNG', M + 1, 15, 18, 18);
-  txt(s.businessName || '', M + 25, 22, { b: 1, fs: 11, c: [255, 255, 255] });
-  txt([s.phone, s.email].filter(Boolean).join('   '), M + 25, 28, { fs: 8, c: [190, 194, 200] });
+  { const big = rec.textSize === 'Large';
+    txt(s.businessName || '', M + 25, big ? 23 : 22, { b: 1, fs: big ? 15 : 11, c: [255, 255, 255], raw: 1 });
+    txt([s.phone, s.email].filter(Boolean).join('   '), M + 25, big ? 30 : 28, { fs: big ? 9.5 : 8, c: [190, 194, 200], raw: 1 }); }
   doc.setFillColor(...GOLD); doc.rect(M, 54, 12, 1.2, 'F');
   txt('YOUR NEW', M, 70, { b: 1, fs: 31, c: [255, 255, 255] }); txt('BOILER', M, 85, { b: 1, fs: 31, c: [255, 255, 255] }); txt('PROPOSAL', M, 100, { b: 1, fs: 31, c: GOLD });
   doc.setCharSpace(0.7); txt('PERSONAL QUOTATION  ·  PREPARED FOR YOUR HOME', M, 114, { fs: 7.2, c: [190, 194, 200] }); doc.setCharSpace(0);
@@ -184,8 +185,9 @@ async function buildGeneralQuotePdf(rec, s) {
   const titleLines = wrap(rec.title || 'Quotation', CW - 6, 22, true).slice(0, 3), bh = 58 + (titleLines.length - 1) * 9 * SC;
   doc.setFillColor(...DARK); doc.rect(0, 0, W, bh, 'F'); doc.setFillColor(...GOLD); doc.rect(0, bh, W, 1.2, 'F');
   doc.setFillColor(255, 255, 255); doc.roundedRect(M, 12, 20, 20, 2, 2, 'F'); doc.addImage(logo, 'PNG', M + 1, 13, 18, 18);
-  txt(s.businessName || '', M + 25, 20, { b: 1, fs: 11, c: [255, 255, 255], raw: 1 });
-  txt([s.phone, s.email].filter(Boolean).join('   '), M + 25, 26, { fs: 8, c: [190, 194, 200], raw: 1 });
+  const big = rec.textSize === 'Large';
+  txt(s.businessName || '', M + 25, big ? 21 : 20, { b: 1, fs: big ? 15 : 11, c: [255, 255, 255], raw: 1 });
+  txt([s.phone, s.email].filter(Boolean).join('   '), M + 25, big ? 28 : 26, { fs: big ? 9.5 : 8, c: [190, 194, 200], raw: 1 });
   label('QUOTATION', W - M, 20, GOLD, 'right');
   titleLines.forEach((l, i) => txt(l, M, 46 + i * 9 * SC, { b: 1, fs: 22, c: [255, 255, 255], raw: 0 }));
 
