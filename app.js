@@ -1618,7 +1618,7 @@ function quoPrevJobs() {
 function quoJob() {
   const prev = quoPrevJobs();
   return `<div class="card">
-    ${prev.length ? `<label class="f"><span>Start from a previous job</span><select data-qprev="1"><option value="">Choose a job you have quoted before</option>${prev.map(x => `<option value="${x.id}">${esc(x.title)}</option>`).join('')}</select><small>Brings in the job title and what is included. You can change them.</small></label>` : ''}
+    ${prev.length ? `<label class="f"><span>Start from a previous job</span><select data-qprev="1"><option value="">Choose a job you have quoted before</option>${prev.map(x => `<option value="${x.id}">${esc(x.title)}</option>`).join('')}</select><small>Brings in the job title, what is included, and the items and prices. You can change them.</small></label>` : ''}
     ${txt('title', 'What is the job?', { req: 1, ph: 'For example: Bathroom installation' })}
     ${txt('scope', 'What is included (one point per line)', { area: 1, rows: 6, ph: 'Strip out the old suite\nSupply and fit the new bath, toilet and basin\nTiling and making good' })}
   </div>`;

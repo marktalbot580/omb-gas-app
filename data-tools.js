@@ -209,7 +209,9 @@ async function dataAct(a, b) {
 document.addEventListener('change', e => {
   const t = e.target; if (!t || !t.dataset || !t.dataset.qprev || !ui.rec || !t.value) return;
   const p = records.find(x => x.id === t.value); if (!p) return;
-  ui.rec.title = p.title; ui.rec.scope = p.scope || ''; persistRec(ui.rec); ui.pdfs = {}; render(); toast('Brought in ' + p.title);
+  ui.rec.title = p.title; ui.rec.scope = p.scope || '';
+  ['labourDesc', 'labourPrice', 'labourCost', 'labourQty', 'labourUnit'].forEach(k => { if (p[k] !== undefined) ui.rec[k] = p[k]; });
+  ui.rec.lines = JSON.parse(JSON.stringify(p.lines || [])); persistRec(ui.rec); ui.pdfs = {}; render(); toast('Brought in ' + p.title);
 });
 document.addEventListener('input', e => {
   const t = e.target; if (!t || t.id !== 'invPlQ' || !ui.invPl) return;

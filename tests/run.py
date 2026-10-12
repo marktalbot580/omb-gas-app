@@ -411,12 +411,14 @@ def run():
 
         # ---------- 12k. quote for any job: start from a previous job ----------
         ctx, pg, errs = fresh(b)
-        ev(pg, "ui.pick={types:{gquote:true},customer:null}; startJob(); ui.rec.title='Bathroom installation'; ui.rec.scope='Strip out\\nFit suite'; ui.rec.status='complete'; persistRec(ui.rec); ui.pick={types:{gquote:true},customer:null}; startJob(); ui.step=1; render()")
+        ev(pg, "ui.pick={types:{gquote:true},customer:null}; startJob(); ui.rec.title='Bathroom installation'; ui.rec.scope='Strip out\\nFit suite'; ui.rec.labourPrice='400'; ui.rec.labourQty='2'; ui.rec.lines=[{desc:'Suite',qty:'1',price:'900'}]; ui.rec.status='complete'; persistRec(ui.rec); ui.pick={types:{gquote:true},customer:null}; startJob(); ui.step=1; render()")
         n = ev(pg, "document.querySelectorAll('[data-qprev] option').length")
         pg.select_option('[data-qprev]', index=1)
         pg.wait_for_timeout(200)
         r = ev(pg, "[ui.rec.title, ui.rec.scope]")
         check('previous job list brings in the title and what is included', n == 2 and r == ['Bathroom installation', 'Strip out\nFit suite'], [n, r])
+        r2 = ev(pg, "[ui.rec.labourPrice, ui.rec.labourQty, ui.rec.lines.length, ui.rec.lines[0] && ui.rec.lines[0].price]")
+        check('previous job list also copies items and prices', r2 == ['400', '2', 1, '900'], r2)
         check('no page errors in previous job list', not errs, errs)
         ctx.close()
 
