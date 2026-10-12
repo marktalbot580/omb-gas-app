@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v159', items: ['The I’m on my way text now includes the address of the job (Hi Ann, just to let you know I am on my way for your 10:30 appointment at 1 Road, Lincoln). If you have changed the wording in Settings → Calendar, add {address} where you want it, or tap Put the original wording back.'] },
   { v: 'v158', items: ['Back and Done are smarter: if you open a form, quote or certificate from an appointment, Back takes you to that appointment, not to Services or Quotes.'] },
   { v: 'v157', items: ['Appointments now show a Forms for this job list. Tap a past appointment in the calendar to open the forms, quote or certificate that were made for it. This works for new appointments, and for older ones where the customer and day match.'] },
   { v: 'v156', items: ['Quotes now finish with Done – back to quotes (and Back, or deleting a quote, returns to the Quotes list) instead of going to Services.', 'When a quote is marked Accepted, a Schedule into the calendar button appears under it (on the Quotes tab and on the quote itself). It opens a booking already filled in with the customer, address and job, and once saved the quote shows the day it is booked in for. A To schedule filter on the Quotes tab lists accepted jobs that are not in the calendar yet.'] },

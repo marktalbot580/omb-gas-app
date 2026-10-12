@@ -574,6 +574,9 @@ def run():
         ev(pg, "bkSave(); bkStart()"); pg.wait_for_timeout(200)
         rid = ev(pg, "[(bookings.find(b=>b.name==='New Cust')||{}).recIds||[], ui.rec.id]")
         check('starting forms from an appointment remembers them', rid[0] == [rid[1]], rid)
+        t1 = ev(pg, "otwText({name:'Ann Lee',time:'10:30',address:'1 Road\\nLincoln'})"); t2 = ev(pg, "otwText({name:'Ann Lee',time:'10:30',address:''})")
+        check('on my way text includes the address', 'appointment at 1 Road, Lincoln.' in t1, t1)
+        check('on my way text copes with no address', 'appointment. See you' in t2, t2)
         check('no page errors scheduling a quote', not errs, errs)
         ctx.close()
 
