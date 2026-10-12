@@ -109,7 +109,7 @@ function bkForms(B) {
 function openRecFromBook(id) {
   const q = records.find(x => x.id === id); if (!q) return;
   const m = mates(q), done = m.every(x => x.status === 'complete');
-  ui.book = null; ui.job = m.length > 1 ? m.map(x => x.id) : null; ui.rec = done ? m[m.length - 1] : m[0];
+  ui.formFrom = { view: 'book', book: ui.book }; ui.book = null; ui.job = m.length > 1 ? m.map(x => x.id) : null; ui.rec = done ? m[m.length - 1] : m[0];
   ui.step = done ? stepsOf(ui.rec).length - 1 : 0; ui.appTab = 0; ui.showErr = false; ui.pdfs = {}; ui.view = 'form'; render(); window.scrollTo(0, 0);
 }
 function renderBook(v) {
@@ -186,7 +186,7 @@ function bkStart() {
   if (a && !(cu.properties || []).includes(a)) (cu.properties = cu.properties || []).push(a);
   saveCustomers();
   const bk = bookings.find(x => x.id === B.id); if (bk) { bk.customerId = cu.id; bk.status = 'done'; bk.updated = Date.now(); saveBookings(); syncAll(); }
-  ui.pick = { types: Object.fromEntries(types.map(t => [t, true])), customer: cu }; ui.book = null; startJob();
+  ui.pick = { types: Object.fromEntries(types.map(t => [t, true])), customer: cu }; ui.formFrom = { view: 'book', book: { ...B } }; ui.book = null; startJob();
   { const bk2 = bookings.find(x => x.id === B.id); if (bk2) { bk2.recIds = (jobRecs() || [ui.rec]).map(r => r.id); saveBookings(); } }   // remember which forms this appointment made
   if (a) { (jobRecs() || [ui.rec]).forEach(r => { r.jobAddress = a; persistRec(r); }); render(); }
 }
