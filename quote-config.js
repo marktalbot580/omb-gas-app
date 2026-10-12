@@ -45,7 +45,7 @@ const QUO = (() => {
     if (num(rec.boilerPrice) !== null) out.push({ d: boiler || 'New boiler', q: 1, p: n0(rec.boilerPrice) });
     if (num(rec.fluePrice) !== null) out.push({ d: rec.flueDesc || 'Flue kit', q: 1, p: n0(rec.fluePrice) });
     (rec.lines || []).forEach(l => { if (String(l.name || '').trim() || num(l.price) !== null) out.push({ d: l.name || 'Extra', q: n0(l.qty) || 1, p: n0(l.price) }); });
-    if (num(rec.labourPrice) !== null) out.push({ d: rec.labourDesc || 'Installation labour', q: 1, p: n0(rec.labourPrice) });
+    if (num(rec.labourPrice) !== null) out.push({ d: rec.labourDesc || 'Installation labour', q: n0(rec.labourQty) || 1, p: n0(rec.labourPrice) });
     return out;
   }
   function totals(rec, s) {
@@ -78,6 +78,7 @@ const QUO = (() => {
   BOILERS.forEach(b => b[3].forEach(kw => STARTER.push(['Boiler', b[0], b[1] + ' ' + kw + 'kW', b[2], String(kw), b[4] || (b[0] === 'Baxi' ? (/^600/.test(b[1]) ? '7 years' : '10 years') : '')])));
   ['Horizontal flue kit', 'Telescopic horizontal flue kit', 'Rear flue kit', 'Vertical flue kit', 'Vertical flue terminal only', 'Plume displacement kit', '90 degree flue elbow', '45 degree flue elbows (pair)', 'Flue extension 1 metre', 'Flue extension 2 metre', 'Flue extension 3 metre'].forEach(n => STARTER.push(['Flue', '', n, '', '', '']));
   ['Combi swap, same location', 'Combi, new location up to 3 metres', 'Combi, new location up to 6 metres', 'Combi, new location up to 9 metres', 'Combi, new location up to 12 metres', 'System boiler, same location', 'System boiler, new location up to 6 metres', 'Heat only boiler, same location', 'Heat only boiler, new location up to 6 metres', 'Extra labour day'].forEach(n => STARTER.push(['Labour', '', 'Installation labour: ' + n, '', '', '']));
+  STARTER.push(['Labour', '', 'Hourly rate', '', '', '', 'hour'], ['Labour', '', 'Day rate', '', '', '', 'day']);
   const EXTRA_CATS = {"Controls & thermostats": ["Smart thermostat (Hive)", "Smart thermostat (Nest)", "Wireless programmable thermostat"], "Water treatment": ["Magnetic filter 22mm", "Magnetic filter 28mm", "MagnaCleanse up to 8 radiators", "MagnaCleanse up to 15 radiators", "Chemical flush", "Inhibitor (Sentinel X100)", "Scale reducer"], "Fittings": ["Condensate pipework internal 3m", "Condensate pipework external 3m", "Condensate pump", "Condensate soakaway", "External filling loop", "Shock arrestor", "Pipe lagging per metre"], "Copper & pipe": ["Gas pipework run (per 5m)", "Copper pipe 15mm (3m)", "Copper pipe 22mm (3m)", "Copper pipe 28mm (3m)", "15mm fittings pack", "22mm fittings pack", "28mm fittings pack"], "Radiators & valves": ["Thermostatic radiator valve", "Radiator valve pair 15mm", "Radiator 600 x 1000 Type 22"], "Electrical": ["New fused spur", "Carbon monoxide alarm"], "System components": ["8 litre expansion vessel", "12 litre expansion vessel", "Circulating pump", "2 port zone valve", "3 port mid-position valve", "Cylinder replacement"], "Other": ["Waste removal (small)", "Waste removal (medium)", "Waste removal (large)"]};
   Object.keys(EXTRA_CATS).forEach(c => EXTRA_CATS[c].forEach(n => STARTER.push([c, '', n, '', '', ''])));
   const TYPES = ['Boiler', 'Flue', 'Labour', 'Copper & pipe', 'Fittings', 'Controls & thermostats', 'Radiators & valves', 'Water treatment', 'System components', 'Electrical', 'Other'];
@@ -110,7 +111,7 @@ const QUO = (() => {
   /* the total cost price of a quote, when the cost prices are known */
   function costOf(rec) {
     let c = 0, any = false;
-    [[rec.boilerCost, 1], [rec.flueCost, 1], [rec.labourCost, 1]].forEach(([v, q]) => { if (num(v) !== null) { c += q * num(v); any = true; } });
+    [[rec.boilerCost, 1], [rec.flueCost, 1], [rec.labourCost, n0(rec.labourQty) || 1]].forEach(([v, q]) => { if (num(v) !== null) { c += q * num(v); any = true; } });
     (rec.lines || []).forEach(l => { if (num(l.cost) !== null) { c += (n0(l.qty) || 1) * num(l.cost); any = true; } });
     return any ? c : null;
   }

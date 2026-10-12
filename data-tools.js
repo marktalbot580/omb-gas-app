@@ -105,6 +105,55 @@ function renderSummary(v) {
     <button class="btn ghost block" data-nav="invoices">Back to invoices</button>`;
 }
 
+/* ---------- import appointments from another calendar (.ics from Google, Apple, Outlook) ---------- */
+const un = v => String(v || '').replace(/\\n/gi, '\n').replace(/\\([,;\\])/g, '$1').trim();
+function icsParse(text) {
+  const lines = String(text || '').replace(/\r\n?/g, '\n').replace(/\n[ \t]/g, '').split('\n'), out = []; let ev = null;
+  lines.forEach(l => {
+    if (l === 'BEGIN:VEVENT') { ev = {}; return; }
+    if (l === 'END:VEVENT') { if (ev) out.push(ev); ev = null; return; }
+    if (!ev) return;
+    const i = l.indexOf(':'); if (i < 0) return;
+    const head = l.slice(0, i).split(';'), key = head[0].toUpperCase(), val = l.slice(i + 1), par = head.slice(1).join(';').toUpperCase();
+    if (key === 'DTSTART' || key === 'DTEND') ev[key] = { v: val.trim(), date: /VALUE=DATE(?!-)/.test(par) || /^\d{8}$/.test(val.trim()) };
+    else if (['SUMMARY', 'LOCATION', 'DESCRIPTION', 'UID', 'STATUS', 'DURATION', 'RRULE'].includes(key)) ev[key] = val;
+  });
+  return out;
+}
+const icsWhen = o => { // -> { date: 'YYYY-MM-DD', min: minutes since midnight, allDay }
+  if (!o) return null; const m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?$/.exec(o.v); if (!m) return null;
+  if (o.date || m[4] === undefined) return { date: m[1] + '-' + m[2] + '-' + m[3], min: 0, allDay: true };
+  const d = m[7] ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5])) : new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+  return { date: localISO(d), min: d.getHours() * 60 + d.getMinutes(), at: d.getTime() };
+};
+function calImpBuild(text, fromToday) {
+  const evs = icsParse(text), t = localISO(), have = new Set(bookings.map(b => b.id)), seen = new Set(), fresh = []; let past = 0, dupes = 0, repeats = 0, cancelled = 0;
+  evs.forEach(e => {
+    if (/CANCELLED/i.test(e.STATUS || '')) { cancelled++; return; }
+    const s = icsWhen(e.DTSTART); if (!s) return;
+    const ownId = /@ombgas\.com$/.test(e.UID || '') ? e.UID.replace(/@ombgas\.com$/, '') : '';
+    const id = ownId || 'ics-' + impNorm(e.UID || (e.SUMMARY + s.date)).slice(0, 40) + '-' + s.date;
+    if (have.has(id) || seen.has(id)) { dupes++; return; }
+    if (fromToday && s.date < t) { past++; return; }
+    seen.add(id); if (e.RRULE) repeats++;
+    let mins = 60; const en = icsWhen(e.DTEND);
+    if (s.allDay) mins = 480; else if (en && en.at && s.at && en.at > s.at) mins = Math.min(Math.round((en.at - s.at) / 60000), 720);
+    const time = s.allDay ? '08:00' : fromMin(s.min);
+    fresh.push({ id, date: s.date, time, mins: String(mins), types: ['other'], other: 'Imported appointment', customerId: '', name: un(e.SUMMARY) || 'Appointment', phone: '', email: '', address: un(e.LOCATION), notes: un(e.DESCRIPTION), status: 'booked', updated: Date.now() });
+  });
+  return { fresh, past, dupes, repeats, cancelled, total: evs.length };
+}
+const calImpHtml = () => {
+  const I = ui.calImp; if (!I) return '';
+  return `<div class="card" style="margin-top:10px"><b>${esc(I.file)}</b>
+    <div class="row sp" style="margin-top:8px"><span>Ready to add</span><b>${I.fresh.length}</b></div>
+    <div class="row sp"><span>Already in your calendar</span><b>${I.dupes}</b></div>
+    ${I.past ? `<div class="row sp"><span>In the past (skipped)</span><b>${I.past}</b></div>` : ''}
+    ${I.repeats ? `<p class="small muted">${I.repeats} repeating event${I.repeats === 1 ? '' : 's'}: only the first date is added.</p>` : ''}
+    ${I.total ? '' : '<p class="small muted">No appointments found in that file. Check it is a calendar (.ics) file.</p>'}
+    ${I.fresh.length ? `<button class="btn gold block" data-act="calImpGo">Add ${I.fresh.length} appointment${I.fresh.length === 1 ? '' : 's'} to my calendar</button>` : ''}</div>`;
+};
+
 /* ---------- invoice: add a line from the price list (at its sale price) ---------- */
 function plResults(q) {
   q = String(q || '').toLowerCase().trim();
@@ -114,6 +163,10 @@ function plResults(q) {
 const plPanel = () => (ui.invPl ? `<div class="card"><label class="f"><span>Search your price list</span><input id="invPlQ" placeholder="For example: thermostat, copper, labour" autocomplete="off" value="${esc(ui.invPl.q)}"></label><div id="invPlRes">${plResults(ui.invPl.q)}</div></div>` : '');
 async function dataAct(a, b) {
   switch (a) {
+    case 'calImpGo': {
+      const I = ui.calImp; if (!I || !I.fresh.length) return true;
+      bookings.push(...I.fresh); saveBookings(); syncAll(); toast(I.fresh.length + ' appointment' + (I.fresh.length === 1 ? '' : 's') + ' added'); ui.calImp = null; const y = window.scrollY; render(); window.scrollTo(0, y); return true;
+    }
     case 'invPl': ui.invPl = ui.invPl ? null : { q: '' }; { const y = window.scrollY; render(); window.scrollTo(0, y); } return true;
     case 'invPlPick': {
       const x = qAll().find(z => z.id === b.dataset.id), inv = ui.inv; if (!x || !inv) return true;
@@ -143,6 +196,11 @@ document.addEventListener('change', e => {
 document.addEventListener('input', e => {
   const t = e.target; if (!t || t.id !== 'invPlQ' || !ui.invPl) return;
   ui.invPl.q = t.value; const el = document.getElementById('invPlRes'); if (el) el.innerHTML = plResults(t.value);
+});
+document.addEventListener('change', async e => {
+  const t = e.target; if (!t || t.id !== 'calImpFile' || !t.files || !t.files[0]) return;
+  const f = t.files[0]; t.value = '';
+  try { const I = calImpBuild(await f.text(), true); I.file = f.name; ui.calImp = I; const y = window.scrollY; render(); window.scrollTo(0, y); } catch (err) { toast('Could not read that file'); }
 });
 document.addEventListener('change', async e => {
   const t = e.target; if (!t || t.id !== 'impFile' || !t.files || !t.files[0]) return;

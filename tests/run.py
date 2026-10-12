@@ -448,6 +448,32 @@ def run():
         check('no page errors in stacked price list', not errs, errs)
         ctx.close()
 
+        # ---------- 12n. labour by the hour or day ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "settings.qList=[{id:'lb1',type:'Labour',make:'',name:'Hourly rate',kind:'',kw:'',cost:'',markup:'',price:'45',unit:'hour'}]; saveSettings(); ui.pCat='Labour'; ui.pEdit='lb1'; ui.view='prices'; render()")
+        f = ev(pg, "[!!document.querySelector('[data-pi=make]'), !!document.querySelector('[data-pi=unit]'), document.querySelector('#view').innerText.includes('Rate name')]")
+        check('labour price list item has no make or model, just a name and charged per', f == [False, True, True], f)
+        ev(pg, "ui.pick={types:{gquote:true},customer:null}; startJob(); ui.step=2; render(); qPick('labour', 0)")
+        r = ev(pg, "(()=>{ui.rec.labourQty='6'; return [ui.rec.labourUnit, ui.rec.labourPrice, QUO.rows(ui.rec).map(x=>x.q+'x'+x.p).join(), QUO.totals(ui.rec,settings).total]})()")
+        check('labour on a quote is charged by the hour or day', r[0] == 'hour' and r[1] == '45' and r[2] == '6x45' and r[3] == 324, r)
+        check('no page errors in labour rates', not errs, errs)
+        ctx.close()
+
+        # ---------- 12o. import appointments from another calendar ----------
+        ctx, pg, errs = fresh(b)
+        ics = 'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:abc1@google.com\r\nDTSTART:20991105T093000Z\r\nDTEND:20991105T103000Z\r\nSUMMARY:Boiler look\\, Mrs Hall\r\nLOCATION:5 Elm Rd\\, Lincoln\r\nDESCRIPTION:Bring a long\r\n  flue\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:abc2@apple.com\r\nDTSTART;VALUE=DATE:20991106\r\nSUMMARY:Day off\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:old@x.com\r\nDTSTART:20200101T090000Z\r\nSUMMARY:Old one\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:x@x\r\nDTSTART:20991107T090000Z\r\nSTATUS:CANCELLED\r\nSUMMARY:Gone\r\nEND:VEVENT\r\nEND:VCALENDAR'
+        ev(pg, "ui.view='settings'; ui.sTab='calendar'; render()")
+        pg.set_input_files('#calImpFile', files=[{'name': 'cal.ics', 'mimeType': 'text/calendar', 'buffer': ics.encode()}])
+        pg.wait_for_timeout(300)
+        I = ev(pg, "({n:ui.calImp.fresh.length,past:ui.calImp.past,c:ui.calImp.cancelled,a:ui.calImp.fresh[0]&&[ui.calImp.fresh[0].name,ui.calImp.fresh[0].address,ui.calImp.fresh[0].notes,ui.calImp.fresh[0].mins],d:ui.calImp.fresh[1]&&[ui.calImp.fresh[1].time,ui.calImp.fresh[1].mins]})")
+        check('calendar file import reads events, skips past and cancelled ones', I['n'] == 2 and I['past'] == 1 and I['c'] == 1, I)
+        check('calendar import keeps the title, place, notes and length; all-day becomes a day', I['a'] and I['a'][0] == 'Boiler look, Mrs Hall' and I['a'][1] == '5 Elm Rd, Lincoln' and 'long' in I['a'][2] and I['a'][3] == '60' and I['d'][1] == '480', I)
+        ev(pg, "document.querySelector('[data-act=calImpGo]').click()"); pg.wait_for_timeout(200)
+        pg.set_input_files('#calImpFile', files=[{'name': 'cal.ics', 'mimeType': 'text/calendar', 'buffer': ics.encode()}]); pg.wait_for_timeout(300)
+        check('importing the same file again adds nothing twice', ev(pg, "bookings.length===2&&ui.calImp.fresh.length===0&&ui.calImp.dupes===2"))
+        check('no page errors in calendar import', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()

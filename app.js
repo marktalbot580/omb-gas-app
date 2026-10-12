@@ -1058,6 +1058,12 @@ function renderSettings(v) {
       <label class="f" style="margin-top:10px"><span>Add a job</span><input id="calJobNew" placeholder="For example: boiler install" autocomplete="off"></label>
       <button class="btn block" data-act="calJobAdd">Add to the list</button>
     </div>
+    <h2>Import</h2>
+    <div class="card">
+      <p class="small muted" style="margin-top:0">Bring in appointments from Google Calendar, Apple Calendar or Outlook. Export your calendar as an <b>.ics</b> file there, then choose it here. Past appointments are skipped, and anything already in your calendar is not added twice.</p>
+      <label class="btn block" style="text-align:center">Choose a calendar file (.ics)<input id="calImpFile" type="file" accept=".ics,text/calendar" hidden></label>
+      ${calImpHtml()}
+    </div>
     <h2>Export</h2>
     <div class="card">
       <p class="small muted" style="margin-top:0">Your appointments are kept on this phone (${bookings.length} so far). Export them to add to Google Calendar, Apple Calendar or Outlook.</p>
@@ -1677,12 +1683,12 @@ function renderPrices(v) {
     return `<div class="card" style="margin-bottom:10px"><button type="button" class="item" data-act="pEdit" data-id="${x.id}" style="width:100%;text-align:left"><span><span class="t">${esc(((x.make ? x.make + ' ' : '') + (x.name || 'New item')) + (x.kw && x.type === 'Boiler' ? ' · ' + x.kw + ' kW' : '') + (x.warranty && x.type === 'Boiler' ? ' · ' + x.warranty : ''))}</span><span class="s" style="display:block">${sub}</span></span></button>
     ${open ? `<div style="margin-top:12px">
       ${i('type', 'Category', { list: 'pCats' })}${x.type === 'Boiler' || x.make ? '' : ''}
-      ${i('make', 'Make')}${i('name', 'Model / item')}
+      ${x.type === 'Labour' ? i('name', 'Rate name', { ph: 'For example: Hourly rate or Day rate' }) + i('unit', 'Charged per', { list: 'pUnits', ph: 'hour, day or job' }) : i('make', 'Make') + i('name', 'Model / item')}
       ${x.type === 'Boiler' ? `<div class="row"><label class="f grow"><span>Boiler type</span><select data-pi="kind" data-id="${x.id}"><option value=""></option>${QUO.KIND.map(k => `<option ${x.kind === k ? 'selected' : ''}>${k}</option>`).join('')}</select></label>${i('kw', 'kW', { mode: 'decimal' })}</div>
       <label class="f"><span>Manufacturer warranty</span><select data-pi="warranty" data-id="${x.id}"><option value=""></option>${QUO.WARRANTY.map(k => `<option ${x.warranty === k ? 'selected' : ''}>${k}</option>`).join('')}</select></label>` : ''}
       <div class="row">${i('cost', 'My cost (£)', { mode: 'decimal' })}${i('markup', 'Mark-up %', { mode: 'decimal', ph: mk + ' (' + (QUO.num(x.markup) === null ? 'standard' : 'own') + ')' })}</div>
       ${i('price', 'Fixed sale price (£), optional', { mode: 'decimal', ph: 'Leave empty to use cost + mark-up' })}
-      ${i('unit', 'Unit', { ph: 'each, metre, pack…' })}
+      ${x.type === 'Labour' ? '' : i('unit', 'Unit', { ph: 'each, metre, pack…' })}
       <p class="small muted" style="margin:0 0 10px">Sale price before VAT: <b>${sale === null ? 'needs a cost price' : money(sale)}</b>${sale !== null && QUO.num(x.cost) ? ` · profit ${money(sale - QUO.num(x.cost))}` : ''}</p>
       <button type="button" class="btn ghost" data-act="pDel" data-id="${x.id}">Delete this item</button></div>` : ''}</div>`;
   };
@@ -1701,6 +1707,7 @@ function renderPrices(v) {
       return `<div style="margin-bottom:10px"><button type="button" class="item" data-act="pCat" data-c="${esc(c)}" style="width:100%;text-align:left;margin:0${open ? ';border-color:var(--gold)' : ''}"><div class="row sp" style="width:100%"><span class="t">${esc(c)}</span><span class="s">${n} item${n === 1 ? '' : 's'} ${open ? '▲' : '▼'}</span></div></button>${open ? `<div class="card" style="margin:8px 0 0">${panel}</div>` : ''}</div>`;
     }).join('')}
     ${ui.pNewCat ? `<div class="row" style="margin:0 0 12px;gap:8px"><input class="grow" id="pCatIn" placeholder="New category, e.g. Baths" autocomplete="off" autocapitalize="words" style="min-width:0"><button type="button" class="btn gold" data-act="pCatAdd" style="flex:none">Add</button></div>` : `<button type="button" class="btn ghost block" data-act="pNewCat" style="margin:0 0 12px">+ New category</button>`}
+    <datalist id="pUnits"><option value="hour"><option value="day"><option value="job"></datalist>
     <datalist id="pCats">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
     <h2>Excel</h2><div class="card">
       <p class="small muted" style="margin:0 0 8px">Easier for filling in lots of prices at once. Download, type in the cost and mark-up columns, and import it back. Importing replaces the list.</p>
@@ -1765,7 +1772,7 @@ function qPick(kind, idx) {
     if (QUO.WARRANTY.includes(x.warranty)) r.warranty = x.warranty;
     if (QUO.saleText(x, settings)) r.boilerPrice = QUO.saleText(x, settings); r.boilerCost = x.cost || '';
   } else if (kind === 'flue') { r.flueDesc = x.name; if (QUO.saleText(x, settings)) r.fluePrice = QUO.saleText(x, settings); r.flueCost = x.cost || ''; }
-  else if (kind === 'labour') { r.labourDesc = x.name; if (QUO.saleText(x, settings)) r.labourPrice = QUO.saleText(x, settings); r.labourCost = x.cost || ''; }
+  else if (kind === 'labour') { r.labourDesc = x.name; r.labourUnit = (x.unit || '').trim().toLowerCase(); r.labourQty = r.labourQty || '1'; if (QUO.saleText(x, settings)) r.labourPrice = QUO.saleText(x, settings); r.labourCost = x.cost || ''; }
   else { (r.lines = r.lines || []).push({ name: (x.make ? x.make + ' ' : '') + x.name, qty: '1', price: QUO.saleText(x, settings), cost: x.cost || '' }); }
   if (kind === 'boiler' || kind === 'extra') (ui.qf = ui.qf || {})[kind] = { done: 1 };
   if (kind === 'extra') (ui.qOpen = ui.qOpen || {}).extra = false;
@@ -1794,7 +1801,8 @@ function quoExtras() {
   <h2>Labour</h2>
   <div class="card">
     ${qSelect('labour', 'Choose labour', qOf('Labour'), false)}
-    <div class="row">${txt('labourDesc', 'Description')}${txt('labourPrice', 'Price (£)', { req: 1, mode: 'decimal' })}</div>
+    ${txt('labourDesc', 'Description')}
+    <div class="row">${txt('labourQty', 'How many' + (ui.rec.labourUnit ? ' (' + ui.rec.labourUnit + 's)' : ' (hours, days…)'), { mode: 'decimal', ph: '1' })}${txt('labourPrice', ui.rec.labourUnit ? 'Price per ' + ui.rec.labourUnit + ' (£)' : 'Price each (£)', { req: ui.rec.general ? 0 : 1, mode: 'decimal' })}</div>
   </div>
   <div class="card">${txt('homeNotes', 'Specific to this home (optional, shown on the quote)', { area: 1, rows: 2 })}</div>
   <div class="card">${choice('textSize', 'Text size on the quote (Large is easier for older customers)', ['Normal', 'Large'])}</div>
