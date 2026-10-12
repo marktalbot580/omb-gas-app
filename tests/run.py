@@ -474,6 +474,18 @@ def run():
         check('no page errors in calendar import', not errs, errs)
         ctx.close()
 
+        # ---------- 12p. calendar default view ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "settings.calView='week'; saveSettings(); ui.view='home'; render(); document.querySelector('.tabs [data-act=calOpen]').click()")
+        pg.wait_for_timeout(300)
+        w = ev(pg, "[ui.view, ui.calMode, document.querySelectorAll('.wkd').length]")
+        ev(pg, "settings.calView='month'; ui.view='home'; render(); document.querySelector('.tabs [data-act=calOpen]').click()"); pg.wait_for_timeout(300)
+        mth = ev(pg, "[ui.calMode, !!document.querySelector('.calg')]")
+        ev(pg, "settings.calView=''; ui.view='home'; render(); document.querySelector('.tabs [data-act=calOpen]').click()"); pg.wait_for_timeout(300)
+        check('calendar opens on the view chosen in settings (week, month, default today)', w == ['cal', 'week', 7] and mth == ['month', True] and ev(pg, "ui.calMode") == 'today', [w, mth])
+        check('no page errors in calendar default view', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()

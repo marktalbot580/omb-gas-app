@@ -800,7 +800,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v149';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v150';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1036,6 +1036,7 @@ function renderSettings(v) {
     </div>
     ${calOn() ? `<div class="card">
       <label class="f"><span>Show the calendar on the home screen</span><select data-s="calHome"><option value="on" ${settings.calHome === 'off' ? '' : 'selected'}>Yes</option><option value="off" ${settings.calHome === 'off' ? 'selected' : ''}>No</option></select><small>Shows today’s appointments under your service buttons. The month and week views are on the Calendar tab.</small></label>
+      <label class="f"><span>Calendar opens on</span><select data-s="calView">${[['today', 'Today (daily)'], ['week', 'This week'], ['month', 'This month']].map(([k, l]) => `<option value="${k}" ${(settings.calView || 'today') === k ? 'selected' : ''}>${l}</option>`).join('')}</select><small>The view you see first when you tap Calendar. You can still switch between Today, Week and Month.</small></label>
       <label class="f"><span>Usual appointment length</span><select data-s="calMins">${[['30', '30 minutes'], ['60', '1 hour'], ['90', '1½ hours'], ['120', '2 hours'], ['180', '3 hours']].map(([m, l]) => `<option value="${m}" ${String(settings.calMins || '60') === m ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <button class="btn block" data-act="calOpen">Open the calendar</button>
     </div>

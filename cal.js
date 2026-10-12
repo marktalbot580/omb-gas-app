@@ -174,7 +174,7 @@ function bkStart() {
 }
 async function calAct(a, b) {
   switch (a) {
-    case 'calOpen': syncAll(); ui.cal = null; calState(); ui.calMode = 'today'; ui.view = 'cal'; render(); return true;
+    case 'calOpen': syncAll(); ui.cal = null; calState(); ui.calMode = ['today', 'week', 'month'].includes(settings.calView) ? settings.calView : 'today'; ui.view = 'cal'; render(); return true;
     case 'calMode': ui.calMode = b.dataset.m; if (b.dataset.m === 'today') ui.cal = null; render(); return true;
     case 'calWeek': { const s = calState(); s.w = addDays(s.w || mondayOf(localISO()), 7 * (+b.dataset.n)); const y = window.scrollY; render(); window.scrollTo(0, y); return true; }
     case 'calMonth': { const s = calState(), [y, m] = s.m.split('-').map(Number), d = new Date(y, m - 1 + (+b.dataset.n), 1); s.m = localISO(d).slice(0, 7); render(); return true; }
