@@ -10,7 +10,9 @@ Live app: https://app.ombgas.com · Setup of the back end: see `SETUP.md`.
 | --- | --- |
 | `index.html`, `style.css`, `manifest.json`, `sw.js` | Shell, styles, install manifest, offline cache |
 | `app.js` | State, screens, forms, customers, invoices, quotes, settings, backup |
-| `cal.js` | Calendar: appointments, booking form, exports, "on my way" text |
+| `cal.js` | Calendar: appointments, week/month views, booking form, reminders, exports, "on my way" text |
+| `data-tools.js` | Customer import from CSV, yearly summary and accounts export |
+| `store.js` | Keeps customers, records, invoices and bookings in IndexedDB (migrates from localStorage, falls back to it), then starts cal.js, data-tools.js and app.js |
 | `cloud.js` | Login, subscription state and two-way sync with Supabase |
 | `*-config.js` | Form definitions (gas, service, Legionella, air con, commissioning, quotes, warnings) |
 | `pdf*.js` | One PDF builder per document type (jsPDF) |

@@ -55,7 +55,7 @@ const CLOUD = (() => {
   /* remove this phone's copy so the next person to log in never sees it */
   function wipeLocal() {
     try { Object.keys(localStorage).filter(k => /^omb_/.test(k)).forEach(k => localStorage.removeItem(k)); } catch (e) { }
-    try { indexedDB.deleteDatabase('omb_photos'); } catch (e) { }
+    try { indexedDB.deleteDatabase('omb_photos'); OMBSTORE.wipe(); } catch (e) { }
     setTimeout(() => location.reload(), 400);
   }
   function signOutLocal() { session = null; sub = null; [KS, KB, KM, KP, KU, KT].forEach(ls.del); ss.del(KS); }
@@ -65,7 +65,7 @@ const CLOUD = (() => {
     const last = ls.get(KID, null);
     if (last && last !== id) {
       try { Object.keys(localStorage).filter(k => /^omb_/.test(k) && k !== KS && k !== KID).forEach(k => localStorage.removeItem(k)); } catch (e) { }
-      try { indexedDB.deleteDatabase('omb_photos'); } catch (e) { }
+      try { indexedDB.deleteDatabase('omb_photos'); OMBSTORE.wipe(); } catch (e) { }
       ls.set(KID, id); saveSession(); setTimeout(() => location.reload(), 400); return true;
     }
     ls.set(KID, id); return false;

@@ -7,8 +7,8 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'id' + Date.now() + Math.random().toString(16).slice(2));
 const LS = {
-  get(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch { return d; } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { toast('Storage full – sync and clear old records'); } }
+  get(k, d) { if (OMBSTORE.has(k)) return OMBSTORE.get(k, d); try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch { return d; } },
+  set(k, v) { if (OMBSTORE.has(k)) return OMBSTORE.set(k, v); try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { toast('Storage full – sync and clear old records'); } }
 };
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const plusYear = iso => { const d = new Date(iso + 'T12:00:00'); d.setFullYear(d.getFullYear() + 1); return d.toISOString().slice(0, 10); };
@@ -114,7 +114,7 @@ records.forEach(r => (r.appliances || []).forEach(a => { if (a.test === 'Burner 
 const fmtSort = v => (String(v || '').replace(/\D/g, '').slice(0, 6).match(/.{1,2}/g) || []).join('-');
 const saveSettings = () => { settings.updated = Date.now(); LS.set('omb_settings', settings); applyBrand(); };
 /* browsers keep roughly 5 MB of saved data per app; this reports how much of it the app's own data is using */
-const storageUsed = () => { try { let n = 0; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); n += (k.length + (localStorage.getItem(k) || '').length) * 2; } return Math.min(100, Math.round(n / 5242880 * 100)); } catch (e) { return 0; } };
+const storageUsed = () => { if (OMBSTORE.has('omb_records')) return 0; try { let n = 0; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); n += (k.length + (localStorage.getItem(k) || '').length) * 2; } return Math.min(100, Math.round(n / 5242880 * 100)); } catch (e) { return 0; } };
 const saveCustomers = () => LS.set('omb_customers', customers);
 const saveRecords = () => LS.set('omb_records', records);
 const saveInvoices = () => LS.set('omb_invoices', invoices);
@@ -1075,7 +1075,7 @@ function renderSettings(v) {
     <div class="card">
       <p class="small muted" style="margin-top:0">Customers and records are stored on this phone. Keep a copy somewhere safe. The app reminds you once a month. A backup holds your customers' details, so keep it somewhere private. You can add a password to it. Bank details are never included.</p>
       <p class="small" style="margin:0 0 10px">Last full backup: <b>${bkGet().last ? ukDate(bkGet().last) : 'none yet'}</b></p>
-      ${(() => { const u = storageUsed(); return `<p class="small" style="margin:0 0 10px">Space used on this device: <b style="${u >= 70 ? 'color:var(--warn)' : ''}">${u}%</b>${u >= 70 ? '. It is getting full. Back up now, then tell support at support@ombgas.com so we can help before it fills.' : ''}</p>`; })()}
+      ${(() => { if (OMBSTORE.has('omb_records')) return `<p class="small" style="margin:0 0 10px">Your records are kept in this device’s database: <b>${(OMBSTORE.bytes() / 1048576).toFixed(1)} MB</b> so far. There is room for many thousands of jobs.</p>`; const u = storageUsed(); return `<p class="small" style="margin:0 0 10px">Space used on this device: <b style="${u >= 70 ? 'color:var(--warn)' : ''}">${u}%</b>${u >= 70 ? '. It is getting full. Back up now, then tell support at support@ombgas.com so we can help before it fills.' : ''}</p>`; })()}
       <button class="btn block" data-act="expCust">Export customers (spreadsheet)</button>
       <div style="height:8px"></div>
       <button class="btn block" data-act="expInv">Export invoices (spreadsheet)</button>
