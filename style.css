@@ -291,3 +291,4 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 4px rgba(217,178,95,.14
 .calg button i{position:absolute;left:50%;bottom:5px;width:6px;height:6px;margin-left:-3px;border-radius:50%;background:var(--gold2)}
 .calg button.sel i{background:#111}
 [data-ctab][hidden]{display:none}
+.btn[hidden]{display:none}

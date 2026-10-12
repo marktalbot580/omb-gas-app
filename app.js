@@ -790,7 +790,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v142';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v143';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -3171,6 +3171,8 @@ async function restoreBackup(file) {
 /* ---------- calendar: appointments kept on this phone ---------- */
 const BK_TYPES = [['gas', 'Gas safety check'], ['service', 'Boiler service'], ['legionella', 'Legionella risk assessment'], ['aircon', 'Air conditioning'], ['quote', 'Boiler quote'], ['other', 'Other job']];
 const calOn = () => settings.calOn !== 'off';
+/* a UK mobile number (07… or +44 7…): only these get the on my way text */
+const isMobileNo = p => /^(?:\+?44|0)7\d{9}$/.test(String(p || '').replace(/\(0\)/, '').replace(/[^\d+]/g, ''));
 /* the "on my way" text: {name} {time} {address} {business} are filled in (wording editable in Settings → Calendar) */
 const OTW_DEFAULT = 'Hi {name}, just to let you know I am on my way for your {time} appointment. See you shortly.\n{business}';
 function otwText(b) {
@@ -3240,7 +3242,7 @@ function renderBook(v) {
   const B = ui.book, isNew = !bookings.some(x => x.id === B.id), c = customers.find(x => x.id === B.customerId);
   const props = c ? (c.properties || []).filter(Boolean) : [], inList = props.includes(B.address);
   const f = (k, l, o = {}) => `<label class="f"><span>${l}</span>${o.area ? `<textarea data-bk="${k}" rows="2">${esc(B[k])}</textarea>` : `<input data-bk="${k}" value="${esc(B[k])}" ${o.type ? `type="${o.type}"` : ''} autocomplete="off">`}</label>`;
-  const top = isNew ? '' : (settings.calOtwOn === 'off' ? '' : '<button class="btn gold block" data-act="bookOtw" style="margin-bottom:10px">Text: I’m on my way</button>') + (String(B.address || '').trim() ? `<a class="btn block" style="text-align:center;text-decoration:none;margin-bottom:10px" href="${esc(mapsUrl(B.address))}" target="_blank" rel="noopener">Navigate to ${esc(addrFirst(B.address))}</a>` : '');
+  const top = isNew ? '' : (settings.calOtwOn === 'off' ? '' : `<button class="btn gold block" id="bkOtw" data-act="bookOtw" style="margin-bottom:10px" ${isMobileNo(B.phone) ? '' : 'hidden'}>Text: I’m on my way</button>`) + (String(B.address || '').trim() ? `<a class="btn block" style="text-align:center;text-decoration:none;margin-bottom:10px" href="${esc(mapsUrl(B.address))}" target="_blank" rel="noopener">Navigate to ${esc(addrFirst(B.address))}</a>` : '');
   v.innerHTML = `<h1>${isNew ? 'Schedule in' : 'Appointment'}</h1>
     ${top}
     <h2 style="margin-top:${top ? '14px' : '0'}">What is the job?</h2>
@@ -3323,7 +3325,7 @@ async function calAct(a, b) {
     case 'bookPickCust': { const c = customers.find(x => x.id === b.dataset.id); if (c) { bkFill(ui.book, c); render(); } return true; }
     case 'bookOtw': {
       const B = ui.book, ph = String(B.phone || '').replace(/[^\d+]/g, '');
-      if (ph.replace(/\D/g, '').length < 10) { toast('Add a mobile number for this customer first'); return true; }
+      if (!isMobileNo(B.phone)) { toast('Add a mobile number for this customer first'); return true; }
       const body = otwText(B);
       if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) { const el = document.createElement('a'); el.href = 'sms:' + ph + '?&body=' + encodeURIComponent(body); document.body.appendChild(el); el.click(); el.remove(); }
       else { try { await navigator.clipboard.writeText(body); toast('Message copied. Paste it into a text to ' + B.phone); } catch (e) { toast('Texts open on a phone. Use this on your phone to send it.'); } }
@@ -3349,6 +3351,7 @@ async function calAct(a, b) {
 document.addEventListener('input', e => {
   const t = e.target, k = t && t.dataset && t.dataset.bk; if (!k || !ui.book || t.tagName === 'SELECT') return;
   ui.book[k] = t.value;
+  if (k === 'phone') { const ob = document.getElementById('bkOtw'); if (ob) ob.hidden = !isMobileNo(t.value); }
   if (k === 'name') { if (ui.book.customerId) { const c = customers.find(x => x.id === ui.book.customerId); if (!c || c.name !== t.value) { ui.book.customerId = ''; ui.book.addrNew = false; } } const el = document.getElementById('bkNameSug'); if (el) el.innerHTML = nameSugHtml(ui.book, t.value, 'bookPickCust'); }
 });
 document.addEventListener('change', e => {
