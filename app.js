@@ -771,7 +771,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v131';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v132';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -923,7 +923,7 @@ function renderSettings(v) {
     <h2>Your branding</h2>
     <div class="card">
       <div style="text-align:center;margin-bottom:12px"><img src="${settings.logo || placeholderLogo(settings.businessName)}" alt="Company logo" style="height:110px;width:110px;border-radius:10px;${settings.logo && settings.logoBg === 'white' ? 'background:#fff' : ''}"></div>
-      <label class="btn block" style="text-align:center">${settings.logo ? 'Change company logo' : 'Upload company logo'}<input id="coLogo" type="file" accept="image/*" hidden></label>
+      <label class="btn block" style="text-align:center">${settings.logo ? 'Change company logo' : 'Upload company logo'}<input id="coLogo" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,.pdf" hidden></label>
       ${settings.logo ? `<label class="f" style="margin-top:10px"><span>Logo background</span><select data-s="logoBg"><option value="clear" ${settings.logoBg === 'white' ? '' : 'selected'}>Clear (the logo sits on the dark header)</option><option value="white" ${settings.logoBg === 'white' ? 'selected' : ''}>White</option></select><small>If your logo is dark and hard to see on the dark header, choose White.</small></label>` : ''}
       ${settings.logo ? '<div style="height:8px"></div><button class="btn block" data-act="rmCoLogo">Remove logo</button>' : ''}
       <div class="hint" style="margin:10px 0 4px">Your logo appears at the top of the app and on every PDF.</div>
@@ -932,7 +932,7 @@ function renderSettings(v) {
     <h2>Gas Safe logo</h2>
     <div class="card">
       ${`<div style="background:#fff;border-radius:10px;padding:10px;text-align:center;margin-bottom:12px"><img src="${settings.gasSafeLogo || 'gassafe.png'}" alt="Gas Safe logo" style="max-height:70px;max-width:100%"></div>`}
-      <label class="btn block" style="text-align:center">Use a different logo image<input id="gsLogo" type="file" accept="image/*" hidden></label>
+      <label class="btn block" style="text-align:center">Use a different logo image<input id="gsLogo" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,.pdf" hidden></label>
       ${settings.gasSafeLogo ? '<div style="height:8px"></div><button class="btn block" data-act="rmLogo">Back to standard Gas Safe logo</button>' : ''}
     </div>
     <h2>Engineer</h2>

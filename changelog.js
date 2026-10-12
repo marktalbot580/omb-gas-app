@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v132', items: ['Uploading your company or Gas Safe logo now opens the phone’s Files picker instead of going straight to the photo gallery.'] },
   { v: 'v131', items: ['Company logo: when you upload a logo that sits in a white box, the white is now cleared (so the logo fills the tile with no white edging) and it is trimmed to fill the box. Re-upload your logo to use this. There is a Logo background setting (Clear or White) in case a dark logo is hard to see on the dark header.'] },
   { v: 'v130', items: ['Settings: the tabs are now stacked in two rows of three, so Tools and App are no longer hidden off the side of the screen on a phone.', 'Settings: the Payment reminders section was showing on every tab; it now only shows under Invoicing.'] },
   { v: 'v129', items: ['Settings → App → Records to show: switch off the record types you do not use (for example air conditioning commissioning until you are qualified). They disappear from the home screen and the Forms for this visit list, and come back when you switch them on. Records you have already made are kept.', 'Every button now has a capital letter on each word.'] },
