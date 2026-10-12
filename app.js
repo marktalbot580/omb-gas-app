@@ -535,7 +535,9 @@ function txt(path, label, o = {}) {
   const el = o.type === 'date' ? dateInp(`data-k="${path}"`, v) : o.area
     ? `<textarea data-k="${path}" rows="${o.rows || 3}" placeholder="${esc(o.ph || '')}">${esc(v)}</textarea>`
     : `<input data-k="${path}" type="${o.type || 'text'}" ${o.mode ? `inputmode="${o.mode}"` : ''} value="${esc(v)}" placeholder="${esc(o.ph || '')}" autocomplete="off" autocapitalize="${o.cap || 'sentences'}">`;
-  return `<label class="f ${bad(o, v) ? 'bad' : ''}" data-f="${path}"><span>${label}${o.req ? ' <b>*</b>' : ''}</span>${el}${o.hint ? `<small>${o.hint}</small>` : ''}</label>`;
+  /* o.copy puts a small Copy button beside the box, to paste the value into another app */
+  const box = o.copy ? `<span style="display:flex;gap:8px;align-items:stretch">${el.replace('<input ', '<input style="flex:1;min-width:0" ')}<button type="button" class="btn ghost" data-act="copyVal" style="width:auto;padding:0 14px;margin:0" aria-label="Copy ${esc(label)}">Copy</button></span>` : el;
+  return `<label class="f ${bad(o, v) ? 'bad' : ''}" data-f="${path}"><span>${label}${o.req ? ' <b>*</b>' : ''}</span>${box}${o.hint ? `<small>${o.hint}</small>` : ''}</label>`;
 }
 function choice(path, label, opts, o = {}) {
   const v = getP(ui.rec, path) ?? '';
@@ -777,7 +779,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v117';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v118';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1253,7 +1255,7 @@ function stepAppliances() {
       ${a.type === 'Other' ? txt(P('typeOther'), 'Describe the appliance', { req: 1 }) : ''}
       ${makeField(P('manufacturer'), i, a.type)}
       ${txt(P('model'), 'Model', { req: 1 })}
-      ${/^(cooker|hob|oven|range cooker)$/i.test(a.type || '') ? '' : txt(P('gc'), 'Gas Council number', { cap: 'characters' })}
+      ${/^(cooker|hob|oven|range cooker)$/i.test(a.type || '') ? '' : txt(P('gc'), 'Gas Council number', { cap: 'characters', copy: 1 })}
       ${choice(P('ownership'), 'Who owns the appliance?', OPT.ownership, { req: 1, wrap: 1 })}
       ${choice(P('flue'), 'Flue type', OPT.flue, { req: 1, wrap: 1 })}
       ${choice(P('serviced'), 'Serviced at the same time?', OPT.yn, { req: 1 })}
@@ -1676,7 +1678,7 @@ function comBoiler() {
     ${r.make === 'Other' ? txt('makeOther', 'Make', { req: 1 }) : ''}
     ${txt('model', 'Boiler model', { req: 1 })}
     ${txt('serial', 'Serial number', { req: 1, cap: 'characters' })}
-    ${txt('gc', 'Gas Council number', { cap: 'characters' })}
+    ${txt('gc', 'Gas Council number', { cap: 'characters', copy: 1 })}
     ${choice('kind', 'Boiler type', COM.KIND, { req: 1, wrap: 1 })}
   </div>
   <h2>Compliance</h2>
@@ -1886,7 +1888,7 @@ function svcBoiler() {
     ${choice('systemType', 'System type', SVC.SYSTEM, { req: 1, wrap: 1 })}
     ${r.systemType === 'Other' ? txt('systemOther', 'Describe the system type', { req: 1 }) : ''}
     ${txt('serial', 'Serial number', { req: 1, cap: 'characters' })}
-    ${txt('gc', 'Gas Council number', { cap: 'characters' })}
+    ${txt('gc', 'Gas Council number', { cap: 'characters', copy: 1 })}
     ${choice('flue', 'Flue type', SVC.FLUE, { req: 1, wrap: 1 })}
   </div>
   <h2>Visit</h2>
@@ -2460,6 +2462,13 @@ document.addEventListener('click', async e => {
       const nm = (r.customer.name || '').trim(), on = (r.customerName || '').trim() === nm && nm;
       if (!on && !nm) { toast('Enter the customer’s name on the first screen'); break; }
       r.customerName = on ? '' : nm; persistRec(r); ui.pdf = null; const y = window.scrollY; render(); window.scrollTo(0, y); break;
+    }
+    case 'copyVal': {
+      const v = (b.closest('label').querySelector('input') || {}).value || '';
+      if (!v.trim()) { toast('Nothing to copy yet'); break; }
+      const ok = () => toast('Copied – paste it into the other app');
+      try { navigator.clipboard.writeText(v.trim()).then(ok, () => toast('Could not copy – press and hold the box to copy')); } catch (e) { toast('Could not copy – press and hold the box to copy'); }
+      break;
     }
     case 'sameAddr': r.jobAddress = r.customer.billing; persistRec(r); render(); break;
     case 'pickSug': {
