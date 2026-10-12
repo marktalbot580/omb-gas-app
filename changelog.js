@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v126', items: ['Overdue invoices: the day after an invoice passes its payment terms, the home screen asks if you want to send a payment reminder. Say Yes and the reminder email opens with the invoice attached; say No and it asks if the invoice has been paid, or to ask again in 7 days. Nothing is sent without you.', 'Every unpaid invoice now has a Send payment reminder button, and the Invoices list has an Overdue filter (oldest first).', 'The reminder wording can be edited, or the questions turned off, in Settings → Invoicing → Payment reminders.'] },
   { v: 'v125', items: ['The quote chase message (Chase by email and Chase by text) can now be edited in Settings → Quotes, with a button to put the original wording back.'] },
   { v: 'v124', items: ['Settings: Tools now has its own tab (choose which tools show), so Reminders only holds the annual check reminders.'] },
   { v: 'v123', items: ['On a computer, the Open the email button (and the quote chase email button) now opens your email in a new browser tab, so the app stays where you were. Phones are unchanged.'] },

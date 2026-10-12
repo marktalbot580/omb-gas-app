@@ -101,7 +101,7 @@ const DEFAULT_SETTINGS = {
   priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', priceCom: '', quoteIncluded: QUO.DEFAULT_INCLUDED, quoteTerms: QUO.DEFAULT_TERMS, qItemsText: '', qList: [], qMarkup: {}, qMarkupDef: '30', discType: '£', discValue: '',
   invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '', vatQtr: '2', yearDay: '6', yearMonth: '4',
   bankName: '', accName: '', sortCode: '', accNo: '', invFooter: 'Thank you for your business.',
-  remText: '', qChaseText: '', remDays: '56', toolGas: 'on', toolPipe: 'on', toolIv: 'on', toolHeat: 'on'
+  remText: '', qChaseText: '', invRemText: '', invAsk: 'on', remDays: '56', toolGas: 'on', toolPipe: 'on', toolIv: 'on', toolHeat: 'on'
 };
 let settings = Object.assign({}, DEFAULT_SETTINGS, LS.get('omb_settings', {}));
 let customers = LS.get('omb_customers', []);
@@ -651,6 +651,7 @@ function renderHome(v) {
     ${bkBanner()}
     ${newsBanner()}
     ${(() => { const c = records.filter(qChase).sort((a, b) => (a.inspectionDate || '').localeCompare(b.inspectionDate || '')); return c.length ? `<button type="button" class="notice" style="display:block;width:100%;text-align:left" data-act="openRec" data-id="${c[0].id}"><b>${c.length} quote${c.length > 1 ? 's' : ''} sent over 2 weeks ago with no answer.</b> Tap to chase ${esc(c[0].customer.name || 'the oldest')}.</button>` : ''; })()}
+    ${(() => { const c = invOverdueAsk(); return c.length ? `<button type="button" class="notice" style="display:block;width:100%;text-align:left" data-act="invAsk"><b>${c.length} overdue invoice${c.length > 1 ? 's' : ''}.</b> Tap to send ${esc(c[0].customer.name || 'a customer')} a payment reminder.</button>` : ''; })()}
     ${missing ? `<div class="notice">Add the business address, Gas Safe register number and engineer details in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a> before issuing certificates.</div>` : ''}
     <button class="btn gold block" data-act="newRec" data-type="gas">+ New gas safety record</button>
     <div style="height:10px"></div>
@@ -779,7 +780,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v125';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v126';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -976,6 +977,13 @@ function renderSettings(v) {
         <button type="button" class="${settings.discType === '%' ? 'on' : ''}" data-act="discType" data-t="%">% off the total</button></div></div>
       ${f('discValue', settings.discType === '%' ? 'Discount (%)' : 'Discount (£)', { mode: 'decimal', hint: 'Taken off automatically when two or three services are done on the same visit. You can still change it on each invoice.' })}
       <p class="small muted" style="margin:0">${(() => { const a = numOf(settings.priceGas), b = numOf(settings.priceSvc), c = numOf(settings.priceLeg), all = a + b + c; if (!all) return 'Set the prices above to see an example.'; const d = x => Math.min(settings.discType === '%' ? r2(x * numOf(settings.discValue) / 100) : numOf(settings.discValue), x); return `Example – all three services: ${money(all)} − ${money(d(all))} = <b style="color:var(--txt)">${money(all - d(all))}</b>`; })()}</p>
+    </div>
+    </div>
+    <h2>Payment reminders</h2>
+    <div class="card">
+      <label class="f"><span>Ask me about overdue invoices</span><select data-s="invAsk"><option value="on" ${settings.invAsk === 'off' ? '' : 'selected'}>On</option><option value="off" ${settings.invAsk === 'off' ? 'selected' : ''}>Off</option></select><small>The day after an invoice passes its payment terms, the home screen asks if you want to send a reminder. Nothing is sent until you say Yes. If you say No, it asks if the invoice has been paid, or to ask again in 7 days.</small></label>
+      <label class="f"><span>Reminder wording</span><textarea data-s="invRemText" rows="8">${esc(settings.invRemText || INVREM_DEFAULT)}</textarea><small>Used for the payment reminder email. {name}, {number}, {amount}, {due}, {address}, {business} and {signoff} are filled in for you. The invoice is attached.</small></label>
+      <button class="btn block ghost" data-act="invRemReset">Put the original wording back</button>
     </div>
     </div>
     <div data-stab="quotes" ${(ui.sTab || 'business') === 'quotes' ? '' : 'hidden'}>
@@ -1399,6 +1407,7 @@ function sendCard(m) {
   if (inv) {
     const T = invTotals(inv);
     invRow = row(inv.id, 'Invoice ' + esc(inv.number), `${money(T.total)} · <span class="badge ${invStatus(inv)}">${invStatus(inv)}</span>`, `<div style="display:flex;gap:8px;flex:none">${side('invOpenVisit', '', 'Open')}${side('invFromVisit', '', 'Edit')}</div>`);
+    if (!inv.paid && inv.sent) invRow += `<button type="button" class="btn block ghost" style="margin-bottom:10px" data-act="invRemindBtn" data-id="${inv.id}">Send payment reminder${inv.remindedAt ? ' (last ' + ukDate(inv.remindedAt) + ')' : ''}</button>`;
     if (selOn(inv.id)) paid = `<button type="button" class="item tog ${inv.paid ? 'on' : ''}" data-act="invPaidVisit" style="margin-bottom:10px"><span class="box"></span><span><span class="t">Paid</span><span class="s" style="display:block">${inv.paid ? 'Paid ' + ukDate(inv.paidDate) + ' – PAID stamp on the invoice' : 'Tick if paid on the day – adds a PAID stamp'}</span></span></button>${methodSeg(inv)}`;
   } else if (bm.length && noInv(m)) invRow = `<div class="notice" style="margin:0 0 10px">No invoice for this job – it counts as complete.</div><button class="btn block" style="margin-bottom:10px" data-act="invUndoNone">Add an invoice after all</button>`;
   else if (bm.length) invRow = `<button class="btn block" style="margin-bottom:10px" data-act="invFromVisit">Add an invoice</button><button class="btn ghost block" style="margin-bottom:10px" data-act="invNoneVisit">Invoice not required</button>`;
@@ -2093,7 +2102,7 @@ function invPdfHtml() {
   return `<div class="card pdfok"><div style="font-weight:700;margin-bottom:10px">PDF ready – ${esc(p.name)}</div>
     <button class="btn gold block" data-act="invShare">Email / share invoice</button><div style="height:8px"></div>
     <button class="btn block" data-act="invDl">Download PDF</button><div style="height:8px"></div>
-    <button class="btn block" data-act="invView">Open PDF</button></div>
+    <button class="btn block" data-act="invView">Open PDF</button>${i.paid ? '' : `<div style="height:8px"></div><button class="btn block" data-act="invRemindBtn" data-id="${i.id}">Send payment reminder</button>${i.remindedAt ? `<p class="small muted" style="margin:6px 0 0">Last reminder sent ${ukDate(i.remindedAt)}</p>` : ''}`}</div>
     <p class="small muted">“Email / share” opens your phone’s share sheet with the invoice attached${i.customer.email ? ' – it is ready to send to ' + esc(i.customer.email) : ''}.</p>`;
 }
 function inf(path, label, o = {}) {
@@ -2108,7 +2117,8 @@ function renderInvoices(v) {
   const f = ui.invFilter, list = [...invoices].sort((a, b) => (b.date + b.number).localeCompare(a.date + a.number));
   const open = invoices.filter(i => !i.paid), late = open.filter(i => invStatus(i) === 'overdue');
   const owed = open.reduce((a, i) => a + invTotals(i).total, 0);
-  const shown = list.filter(i => f === 'all' || (f === 'unpaid' && !i.paid) || (f === 'paid' && i.paid));
+  const shown = list.filter(i => f === 'all' || (f === 'unpaid' && !i.paid) || (f === 'paid' && i.paid) || (f === 'overdue' && !i.paid && invStatus(i) === 'overdue'));
+  if (f === 'overdue') shown.sort((x, y) => (x.due || '').localeCompare(y.due || ''));
   const chip = (k, l) => `<button class="chip ${f === k ? 'on' : ''}" data-act="invFilter" data-f="${k}">${l}</button>`;
   v.innerHTML = `
     <h1>Invoices</h1>
@@ -2118,7 +2128,7 @@ function renderInvoices(v) {
     <div style="height:8px"></div>
     <button class="btn block" data-act="prtOpen">Print for accountant (VAT quarter / bulk)</button>
     <div style="height:14px"></div>
-    <div class="chips">${chip('all', 'All')}${chip('unpaid', 'Unpaid')}${chip('paid', 'Paid')}</div>
+    <div class="chips">${chip('all', 'All')}${chip('unpaid', 'Unpaid')}${late.length ? chip('overdue', 'Overdue (' + late.length + ')') : ''}${chip('paid', 'Paid')}</div>
     ${shown.length ? shown.map(i => `
       <button class="item" data-act="openInv" data-id="${i.id}">
         <div class="row sp"><span class="t">${esc(i.customer.name || 'No customer')}</span><span class="badge ${invStatus(i)}">${invStatus(i)}</span></div>
@@ -2201,6 +2211,47 @@ async function invMakePdf() {
   const i = ui.inv;
   try { const blob = await buildInvPdf(i, settings); ui.invPdf = { id: i.id, blob, name: invFileName(i) }; $('#invPdfBox').innerHTML = invPdfHtml(); toast('Invoice PDF created'); }
   catch (err) { console.error(err); toast('Could not create the PDF: ' + err.message); }
+}
+/* ---------- overdue invoices: payment reminder wording, the "send a reminder?" question, and the reminder email itself ---------- */
+const INVREM_DEFAULT = 'Hi {name},\n\nI hope you are well. This is a friendly reminder that invoice {number} for {amount}{address} was due on {due} and I have not yet received payment. I have attached a copy.\n\nIf you have already paid, thank you, and please ignore this message. Otherwise I would be grateful if you could arrange payment as soon as you can.\n\nKind regards,\n{signoff}';
+function invRemText(i) {
+  const addr = addrLine(i.jobAddress || ''), map = { name: greetName(i.customer.name), number: i.number, amount: money(invTotals(i).total), due: ukDate(i.due), business: settings.businessName || '', address: addr ? ' for the work at ' + addr : '', signoff: signOff() };
+  return (settings.invRemText || INVREM_DEFAULT).replace(/\{(name|number|amount|due|business|address|signoff)\}/gi, (m, k) => map[k.toLowerCase()]);
+}
+const invOverdueAsk = () => settings.invAsk === 'off' ? [] : invoices.filter(i => !i.paid && i.due && i.due < todayISO() && !(i.snooze && i.snooze > todayISO())).sort((x, y) => x.due.localeCompare(y.due));
+async function invRemind(i) {
+  let blob;
+  try { blob = await buildInvPdf(i, settings); } catch (err) { toast('Could not create the invoice PDF: ' + err.message); return false; }
+  const name = invFileName(i), file = new File([blob], name, { type: 'application/pdf' });
+  copyEmail((i.customer || {}).email);
+  const subject = `Payment reminder – invoice ${i.number} – ${settings.businessName}`, text = invRemText(i);
+  const done = () => { i.remindedAt = todayISO(); i.snooze = addDays(todayISO(), 7); persistInv(i); };
+  try { if (canShareFiles({ files: [file] })) { await navigator.share({ files: [file], title: subject, text }); done(); return true; } }
+  catch (err) { if (err.name === 'AbortError') return false; console.warn(err); }
+  const l = document.createElement('a'); l.href = URL.createObjectURL(blob); l.download = name; document.body.appendChild(l); l.click(); l.remove();
+  openMail(`mailto:${mailAddr(i.customer.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text + '\n\n(Attach the downloaded PDF)')}`);
+  done(); return true;
+}
+function invAskShow(id, step) {
+  const old = document.getElementById('askBox'); if (old) old.remove();
+  const i = invoices.find(x => x.id === id); if (!i) return;
+  const days = Math.max(1, Math.round((Date.parse(todayISO()) - Date.parse(i.due)) / 86400000));
+  const d = document.createElement('div'); d.id = 'askBox';
+  const head = `<div class="insthead"><div><b>Invoice ${esc(i.number)} is overdue</b><span>${esc(i.customer.name || 'Customer')} · ${money(invTotals(i).total)} · due ${ukDate(i.due)} (${days} day${days === 1 ? '' : 's'} ago)</span></div></div>`;
+  d.innerHTML = step === 'paid'
+    ? `<div class="instbox">${head}<p class="small">Has this invoice been paid?</p>
+      <button class="btn gold block" data-act="invAskPaid" data-id="${i.id}">Yes, it has been paid</button><div style="height:8px"></div>
+      <button class="btn block" data-act="invAskSnooze" data-id="${i.id}">Not yet – ask me again in 7 days</button>
+      <div class="instrow"><button class="btn ghost" data-act="invAskClose">Close</button></div></div>`
+    : `<div class="instbox">${head}<p class="small">Send ${esc(i.customer.name || 'the customer')} a payment reminder${i.remindedAt ? ' (last one sent ' + ukDate(i.remindedAt) + ')' : ''}?</p>
+      <button class="btn gold block" data-act="invAskYes" data-id="${i.id}">Yes, send a reminder</button><div style="height:8px"></div>
+      <button class="btn block" data-act="invAskNo" data-id="${i.id}">No</button>
+      <div class="instrow"><button class="btn ghost" data-act="invAskClose">Close</button></div></div>`;
+  document.body.appendChild(d);
+}
+function invAskNext() {
+  const n = invOverdueAsk(); if (n.length) invAskShow(n[0].id, 'ask'); else { const o = document.getElementById('askBox'); if (o) o.remove(); }
+  if (ui.view === 'home' || ui.view === 'invoices') render();
 }
 async function invShare() {
   copyEmail((ui.inv.customer || {}).email);
@@ -2372,6 +2423,14 @@ document.addEventListener('click', async e => {
   if (a === 'remSent') { const id = b.dataset.id; setTimeout(() => { const o = remGet(); o.s[id] = todayISO(); remSet(o); if (ui.view === 'due') { const y = window.scrollY; render(); window.scrollTo(0, y); } }, 600); return; }
   if (a === 'remDone') { const rr = records.find(x => x.id === b.dataset.id); if (rr) remSetState(rr, b.dataset.v); toast(b.dataset.v === 'booked' ? 'Marked as booked in' : 'Removed from the list'); render(); return; }
   if (a === 'remStop') { if (confirm('Stop reminders for this property? You can still do its next check as normal.')) { const o = remGet(); o.stop[b.dataset.key] = 1; remSet(o); const rr = records.find(x => x.id === b.dataset.id); if (rr) remSetState(rr, 'stop'); render(); } return; }
+  if (a === 'invAskClose') { const o = document.getElementById('askBox'); if (o) o.remove(); return; }
+  if (a === 'invAsk') { const n = invOverdueAsk(); if (n.length) invAskShow(n[0].id, 'ask'); return; }
+  if (a === 'invAskNo') { invAskShow(b.dataset.id, 'paid'); return; }
+  if (a === 'invAskYes') { const i = invoices.find(x => x.id === b.dataset.id); if (i && await invRemind(i)) { toast('Reminder opened – send it from your email'); invAskNext(); } return; }
+  if (a === 'invAskPaid') { const i = invoices.find(x => x.id === b.dataset.id); if (i) { i.paid = true; i.paidDate = todayISO(); persistInv(i); toast('Marked as paid'); } invAskNext(); return; }
+  if (a === 'invAskSnooze') { const i = invoices.find(x => x.id === b.dataset.id); if (i) { i.snooze = addDays(todayISO(), 7); persistInv(i); toast('Okay – I will ask again in 7 days'); } invAskNext(); return; }
+  if (a === 'invRemindBtn') { const i = invoices.find(x => x.id === b.dataset.id) || ui.inv; if (i && await invRemind(i)) { toast('Reminder opened – send it from your email'); render(); } return; }
+  if (a === 'invRemReset') { settings.invRemText = ''; saveSettings(); render(); return; }
   if (a === 'qChaseReset') { settings.qChaseText = ''; saveSettings(); render(); return; }
   if (a === 'remReset') { settings.remText = ''; saveSettings(); render(); return; }
   if (a === 'help') { if (ui.view !== 'help') { ui.helpFrom = ui.view; } ui.helpQ = ''; ui.view = 'help'; render(); return; }
