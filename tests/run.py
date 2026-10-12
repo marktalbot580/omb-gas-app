@@ -274,6 +274,27 @@ def run():
         check('no page errors in calendar extras', not errs, errs)
         ctx.close()
 
+        # ---------- 12c. customer import and yearly summary ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "customers.push({id:'c0',name:'Ann Old',phone:'07700 900111',email:'',billing:'',properties:[],updated:1})")
+        csv = 'Name;Mobile;Email;Address;City;Postcode\r\n"Ann Old";07700900111;;1 X St;Lincoln;LN1 1AA\r\n"Bob, ""Bobby"" Jones";07700 900222;bob@x.com;"2 Y Rd\nFlat 3";Lincoln;LN2 2BB\r\n;07700900333;;;;\r\nCara Lee;;cara@x.com;;;'
+        ev(pg, "ui.view='import'; render()")
+        pg.set_input_files('#impFile', files=[{'name': 'c.csv', 'mimeType': 'text/csv', 'buffer': csv.encode()}])
+        pg.wait_for_timeout(400)
+        I = ev(pg, "({f:ui.imp.fresh.map(c=>c.name),d:ui.imp.dupes,b:ui.imp.blank,a:ui.imp.fresh[0]&&ui.imp.fresh[0].properties[0],p:ui.imp.fresh[0]&&ui.imp.fresh[0].phone})")
+        check('CSV import: reads quotes, semicolons, skips duplicates and blank names', I['f'] == ['Bob, "Bobby" Jones', 'Cara Lee'] and I['d'] == 1 and I['b'] == 1, I)
+        check('CSV import: builds the address from several columns', I['a'] == '2 Y Rd\nFlat 3\nLincoln\nLN2 2BB', I)
+        ev(pg, "document.querySelector('[data-act=impGo]').click()")
+        pg.wait_for_timeout(300)
+        check('CSV import: adds the new customers', ev(pg, "customers.length===3&&customers.some(c=>c.name==='Cara Lee'&&c._dirty)"))
+        ev(pg, "SAMPLE.add(); const T=localISO().slice(0,4); invoices.push({id:'i1',number:'1',date:T+'-03-05',due:T+'-04-05',paid:true,paidDate:T+'-03-20',payMethod:'Cash',customer:{name:'Zed'},lines:[{d:'x',q:'1',p:'100'}],vatRate:'20',disc:''},{id:'i2',number:'2',date:T+'-04-05',due:T+'-05-05',paid:false,customer:{name:'Yan'},lines:[{d:'x',q:'2',p:'50'}],vatRate:'0',disc:''}); ui.view='summary'; render()")
+        S = ev(pg, "(()=>{const D=sumData(ui.sumYear);return [D.tot.n,D.tot.net,D.tot.vat,D.tot.total,D.tot.paid,document.querySelector('#view').innerText.includes('Yearly summary')]})()")
+        check('yearly summary adds up invoices, VAT and paid', S[0] == 2 and S[1] == 200 and S[2] == 20 and S[3] == 220 and S[4] == 120 and S[5], S)
+        c = ev(pg, "sumCsv(ui.sumYear)")
+        check('accounts export has a header and one row per invoice', c.count('\r\n') == 2 and 'Invoice date' in c and '100.00' in c and '"Zed"' in c, c[:120])
+        check('no page errors in import/summary', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()
