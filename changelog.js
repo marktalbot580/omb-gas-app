@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v124', items: ['Settings: Tools now has its own tab (choose which tools show), so Reminders only holds the annual check reminders.'] },
   { v: 'v123', items: ['On a computer, the Open the email button (and the quote chase email button) now opens your email in a new browser tab, so the app stays where you were. Phones are unchanged.'] },
   { v: 'v122', items: ['Settings is now split into tabs across the top: Business (with your bank details, branding, Gas Safe logo and engineer), Invoicing, Quotes, Reminders (with the tools) and App (backup, updates and your account). Nothing has been removed.'] },
   { v: 'v121', items: ['Sharing from Chrome on a Mac: the Mac share menu only offers AirDrop and Messages for PDFs, so the app now skips it and goes straight to the steps box (PDF saved, Open the email, drag the PDF in). Phones, Safari and Windows are unchanged.'] },

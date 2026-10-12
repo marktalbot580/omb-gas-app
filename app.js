@@ -779,7 +779,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v123';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v124';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -910,7 +910,7 @@ function renderSettings(v) {
     <button class="btn block" data-act="help" style="margin-bottom:10px">Help guide</button>
     <button class="btn block" data-act="news" style="margin-bottom:10px">What’s new</button>
     <button class="btn block" data-act="feedback" style="margin-bottom:12px">Send feedback</button>
-    <div class="stabs">${[['business', 'Business'], ['invoicing', 'Invoicing'], ['quotes', 'Quotes'], ['reminders', 'Reminders'], ['app', 'App']].map(([k, l]) => `<button type="button" class="${(ui.sTab || 'business') === k ? 'on' : ''}" data-act="sTab" data-t="${k}">${l}</button>`).join('')}</div>
+    <div class="stabs">${[['business', 'Business'], ['invoicing', 'Invoicing'], ['quotes', 'Quotes'], ['reminders', 'Reminders'], ['tools', 'Tools'], ['app', 'App']].map(([k, l]) => `<button type="button" class="${(ui.sTab || 'business') === k ? 'on' : ''}" data-act="sTab" data-t="${k}">${l}</button>`).join('')}</div>
     <div data-stab="business" ${(ui.sTab || 'business') === 'business' ? '' : 'hidden'}>
     <h2>Business (printed on every certificate)</h2>
     <div class="card">
@@ -997,6 +997,8 @@ function renderSettings(v) {
       ${settings.remAuto === 'on' ? '<button class="btn block" data-act="remTest">Send me a sample reminder</button><div style="height:8px"></div>' : ''}
       <button class="btn block ghost" data-act="remReset">Put the original wording back</button>
     </div>
+    </div>
+    <div data-stab="tools" ${(ui.sTab || 'business') === 'tools' ? '' : 'hidden'}>
     <h2>Tools</h2>
     <div class="card">
       ${[['toolGas', 'Gas rate calculator'], ['toolPipe', 'Gas pipe sizing'], ['toolIv', 'Tightness test volume'], ['toolHeat', 'Heat loss and radiator sizing']].map(([k, l]) => `<label class="f"><span>${l}</span><select data-s="${k}"><option value="on" ${settings[k] === 'off' ? '' : 'selected'}>Show</option><option value="off" ${settings[k] === 'off' ? 'selected' : ''}>Hide</option></select></label>`).join('')}
