@@ -304,6 +304,9 @@ def run():
         check('customer import is opened from Settings > App', ev(pg, "ui.view")=='import')
         ev(pg, "ui.view='customers'; render()")
         check('customer list no longer has the import button', not ev(pg, "!!document.querySelector('#view [data-act=impOpen]')"))
+        sub = lambda v: (ev(pg, "ui.view='%s'; render()" % v), ev(pg, "document.getElementById('barSub').textContent"))[1]
+        got = [sub(v) for v in ['home', 'customers', 'invoices', 'tools', 'settings', 'cal']]
+        check('header subtitle follows the section', got == ['Services', 'Customers', 'Invoices', 'Tools', 'Settings', 'Calendar'], got)
         check('no page errors in import/summary', not errs, errs)
         ctx.close()
 
