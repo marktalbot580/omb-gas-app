@@ -179,7 +179,7 @@ body.gated{overflow:hidden}
 body.locked [data-act=newRec],body.locked [data-act=newCust],body.locked [data-act=newInvBlank],body.locked [data-act=editCust],body.locked [data-act=saveCust],body.locked [data-act=delRec],body.locked [data-act=delDraft],body.locked [data-act=invFromVisit],body.locked [data-act=pickGo],body.locked [data-act=addWarn],body.locked [data-act=favCust],body.locked #view button[data-k][data-v],body.locked #view input:not(#custSearch):not([data-s]),body.locked #view textarea:not([data-s]){opacity:.35;filter:grayscale(1)}
 body.locked.gated{overflow:hidden}
 
-.itemw{position:relative;margin-bottom:10px}.itemw .item{margin-bottom:0;padding-bottom:40px}.draftdel{position:absolute;right:10px;bottom:6px;background:none;border:0;color:var(--bad);font:inherit;font-size:13px;padding:6px 8px;border-radius:8px}
+.itemw{position:relative;margin-bottom:10px}.itemw .item{margin-bottom:0;padding-bottom:40px}.draftdel{position:absolute;right:6px;bottom:0;background:none;border:0;color:var(--bad);font:inherit;font-size:13px;min-height:40px;padding:10px 12px;border-radius:8px}
 
 .gate-card label.rem{flex-direction:row;align-items:center;gap:10px;color:var(--txt)}.gate-card label.rem input{width:22px;height:22px;padding:0;accent-color:var(--gold)}
 
@@ -211,7 +211,7 @@ header.bar .bar-logo,header.bar .bar-title{cursor:pointer;-webkit-tap-highlight-
 
 .addrw .pc{margin-top:8px;max-width:190px;text-transform:uppercase}
 
-.helpbtn{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gold2);background:transparent;color:var(--gold2);font-size:17px;font-weight:700;line-height:1;padding:0;cursor:pointer}
+.helpbtn{position:relative;width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gold2);background:transparent;color:var(--gold2);font-size:17px;font-weight:700;line-height:1;padding:0;cursor:pointer}
 details.hlp{background:var(--card);border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px}
 details.hlp summary{padding:14px;font-weight:600;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:10px}
 details.hlp summary::-webkit-details-marker{display:none}
@@ -265,7 +265,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 4px rgba(217,178,95,.14
 .badge.declined{background:#26282c;color:#9aa0a8}
 
 /* settings tabs */
-.stabs{display:flex;gap:8px;overflow-x:auto;margin:0 -16px 14px;padding:2px 16px 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.stabs{display:flex;gap:8px;overflow-x:auto;margin:0 -14px 14px;padding:2px 14px 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .stabs::-webkit-scrollbar{display:none}
 .stabs button{flex:none;background:var(--card,#16181b);border:1px solid var(--line);color:var(--mut);border-radius:999px;padding:9px 16px;font:inherit;font-size:14px;font-weight:600;white-space:nowrap}
 .stabs button.on{background:var(--gold2);border-color:var(--gold2);color:#111}
@@ -292,3 +292,8 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 4px rgba(217,178,95,.14
 .calg button.sel i{background:#111}
 [data-ctab][hidden]{display:none}
 .btn[hidden]{display:none}
+
+.helpbtn::after{content:"";position:absolute;inset:-7px}   /* 46px tap area, same look */
+/* wide screens: keep the bottom bar in the same column as the page instead of spreading across the whole window */
+@media (min-width:760px){.tabs{padding-left:calc(50% - 360px);padding-right:calc(50% - 360px)}.tabs.wiz{padding-left:calc(50% - 346px);padding-right:calc(50% - 346px)}}
+@media (min-width:760px){.calg button{aspect-ratio:auto;height:54px}}   /* wide screens: shorter day boxes so the whole month fits */
