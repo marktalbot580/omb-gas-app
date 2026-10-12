@@ -495,6 +495,18 @@ def run():
         check('no page errors adding labour rates', not errs, errs)
         ctx.close()
 
+        # ---------- 12r. names get capital letters ----------
+        ctx, pg, errs = fresh(b)
+        P = ev(pg, "['jane smith','mr & mrs o\\'brien','anna smith-jones','Ian McDonald','DAVIES','greenfield lettings ltd','jan van der berg'].map(properName)")
+        check('names get a capital on each lower-case word and keep existing capitals', P == ['Jane Smith', "Mr & Mrs O'Brien", 'Anna Smith-Jones', 'Ian McDonald', 'DAVIES', 'Greenfield Lettings Ltd', 'Jan van der Berg'], P)
+        ev(pg, "customers.push({id:'n1',name:'bob jones',phone:'',email:'',billing:'',properties:[]}); invoices.push({id:'nv1',number:'1',date:todayISO(),customer:{name:'bob jones'},lines:[],vatRate:'0'}); bookings.push({id:'nb1',date:todayISO(),time:'09:00',mins:'60',types:['gas'],name:'bob jones',status:'booked'}); nameTidy()")
+        check('saved names are tidied once on customers, invoices and appointments', ev(pg, "[customers[0].name, invoices[0].customer.name, bookings[0].name].join('|')") == 'Bob Jones|Bob Jones|Bob Jones')
+        ev(pg, "ui.view='custEdit'; ui.cust={_new:true,id:'z',name:'',phone:'',email:'',billing:'',properties:[]}; render()")
+        pg.fill('[data-c=name]', 'cara lee'); pg.press('[data-c=name]', 'Tab')
+        check('typing a customer name tidies it when you leave the box', ev(pg, "ui.cust.name") == 'Cara Lee' and pg.input_value('[data-c=name]') == 'Cara Lee', ev(pg, "ui.cust.name"))
+        check('no page errors tidying names', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()

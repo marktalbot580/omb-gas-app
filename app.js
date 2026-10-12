@@ -800,7 +800,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v151';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v152';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -3247,6 +3247,7 @@ render();
 (function () {
   const bad = invoices.filter(i => Array.isArray(i.types) && i.date && !Array.isArray(i.lines));
   if (bad.length) { invoices = invoices.filter(i => !bad.includes(i)); saveInvoices(); bad.forEach(i => deleteRemote('invoice', i.id)); }
+  try { if (!localStorage.getItem('omb_namefix')) { nameTidy(); localStorage.setItem('omb_namefix', '1'); } } catch (e) { }
   try { if (!localStorage.getItem('omb_bkfix')) { localStorage.removeItem('omb_pull'); localStorage.setItem('omb_bkfix', '1'); } } catch (e) { }
 })();
 CLOUD.start();

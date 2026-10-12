@@ -2,6 +2,24 @@
    Loaded before app.js; uses its globals (ui, customers, records, invoices, esc, toast, saveFile ...) when called. */
 'use strict';
 
+/* ---------- names: a capital letter on each word of a name (words already with capitals, like McDonald or DAVIES, are left alone) ---------- */
+const NAME_SMALL = new Set(['and', 'of', 'de', 'la', 'le', 'van', 'von', 'der', 'den', 'da', 'di', 'du']);
+const properName = s => String(s || '').replace(/\S+/g, (w, i) => (w !== w.toLowerCase() || (i > 0 && NAME_SMALL.has(w)) ? w : w.replace(/(^|[-'’.(])([a-z])/g, (m, p, c) => p + c.toUpperCase())));
+/* one-off: tidy the names already saved (customers, and the copies on records, invoices and appointments) */
+function nameTidy() {
+  let c = 0; const fix = (o, k) => { if (o && typeof o[k] === 'string') { const v = properName(o[k]); if (v !== o[k]) { o[k] = v; o.updated = Date.now(); o._dirty = true; return true; } } return false; };
+  customers.forEach(x => { if (fix(x, 'name')) c++; });
+  const r = records.filter(x => fix(x.customer, 'name') && (x.updated = Date.now(), x._dirty = true)).length, i = invoices.filter(x => fix(x.customer, 'name') && (x.updated = Date.now(), x._dirty = true)).length, b = bookings.filter(x => fix(x, 'name')).length;
+  if (c) saveCustomers(); if (r) saveRecords(); if (i) saveInvoices(); if (b) saveBookings();
+  return c + r + i + b;
+}
+/* as you leave a name box, tidy it before anything else reads it */
+document.addEventListener('change', e => {
+  const t = e.target, d = t && t.dataset; if (!d || t.tagName !== 'INPUT') return;
+  if (!(d.k === 'customer.name' || d.n === 'customer.name' || d.bk === 'name' || d.c === 'name')) return;
+  const v = properName(t.value); if (v !== t.value) { t.value = v; t.dispatchEvent(new Event('input', { bubbles: true })); }
+}, true);
+
 /* ---------- CSV reading ---------- */
 function csvParse(text) {
   text = String(text || '').replace(/^﻿/, '');
@@ -52,7 +70,7 @@ function impBuild(text) {
     if (known.some(same) || seen.some(same)) { dupes++; return; }
     seen.push({ n, p, e });
     const addr = [get(r, 'street'), get(r, 'street2'), get(r, 'city'), get(r, 'county'), get(r, 'post')].filter(Boolean).join('\n');
-    fresh.push({ id: uid(), name, phone, email, billing: '', properties: addr ? [addr] : [], updated: Date.now(), _dirty: true });
+    fresh.push({ id: uid(), name: properName(name), phone, email, billing: '', properties: addr ? [addr] : [], updated: Date.now(), _dirty: true });
   });
   return { fresh, dupes, blank, total: rows.length - 1, found: Object.keys(col) };
 }

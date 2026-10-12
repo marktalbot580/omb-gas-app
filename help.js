@@ -90,7 +90,7 @@ const HELP = [
 <p>The list uses the “next check due” date on your completed gas safety, boiler service and Legionella records. In <b>Settings → Reminders</b> you can change the wording of the message and how many weeks early they show. Which ones you have reminded is kept on this phone.</p>` },
 
   { t: 'Customers', k: 'customer list search favourite heart previous jobs add edit delete navigate tabs map directions',
-    h: `<p>The <b>Customers</b> tab lists everyone you have worked for.</p>
+    h: `<p>Customer names get a capital letter on each word for you (jane smith becomes Jane Smith). The <b>Customers</b> tab lists everyone you have worked for.</p>
 <ul><li>Use the search box to find a name, phone number, email, address, invoice number or certificate number.</li>
 <li>Sort by <b>A–Z</b>, <b>Most used</b> or <b>♥ Favourites</b>.</li>
 <li>Tap <b>+ Customer</b> to add one.</li></ul>
