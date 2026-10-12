@@ -305,8 +305,8 @@ function goTo(rec, step) {
 function exitForm() {
   const m = jobRecs() || [ui.rec];
   commitCustomer(m[0]); m.forEach(persistRec);
-  const toQ = ui.quoFrom && typeOf(m[0]) === 'quote'; ui.quoFrom = false;
-  ui.job = null; ui.view = toQ ? 'invoices' : 'home'; render(); syncAll();
+  const toQ = m.every(x => typeOf(x) === 'quote');   // quotes live under Sales > Quotes, so go back there
+  ui.job = null; if (toQ) ui.invTab = 'quotes'; ui.view = toQ ? 'invoices' : 'home'; render(); syncAll();
 }
 function goBack() {
   const { seq, pos } = seqPos();
@@ -1582,7 +1582,7 @@ function stepReview() {
     ${made ? sendCard(m) : `<button class="btn gold block" data-act="makePdf" ${issues.length || needWarn.length ? 'disabled' : ''}>${ui.rec.status === 'draft' ? 'Create documents' : 'Open documents'}</button>
       <p class="small muted">${ui.rec.status === 'draft' ? `Makes the signed PDF${multi ? 's' : ''}${billable(m).length ? ' and the invoice' : ''}, ready to send.` : `Your finished document${multi ? 's are' : ' is'} already saved. This opens ${multi ? 'them' : 'it'} ready to view and send.`}</p>`}
     <div style="height:14px"></div>
-    <button class="btn block" data-act="done">Done – back to services</button>
+    <button class="btn block" data-act="done">${m.every(x => typeOf(x) === 'quote') ? 'Done – back to quotes' : 'Done – back to services'}</button>
     <details class="adv"><summary>More options</summary>
       ${made ? `<button class="btn block" data-act="dlSel">Download selected</button><div style="height:8px"></div>
       <button class="btn block" data-act="makePdf" ${issues.length || needWarn.length ? 'disabled' : ''}>Re-create documents</button><div style="height:8px"></div>` : ''}
@@ -2550,7 +2550,6 @@ document.addEventListener('click', async e => {
   if (dtb) { const n = dtb.querySelector('.dth'); try { n.showPicker(); } catch (err) { /* the tap itself opens it on phones */ } return; }
   const b = e.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act, r = ui.rec;
-  if (a === 'openRec' || a === 'newRec') ui.quoFrom = ui.view === 'invoices' && ui.invTab === 'quotes';   // so Back returns to the Quotes list
   if (CLOUD.locked() && (LOCKED_WRITES.has(a) || (a === 'makePdf' && r && r.status !== 'complete'))) { lockedMsg(); return; }
   if (a === 'custNoRem') { ui.cust.noRemind = !ui.cust.noRemind; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
   if (a === 'remTest') { remTest(); return; }
@@ -2647,7 +2646,7 @@ document.addEventListener('click', async e => {
     }
     case 'back': goBack(); break;
     case 'next': goNext(); break;
-    case 'done': ui.job = null; ui.view = 'home'; render(); syncAll(); break;
+    case 'done': { const m = jobRecs() || (r ? [r] : []), toQ = m.length && m.every(x => typeOf(x) === 'quote'); ui.job = null; if (toQ) ui.invTab = 'quotes'; ui.view = toQ ? 'invoices' : 'home'; render(); syncAll(); break; }
     case 'appTab': ui.appTab = +b.dataset.i; render(); break;
     case 'ageUnknown': {
       r.age = b.checked ? 'Unknown' : ''; ui.pdf = null; persistRec(r);
@@ -2759,7 +2758,7 @@ document.addEventListener('click', async e => {
       const m = jobRecs() || [r];
       if (confirm(m.length > 1 ? `Delete all ${m.length} forms in this visit from this phone? This cannot be undone.` : 'Delete this record from this phone? This cannot be undone.')) {
         m.forEach(x => PH.dropAll(PH.recIds(x))); const ids = new Set(m.map(x => x.id)); records = records.filter(x => !ids.has(x.id)); saveRecords(); ids.forEach(id => deleteRemote('record', id));
-        ui.job = null; ui.view = 'home'; render();
+        const toQ = m.every(x => typeOf(x) === 'quote'); ui.job = null; if (toQ) ui.invTab = 'quotes'; ui.view = toQ ? 'invoices' : 'home'; render();
       }
       break;
     }

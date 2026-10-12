@@ -530,6 +530,9 @@ def run():
         pg.click('#view .item[data-act=openRec]'); pg.wait_for_timeout(150)
         ev(pg, "exitForm()"); pg.wait_for_timeout(150)
         check('Back from a quote returns to the Quotes list', ev(pg, "ui.view==='invoices' && ui.invTab==='quotes'"))
+        ev(pg, "ui.rec=records[0]; ui.view='form'; ui.job=null; const x=document.createElement('button'); x.id='tDone'; x.dataset.act='done'; document.body.appendChild(x)")
+        pg.click('#tDone'); pg.wait_for_timeout(150)
+        check('Done on a quote goes back to Quotes, not Services', ev(pg, "ui.view==='invoices' && ui.invTab==='quotes'"))
         check('no page errors on the Sales tab', not errs, errs)
         ctx.close()
 
