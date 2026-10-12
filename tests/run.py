@@ -425,12 +425,27 @@ def run():
         ev(pg, "ui.view='prices'; render(); document.querySelector('[data-act=pNewCat]').click()")
         pg.fill('#pCatIn', 'Baths'); ev(pg, "document.querySelector('[data-act=pCatAdd]').click()")
         pg.wait_for_timeout(200)
-        c = ev(pg, "({cat:ui.pCat,tab:[...document.querySelectorAll('.stabs button')].some(b=>b.innerText.startsWith('Baths')),saved:settings.qCats})")
-        check('new price list category appears as a tab and is saved', c['cat'] == 'Baths' and c['tab'] and c['saved'] == ['Baths'], c)
+        c = ev(pg, "({cat:ui.pCat,tab:[...document.querySelectorAll('[data-act=pCat]')].some(b=>b.innerText.startsWith('Baths')),saved:settings.qCats})")
+        check('new price list category appears in the list and is saved', c['cat'] == 'Baths' and c['tab'] and c['saved'] == ['Baths'], c)
         ev(pg, "document.querySelector('[data-act=pAdd]').click()")
         ev(pg, "settings.qList.find(x=>x.type==='Baths').name='Double ended bath'; settings.qList.find(x=>x.type==='Baths').price='320'; saveSettings(); render()")
         check('an item can be added to the new category and shows in quote extras', ev(pg, "qExtraList().some(x=>x.type==='Baths'&&x.name==='Double ended bath')"))
         check('no page errors in price list categories', not errs, errs)
+        ctx.close()
+
+        # ---------- 12m. price list: stacked categories that open when tapped ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "document.querySelector('[data-act=pricesOpen]') ? 0 : (ui.view='settings')"); ev(pg, "qSeed(); ui.pCat=''; ui.view='prices'; render()")
+        closed = ev(pg, "[document.querySelectorAll('[data-act=pCat]').length>5, document.querySelectorAll('[data-act=pAdd]').length, document.querySelectorAll('[data-pi]').length]")
+        check('price list shows stacked categories with nothing open at first', closed[0] and closed[1] == 0 and closed[2] == 0, closed)
+        a = {}
+        for c in ['Boiler', 'Flue']:
+            ev(pg, f"document.querySelector('[data-act=pCat][data-c={c}]').click()")
+            a[c] = ev(pg, "(()=>{const add=document.querySelector('[data-act=pAdd]').getBoundingClientRect().top, head=document.querySelector('[data-act=pCat].item, [data-act=pCat]').getBoundingClientRect().top, open=document.querySelector('[data-act=pCat][data-c=%s]').getBoundingClientRect().top; return Math.round(add-open)})()" % c)
+        check('Add button sits straight under the open category, for Boiler and Flue alike', abs(a['Boiler'] - a['Flue']) < 80, a)
+        ev(pg, "document.querySelector('[data-act=pCat][data-c=Flue]').click()")
+        check('tapping the open category closes it', ev(pg, "document.querySelectorAll('[data-act=pAdd]').length") == 0)
+        check('no page errors in stacked price list', not errs, errs)
         ctx.close()
 
         # ---------- 13. offline (service worker) ----------
