@@ -103,7 +103,7 @@ async function buildQuotePdf(rec, s) {
     label('ITEM', M, y); label('QTY', xq, y); label('PRICE', xt - 27, y, null, 'right'); label('TOTAL', xt, y, null, 'right'); doc.setDrawColor(...GOLD); doc.setLineWidth(0.5); doc.line(M, y + 2, W - M, y + 2); y += 8;
     R.forEach(r => { const lines = wrap(r.d, xq - M - 12, 9, true), rh = lines.length * 4 * SC + 4; ensure(rh + 2);
       lines.forEach((l, i) => txt(l, M, y + i * 4 * SC, { b: 1, fs: 9, c: DARK })); txt(String(r.q), xq, y, { fs: 9, c: GREY }); txt(money(r.p), xt - 27, y, { fs: 9, c: GREY, align: 'right' }); txt(money(r.q * r.p), xt, y, { b: 1, fs: 9, c: DARK, align: 'right' });
-      doc.setDrawColor(...LINE); doc.setLineWidth(0.25); doc.line(M, y + rh - 3, W - M, y + rh - 3); y += rh; });
+      doc.setDrawColor(...LINE); doc.setLineWidth(0.25); { const ly = y + (lines.length - 1) * 4 * SC + 2 * SC + 0.9; doc.line(M, ly, W - M, ly); } y += rh; });
     ensure(30); y += 3;
     const row = (l, v, b) => { txt(l, xp - 14, y, { fs: 9, c: GREY, b }); txt(v, xt, y, { fs: 9, c: DARK, b, align: 'right' }); y += 5 + SC; };
     row('Subtotal', money(T.sub)); if (T.rate) row('VAT at ' + T.rate + '%', money(T.vat));
@@ -214,7 +214,7 @@ async function buildGeneralQuotePdf(rec, s) {
     label('ITEM', M, y); label('QTY', xq, y); label('PRICE', xt - 27, y, null, 'right'); label('TOTAL', xt, y, null, 'right'); doc.setDrawColor(...GOLD); doc.setLineWidth(0.5); doc.line(M, y + 2, W - M, y + 2); y += 8;
     R.forEach(r => { const lines = wrap(r.d, xq - M - 12, 9, true), rh = lines.length * 4 * SC + 4; ensure(rh + 2);
       lines.forEach((l, i) => txt(l, M, y + i * 4 * SC, { b: 1, fs: 9, c: DARK })); txt(String(r.q), xq, y, { fs: 9, c: GREY }); txt(money(r.p), xt - 27, y, { fs: 9, c: GREY, align: 'right' }); txt(money(r.q * r.p), xt, y, { b: 1, fs: 9, c: DARK, align: 'right' });
-      doc.setDrawColor(...LINE); doc.setLineWidth(0.25); doc.line(M, y + rh - 3, W - M, y + rh - 3); y += rh; });
+      doc.setDrawColor(...LINE); doc.setLineWidth(0.25); { const ly = y + (lines.length - 1) * 4 * SC + 2 * SC + 0.9; doc.line(M, ly, W - M, ly); } y += rh; });
     ensure(30); y += 3;
     const row = (l, v) => { txt(l, xp - 14, y, { fs: 9, c: GREY }); txt(v, xt, y, { fs: 9, c: DARK, align: 'right' }); y += 5 + SC; };
     row('Subtotal', money(T.sub)); if (T.rate) row('VAT at ' + T.rate + '%', money(T.vat));
