@@ -101,7 +101,7 @@ const DEFAULT_SETTINGS = {
   priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', priceCom: '', quoteIncluded: QUO.DEFAULT_INCLUDED, quoteTerms: QUO.DEFAULT_TERMS, qItemsText: '', qList: [], qMarkup: {}, qMarkupDef: '30', discType: '£', discValue: '',
   invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '', vatQtr: '2', yearDay: '6', yearMonth: '4',
   bankName: '', accName: '', sortCode: '', accNo: '', invFooter: 'Thank you for your business.',
-  remText: '', qChaseText: '', invRemText: '', invAsk: 'on', recGas: 'on', recService: 'on', recLeg: 'on', recAc: 'on', recQuote: 'on', remDays: '56', toolGas: 'on', toolPipe: 'on', toolIv: 'on', toolHeat: 'on'
+  remText: '', qChaseText: '', invRemText: '', invAsk: 'on', logoBg: 'clear', recGas: 'on', recService: 'on', recLeg: 'on', recAc: 'on', recQuote: 'on', remDays: '56', toolGas: 'on', toolPipe: 'on', toolIv: 'on', toolHeat: 'on'
 };
 let settings = Object.assign({}, DEFAULT_SETTINGS, LS.get('omb_settings', {}));
 let customers = LS.get('omb_customers', []);
@@ -129,10 +129,10 @@ function placeholderLogo(name) {
 function mixHex(h, to, k) { const n = x => parseInt(h.slice(x, x + 2), 16); return '#' + [1, 3, 5].map(i => Math.round(n(i) + (to - n(i)) * k).toString(16).padStart(2, '0')).join(''); }
 let _brandKey = '';
 function applyBrand() {
-  const key = [settings.logo && settings.logo.length, settings.businessName].join('|');
+  const key = [settings.logo && settings.logo.length, settings.businessName, settings.logoBg].join('|');
   if (key === _brandKey) return; _brandKey = key;
   const name = settings.businessName || 'OMB Gas Service', img = document.querySelector('.bar-logo'), st = document.querySelector('.bar-title strong');
-  if (img) img.src = settings.logo || placeholderLogo(settings.businessName);
+  if (img) { img.src = settings.logo || placeholderLogo(settings.businessName); img.style.background = settings.logo && settings.logoBg === 'white' ? '#fff' : ''; }
   if (st) st.textContent = name;
   document.title = name;
   const a = '#c9a24b';   // the gold theme is fixed
@@ -771,7 +771,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v130';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v131';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -922,8 +922,9 @@ function renderSettings(v) {
     </div>
     <h2>Your branding</h2>
     <div class="card">
-      <div style="text-align:center;margin-bottom:12px"><img src="${settings.logo || placeholderLogo(settings.businessName)}" alt="Company logo" style="height:110px;width:110px;border-radius:10px"></div>
+      <div style="text-align:center;margin-bottom:12px"><img src="${settings.logo || placeholderLogo(settings.businessName)}" alt="Company logo" style="height:110px;width:110px;border-radius:10px;${settings.logo && settings.logoBg === 'white' ? 'background:#fff' : ''}"></div>
       <label class="btn block" style="text-align:center">${settings.logo ? 'Change company logo' : 'Upload company logo'}<input id="coLogo" type="file" accept="image/*" hidden></label>
+      ${settings.logo ? `<label class="f" style="margin-top:10px"><span>Logo background</span><select data-s="logoBg"><option value="clear" ${settings.logoBg === 'white' ? '' : 'selected'}>Clear (the logo sits on the dark header)</option><option value="white" ${settings.logoBg === 'white' ? 'selected' : ''}>White</option></select><small>If your logo is dark and hard to see on the dark header, choose White.</small></label>` : ''}
       ${settings.logo ? '<div style="height:8px"></div><button class="btn block" data-act="rmCoLogo">Remove logo</button>' : ''}
       <div class="hint" style="margin:10px 0 4px">Your logo appears at the top of the app and on every PDF.</div>
       ${f('refPrefix', 'Record number prefix', { cap: 'characters', hint: 'Up to 5 letters, for example ABC gives ABC-20261004-01.' })}
@@ -2853,7 +2854,16 @@ document.addEventListener('change', async e => {
       const tw = Math.max(1, Math.round(w0 * m)), th = Math.max(1, Math.round(h0 * m));
       const t = document.createElement('canvas'); t.width = tw; t.height = th;
       const tc = t.getContext('2d', { willReadFrequently: true }); tc.drawImage(img, 0, 0, tw, th);
-      const px = tc.getImageData(0, 0, tw, th).data; let x0 = tw, y0 = th, x1 = -1, y1 = -1;
+      const id = tc.getImageData(0, 0, tw, th), px = id.data; let x0 = tw, y0 = th, x1 = -1, y1 = -1;
+      /* a logo with a white box behind it: clear the white connected to the edges so the logo itself fills the tile (white inside the lettering is kept) */
+      const nearW = i => px[i + 3] > 200 && px[i] >= 215 && px[i + 1] >= 215 && px[i + 2] >= 215;
+      if ([0, (tw - 1) * 4, (th - 1) * tw * 4, ((th - 1) * tw + tw - 1) * 4].every(nearW)) {
+        const seen = new Uint8Array(tw * th), st = [];
+        const push = (x, y) => { const k = y * tw + x; if (!seen[k] && nearW(k * 4)) { seen[k] = 1; st.push(k); } };
+        for (let x = 0; x < tw; x++) { push(x, 0); push(x, th - 1); } for (let y = 0; y < th; y++) { push(0, y); push(tw - 1, y); }
+        while (st.length) { const k = st.pop(), x = k % tw, y = (k - x) / tw; px[k * 4 + 3] = 0; if (x > 0) push(x - 1, y); if (x < tw - 1) push(x + 1, y); if (y > 0) push(x, y - 1); if (y < th - 1) push(x, y + 1); }
+        tc.putImageData(id, 0, 0);
+      }
       for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) {
         const i = (y * tw + x) * 4, blank = px[i + 3] < 20 || (px[i] > 235 && px[i + 1] > 235 && px[i + 2] > 235);
         if (!blank) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
@@ -2861,8 +2871,8 @@ document.addEventListener('change', async e => {
       if (x1 < 0) { x0 = 0; y0 = 0; x1 = tw - 1; y1 = th - 1; }
       const cw = x1 - x0 + 1, ch = y1 - y0 + 1, S = 400, sc = Math.min(S / cw, S / ch), dw = cw * sc, dh = ch * sc;
       const cv = document.createElement('canvas'); cv.width = cv.height = S;
-      const c = cv.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, S, S);
-      const e = tc.getImageData(x0, y0, 1, 1).data;   // colour at the logo's own corner, so any gap blends in
+      const c = cv.getContext('2d');
+      const e = tc.getImageData(x0, y0, 1, 1).data;   // a logo on a solid coloured square keeps that colour right to the tile edge
       if (e[3] > 200) { c.fillStyle = 'rgb(' + e[0] + ',' + e[1] + ',' + e[2] + ')'; c.fillRect(0, 0, S, S); }
       c.drawImage(t, x0, y0, cw, ch, (S - dw) / 2, (S - dh) / 2, dw, dh);
       settings.logo = cv.toDataURL('image/png'); saveSettings(); URL.revokeObjectURL(url); render(); toast('Logo saved');

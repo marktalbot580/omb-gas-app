@@ -2,7 +2,16 @@
 'use strict';
 
 /* the business's own logo (uploaded in Settings), or a neutral initials tile until they add one */
-async function getLogo() { return settings.logo || placeholderLogo(settings.businessName); }
+let _logoW = { k: '', v: '' };
+async function getLogo() {
+  if (!settings.logo) return placeholderLogo(settings.businessName);
+  if (settings.logoBg !== 'white') return settings.logo;
+  const k = settings.logo.length + '|w'; if (_logoW.k === k) return _logoW.v;   // white behind the logo: draw it onto white first
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = settings.logo; });
+  const cv = document.createElement('canvas'); cv.width = img.naturalWidth || 400; cv.height = img.naturalHeight || 400;
+  const c = cv.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, cv.width, cv.height); c.drawImage(img, 0, 0);
+  _logoW = { k, v: cv.toDataURL('image/png') }; return _logoW.v;
+}
 
 
 /* Try progressively tighter layouts until the record fits on a single A4 page. */
