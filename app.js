@@ -780,7 +780,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v127';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v128';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1581,7 +1581,11 @@ function qSeed() {
 function renderPrices(v) {
   qSeed();
   const list = settings.qList, cats = QUO.TYPES.concat(list.map(x => x.type).filter((t, i, a) => !QUO.TYPES.includes(t) && a.indexOf(t) === i));
-  const cat = ui.pCat || 'Boiler', items = list.filter(x => x.type === cat), M = settings.qMarkup || {};
+  const cat = ui.pCat || 'Boiler', M = settings.qMarkup || {};
+  /* Boiler: pick a make first, then its models */
+  const isB = cat === 'Boiler', allB = list.filter(x => x.type === 'Boiler'), makes = isB ? allB.map(x => x.make || '').filter((m, i, arr) => arr.indexOf(m) === i).sort((p, q) => (p === '') - (q === '')) : [];
+  const pm = isB ? (ui.pMake && makes.includes(ui.pMake === '__none' ? '' : ui.pMake) ? ui.pMake : '') : '';
+  const items = isB ? (pm ? allB.filter(x => (x.make || '') === (pm === '__none' ? '' : pm)) : []) : list.filter(x => x.type === cat);
   const money = n => n === null ? '' : '£' + (Math.round(n * 100) / 100).toFixed(2).replace(/\.00$/, '');
   const row = x => {
     const sale = QUO.saleOf(x, settings), mk = QUO.markupOf(x, settings), open = ui.pEdit === x.id;
@@ -1603,9 +1607,11 @@ function renderPrices(v) {
     <p class="small muted" style="margin-top:0">Add your cost and mark-up and the app works out the price you quote. Tap an item to change it.</p>
     <div class="card"><label class="f"><span>Standard mark-up on everything (%)</span><input data-s="qMarkupDef" inputmode="decimal" value="${esc(settings.qMarkupDef)}"></label>
     <label class="f" style="margin-bottom:0"><span>Mark-up for ${esc(cat)} (%)</span><input data-pmk="${esc(cat)}" inputmode="decimal" value="${esc(M[cat] || '')}" placeholder="${esc(settings.qMarkupDef || '0')} (standard)"></label></div>
-    <div class="seg wrap" style="margin:14px 0">${cats.map(c => `<button type="button" class="${c === cat ? 'on' : ''}" data-act="pCat" data-c="${esc(c)}">${esc(c)} (${list.filter(x => x.type === c).length})</button>`).join('')}</div>
-    <button type="button" class="btn block" data-act="pAdd" style="margin-bottom:12px">+ Add to ${esc(cat)}</button>
-    ${items.length ? items.map(row).join('') : '<p class="muted">Nothing here yet.</p>'}
+    <div class="stabs" style="margin-top:14px">${cats.map(c => `<button type="button" class="${c === cat ? 'on' : ''}" data-act="pCat" data-c="${esc(c)}">${esc(c)} (${list.filter(x => x.type === c).length})</button>`).join('')}</div>
+    ${isB ? `<div class="chips" style="margin:0 0 12px">${makes.map(m => { const k = m || '__none'; return `<button type="button" class="chip ${pm === k ? 'on' : ''}" data-act="pMake" data-m="${esc(k)}">${esc(m || 'Other')} (${allB.filter(x => (x.make || '') === m).length})</button>`; }).join('')}<button type="button" class="chip" data-act="pNewMake">+ Add a make</button></div>
+    ${ui.pNewMake ? `<div class="row" style="margin:0 0 12px;gap:8px"><input class="grow" id="pMakeIn" placeholder="Make, e.g. Vokera" autocomplete="off" autocapitalize="words" style="min-width:0"><button type="button" class="btn gold" data-act="pMakeAdd" style="flex:none">Add</button></div>` : ''}` : ''}
+    <button type="button" class="btn block" data-act="pAdd" style="margin-bottom:12px">+ Add ${isB ? (pm && pm !== '__none' ? 'a new ' + esc(pm) + ' model' : 'a boiler') : 'to ' + esc(cat)}</button>
+    ${items.length ? items.map(row).join('') : `<p class="muted">${isB && !pm ? 'Tap a make above to see its models.' : 'Nothing here yet.'}</p>`}
     <datalist id="pCats">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
     <h2>Excel</h2><div class="card">
       <p class="small muted" style="margin:0 0 8px">Easier for filling in lots of prices at once. Download, type in the cost and mark-up columns, and import it back. Importing replaces the list.</p>
@@ -1613,6 +1619,7 @@ function renderPrices(v) {
       <label class="btn block ghost" style="display:block;text-align:center">Import price list<input type="file" id="qImport" accept=".xlsx,.xls,.csv" hidden></label><div style="height:8px"></div>
       <button type="button" class="btn block ghost" data-act="qClearList">Reset to the built-in list</button></div>
     <button class="btn block ghost" data-nav="settings" style="margin-top:14px">Back to settings</button>`;
+  const on = v.querySelector('.stabs .on'); if (on) { const bar = on.parentNode; bar.scrollLeft += (on.getBoundingClientRect().left - bar.getBoundingClientRect().left) - (bar.clientWidth - on.offsetWidth) / 2; }
 }
 /* make (or category) dropdown + search box + the matching items to tap */
 const QF_LIST = { boiler: () => qOf('Boiler'), extra: qExtraList };
@@ -2411,9 +2418,19 @@ document.addEventListener('click', async e => {
   if (a === 'qOpen') { ui.qOpen = ui.qOpen || {}; ui.qOpen[b.dataset.k] = !ui.qOpen[b.dataset.k]; if (ui.qf) ui.qf[b.dataset.k] = {}; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
   if (a === 'qFind') { qPick(b.dataset.kind, +b.dataset.i); return; }
   if (a === 'pricesOpen') { qSeed(); ui.pCat = ui.pCat || 'Boiler'; ui.pEdit = ''; ui.view = 'prices'; render(); return; }
-  if (a === 'pCat') { ui.pCat = b.dataset.c; ui.pEdit = ''; render(); return; }
+  if (a === 'pCat') { ui.pCat = b.dataset.c; ui.pEdit = ''; ui.pMake = ''; render(); return; }
+  if (a === 'pNewMake') { ui.pNewMake = !ui.pNewMake; render(); const inp = document.getElementById('pMakeIn'); if (inp) inp.focus(); return; }
+  if (a === 'pMakeAdd') {
+    const inp = document.getElementById('pMakeIn'), nm = capWords(String((inp || {}).value || '').trim());
+    if (!nm) { toast('Type the make first'); return; }
+    const ex = settings.qList.find(x => x.type === 'Boiler' && (x.make || '').toLowerCase() === nm.toLowerCase());
+    if (ex) { ui.pMake = ex.make; ui.pNewMake = false; render(); toast(nm + ' is already in the list'); return; }
+    const it = { id: QUO.newId(), type: 'Boiler', make: nm, name: '', kind: '', kw: '', warranty: '', unit: '', cost: '', markup: '', price: '' };
+    settings.qList.unshift(it); saveSettings(); ui.pMake = nm; ui.pEdit = it.id; ui.pNewMake = false; render(); toast(nm + ' added – now fill in its first model'); return;
+  }
+  if (a === 'pMake') { ui.pMake = ui.pMake === b.dataset.m ? '' : b.dataset.m; ui.pEdit = ''; render(); return; }
   if (a === 'pEdit') { ui.pEdit = ui.pEdit === b.dataset.id ? '' : b.dataset.id; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
-  if (a === 'pAdd') { const it = { id: QUO.newId(), type: ui.pCat || 'Other', make: '', name: '', kind: '', kw: '', warranty: '', unit: '', cost: '', markup: '', price: '' }; settings.qList.unshift(it); saveSettings(); ui.pEdit = it.id; render(); return; }
+  if (a === 'pAdd') { const it = { id: QUO.newId(), type: ui.pCat || 'Other', make: (ui.pCat || 'Boiler') === 'Boiler' && ui.pMake && ui.pMake !== '__none' ? ui.pMake : '', name: '', kind: '', kw: '', warranty: '', unit: '', cost: '', markup: '', price: '' }; settings.qList.unshift(it); saveSettings(); ui.pEdit = it.id; if ((ui.pCat || 'Boiler') === 'Boiler' && !ui.pMake) ui.pMake = '__none'; render(); return; }
   if (a === 'pDel') { if (confirm('Delete this item?')) { settings.qList = settings.qList.filter(x => x.id !== b.dataset.id); saveSettings(); ui.pEdit = ''; render(); } return; }
   if (a === 'qExport') { qExport(); return; }
   if (a === 'qClearList') { if (confirm('Remove the whole price list and start again from the built-in one?')) { settings.qList = []; saveSettings(); qSeed(); render(); toast('Price list reset'); } return; }
