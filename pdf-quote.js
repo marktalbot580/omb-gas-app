@@ -107,7 +107,7 @@ async function buildQuotePdf(rec, s) {
     ensure(30); y += 3;
     const row = (l, v, b) => { txt(l, xp - 14, y, { fs: 9, c: GREY, b }); txt(v, xt, y, { fs: 9, c: DARK, b, align: 'right' }); y += 5 + SC; };
     row('Subtotal', money(T.sub)); if (T.rate) row('VAT at ' + T.rate + '%', money(T.vat));
-    doc.setFillColor(...DARK); doc.roundedRect(xp - 18, y - 4.5, xt - xp + 18, 6 + 4 * SC, 2, 2, 'F'); txt('TOTAL', xp - 14, y + 0.8 + SC, { b: 1, fs: 9, c: GOLD }); txt(money(T.total), xt - 3, y + 0.8 + SC, { b: 1, fs: 11, c: [255, 255, 255], align: 'right' }); y += 10 + 6 * SC; }
+    doc.setFillColor(...DARK); doc.roundedRect(xp - 18, y - 4.5, xt - xp + 21, 6 + 4 * SC, 2, 2, 'F'); txt('TOTAL', xp - 14, y + 0.8 + SC, { b: 1, fs: 9, c: GOLD }); txt(money(T.total), xt, y + 0.8 + SC, { b: 1, fs: 11, c: [255, 255, 255], align: 'right' }); y += 10 + 6 * SC; }
 
   if (String(rec.homeNotes || '').trim()) {
     const h = wrap(rec.homeNotes, CW - 14, 9).length * 3.9 * SC + 14; ensure(h + 4);
@@ -218,7 +218,7 @@ async function buildGeneralQuotePdf(rec, s) {
     ensure(30); y += 3;
     const row = (l, v) => { txt(l, xp - 14, y, { fs: 9, c: GREY }); txt(v, xt, y, { fs: 9, c: DARK, align: 'right' }); y += 5 + SC; };
     row('Subtotal', money(T.sub)); if (T.rate) row('VAT at ' + T.rate + '%', money(T.vat));
-    doc.setFillColor(...DARK); doc.roundedRect(xp - 18, y - 4.5, xt - xp + 18, 6 + 4 * SC, 2, 2, 'F'); txt('TOTAL', xp - 14, y + 0.8 + SC, { b: 1, fs: 9, c: GOLD }); txt(money(T.total), xt - 3, y + 0.8 + SC, { b: 1, fs: 11, c: [255, 255, 255], align: 'right' });
+    doc.setFillColor(...DARK); doc.roundedRect(xp - 18, y - 4.5, xt - xp + 21, 6 + 4 * SC, 2, 2, 'F'); txt('TOTAL', xp - 14, y + 0.8 + SC, { b: 1, fs: 9, c: GOLD }); txt(money(T.total), xt, y + 0.8 + SC, { b: 1, fs: 11, c: [255, 255, 255], align: 'right' });
     y += 14 + 4 * SC; }
 
   if (String(rec.homeNotes || '').trim()) {
