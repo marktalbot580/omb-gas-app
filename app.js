@@ -789,7 +789,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v136';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v137';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -3221,6 +3221,7 @@ function newBook(o) {
 }
 function renderBook(v) {
   const B = ui.book, isNew = !bookings.some(x => x.id === B.id), c = customers.find(x => x.id === B.customerId);
+  const props = c ? (c.properties || []).filter(Boolean) : [], inList = props.includes(B.address);
   const sorted = [...customers].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   const f = (k, l, o = {}) => `<label class="f"><span>${l}</span>${o.area ? `<textarea data-bk="${k}" rows="2">${esc(B[k])}</textarea>` : `<input data-bk="${k}" value="${esc(B[k])}" ${o.type ? `type="${o.type}"` : ''} autocomplete="off">`}</label>`;
   v.innerHTML = `<h1>${isNew ? 'Schedule in' : 'Appointment'}</h1>
@@ -3234,8 +3235,9 @@ function renderBook(v) {
     <h2>Customer</h2>
     <div class="card">
       ${sorted.length ? `<label class="f"><span>Customer</span><select data-bk="customerId"><option value="">New customer (type the details below)</option>${sorted.map(x => `<option value="${x.id}" ${x.id === B.customerId ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>` : ''}
-      ${c && (c.properties || []).length > 1 ? `<label class="f"><span>Property</span><select data-bk="propPick"><option value="">Choose a property</option>${c.properties.map((p, i) => `<option value="${i}" ${p === B.address ? 'selected' : ''}>${esc(addrFirst(p))}</option>`).join('')}</select></label>` : ''}
-      ${f('name', 'Name')}${f('phone', 'Phone', { type: 'tel' })}${f('email', 'Email', { type: 'email' })}${f('address', 'Address of the job', { area: 1 })}
+      ${f('name', 'Name')}${f('phone', 'Phone', { type: 'tel' })}${f('email', 'Email', { type: 'email' })}
+      ${props.length ? `<label class="f"><span>Address of the job</span><select data-bk="propPick">${B.addrNew || inList ? '' : '<option value="">Choose an address</option>'}${props.map((p, i) => `<option value="${i}" ${!B.addrNew && p === B.address ? 'selected' : ''}>${esc(addrFirst(p) + (p.split('\n')[1] ? ', ' + p.split('\n')[1] : ''))}</option>`).join('')}<option value="__new" ${B.addrNew ? 'selected' : ''}>+ Add a new address</option></select></label>` : ''}
+      ${!props.length || B.addrNew || (B.address && !inList) ? f('address', props.length ? 'New address' : 'Address of the job', { area: 1 }) : ''}
     </div>
     <h2>Notes</h2><div class="card">${f('notes', 'Anything to remember', { area: 1 })}</div>
     <button class="btn gold block" data-act="bookSave">${isNew ? 'Add to calendar' : 'Save changes'}</button>
@@ -3246,7 +3248,7 @@ function renderBook(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-act="bookBack">${isNew ? 'Cancel' : 'Back'}</button>`;
 }
 function bkBack() { ui.book = null; if (ui.bookFrom === 'pick' && ui.pick) ui.view = 'pick'; else ui.view = ui.bookFrom === 'home' ? 'home' : 'cal'; render(); }
-function bkFill(B, c) { if (!c) return; B.customerId = c.id; B.name = c.name || ''; B.phone = c.phone || ''; B.email = c.email || ''; B.address = (c.properties || []).length === 1 ? c.properties[0] : ((c.properties || []).includes(B.address) ? B.address : ''); }
+function bkFill(B, c) { if (!c) return; B.addrNew = false; B.customerId = c.id; B.name = c.name || ''; B.phone = c.phone || ''; B.email = c.email || ''; const ps = (c.properties || []).filter(Boolean); B.address = ps.length === 1 ? ps[0] : (ps.includes(B.address) ? B.address : ''); }
 function bkValid(B) {
   if (!B.types.length) { toast('Choose what the job is'); return false; }
   if (B.types.includes('other') && !String(B.other || '').trim()) { toast('Type what the other job is'); return false; }
@@ -3259,6 +3261,7 @@ function bkValid(B) {
 }
 function bkSave() {
   const B = ui.book; if (!bkValid(B)) return false;
+  { const cu = customers.find(x => x.id === B.customerId), ad = String(B.address || '').trim(); if (cu && ad && !(cu.properties || []).includes(ad)) { (cu.properties = (cu.properties || []).filter(Boolean)).push(ad); cu.updated = Date.now(); cu._dirty = true; saveCustomers(); } }
   B.updated = Date.now(); const i = bookings.findIndex(x => x.id === B.id);
   if (i >= 0) bookings[i] = { ...B }; else bookings.push({ ...B });
   saveBookings(); syncAll(); return true;
@@ -3324,7 +3327,7 @@ document.addEventListener('change', e => {
   const t = e.target, k = t && t.dataset && t.dataset.bk; if (!k || !ui.book) return;
   const B = ui.book, y = window.scrollY;
   if (k === 'customerId') { const c = customers.find(x => x.id === t.value); if (c) bkFill(B, c); else B.customerId = ''; render(); window.scrollTo(0, y); }
-  else if (k === 'propPick') { const c = customers.find(x => x.id === B.customerId); if (c && t.value !== '') B.address = c.properties[+t.value]; render(); window.scrollTo(0, y); }
+  else if (k === 'propPick') { const c = customers.find(x => x.id === B.customerId), ps = c ? (c.properties || []).filter(Boolean) : []; if (t.value === '__new') { B.addrNew = true; B.address = ''; } else if (t.value !== '') { B.addrNew = false; B.address = ps[+t.value] || ''; } render(); window.scrollTo(0, y); }
   else B[k] = t.value;
 });
 

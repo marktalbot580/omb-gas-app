@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v137', items: ['Calendar: when you pick a customer, the address of the job is now a list of their saved addresses, with “+ Add a new address” at the bottom. A new address is saved on the customer for next time.'] },
   { v: 'v136', items: ['Calendar: choosing “Other job” now opens a box to say what the job is, with quick buttons for jobs you save. Add or remove those jobs (bathroom install, radiator install and so on) in Settings → Calendar.'] },
   { v: 'v135', items: ['Calendar sync fix: appointments now come through on every device you are signed in on, and there is a Sync now button on the calendar. If you see odd blank invoices after updating, they are cleared automatically.'] },
   { v: 'v134', items: ['New calendar. Today’s appointments and a month calendar now sit on the home screen under your record buttons. Pick a job, tap Schedule in, and fill in the date, time and customer to book it. You can also add appointments from inside the calendar, mark them done, or start the forms straight from an appointment. Appointments sync between every device you are signed in on. Settings has a new Calendar tab to export everything (.ics or spreadsheet).', 'Customer cards now have three tabs: Customer, Navigate and Previous jobs.'] },
