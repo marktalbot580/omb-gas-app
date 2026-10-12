@@ -577,6 +577,9 @@ def run():
         t1 = ev(pg, "otwText({name:'Ann Lee',time:'10:30',address:'1 Road\\nLincoln'})"); t2 = ev(pg, "otwText({name:'Ann Lee',time:'10:30',address:''})")
         check('on my way text includes the address', 'appointment at 1 Road, Lincoln.' in t1, t1)
         check('on my way text copes with no address', 'appointment. See you' in t2, t2)
+        ev(pg, "bookings.length=0; bookings.push({id:'k1',date:'2026-12-01',time:'10:00',mins:'60',types:['service'],name:'Ann',status:'booked'},{id:'k2',date:'2026-12-01',time:'10:30',mins:'60',types:['service'],name:'Bob',status:'booked'},{id:'k3',date:'2026-12-01',time:'13:00',mins:'60',types:['service'],name:'Cy',status:'booked'}); ui.view='cal'; ui.calMode='month'; ui.cal={m:'2026-12',d:'2026-12-01'}; render()")
+        cl = ev(pg, "[...document.querySelectorAll('#view .item[data-act=bookOpen]')].map(e=>e.innerText.toLowerCase().includes('clashes with'))")
+        check('appointments that overlap are flagged as a clash', cl == [True, True, False], cl)
         check('no page errors scheduling a quote', not errs, errs)
         ctx.close()
 

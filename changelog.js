@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v160', items: ['Calendar: appointments that overlap now show a red Clash tag and say who they clash with. You already got a warning when saving a clashing appointment on one phone; this also catches clashes that arrive from another device, such as a partner booking the same slot.'] },
   { v: 'v159', items: ['The I’m on my way text now includes the address of the job (Hi Ann, just to let you know I am on my way for your 10:30 appointment at 1 Road, Lincoln). If you have changed the wording in Settings → Calendar, add {address} where you want it, or tap Put the original wording back.'] },
   { v: 'v158', items: ['Back and Done are smarter: if you open a form, quote or certificate from an appointment, Back takes you to that appointment, not to Services or Quotes.'] },
   { v: 'v157', items: ['Appointments now show a Forms for this job list. Tap a past appointment in the calendar to open the forms, quote or certificate that were made for it. This works for new appointments, and for older ones where the customer and day match.'] },
