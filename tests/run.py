@@ -420,6 +420,19 @@ def run():
         check('no page errors in previous job list', not errs, errs)
         ctx.close()
 
+        # ---------- 12l. price list: own categories ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "ui.view='prices'; render(); document.querySelector('[data-act=pNewCat]').click()")
+        pg.fill('#pCatIn', 'Baths'); ev(pg, "document.querySelector('[data-act=pCatAdd]').click()")
+        pg.wait_for_timeout(200)
+        c = ev(pg, "({cat:ui.pCat,tab:[...document.querySelectorAll('.stabs button')].some(b=>b.innerText.startsWith('Baths')),saved:settings.qCats})")
+        check('new price list category appears as a tab and is saved', c['cat'] == 'Baths' and c['tab'] and c['saved'] == ['Baths'], c)
+        ev(pg, "document.querySelector('[data-act=pAdd]').click()")
+        ev(pg, "settings.qList.find(x=>x.type==='Baths').name='Double ended bath'; settings.qList.find(x=>x.type==='Baths').price='320'; saveSettings(); render()")
+        check('an item can be added to the new category and shows in quote extras', ev(pg, "qExtraList().some(x=>x.type==='Baths'&&x.name==='Double ended bath')"))
+        check('no page errors in price list categories', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()

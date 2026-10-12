@@ -1663,7 +1663,7 @@ function qSeed() {
 }
 function renderPrices(v) {
   qSeed();
-  const list = settings.qList, cats = QUO.TYPES.concat(list.map(x => x.type).filter((t, i, a) => !QUO.TYPES.includes(t) && a.indexOf(t) === i));
+  const list = settings.qList, mine = Array.isArray(settings.qCats) ? settings.qCats : [], cats = QUO.TYPES.concat(mine.concat(list.map(x => x.type)).filter((t, i, a) => !QUO.TYPES.includes(t) && a.indexOf(t) === i));
   const cat = ui.pCat || 'Boiler', M = settings.qMarkup || {};
   /* Boiler: pick a make first, then its models */
   const isB = cat === 'Boiler', allB = list.filter(x => x.type === 'Boiler'), makes = isB ? allB.map(x => x.make || '').filter((m, i, arr) => arr.indexOf(m) === i).sort((p, q) => (p === '') - (q === '')) : [];
@@ -1691,10 +1691,12 @@ function renderPrices(v) {
     <div class="card"><label class="f"><span>Standard mark-up on everything (%)</span><input data-s="qMarkupDef" inputmode="decimal" value="${esc(settings.qMarkupDef)}"></label>
     <label class="f" style="margin-bottom:0"><span>Mark-up for ${esc(cat)} (%)</span><input data-pmk="${esc(cat)}" inputmode="decimal" value="${esc(M[cat] || '')}" placeholder="${esc(settings.qMarkupDef || '0')} (standard)"></label></div>
     <div class="stabs" style="margin-top:14px">${cats.map(c => `<button type="button" class="${c === cat ? 'on' : ''}" data-act="pCat" data-c="${esc(c)}">${esc(c)} (${list.filter(x => x.type === c).length})</button>`).join('')}</div>
+    ${ui.pNewCat ? `<div class="row" style="margin:0 0 12px;gap:8px"><input class="grow" id="pCatIn" placeholder="New category, e.g. Baths" autocomplete="off" autocapitalize="words" style="min-width:0"><button type="button" class="btn gold" data-act="pCatAdd" style="flex:none">Add</button></div>` : `<button type="button" class="btn ghost" data-act="pNewCat" style="margin:0 0 12px">+ New category</button>`}
     ${isB ? `<div class="chips" style="margin:0 0 12px">${makes.map(m => { const k = m || '__none'; return `<button type="button" class="chip ${pm === k ? 'on' : ''}" data-act="pMake" data-m="${esc(k)}">${esc(m || 'Other')} (${allB.filter(x => (x.make || '') === m).length})</button>`; }).join('')}<button type="button" class="chip" data-act="pNewMake">+ Add a make</button></div>
     ${ui.pNewMake ? `<div class="row" style="margin:0 0 12px;gap:8px"><input class="grow" id="pMakeIn" placeholder="Make, e.g. Vokera" autocomplete="off" autocapitalize="words" style="min-width:0"><button type="button" class="btn gold" data-act="pMakeAdd" style="flex:none">Add</button></div>` : ''}` : ''}
     <button type="button" class="btn block" data-act="pAdd" style="margin-bottom:12px">+ Add ${isB ? (pm && pm !== '__none' ? 'a new ' + esc(pm) + ' model' : 'a boiler') : 'to ' + esc(cat)}</button>
     ${items.length ? items.map(row).join('') : `<p class="muted">${isB && !pm ? 'Tap a make above to see its models.' : 'Nothing here yet.'}</p>`}
+    ${mine.includes(cat) && !list.some(x => x.type === cat) ? `<button type="button" class="btn ghost block" data-act="pCatDel" style="margin-bottom:12px">Delete the empty category ${esc(cat)}</button>` : ''}
     <datalist id="pCats">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
     <h2>Excel</h2><div class="card">
       <p class="small muted" style="margin:0 0 8px">Easier for filling in lots of prices at once. Download, type in the cost and mark-up columns, and import it back. Importing replaces the list.</p>
@@ -2487,6 +2489,15 @@ document.addEventListener('click', async e => {
   if (a === 'qFind') { qPick(b.dataset.kind, +b.dataset.i); return; }
   if (a === 'pricesOpen') { qSeed(); ui.pCat = ui.pCat || 'Boiler'; ui.pEdit = ''; ui.view = 'prices'; render(); return; }
   if (a === 'pCat') { ui.pCat = b.dataset.c; ui.pEdit = ''; ui.pMake = ''; render(); return; }
+  if (a === 'pNewCat') { ui.pNewCat = !ui.pNewCat; render(); const inp = document.getElementById('pCatIn'); if (inp) inp.focus(); return; }
+  if (a === 'pCatAdd') {
+    const inp = document.getElementById('pCatIn'), nm = (inp ? inp.value : '').trim().replace(/\s+/g, ' ');
+    if (!nm) { toast('Type the category name first'); return; }
+    const all = QUO.TYPES.concat(settings.qCats || [], (settings.qList || []).map(x => x.type)), ex = all.find(x => x.toLowerCase() === nm.toLowerCase());
+    if (!ex) { settings.qCats = [...(settings.qCats || []), nm]; saveSettings(); }
+    ui.pCat = ex || nm; ui.pNewCat = false; ui.pEdit = ''; ui.pMake = ''; render(); toast(ex ? ex + ' already exists' : nm + ' added – now add its items'); return;
+  }
+  if (a === 'pCatDel') { settings.qCats = (settings.qCats || []).filter(x => x !== ui.pCat); saveSettings(); ui.pCat = 'Boiler'; render(); return; }
   if (a === 'pNewMake') { ui.pNewMake = !ui.pNewMake; render(); const inp = document.getElementById('pMakeIn'); if (inp) inp.focus(); return; }
   if (a === 'pMakeAdd') {
     const inp = document.getElementById('pMakeIn'), nm = capWords(String((inp || {}).value || '').trim());
