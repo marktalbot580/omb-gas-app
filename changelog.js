@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v144', items: ['Calendar: picking a customer on a booking no longer jumps the screen back to the top. It stays where you were.'] },
   { v: 'v143', items: ['The Text: I’m on my way button only shows when the customer has a mobile number (07… or +44 7…) on the appointment, so you never try to text a landline.'] },
   { v: 'v142', items: ['Calendar: on an open appointment, Text: I’m on my way is now at the top, with a Navigate to button under it that opens the job address in maps.'] },
   { v: 'v141', items: ['Calendar: open an appointment and tap Text: I’m on my way. Your texting app opens with a message to the customer ready to send (on a computer the message is copied instead). Change the wording, or hide the button, in Settings → Calendar.'] },

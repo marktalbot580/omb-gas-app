@@ -790,7 +790,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v143';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v144';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -3322,7 +3322,7 @@ async function calAct(a, b) {
     case 'calDay': { const s = calState(); s.d = b.dataset.d; s.m = s.d.slice(0, 7); ui.calMode = 'month'; if (ui.view === 'home') ui.view = 'cal'; render(); window.scrollTo(0, 0); return true; }
     case 'bookNew': ui.book = newBook({ base: { date: b.dataset.d || localISO() } }); ui.bookFrom = ui.view === 'home' ? 'home' : 'cal'; ui.view = 'book'; render(); return true;
     case 'bookFromPick': { const pk = ui.pick; ui.book = newBook({ customer: pk.customer, base: { types: Object.keys(pk.types).filter(k => pk.types[k]) } }); ui.bookFrom = 'pick'; ui.view = 'book'; render(); return true; }
-    case 'bookPickCust': { const c = customers.find(x => x.id === b.dataset.id); if (c) { bkFill(ui.book, c); render(); } return true; }
+    case 'bookPickCust': { const c = customers.find(x => x.id === b.dataset.id); if (c) { const y = window.scrollY; bkFill(ui.book, c); render(); window.scrollTo(0, y); } return true; }
     case 'bookOtw': {
       const B = ui.book, ph = String(B.phone || '').replace(/[^\d+]/g, '');
       if (!isMobileNo(B.phone)) { toast('Add a mobile number for this customer first'); return true; }
