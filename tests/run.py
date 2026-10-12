@@ -507,6 +507,18 @@ def run():
         check('no page errors tidying names', not errs, errs)
         ctx.close()
 
+        # ---------- 12s. settings cog in the header ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "ui.view='home'; render()")
+        tabs = ev(pg, "[...document.querySelectorAll('.tabs button')].map(b=>b.innerText).join(',')")
+        pg.click('#setBtn'); pg.wait_for_timeout(200)
+        check('settings is a cog in the header and gone from the bottom bar', 'Settings' not in tabs and ev(pg, "ui.view") == 'settings' and ev(pg, "document.querySelector('#setBtn').classList.contains('on')"), tabs)
+        ev(pg, "ui.pick={types:{gas:true},customer:null}; startJob()")
+        pg.click('#setBtn'); pg.wait_for_timeout(200)
+        check('opening settings from inside a form keeps it as a draft', ev(pg, "ui.view") == 'settings' and ev(pg, "records.some(r=>r.status==='draft')"))
+        check('no page errors with the settings cog', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()

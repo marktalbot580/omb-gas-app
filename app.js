@@ -604,7 +604,8 @@ const ICON = {
 function renderTabs(nav) {
   nav.className = 'tabs';
   const t = (id, label, ic, on) => `<button data-nav="${id}" class="${on ? 'on' : ''}">${ic}${label}</button>`;
-  nav.innerHTML = t('home', 'Services', ICON.rec, ui.view === 'home' || ui.view === 'pick' || (!calOn() && ui.view === 'due')) + (calOn() ? `<button data-act="calOpen" class="${ui.view === 'cal' || ui.view === 'book' || ui.view === 'due' ? 'on' : ''}">${ICON.cal}Calendar</button>` : '') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit' || ui.view === 'import') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' || ui.view === 'summary') + (['gas', 'pipe', 'iv', 'heat'].some(toolOn) ? `<button data-act="toolsOpen" class="${ui.view === 'tools' ? 'on' : ''}">${ICON.tools}Tools</button>` : '') + t('settings', 'Settings', ICON.set, ui.view === 'settings' || ui.view === 'prices' || ui.view === 'admin' || ui.view === 'help' || ui.view === 'news' || ui.view === 'feedback');
+  nav.innerHTML = t('home', 'Services', ICON.rec, ui.view === 'home' || ui.view === 'pick' || (!calOn() && ui.view === 'due')) + (calOn() ? `<button data-act="calOpen" class="${ui.view === 'cal' || ui.view === 'book' || ui.view === 'due' ? 'on' : ''}">${ICON.cal}Calendar</button>` : '') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit' || ui.view === 'import') + t('invoices', 'Invoices', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' || ui.view === 'summary') + (['gas', 'pipe', 'iv', 'heat'].some(toolOn) ? `<button data-act="toolsOpen" class="${ui.view === 'tools' ? 'on' : ''}">${ICON.tools}Tools</button>` : '');
+  { const sb = $('#setBtn'); if (sb) sb.classList.toggle('on', ['settings', 'prices', 'admin', 'help', 'news', 'feedback'].includes(ui.view)); }
   $('#barSub').textContent = ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' ? 'Invoices' : 'Gas & Legionella records';
 }
 
@@ -800,7 +801,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v152';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v153';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -2490,6 +2491,11 @@ document.addEventListener('click', async e => {
     if (ui.view === 'form' && ui.rec) { const was = ui.rec.status; exitForm(); if (was === 'draft') toast('Saved as a draft'); }
     else if (ui.view !== 'home' && !document.getElementById('gate')) { ui.view = 'home'; ui.search = ''; ui.job = null; render(); }
     return;
+  }
+  if (e.target.closest('#setBtn')) {
+    if (document.getElementById('gate')) return;
+    if (ui.view === 'form' && ui.rec) { const was = ui.rec.status; exitForm(); if (was === 'draft') toast('Saved as a draft'); }
+    ui.view = 'settings'; ui.search = ''; render(); return;
   }
   const nav = e.target.closest('[data-nav]');
   if (nav) { e.preventDefault(); ui.view = nav.dataset.nav; ui.search = ''; render(); return; }

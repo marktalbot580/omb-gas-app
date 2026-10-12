@@ -4,7 +4,7 @@ const HELP = [
   { t: 'Getting started: set up your details first', k: 'setup first time business address gas safe number engineer signature logo settings tabs',
     h: `<p>Do this once, before your first certificate. Everything you enter here is printed on your PDFs.</p>
 <p>Settings is split into tabs across the top: <b>Business</b>, <b>Invoicing</b>, <b>Quotes</b>, <b>Reminders</b>, <b>Calendar</b>, <b>Tools</b> and <b>App</b>.</p>
-<ol><li>Tap <b>Settings</b> at the bottom.</li>
+<ol><li>Tap the <b>cog</b> at the top right, next to the <b>?</b> button.</li>
 <li>On the <b>Business</b> tab, fill in your business name, address, telephone, email and Gas Safe Register number.</li>
 <li>Still on <b>Business</b>, add your <b>bank details</b> (printed on invoices), your <b>company logo</b> under Your branding, your <b>Gas Safe logo</b> and your <b>Engineer</b> name and Gas Safe ID.</li>
 <li>On the <b>Invoicing</b> tab, set your invoice number, VAT and payment terms, and enter what you normally charge under <b>Prices</b> so invoices fill in for you.</li></ol>
