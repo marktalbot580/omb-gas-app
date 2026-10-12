@@ -69,7 +69,7 @@ async function buildQuotePdf(rec, s) {
   const c3 = CW / 3;
   label('PREPARED FOR', M, y); label('QUOTE REFERENCE', M + c3 + 4, y); label('YOUR ADVISOR', M + 2 * c3 + 8, y);
   txt(rec.customer.name || '', M, y + 6.5, { b: 1, fs: 11, c: DARK });
-  { const h = para(rec.jobAddress || '', M, y + 5 + 6.5 * SC, c3 - 4, 8.2, { c: GREY }); }
+  para(rec.jobAddress || '', M, y + 5 + 6.5 * SC, c3 - 4, 8.2, { c: GREY });
   txt(rec.ref, M + c3 + 4, y + 6.5, { b: 1, fs: 11, c: DARK });
   txt('Date: ' + ukd(rec.inspectionDate), M + c3 + 4, y + 5 + 6.5 * SC, { fs: 8.2, c: GREY }); txt('Valid until: ' + ukd(addDays(rec.inspectionDate, 30)), M + c3 + 4, y + 5 + 11 * SC, { fs: 8.2, c: GREY });
   txt(s.engineerName || s.businessName || '', M + 2 * c3 + 8, y + 6.5, { b: 1, fs: 11, c: DARK });

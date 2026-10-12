@@ -280,7 +280,7 @@ const CLOUD = (() => {
     if (was !== now && typeof render === 'function') try { render(); } catch (e) {}
     if (!html) { hideGate(); return false; }
     const g = gateEl(); document.body.classList.add('gated');
-    const keep = g.querySelector('input:focus'), vals = {}; g.querySelectorAll('input').forEach(i => vals[i.name] = i.value);
+    const vals = {}; g.querySelectorAll('input').forEach(i => vals[i.name] = i.value);
     g.innerHTML = html; g.querySelectorAll('input').forEach(i => { if (vals[i.name] && i.type !== 'password') i.value = vals[i.name]; });
     return true;
   }

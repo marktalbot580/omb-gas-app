@@ -23,7 +23,7 @@ async function buildInvPdf(inv, s, ext) {
   const p0 = doc.getNumberOfPages();
   const W = 210, H = 297, M = 12, CW = W - 2 * M, FOOT = 16;
   const GOLD = [201, 162, 75], GOLD_T = [230, 199, 120], GOLD_L = [246, 242, 233], INK = [22, 22, 22], GREY = [105, 105, 105], LINE = [190, 190, 190];
-  const GREEN = [22, 120, 70], RED = [190, 35, 30];
+  const GREEN = [22, 120, 70];
   const logo = await getLogo();
   const ukd = iso => (iso ? iso.split('-').reverse().join('/') : '');
   const T = invTotals(inv);

@@ -115,8 +115,6 @@ async function drawAcPdf(rec, s, lv) {
     });
     y += GAP;
   }
-  const dot = (v, key) => ({ t: '', keep: 1, dot: v === key ? (key === 'PASS' ? GREEN : key === 'FAIL' ? RED : GREY) : null });
-  const chkRow = (label, v, detail) => [{ t: label, b: 1 }, dot(v, 'PASS'), dot(v, 'FAIL'), dot(v, 'NA'), { t: detail || '', keep: 1, c: RED }];
   const pfCell = (v) => v === 'PASS' ? { t: 'PASS', b: 1, c: GREEN } : v === 'FAIL' ? { t: 'FAIL', b: 1, c: RED } : { t: v || '–', c: GREY };
 
   /* ================= LAYOUT ================= */

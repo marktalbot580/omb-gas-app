@@ -41,7 +41,7 @@ const workBtn = () => `<button type="button" class="btn ghost block" style="marg
 const wk = (title, lines) => `<div class="tlwork"><div class="t">${esc(title)}</div>${lines.map(l => `<div>${l}</div>`).join('')}</div>`;
 const w2 = (n, d = 2) => tlFmt(n, d);
 function pipeWork(c) {
-  const p = TL.pipe, out = [];
+  const out = [];
   out.push(wk('1. Gas rate', [`${w2(c.kw, 1)} kW ÷ ${KW_PER_M3H} kW per m³/h = <b>${w2(c.flow, 2)} m³/h</b>`]));
   c.rows.forEach(r => {
     const fl = r.det.length ? r.det.map(d => `${d.n} × ${d.eq} m`).join(' + ') + ' = ' + w2(r.fit, 2) + ' m' : 'no fittings';
@@ -466,7 +466,6 @@ function toolsForCustomer(c) {
   TL.prop.same = true;
   tlSave(); ui.toolBack = 'custEdit'; ui.tool = 'menu'; ui.view = 'tools'; render(); window.scrollTo(0, 0);
 }
-const toolsHomeBtn = () => !['gas', 'pipe', 'iv', 'heat'].some(toolOn) ? '' : `<button class="btn block sec" data-act="toolsOpen">Tools: gas rate, pipe sizing, heat loss</button><div style="height:10px"></div>`;
 
 /* ---------- events (kept separate from the main app handlers) ---------- */
 function tlSet(path, val) {

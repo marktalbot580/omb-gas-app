@@ -28,7 +28,7 @@ async function drawComPdf(rec, s, lv) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const W = 210, H = 297, M = 8, CW = W - 2 * M, FOOT = 14, GAP = 2.2;
   const GOLD = [255, 242, 0], GOLD_L = [241, 241, 241], INK = [22, 22, 22], GREY = [105, 105, 105], LINE = [190, 190, 190];
-  const GREEN = [22, 120, 70], RED = [190, 35, 30];
+  const GREEN = [22, 120, 70];
   const F = lv.f, P = lv.p;
   const logo = await getLogo();
   const ukd = iso => (iso ? iso.split('-').reverse().join('/') : '');
@@ -114,9 +114,6 @@ async function drawComPdf(rec, s, lv) {
     });
     y += GAP;
   }
-  const dot = (v, key) => ({ t: '', keep: 1, dot: v === key ? (key === 'PASS' ? GREEN : key === 'FAIL' ? RED : GREY) : null });
-  const chkRow = (label, v, detail) => [{ t: label, b: 1 }, dot(v, 'PASS'), dot(v, 'FAIL'), dot(v, 'NA'), { t: detail || '', keep: 1, c: RED }];
-  const pfCell = (v) => v === 'PASS' ? { t: 'PASS', b: 1, c: GREEN } : v === 'FAIL' ? { t: 'FAIL', b: 1, c: RED } : { t: v || '–', c: GREY };
 
   /* ================= LAYOUT ================= */
   band(true);
@@ -136,7 +133,6 @@ async function drawComPdf(rec, s, lv) {
   y += bh + GAP;
 
   /* four-column grid: label, value, label, value */
-  const kv = (label, v) => [{ t: label, b: 1 }, v];
   const unit = (v, u) => (String(v ?? '').trim() ? v + ' ' + u : '');
   const yes = v => (v === 'Yes' ? { t: 'Yes', b: 1, c: GREEN } : v === 'No' ? { t: 'No', b: 1 } : { t: v || '', b: v ? 1 : 0 });
   const grid = (title, items) => {
