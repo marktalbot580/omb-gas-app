@@ -96,6 +96,22 @@ function newBook(o) {
   const c = o.customer || null;
   return Object.assign({ id: uid(), date: localISO(), time: '09:00', mins: String(settings.calMins || '60'), types: [], customerId: c ? c.id : '', name: c ? c.name : '', phone: c ? c.phone || '' : '', email: c ? c.email || '' : '', address: c && (c.properties || []).length === 1 ? c.properties[0] : '', notes: '', status: 'booked' }, o.base || {});
 }
+/* the forms made for an appointment: the ones it started, or (older appointments) forms for the same customer on the same day */
+function bkForms(B) {
+  const ids = new Set(B.recIds || []); if (B.fromQuote) ids.add(B.fromQuote);
+  let list = records.filter(r => ids.has(r.id));
+  if (!list.length && B.date && (B.customerId || B.name)) {
+    const nm = String(B.name || '').trim().toLowerCase(), want = (B.types || []).filter(t => t !== 'other');
+    list = records.filter(r => r.inspectionDate === B.date && (B.customerId ? r.customerId === B.customerId : String((r.customer || {}).name || '').trim().toLowerCase() === nm) && (!want.length || want.includes(typeOf(r))));
+  }
+  return list;
+}
+function openRecFromBook(id) {
+  const q = records.find(x => x.id === id); if (!q) return;
+  const m = mates(q), done = m.every(x => x.status === 'complete');
+  ui.book = null; ui.job = m.length > 1 ? m.map(x => x.id) : null; ui.rec = done ? m[m.length - 1] : m[0];
+  ui.step = done ? stepsOf(ui.rec).length - 1 : 0; ui.appTab = 0; ui.showErr = false; ui.pdfs = {}; ui.view = 'form'; render(); window.scrollTo(0, 0);
+}
 function renderBook(v) {
   const B = ui.book, isNew = !bookings.some(x => x.id === B.id), c = customers.find(x => x.id === B.customerId);
   const props = c ? (c.properties || []).filter(Boolean) : [], inList = props.includes(B.address);
@@ -118,7 +134,7 @@ function renderBook(v) {
     </div>
     <h2>Notes</h2><div class="card">${f('notes', 'Anything to remember', { area: 1 })}</div>
     <button class="btn gold block" data-act="bookSave">${isNew ? 'Add to calendar' : 'Save changes'}</button>
-    ${!isNew && B.fromQuote && records.some(x => x.id === B.fromQuote) ? `<div style="height:10px"></div><button class="btn block" data-act="bookQuote">Open the quote</button>` : ''}
+    ${!isNew && bkForms(B).length ? `<h2>Forms for this job</h2>${bkForms(B).map(r => `<button type="button" class="item" data-act="bookForm" data-id="${r.id}"><div class="row sp"><span class="t">${esc(formName(r))}</span><span class="badge ${r.status}">${r.status}</span></div><div class="s">${esc(r.ref)} · ${ukDate(r.inspectionDate)}</div></button>`).join('')}` : ''}
     ${isNew ? '' : `<div style="height:10px"></div><button class="btn block" data-act="bookStart">Start the forms for this job</button>
       <div style="height:10px"></div><button class="btn block" data-act="bookDone">${B.status === 'done' ? 'Mark as not done' : 'Mark as done'}</button>
       <div style="height:10px"></div><button class="btn block" data-act="bookIcs">Add to my phone’s calendar</button>
@@ -171,6 +187,7 @@ function bkStart() {
   saveCustomers();
   const bk = bookings.find(x => x.id === B.id); if (bk) { bk.customerId = cu.id; bk.status = 'done'; bk.updated = Date.now(); saveBookings(); syncAll(); }
   ui.pick = { types: Object.fromEntries(types.map(t => [t, true])), customer: cu }; ui.book = null; startJob();
+  { const bk2 = bookings.find(x => x.id === B.id); if (bk2) { bk2.recIds = (jobRecs() || [ui.rec]).map(r => r.id); saveBookings(); } }   // remember which forms this appointment made
   if (a) { (jobRecs() || [ui.rec]).forEach(r => { r.jobAddress = a; persistRec(r); }); render(); }
 }
 async function calAct(a, b) {
@@ -181,10 +198,7 @@ async function calAct(a, b) {
     case 'calMonth': { const s = calState(), [y, m] = s.m.split('-').map(Number), d = new Date(y, m - 1 + (+b.dataset.n), 1); s.m = localISO(d).slice(0, 7); render(); return true; }
     case 'calDay': { const s = calState(); s.d = b.dataset.d; s.m = s.d.slice(0, 7); ui.calMode = 'month'; if (ui.view === 'home') ui.view = 'cal'; render(); window.scrollTo(0, 0); return true; }
     case 'bookNew': ui.book = newBook({ base: { date: b.dataset.d || localISO() } }); ui.bookFrom = ui.view === 'home' ? 'home' : 'cal'; ui.view = 'book'; render(); return true;
-    case 'bookQuote': {
-      const q = records.find(x => x.id === (ui.book || {}).fromQuote); if (!q) return true;
-      ui.book = null; ui.job = null; ui.rec = q; ui.step = q.status === 'complete' ? stepsOf(q).length - 1 : 0; ui.appTab = 0; ui.showErr = false; ui.pdfs = {}; ui.view = 'form'; render(); window.scrollTo(0, 0); return true;
-    }
+    case 'bookForm': case 'bookQuote': openRecFromBook(b.dataset.id || (ui.book || {}).fromQuote); return true;
     case 'quoBook': {
       const r = records.find(x => x.id === b.dataset.id); if (!r) return true;
       const cu = customers.find(c => c.id === r.customerId) || null, cd = r.customer || {};
