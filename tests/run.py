@@ -396,6 +396,19 @@ def run():
         check('no page errors in calendar tab', not errs, errs)
         ctx.close()
 
+        # ---------- 12j. screen keeps its position when picking an address ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        ev(pg, "customers.push({id:'cz',name:'Pat Long',phone:'',email:'',billing:'',properties:['1 A St\\nLincoln','2 B Rd\\nGrantham']}); ui.pick={types:{gquote:true},customer:customers[0]}; startJob(); document.body.style.minHeight='3000px'; window.scrollTo(0,400)")
+        pg.wait_for_timeout(200)
+        y0 = ev(pg, "window.scrollY")
+        ev(pg, "document.querySelector('[data-act=pickProp]') ? document.querySelector('[data-act=pickProp]').click() : render()")
+        pg.wait_for_timeout(200)
+        check('picking the work address in a form keeps your place on the page', y0 > 100 and ev(pg, "window.scrollY") == y0, [y0, ev(pg, "window.scrollY")])
+        ev(pg, "ui.rec.customer.name='x'; ui.rec.jobAddress='y'; ui.step=1; render()")
+        check('moving to the next step still goes back to the top', ev(pg, "window.scrollY") == 0)
+        check('no page errors keeping position', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()

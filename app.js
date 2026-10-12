@@ -577,7 +577,10 @@ function fitBoxes() { document.querySelectorAll('#view textarea').forEach(fitBox
 document.addEventListener('input', e => { if (e.target && e.target.tagName === 'TEXTAREA') fitBox(e.target); });
 function render() {
   const v = $('#view'), nav = $('#nav');
-  window.scrollTo(0, 0);
+  /* go back to the top only when the screen, step or tab changes; picking an address or ticking something redraws in place and keeps your position */
+  const rk = [ui.view, ui.rec && ui.rec.id, ui.step, ui.appTab, ui.sTab, ui.cTab, ui.calMode, ui.inv && ui.inv.id, ui.cust && ui.cust.id, ui.book && ui.book.id, ui.pCat, ui.pMake].join('|');
+  if (rk !== ui._rk) window.scrollTo(0, 0);
+  ui._rk = rk;
   if (ui.view !== 'home' && typeof instPopClose === 'function') instPopClose();   // the install pop-up must never cover the Next / Back buttons
   if (ui.view === 'form') { renderForm(v, nav); }
   else {
