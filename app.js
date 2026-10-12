@@ -789,7 +789,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v135';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v136';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1023,6 +1023,13 @@ function renderSettings(v) {
       <label class="f"><span>Show the calendar on the home screen</span><select data-s="calHome"><option value="on" ${settings.calHome === 'off' ? '' : 'selected'}>Yes</option><option value="off" ${settings.calHome === 'off' ? 'selected' : ''}>No</option></select><small>Shows today’s appointments and the month under your record buttons.</small></label>
       <label class="f"><span>Usual appointment length</span><select data-s="calMins">${[['30', '30 minutes'], ['60', '1 hour'], ['90', '1½ hours'], ['120', '2 hours'], ['180', '3 hours']].map(([m, l]) => `<option value="${m}" ${String(settings.calMins || '60') === m ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <button class="btn block" data-act="calOpen">Open the calendar</button>
+    </div>
+    <h2>Other jobs</h2>
+    <div class="card">
+      <p class="small muted" style="margin-top:0">Jobs you can pick when you choose “Other job” on an appointment.</p>
+      ${calJobs().map((j, i) => `<div class="row sp" style="margin-bottom:8px;gap:8px"><span class="t" style="flex:1">${esc(j)}</span><button type="button" class="btn ghost" data-act="calJobRm" data-i="${i}" style="min-height:40px;padding:6px 14px">Remove</button></div>`).join('') || '<p class="small muted">No saved jobs yet.</p>'}
+      <label class="f" style="margin-top:10px"><span>Add a job</span><input id="calJobNew" placeholder="For example: boiler install" autocomplete="off"></label>
+      <button class="btn block" data-act="calJobAdd">Add to the list</button>
     </div>
     <h2>Export</h2>
     <div class="card">
@@ -3153,7 +3160,8 @@ async function restoreBackup(file) {
 
 /* ---------- calendar: appointments kept on this phone ---------- */
 const BK_TYPES = [['gas', 'Gas safety check'], ['service', 'Boiler service'], ['legionella', 'Legionella risk assessment'], ['aircon', 'Air conditioning'], ['quote', 'Boiler quote'], ['other', 'Other job']];
-const bkLabel = b => (b.types || []).map(t => (BK_TYPES.find(x => x[0] === t) || [0, t])[1]).join(' + ') || 'Appointment';
+const calJobs = () => (Array.isArray(settings.calJobs) ? settings.calJobs : ['Bathroom install', 'Radiator install']);
+const bkLabel = b => (b.types || []).map(t => t === 'other' ? (String(b.other || '').trim() || 'Other job') : (BK_TYPES.find(x => x[0] === t) || [0, t])[1]).join(' + ') || 'Appointment';
 const localISO = d => { d = d || new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const toMin = t => { const m = /^(\d{1,2}):(\d{2})/.exec(t || ''); return m ? (+m[1]) * 60 + (+m[2]) : 0; };
 const fromMin = n => String(Math.floor(n / 60) % 24).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0');
@@ -3218,6 +3226,8 @@ function renderBook(v) {
   v.innerHTML = `<h1>${isNew ? 'Schedule in' : 'Appointment'}</h1>
     <h2 style="margin-top:0">What is the job?</h2>
     ${BK_TYPES.filter(([k]) => k === 'other' || recOn(k) || B.types.includes(k)).map(([k, l]) => `<button type="button" class="item tog ${B.types.includes(k) ? 'on' : ''}" data-act="bookType" data-t="${k}"><span class="box"></span><span class="t">${l}</span></button>`).join('')}
+    ${B.types.includes('other') ? `<div class="card"><label class="f"><span>What is the other job?</span><input data-bk="other" value="${esc(B.other || '')}" placeholder="For example: bathroom install" autocomplete="off"></label>
+      ${calJobs().length ? `<div class="seg wrap">${calJobs().map((j, i) => `<button type="button" data-act="bookOther" data-i="${i}" class="${(B.other || '') === j ? 'on' : ''}">${esc(j)}</button>`).join('')}</div>` : ''}</div>` : ''}
     <h2>When</h2>
     <div class="card">${f('date', 'Date', { type: 'date' })}${f('time', 'Start time', { type: 'time' })}
       <label class="f"><span>How long</span><select data-bk="mins">${[['30', '30 minutes'], ['45', '45 minutes'], ['60', '1 hour'], ['90', '1½ hours'], ['120', '2 hours'], ['180', '3 hours'], ['240', '4 hours'], ['480', 'All day']].map(([m, l]) => `<option value="${m}" ${String(B.mins) === m ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
@@ -3239,6 +3249,7 @@ function bkBack() { ui.book = null; if (ui.bookFrom === 'pick' && ui.pick) ui.vi
 function bkFill(B, c) { if (!c) return; B.customerId = c.id; B.name = c.name || ''; B.phone = c.phone || ''; B.email = c.email || ''; B.address = (c.properties || []).length === 1 ? c.properties[0] : ((c.properties || []).includes(B.address) ? B.address : ''); }
 function bkValid(B) {
   if (!B.types.length) { toast('Choose what the job is'); return false; }
+  if (B.types.includes('other') && !String(B.other || '').trim()) { toast('Type what the other job is'); return false; }
   if (!B.date || !B.time) { toast('Set the date and time'); return false; }
   if (!String(B.name || '').trim()) { toast('Add the customer’s name'); return false; }
   const s = toMin(B.time), e = s + (+B.mins || 60);
@@ -3289,6 +3300,9 @@ async function calAct(a, b) {
     case 'calDay': { const s = calState(); s.d = b.dataset.d; s.m = s.d.slice(0, 7); ui.calMode = 'month'; if (ui.view === 'home') ui.view = 'cal'; render(); window.scrollTo(0, 0); return true; }
     case 'bookNew': ui.book = newBook({ base: { date: b.dataset.d || localISO() } }); ui.bookFrom = ui.view === 'home' ? 'home' : 'cal'; ui.view = 'book'; render(); return true;
     case 'bookFromPick': { const pk = ui.pick; ui.book = newBook({ customer: pk.customer, base: { types: Object.keys(pk.types).filter(k => pk.types[k]) } }); ui.bookFrom = 'pick'; ui.view = 'book'; render(); return true; }
+    case 'bookOther': { ui.book.other = calJobs()[+b.dataset.i] || ''; const y = window.scrollY; render(); window.scrollTo(0, y); return true; }
+    case 'calJobAdd': { const el = document.getElementById('calJobNew'), v = el ? el.value.trim() : ''; if (!v) { toast('Type the job first'); return true; } const l = [...calJobs()]; if (!l.some(x => x.toLowerCase() === v.toLowerCase())) l.push(v); settings.calJobs = l; saveSettings(); const y = window.scrollY; render(); window.scrollTo(0, y); return true; }
+    case 'calJobRm': { settings.calJobs = calJobs().filter((_, i) => i !== +b.dataset.i); saveSettings(); const y = window.scrollY; render(); window.scrollTo(0, y); return true; }
     case 'bookType': { const T = ui.book.types, i = T.indexOf(b.dataset.t); if (i >= 0) T.splice(i, 1); else T.push(b.dataset.t); const y = window.scrollY; render(); window.scrollTo(0, y); return true; }
     case 'bookOpen': { const x = bookings.find(z => z.id === b.dataset.id); if (x) { ui.book = { ...x, types: [...(x.types || [])] }; ui.bookFrom = ui.view === 'home' ? 'home' : 'cal'; ui.view = 'book'; render(); } return true; }
     case 'bookSave': { if (!bkSave()) return true; const d = ui.book.date, t = ui.book.time; ui.pick = ui.bookFrom === 'pick' ? null : ui.pick; ui.cal = { m: d.slice(0, 7), d }; ui.calMode = 'month'; ui.book = null; ui.view = ui.bookFrom === 'home' ? 'home' : 'cal'; ui.bookFrom = ''; toast('Booked in for ' + dayShort(d) + ' at ' + t); render(); return true; }
