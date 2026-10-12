@@ -103,7 +103,7 @@ async function buildInvPdf(inv, s, ext) {
   y += jh + 5;
 
   /* line items */
-  const cols = [{ h: 'Description', w: 98 }, { h: 'Qty', w: 14, a: 'c' }, { h: vatOn ? 'Unit price (ex VAT)' : 'Unit price', w: 34, a: 'r' }, { h: vatOn ? 'Amount (ex VAT)' : 'Amount', w: 34, a: 'r' }];
+  const cols = [{ h: String(settings.invHead || '').trim() || 'Work and materials', w: 98 }, { h: 'Qty', w: 14, a: 'c' }, { h: vatOn ? 'Unit price (ex VAT)' : 'Unit price', w: 34, a: 'r' }, { h: vatOn ? 'Amount (ex VAT)' : 'Amount', w: 34, a: 'r' }];
   const k = CW / cols.reduce((a, c) => a + c.w, 0); cols.forEach(c => (c.w *= k));
   const padX = 2, fsH = 7, fsB = 9;
   const colX = i => M + cols.slice(0, i).reduce((a, c) => a + c.w, 0);

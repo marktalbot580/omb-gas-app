@@ -101,7 +101,7 @@ const DEFAULT_SETTINGS = {
   priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', priceCom: '', quoteIncluded: QUO.DEFAULT_INCLUDED, quoteTerms: QUO.DEFAULT_TERMS, qItemsText: '', qList: [], qMarkup: {}, qMarkupDef: '30', discType: '£', discValue: '',
   invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '', vatQtr: '2', yearDay: '6', yearMonth: '4',
   bankName: '', accName: '', sortCode: '', accNo: '', invFooter: 'Thank you for your business.',
-  remText: '', qChaseText: '', invRemText: '', invAsk: 'on', logoBg: 'white', calOn: 'on', calHome: 'on', calMins: '60', recGas: 'on', recService: 'on', recLeg: 'on', recAc: 'on', recQuote: 'on', remDays: '56', toolGas: 'on', toolPipe: 'on', toolIv: 'on', toolHeat: 'on'
+  remText: '', qChaseText: '', invRemText: '', invAsk: 'on', invHead: 'Work and materials', logoBg: 'white', calOn: 'on', calHome: 'on', calMins: '60', recGas: 'on', recService: 'on', recLeg: 'on', recAc: 'on', recQuote: 'on', remDays: '56', toolGas: 'on', toolPipe: 'on', toolIv: 'on', toolHeat: 'on'
 };
 let settings = Object.assign({}, DEFAULT_SETTINGS, LS.get('omb_settings', {}));
 let customers = LS.get('omb_customers', []);
@@ -793,7 +793,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v146';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v147';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -971,6 +971,7 @@ function renderSettings(v) {
       ${f('invDigits', 'Digits in the number', { mode: 'numeric', hint: '3 gives 001, 4 gives 0001, 1 gives no leading zeros.' })}
       <div class="notice" style="margin:0 0 14px">Next invoice will be numbered <b id="invPreview">${esc(invNumberFor(settings.invNext))}</b></div>
       ${f('payDays', 'Payment terms (days)', { mode: 'numeric' })}
+      ${f('invHead', 'Heading for the lines on an invoice', { hint: 'Shown on the invoice screen and above the lines on the PDF. For example: Work and materials, Parts and labour, Charges. Leave blank for Work and materials.' })}
       <button type="button" class="item tog ${settings.vatReg === 'Yes' ? 'on' : ''}" data-act="vatReg"><span class="box"></span><span><span class="t">VAT registered</span><span class="s" style="display:block">${settings.vatReg === 'Yes' ? 'VAT is added to invoices' : 'Tick if the business is VAT registered – VAT will then be added to invoices'}</span></span></button>
       ${settings.vatReg === 'Yes' ? f('vatRate', 'VAT rate (%)', { mode: 'decimal' }) + f('vatNumber', 'VAT number') + `<label class="f"><span>VAT quarters end in</span><select data-s="vatQtr"><option value="2" ${settings.vatQtr === '2' ? 'selected' : ''}>March, June, September, December</option><option value="0" ${settings.vatQtr === '0' ? 'selected' : ''}>January, April, July, October</option><option value="1" ${settings.vatQtr === '1' ? 'selected' : ''}>February, May, August, November</option></select><small>Used by “Print for accountant” on the Invoices tab. It is on your VAT registration certificate.</small></label>` + '<p class="small muted">Enter your prices above <b>excluding VAT</b>. VAT is added on the invoice and shown as its own line. The VAT number is printed on the invoice, which is then headed “VAT Invoice”.</p>' : ''}
       <div class="row"><div class="grow">${f('yearDay', 'Tax year starts: day', { mode: 'numeric', maxlen: 2 })}</div><div class="grow"><label class="f"><span>Month</span><select data-s="yearMonth">${['January','February','March','April','May','June','July','August','September','October','November','December'].map((mn, k) => `<option value="${k + 1}" ${String(+settings.yearMonth || 4) === String(k + 1) ? 'selected' : ''}>${mn}</option>`).join('')}</select></label></div></div>
@@ -2218,7 +2219,7 @@ function renderInvEdit(v) {
       ${inf('due', 'Payment due by', { type: 'date' })}
       ${inf('workDate', 'Date of work', { type: 'date' })}
     </div>
-    <h2>Services</h2>
+    <h2>${esc(String(settings.invHead || '').trim() || 'Work and materials')}</h2>
     ${i.lines.map((l, k) => `<div class="card">
       ${inf(`lines.${k}.d`, 'Description', { ph: 'e.g. Replacement part' })}
       <div class="row"><div class="grow">${inf(`lines.${k}.q`, 'Qty', { mode: 'decimal' })}</div><div class="grow">${inf(`lines.${k}.p`, 'Price each (£)', { mode: 'decimal' })}</div></div>

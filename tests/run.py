@@ -357,6 +357,16 @@ def run():
         check('no page errors in discount types', not errs, errs)
         ctx.close()
 
+        # ---------- 12g. invoice lines heading ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "ui.inv=newInvoice(null); invoices.push(ui.inv); ui.view='invEdit'; render()")
+        h1 = ev(pg, "[...document.querySelectorAll('#view h2')].map(h=>h.innerText).join('|')").lower()
+        ev(pg, "settings.invHead='Parts and labour'; render()")
+        h2 = ev(pg, "[...document.querySelectorAll('#view h2')].map(h=>h.innerText).join('|')").lower()
+        check('invoice lines heading defaults to Work and materials and can be changed', 'work and materials' in h1 and 'services' not in h1 and 'parts and labour' in h2, [h1, h2])
+        check('no page errors in invoice heading', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()
