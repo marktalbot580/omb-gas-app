@@ -101,7 +101,7 @@ const DEFAULT_SETTINGS = {
   priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', priceCom: '', quoteIncluded: QUO.DEFAULT_INCLUDED, quoteTerms: QUO.DEFAULT_TERMS, qItemsText: '', qList: [], qMarkup: {}, qMarkupDef: '30', discType: '£', discValue: '',
   invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '', vatQtr: '2', yearDay: '6', yearMonth: '4',
   bankName: '', accName: '', sortCode: '', accNo: '', invFooter: 'Thank you for your business.',
-  remText: '', remDays: '56', toolGas: 'on', toolPipe: 'on', toolIv: 'on', toolHeat: 'on'
+  remText: '', qChaseText: '', remDays: '56', toolGas: 'on', toolPipe: 'on', toolIv: 'on', toolHeat: 'on'
 };
 let settings = Object.assign({}, DEFAULT_SETTINGS, LS.get('omb_settings', {}));
 let customers = LS.get('omb_customers', []);
@@ -779,7 +779,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v124';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v125';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -986,6 +986,8 @@ function renderSettings(v) {
         <button type="button" class="btn block" data-act="pricesOpen">Open price list</button></div>
       ${f('quoteIncluded', 'What is included as standard (one item per line)', { area: 1 })}
       ${f('quoteTerms', 'Terms shown on the quote (one per line)', { area: 1 })}
+      <label class="f"><span>Chase message wording</span><textarea data-s="qChaseText" rows="7">${esc(settings.qChaseText || QCHASE_DEFAULT)}</textarea><small>Used for the Chase by email and Chase by text buttons on a quote nobody has replied to. {name}, {address}, {ref}, {business} and {signoff} are filled in for you.</small></label>
+      <button class="btn block ghost" data-act="qChaseReset">Put the original wording back</button>
     </div>
     </div>
     <div data-stab="reminders" ${(ui.sTab || 'business') === 'reminders' ? '' : 'hidden'}>
@@ -1428,6 +1430,12 @@ async function sendSel() {
 }
 /* open the email app without leaving the page (a plain location change leaves a blank screen in some browsers, e.g. Firefox with no mail app set) */
 const mailAddr = a => encodeURIComponent(String(a || '').trim()).replace(/%40/g, '@').replace(/%2C/g, ',');
+/* wording of the quote chase email / text (editable in Settings → Quotes). {name} {address} {ref} {business} {signoff} are filled in */
+const QCHASE_DEFAULT = 'Hi {name},\n\nI just wanted to check that you received my quote for your new boiler at {address}. If you have any questions, or would like to go ahead, just let me know and I will arrange a date for the installation.\n\nKind regards,\n{signoff}';
+function chaseText(q) {
+  const first = String(q.customer.name || '').trim().split(/\s+/)[0] || 'there', map = { name: first, address: q.jobAddress ? String(q.jobAddress).replace(/\s*\n+\s*/g, ', ') : 'your property', ref: q.ref || '', business: settings.businessName || '', signoff: signOff() };
+  return (settings.qChaseText || QCHASE_DEFAULT).replace(/\{(name|address|ref|business|signoff)\}/gi, (m, k) => map[k.toLowerCase()]);
+}
 /* Chrome on a Mac only offers AirDrop and Messages when sharing a PDF (no Mail), so there we skip the share menu and use the save-then-attach steps instead */
 const macChrome = /Mac/i.test(navigator.platform || '') && !(navigator.maxTouchPoints > 1) && /Chrome\//.test(navigator.userAgent);
 const canShareFiles = o => !macChrome && !!navigator.canShare && navigator.canShare(o);
@@ -2364,6 +2372,7 @@ document.addEventListener('click', async e => {
   if (a === 'remSent') { const id = b.dataset.id; setTimeout(() => { const o = remGet(); o.s[id] = todayISO(); remSet(o); if (ui.view === 'due') { const y = window.scrollY; render(); window.scrollTo(0, y); } }, 600); return; }
   if (a === 'remDone') { const rr = records.find(x => x.id === b.dataset.id); if (rr) remSetState(rr, b.dataset.v); toast(b.dataset.v === 'booked' ? 'Marked as booked in' : 'Removed from the list'); render(); return; }
   if (a === 'remStop') { if (confirm('Stop reminders for this property? You can still do its next check as normal.')) { const o = remGet(); o.stop[b.dataset.key] = 1; remSet(o); const rr = records.find(x => x.id === b.dataset.id); if (rr) remSetState(rr, 'stop'); render(); } return; }
+  if (a === 'qChaseReset') { settings.qChaseText = ''; saveSettings(); render(); return; }
   if (a === 'remReset') { settings.remText = ''; saveSettings(); render(); return; }
   if (a === 'help') { if (ui.view !== 'help') { ui.helpFrom = ui.view; } ui.helpQ = ''; ui.view = 'help'; render(); return; }
   if (a === 'news') { if (ui.view !== 'news') ui.helpFrom = ui.view; ui.view = 'news'; render(); return; }
@@ -2648,8 +2657,7 @@ document.addEventListener('click', async e => {
     case 'qOutcome': { const q = records.find(x => x.id === b.dataset.id); if (!q) break; q.qStatus = q.qStatus === b.dataset.v ? '' : b.dataset.v; q.qDate = q.qStatus ? todayISO() : ''; persistRec(q); const y = window.scrollY; render(); window.scrollTo(0, y); break; }
     case 'qChase': {
       const q = records.find(x => x.id === b.dataset.id); if (!q) break;
-      const first = String(q.customer.name || '').trim().split(/\s+/)[0] || 'there', addr = q.jobAddress ? ' for ' + q.jobAddress : '';
-      const body = `Hi ${first},\n\nI just wanted to check that you received my quote for your new boiler${addr}. If you have any questions, or would like to go ahead, just let me know and I will arrange a date for the installation.\n\nKind regards,\n${signOff()}`;
+      const body = chaseText(q);
       const url = b.dataset.how === 'email' ? `mailto:${mailAddr(q.customer.email)}?subject=${encodeURIComponent('Your boiler quote ' + q.ref)}&body=${encodeURIComponent(body)}` : `sms:${String(q.customer.phone).replace(/\s+/g, '')}?&body=${encodeURIComponent(body)}`;
       const a = document.createElement('a'); a.href = url; if (!/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) { a.target = '_blank'; a.rel = 'noopener'; } document.body.appendChild(a); a.click(); a.remove(); break;
     }

@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v125', items: ['The quote chase message (Chase by email and Chase by text) can now be edited in Settings → Quotes, with a button to put the original wording back.'] },
   { v: 'v124', items: ['Settings: Tools now has its own tab (choose which tools show), so Reminders only holds the annual check reminders.'] },
   { v: 'v123', items: ['On a computer, the Open the email button (and the quote chase email button) now opens your email in a new browser tab, so the app stays where you were. Phones are unchanged.'] },
   { v: 'v122', items: ['Settings is now split into tabs across the top: Business (with your bank details, branding, Gas Safe logo and engineer), Invoicing, Quotes, Reminders (with the tools) and App (backup, updates and your account). Nothing has been removed.'] },
