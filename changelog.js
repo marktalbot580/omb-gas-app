@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v139', items: ['Calendar: on a booking, the customer is now a search box. Start typing a name, phone number or email and your saved customers come up to tap; or just type the details of someone new.'] },
   { v: 'v138', items: ['The Help guide is brought up to date: new topics on the calendar, boiler quotes, the price list, overdue invoice reminders and Tools, and the existing topics now point to the right Settings tabs.'] },
   { v: 'v137', items: ['Calendar: when you pick a customer, the address of the job is now a list of their saved addresses, with “+ Add a new address” at the bottom. A new address is saved on the customer for next time.'] },
   { v: 'v136', items: ['Calendar: choosing “Other job” now opens a box to say what the job is, with quick buttons for jobs you save. Add or remove those jobs (bathroom install, radiator install and so on) in Settings → Calendar.'] },

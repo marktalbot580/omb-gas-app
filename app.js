@@ -789,7 +789,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v138';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v139';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -3222,7 +3222,6 @@ function newBook(o) {
 function renderBook(v) {
   const B = ui.book, isNew = !bookings.some(x => x.id === B.id), c = customers.find(x => x.id === B.customerId);
   const props = c ? (c.properties || []).filter(Boolean) : [], inList = props.includes(B.address);
-  const sorted = [...customers].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   const f = (k, l, o = {}) => `<label class="f"><span>${l}</span>${o.area ? `<textarea data-bk="${k}" rows="2">${esc(B[k])}</textarea>` : `<input data-bk="${k}" value="${esc(B[k])}" ${o.type ? `type="${o.type}"` : ''} autocomplete="off">`}</label>`;
   v.innerHTML = `<h1>${isNew ? 'Schedule in' : 'Appointment'}</h1>
     <h2 style="margin-top:0">What is the job?</h2>
@@ -3234,8 +3233,7 @@ function renderBook(v) {
       <label class="f"><span>How long</span><select data-bk="mins">${[['30', '30 minutes'], ['45', '45 minutes'], ['60', '1 hour'], ['90', '1½ hours'], ['120', '2 hours'], ['180', '3 hours'], ['240', '4 hours'], ['480', 'All day']].map(([m, l]) => `<option value="${m}" ${String(B.mins) === m ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
     <h2>Customer</h2>
     <div class="card">
-      ${sorted.length ? `<label class="f"><span>Customer</span><select data-bk="customerId"><option value="">New customer (type the details below)</option>${sorted.map(x => `<option value="${x.id}" ${x.id === B.customerId ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>` : ''}
-      ${f('name', 'Name')}${f('phone', 'Phone', { type: 'tel' })}${f('email', 'Email', { type: 'email' })}
+      ${f('name', 'Customer name')}<div id="bkNameSug"></div>${c ? '<p class="small muted" style="margin:-4px 0 12px">Saved customer. Change the name to book someone new.</p>' : '<p class="small muted" style="margin:-4px 0 12px">Start typing to find a saved customer, or fill in the details for a new one.</p>'}${f('phone', 'Phone', { type: 'tel' })}${f('email', 'Email', { type: 'email' })}
       ${props.length ? `<label class="f"><span>Address of the job</span><select data-bk="propPick">${B.addrNew || inList ? '' : '<option value="">Choose an address</option>'}${props.map((p, i) => `<option value="${i}" ${!B.addrNew && p === B.address ? 'selected' : ''}>${esc(addrFirst(p) + (p.split('\n')[1] ? ', ' + p.split('\n')[1] : ''))}</option>`).join('')}<option value="__new" ${B.addrNew ? 'selected' : ''}>+ Add a new address</option></select></label>` : ''}
       ${!props.length || B.addrNew || (B.address && !inList) ? f('address', props.length ? 'New address' : 'Address of the job', { area: 1 }) : ''}
     </div>
@@ -3303,6 +3301,7 @@ async function calAct(a, b) {
     case 'calDay': { const s = calState(); s.d = b.dataset.d; s.m = s.d.slice(0, 7); ui.calMode = 'month'; if (ui.view === 'home') ui.view = 'cal'; render(); window.scrollTo(0, 0); return true; }
     case 'bookNew': ui.book = newBook({ base: { date: b.dataset.d || localISO() } }); ui.bookFrom = ui.view === 'home' ? 'home' : 'cal'; ui.view = 'book'; render(); return true;
     case 'bookFromPick': { const pk = ui.pick; ui.book = newBook({ customer: pk.customer, base: { types: Object.keys(pk.types).filter(k => pk.types[k]) } }); ui.bookFrom = 'pick'; ui.view = 'book'; render(); return true; }
+    case 'bookPickCust': { const c = customers.find(x => x.id === b.dataset.id); if (c) { bkFill(ui.book, c); render(); } return true; }
     case 'bookOther': { ui.book.other = calJobs()[+b.dataset.i] || ''; const y = window.scrollY; render(); window.scrollTo(0, y); return true; }
     case 'calJobAdd': { const el = document.getElementById('calJobNew'), v = el ? el.value.trim() : ''; if (!v) { toast('Type the job first'); return true; } const l = [...calJobs()]; if (!l.some(x => x.toLowerCase() === v.toLowerCase())) l.push(v); settings.calJobs = l; saveSettings(); const y = window.scrollY; render(); window.scrollTo(0, y); return true; }
     case 'calJobRm': { settings.calJobs = calJobs().filter((_, i) => i !== +b.dataset.i); saveSettings(); const y = window.scrollY; render(); window.scrollTo(0, y); return true; }
@@ -3322,12 +3321,12 @@ async function calAct(a, b) {
 document.addEventListener('input', e => {
   const t = e.target, k = t && t.dataset && t.dataset.bk; if (!k || !ui.book || t.tagName === 'SELECT') return;
   ui.book[k] = t.value;
+  if (k === 'name') { if (ui.book.customerId) { const c = customers.find(x => x.id === ui.book.customerId); if (!c || c.name !== t.value) { ui.book.customerId = ''; ui.book.addrNew = false; } } const el = document.getElementById('bkNameSug'); if (el) el.innerHTML = nameSugHtml(ui.book, t.value, 'bookPickCust'); }
 });
 document.addEventListener('change', e => {
   const t = e.target, k = t && t.dataset && t.dataset.bk; if (!k || !ui.book) return;
   const B = ui.book, y = window.scrollY;
-  if (k === 'customerId') { const c = customers.find(x => x.id === t.value); if (c) bkFill(B, c); else B.customerId = ''; render(); window.scrollTo(0, y); }
-  else if (k === 'propPick') { const c = customers.find(x => x.id === B.customerId), ps = c ? (c.properties || []).filter(Boolean) : []; if (t.value === '__new') { B.addrNew = true; B.address = ''; } else if (t.value !== '') { B.addrNew = false; B.address = ps[+t.value] || ''; } render(); window.scrollTo(0, y); }
+  if (k === 'propPick') { const c = customers.find(x => x.id === B.customerId), ps = c ? (c.properties || []).filter(Boolean) : []; if (t.value === '__new') { B.addrNew = true; B.address = ''; } else if (t.value !== '') { B.addrNew = false; B.address = ps[+t.value] || ''; } render(); window.scrollTo(0, y); }
   else B[k] = t.value;
 });
 
