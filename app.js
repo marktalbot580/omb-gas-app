@@ -779,7 +779,7 @@ function renderCustEdit(v) {
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v120';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v121';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1414,6 +1414,9 @@ async function sendSel() {
 }
 /* open the email app without leaving the page (a plain location change leaves a blank screen in some browsers, e.g. Firefox with no mail app set) */
 const mailAddr = a => encodeURIComponent(String(a || '').trim()).replace(/%40/g, '@').replace(/%2C/g, ',');
+/* Chrome on a Mac only offers AirDrop and Messages when sharing a PDF (no Mail), so there we skip the share menu and use the save-then-attach steps instead */
+const macChrome = /Mac/i.test(navigator.platform || '') && !(navigator.maxTouchPoints > 1) && /Chrome\//.test(navigator.userAgent);
+const canShareFiles = o => !macChrome && !!navigator.canShare && navigator.canShare(o);
 function openMail(url) {
   /* this browser could not hand the PDFs to the share sheet, so say so clearly instead of jumping straight into an email with nothing attached */
   const old = document.getElementById('mailBox'); if (old) old.remove();
@@ -1424,7 +1427,7 @@ function openMail(url) {
 `:`<div class="instbox"><div class="insthead"><div><b>PDF saved to your computer</b><span>Now attach it to the email</span></div></div>
     <ol class="small" style="margin:0 0 12px;padding-left:20px;line-height:1.6">
       <li>Click <b>Open the email</b> below. Your email program opens with the customer’s address, subject and message already filled in.</li>
-      <li>Attach the PDF: click the <b>paperclip</b> / <b>Attach</b> button and pick it from your <b>Downloads</b> folder (the newest file), or just drag it into the email.</li>
+      <li>Attach the PDF: click the <b>paperclip</b> / <b>Attach</b> button and pick it from your <b>Downloads</b> folder (the newest file), or just drag it into the email${mac ? ' – you can drag it straight from the download arrow at the top right of Chrome' : ''}.</li>
       <li>Check it, then press Send.</li>
     </ol>
     <p class="small muted" style="margin-top:0">${mac ? 'On a Mac, open Finder → Downloads. If Mail is not your usual email program, change it in Mail → Settings → Default email reader.' : 'If the wrong program opens, go to Windows Settings → Apps → Default apps → Email and pick the one you use.'}</p>
@@ -2029,7 +2032,7 @@ async function sharePack(sel) {
   const first = greetName(r0.customer.name), addr = addrLine(r0.jobAddress || '');
   const subject = `${m.map(r => SUBJ[typeOf(r)]).join(', ')} and invoice ${inv.number} – ${addrFirst(r0.jobAddress || '')}`;
   const text = `Hi ${first},\n\nPlease find attached your records and invoice for ${addr}, carried out on ${ukDate(r0.inspectionDate)}:\n${m.map(r => `- ${docLine(r)}`).join('\n')}\n- Invoice ${inv.number}: ${money(T.total)}${inv.paid ? ' (paid – thank you)' : ', payment due by ' + ukDate(inv.due)}\n\nKind regards,\n${signOff()}`;
-  try { if (navigator.canShare && navigator.canShare({ files })) { await navigator.share({ files, title: subject, text }); markSent(inv); return; } }
+  try { if (canShareFiles({ files })) { await navigator.share({ files, title: subject, text }); markSent(inv); return; } }
   catch (err) { if (err.name === 'AbortError') return; console.warn(err); }
   parts.forEach(p => { const el = document.createElement('a'); el.href = URL.createObjectURL(p.blob); el.download = p.name; document.body.appendChild(el); el.click(); el.remove(); });
   openMail(`mailto:${mailAddr(r0.customer.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text + '\n\n(Attach the downloaded PDFs)')}`);
@@ -2184,7 +2187,7 @@ async function invShare() {
   const first = greetName(i.customer.name), addr = addrLine(i.jobAddress || '');
   const subject = `Invoice ${i.number} – ${settings.businessName}`;
   const text = `Hi ${first},\n\nPlease find attached invoice ${i.number}${addr ? ' for the work at ' + addr : ''}.\n${i.paid ? 'This invoice has been paid – thank you.' : `Total due: ${money(T.total)}\nPayment is due by ${ukDate(i.due)}.`}\n\nKind regards,\n${signOff()}`;
-  try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: subject, text }); markSent(i); return; } }
+  try { if (canShareFiles({ files: [file] })) { await navigator.share({ files: [file], title: subject, text }); markSent(i); return; } }
   catch (err) { if (err.name === 'AbortError') return; console.warn(err); }
   invDownload();
   openMail(`mailto:${mailAddr(i.customer.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text + '\n\n(Attach the downloaded PDF)')}`);
@@ -2890,7 +2893,7 @@ async function sharePdf(r) {
   const text = isQuo(r) ? `Hi ${first},\n\nThank you for the chance to quote. Please find attached your quotation for ${addr}. It is valid for 30 days.\n\nIf you would like to go ahead, just reply to this email and I will call you to arrange a date for the installation.\n\nKind regards,\n${signOff()}`
     : `Hi ${first},\n\nPlease find attached your ${doc} for ${addr}, carried out on ${ukDate(r.inspectionDate)}.${due ? '\n' + due + ' ' + ukDate(r.renewal) + '.' : ''}\n\nKind regards,\n${signOff()}`;
   try {
-    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: subject, text }); return; }
+    if (canShareFiles({ files: [file] })) { await navigator.share({ files: [file], title: subject, text }); return; }
   } catch (err) { if (err.name === 'AbortError') return; console.warn(err); }
   downloadPdf(r);
   openMail(`mailto:${mailAddr(r.customer.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text + '\n\n(Attach the downloaded PDF)')}`);
@@ -2902,7 +2905,7 @@ async function sharePdfAll(sel) {
   const subject = `${m.map(r => SUBJ[typeOf(r)]).join(', ')} – ${addrFirst(r0.jobAddress || '')}`;
   const text = `Hi ${first},\n\nPlease find attached your records for ${addr}, carried out on ${ukDate(r0.inspectionDate)}:\n${m.map(r => `- ${docLine(r)}`).join('\n')}\n\nKind regards,\n${signOff()}`;
   try {
-    if (navigator.canShare && navigator.canShare({ files })) { await navigator.share({ files, title: subject, text }); return; }
+    if (canShareFiles({ files })) { await navigator.share({ files, title: subject, text }); return; }
   } catch (err) { if (err.name === 'AbortError') return; console.warn(err); }
   m.forEach(r => downloadPdf(r));
   openMail(`mailto:${mailAddr(r0.customer.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text + '\n\n(Attach the downloaded PDFs)')}`);

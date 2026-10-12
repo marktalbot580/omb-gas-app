@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v121', items: ['Sharing from Chrome on a Mac: the Mac share menu only offers AirDrop and Messages for PDFs, so the app now skips it and goes straight to the steps box (PDF saved, Open the email, drag the PDF in). Phones, Safari and Windows are unchanged.'] },
   { v: 'v120', items: ['When you go back into a finished record, the button now says Open documents instead of Create documents, because they have already been made. New records still say Create documents.'] },
   { v: 'v119', items: ['The Serial number boxes now have a Copy button too, next to the Gas Council number one.'] },
   { v: 'v118', items: ['Gas Council (GC) number boxes now have a Copy button beside them, so you can paste the number straight into another app to look up the readings.'] },
