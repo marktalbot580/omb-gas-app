@@ -797,7 +797,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v148';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v149';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1032,7 +1032,7 @@ function renderSettings(v) {
       <label class="f"><span>Use the calendar</span><select data-s="calOn"><option value="on" ${calOn() ? 'selected' : ''}>On</option><option value="off" ${calOn() ? '' : 'selected'}>Off</option></select><small>Turn it off if you do not book jobs in the app. The calendar, the Schedule in button and the appointment lists disappear. Any appointments you have saved are kept.</small></label>
     </div>
     ${calOn() ? `<div class="card">
-      <label class="f"><span>Show the calendar on the home screen</span><select data-s="calHome"><option value="on" ${settings.calHome === 'off' ? '' : 'selected'}>Yes</option><option value="off" ${settings.calHome === 'off' ? 'selected' : ''}>No</option></select><small>Shows today’s appointments and the month under your record buttons.</small></label>
+      <label class="f"><span>Show the calendar on the home screen</span><select data-s="calHome"><option value="on" ${settings.calHome === 'off' ? '' : 'selected'}>Yes</option><option value="off" ${settings.calHome === 'off' ? 'selected' : ''}>No</option></select><small>Shows today’s appointments under your service buttons. The month and week views are on the Calendar tab.</small></label>
       <label class="f"><span>Usual appointment length</span><select data-s="calMins">${[['30', '30 minutes'], ['60', '1 hour'], ['90', '1½ hours'], ['120', '2 hours'], ['180', '3 hours']].map(([m, l]) => `<option value="${m}" ${String(settings.calMins || '60') === m ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <button class="btn block" data-act="calOpen">Open the calendar</button>
     </div>

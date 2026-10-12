@@ -146,7 +146,7 @@ def run():
         # ---------- 8. calendar ----------
         ctx, pg, errs = fresh(b, mobile=True)
         ev(pg, "customers.push({id:'c1',name:'Jane Smith',phone:'07700 900123',email:'',billing:'',properties:['1 High St\\nLincoln\\nLN1 1AA','2 Low Rd\\nGrantham\\nNG31 1AA']},{id:'c2',name:'Janet Brown',phone:'01522 123456',email:'',billing:'',properties:[]});render()")
-        check('home shows Today and the month calendar', ev(pg, "!!document.querySelector('.calg') && /today/i.test(document.querySelector('#view').innerText)"))
+        check('home shows today\'s appointments but no month grid', ev(pg, "!document.querySelector('.calg') && /today/i.test(document.querySelector('#view').innerText)"))
         pg.click('[data-act=newRec][data-type=gas]'); pg.click('[data-act=bookFromPick]')
         check('Schedule in opens the booking form with the job ticked', ev(pg, "ui.view==='book' && ui.book.types.join()==='gas'"))
         pg.click('[data-bk=name]'); pg.keyboard.type('jan', delay=20)

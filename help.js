@@ -101,14 +101,14 @@ const HELP = [
 <p>Deleting a customer does not delete their past records.</p>` },
 
   { t: 'Calendar and appointments', k: 'calendar diary appointment booking schedule today schedule in export ics sync other job',
-    h: `<p>The calendar keeps your appointments in the app. Today’s appointments and a month calendar sit on the home screen under the record buttons.</p>
+    h: `<p>The calendar keeps your appointments in the app. Today’s appointments sit on the Services screen under the service buttons, and the <b>Calendar</b> tab on the bottom bar has the Today, Week and Month views.</p>
 <p><b>Book a job in:</b></p>
 <ol><li>Tap a job type (for example Gas Safety Record), then tap <b>Schedule in</b> under Start. Or tap <b>+ Schedule an appointment</b> on the home screen, or <b>+ Appointment</b> inside the calendar.</li>
 <li>Tick the job or jobs. <b>Other job</b> opens a box to type what it is, with quick buttons for jobs you have saved.</li>
 <li>Set the date, start time and how long.</li>
 <li>Pick a customer to fill in their details. The address of the job is a list of their saved addresses, with <b>+ Add a new address</b> at the bottom.</li>
 <li>Tap <b>Add to calendar</b>.</li></ol>
-<p><b>Using the calendar:</b> tap a day on the month to see it. Open <b>Open the full calendar</b> for the <b>Today</b> view (today’s appointments and the week ahead) and the <b>Month</b> view. Tap an appointment to edit it, at the top tap <b>Text: I’m on my way</b> to open a ready-written text to the customer (you press send; it only shows when the customer has a mobile number), or <b>Navigate to</b> to open the address in maps, <b>Start the forms for this job</b> (the customer and address are filled in), <b>Mark as done</b>, add it to your phone’s calendar or delete it. It warns you if two appointments clash.</p>
+<p><b>Using the calendar:</b> tap <b>Calendar</b> on the bottom bar for the <b>Today</b> view (today’s appointments and the week ahead), the <b>Week</b> view and the <b>Month</b> view. Tap a day on the month to see it. Tap an appointment to edit it, at the top tap <b>Text: I’m on my way</b> to open a ready-written text to the customer (you press send; it only shows when the customer has a mobile number), or <b>Navigate to</b> to open the address in maps, <b>Start the forms for this job</b> (the customer and address are filled in), <b>Mark as done</b>, add it to your phone’s calendar or delete it. It warns you if two appointments clash.</p>
 <p><b>Settings → Calendar:</b> switch the whole calendar <b>On</b> or <b>Off</b> (off removes it from the app and keeps your saved appointments), show or hide it on the home screen, set your usual appointment length, change the wording of the on my way text, add or remove your <b>Other jobs</b> list (bathroom install, radiator install and so on), and export every appointment as an <b>.ics</b> file (Google, Apple or Outlook calendar) or a spreadsheet.</p>
 <p>Appointments sync between every device you are signed in on. If one is missing, open the calendar and tap <b>Sync now</b>.</p>
 <p><b>Today, Week and Month:</b> use the buttons at the top of the calendar. The week view lists each day with an <b>+ Add</b> button. To move an appointment, open it and change the date or time, then <b>Save changes</b>.</p>
