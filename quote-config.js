@@ -33,7 +33,7 @@ const QUO = (() => {
     return {
       kind: '', make: '', makeOther: '', model: '', kw: '', warranty: '',
       boilerPrice: '', boilerCost: '', flueDesc: '', fluePrice: '', flueCost: '', labourDesc: 'Installation labour', labourPrice: '', labourCost: '',
-      lines: [], homeNotes: '', textSize: 'Normal', accepted: ''
+      lines: [], homeNotes: '', textSize: 'Normal', accepted: '', qSent: ''
     };
   }
   const makeText = r => (r.make === 'Other' ? r.makeOther : r.make);
@@ -61,7 +61,7 @@ const QUO = (() => {
 
 
   /* ---------- the price list (downloaded to Excel, edited, imported back) ---------- */
-  const SHEET_HEAD = ['Category', 'Make', 'Item', 'Boiler type', 'kW', 'Warranty', 'Unit', 'My cost (£)', 'Mark-up %', 'Sale price (£)'];
+  const SHEET_HEAD = ['Category', 'Make', 'Item', 'Boiler type', 'kW', 'Warranty', 'Unit', 'My cost (£)', 'Mark-up %', 'Sale price (£)', 'Supplier'];
   /* starter list: boiler ranges, flue kits, labour and extras. Prices are left blank for the engineer to fill in. */
   const BOILERS = [
     ['Worcester Bosch', 'Greenstar 4000', 'Combination', [25, 30]], ['Worcester Bosch', 'Greenstar 2000', 'Combination', [25, 30]], ['Worcester Bosch', 'Greenstar 8000 Life', 'Combination', [30, 35]], ['Worcester Bosch', 'Greenstar 8000 Style', 'Combination', [30, 35, 40]], ['Worcester Bosch', 'Greenstar 4000 System', 'System', [18, 25]], ['Worcester Bosch', 'Greenstar 4000 Regular', 'Heat only', [15, 18]],
@@ -93,15 +93,15 @@ const QUO = (() => {
   function itemsFromRows(rows) {
     if (!rows || rows.length < 2) return [];
     const hdr = rows[0].map(norm), col = (...names) => hdr.findIndex(h => names.includes(h));
-    const c = { type: col('category', 'type'), make: col('make', 'manufacturer', 'brand'), item: col('item', 'model', 'name', 'description'), kind: col('boilertype', 'kind'), kw: col('kw', 'output'), warr: col('warranty'), unit: col('unit'), cost: col('mycost', 'cost', 'costprice'), mk: col('markup', 'markup', 'margin'), price: col('saleprice', 'sale', 'price', 'sellprice') };
+    const c = { type: col('category', 'type'), make: col('make', 'manufacturer', 'brand'), item: col('item', 'model', 'name', 'description'), kind: col('boilertype', 'kind'), kw: col('kw', 'output'), warr: col('warranty'), unit: col('unit'), cost: col('mycost', 'cost', 'costprice'), mk: col('markup', 'markup', 'margin'), price: col('saleprice', 'sale', 'price', 'sellprice'), sup: col('supplier', 'suppliers', 'supplierdetails', 'wheretobuy', 'supplierwheretoorder') };
     if (c.item < 0) return [];
     return rows.slice(1).map(r => {
       const g = i => (i >= 0 && r[i] != null ? String(r[i]).trim() : '');
-      return { id: newId(), type: asType(g(c.type)), make: g(c.make), name: g(c.item), kind: asKind(g(c.kind)), kw: g(c.kw), warranty: g(c.warr), unit: g(c.unit), cost: clean(r[c.cost]), markup: clean(r[c.mk]), price: clean(r[c.price]) };
+      return { id: newId(), type: asType(g(c.type)), make: g(c.make), name: g(c.item), kind: asKind(g(c.kind)), kw: g(c.kw), warranty: g(c.warr), unit: g(c.unit), cost: clean(r[c.cost]), markup: clean(r[c.mk]), price: clean(r[c.price]), supplier: g(c.sup) };
     }).filter(x => x.name);
   }
   const blankNum = v => (v === '' || v == null ? '' : num(v));
-  const rowsFromItems = items => [SHEET_HEAD].concat(items.map(x => [x.type, x.make || '', x.name, x.kind || '', x.kw || '', x.warranty || '', x.unit || '', blankNum(x.cost), blankNum(x.markup), blankNum(x.price)]));
+  const rowsFromItems = items => [SHEET_HEAD].concat(items.map(x => [x.type, x.make || '', x.name, x.kind || '', x.kw || '', x.warranty || '', x.unit || '', blankNum(x.cost), blankNum(x.markup), blankNum(x.price), x.supplier || '']));
   const itemsOf = (s, type) => (s.qList || []).filter(x => x.type === type);
   const label = x => [x.make, x.name].filter(Boolean).join(' ') + (x.kw && x.type === 'Boiler' ? ' · ' + x.kw + ' kW' : '');
   /* sale price of an item: a fixed price if one is typed, otherwise cost + mark-up % (the item's own, else its category's, else the default) */

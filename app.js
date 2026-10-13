@@ -624,9 +624,12 @@ function renderTabs(nav) {
 
 /* invoice reminder shown on completed records: green once the invoice has been sent, otherwise a reminder */
 /* a quote is not invoiced: it is waiting for an answer, accepted or declined, and gets chased after two weeks */
-const qAge = r => Math.max(0, Math.round((Date.parse(todayISO()) - Date.parse(r.inspectionDate || todayISO())) / 864e5));
+/* when a quote was sent (the day you shared or emailed it). Quotes made before this was tracked count as sent on the day they were made. */
+const qSentDay = r => r.qSent === undefined ? (r.inspectionDate || '') : r.qSent ? localISO(new Date(r.qSent)) : '';
+const qAge = r => Math.max(0, Math.round((Date.parse(todayISO()) - Date.parse(qSentDay(r) || r.inspectionDate || todayISO())) / 864e5));
+const markQuoSent = r => { if (r && isQuo(r) && r.status === 'complete') { r.qSent = Date.now(); persistRec(r); } };
 const qWaiting = r => typeOf(r) === 'quote' && r.status === 'complete' && !r.qStatus;
-const qChase = r => qWaiting(r) && qAge(r) >= 14;
+const qChase = r => qWaiting(r) && !!qSentDay(r) && qAge(r) >= 14;
 /* an accepted quote: a button to put the job in the calendar, or the date it is booked for */
 function quoSched(r, cls) {
   if (r.qStatus !== 'accepted' || !calOn()) return '';
@@ -637,6 +640,7 @@ function quoBadge(r) {
   if (r.status !== 'complete') return '';
   if (r.qStatus === 'accepted') return '<span class="badge paid">Accepted</span>';
   if (r.qStatus === 'declined') return '<span class="badge declined">Declined</span>';
+  if (!qSentDay(r)) return '<span class="badge draft">Not sent yet</span>';
   return qChase(r) ? '<span class="badge overdue">Chase up · ' + qAge(r) + ' days</span>' : '<span class="badge unpaid">Awaiting reply</span>';
 }
 function invBadge(r) {
@@ -1506,8 +1510,9 @@ function sendCard(m) {
   const quoteRows = m.filter(x => typeOf(x) === 'quote').map(q => {
     const can = (q.customer || {}).email || (q.customer || {}).phone;
     const tg = (v, label) => `<button type="button" class="item tog grow ${q.qStatus === v ? 'on' : ''}" style="margin:0" data-act="qOutcome" data-id="${q.id}" data-v="${v}"><span class="box"></span><span><span class="t">${label}</span></span></button>`;
-    return `<div style="margin-bottom:10px"><div class="small muted" style="margin-bottom:6px">Quote outcome${q.qStatus ? ' · ' + (q.qStatus === 'accepted' ? 'accepted' : 'declined') + ' ' + ukDate(q.qDate) : ' · sent ' + qAge(q) + ' day' + (qAge(q) === 1 ? '' : 's') + ' ago, no answer yet'}</div>
+    return `<div style="margin-bottom:10px"><div class="small muted" style="margin-bottom:6px">Quote outcome${q.qStatus ? ' · ' + (q.qStatus === 'accepted' ? 'accepted' : 'declined') + ' ' + ukDate(q.qDate) : (qSentDay(q) ? ' · sent ' + ukDate(qSentDay(q)) + ', ' + qAge(q) + ' day' + (qAge(q) === 1 ? '' : 's') + ' ago, no answer yet' : ' · not sent yet')}</div>
       <div class="row" style="gap:8px">${tg('accepted', 'Accepted')}${tg('declined', 'Declined')}</div>
+      ${q.status === 'complete' && !q.qStatus ? `<button type="button" class="btn ghost block" data-act="qSentToggle" data-id="${q.id}" style="margin-top:8px">${qSentDay(q) ? 'Mark as not sent' : 'Mark as sent'}</button>` : ''}
       ${quoSched(q)}
       ${qWaiting(q) && can ? `<div class="row" style="gap:8px;margin-top:8px">${q.customer.email ? `<button type="button" class="btn grow" data-act="qChase" data-id="${q.id}" data-how="email">Chase by email</button>` : ''}${q.customer.phone ? `<button type="button" class="btn grow" data-act="qChase" data-id="${q.id}" data-how="text">Chase by text</button>` : ''}</div>` : ''}</div>`;
   }).join('');
@@ -1707,7 +1712,7 @@ function renderPrices(v) {
   const money = n => n === null ? '' : '£' + (Math.round(n * 100) / 100).toFixed(2).replace(/\.00$/, '');
   const row = x => {
     const sale = QUO.saleOf(x, settings), mk = QUO.markupOf(x, settings), open = ui.pEdit === x.id;
-    const sub = (QUO.num(x.cost) !== null ? 'cost ' + money(QUO.num(x.cost)) + ' + ' + mk + '% = ' : '') + (sale !== null ? '<b>' + money(sale) + '</b>' : 'no price yet') + (x.unit ? ' / ' + esc(x.unit) : '') + (QUO.num(x.price) !== null ? ' (fixed)' : '');
+    const sub = (QUO.num(x.cost) !== null ? 'cost ' + money(QUO.num(x.cost)) + ' + ' + mk + '% = ' : '') + (sale !== null ? '<b>' + money(sale) + '</b>' : 'no price yet') + (x.unit ? ' / ' + esc(x.unit) : '') + (QUO.num(x.price) !== null ? ' (fixed)' : '') + (x.supplier ? ' · ' + esc(String(x.supplier).split('\n')[0].slice(0, 40)) : '');
     const i = (k, l, o = {}) => `<label class="f"><span>${l}</span><input data-pi="${k}" data-id="${x.id}" value="${esc(x[k] || '')}" ${o.mode ? `inputmode="${o.mode}"` : ''} ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} ${o.list ? `list="${o.list}"` : ''}></label>`;
     return `<div class="card" style="margin-bottom:10px"><button type="button" class="item" data-act="pEdit" data-id="${x.id}" style="width:100%;text-align:left"><span><span class="t">${esc(((x.make ? x.make + ' ' : '') + (x.name || 'New item')) + (x.kw && x.type === 'Boiler' ? ' · ' + x.kw + ' kW' : '') + (x.warranty && x.type === 'Boiler' ? ' · ' + x.warranty : ''))}</span><span class="s" style="display:block">${sub}</span></span></button>
     ${open ? `<div style="margin-top:12px">
@@ -1718,6 +1723,7 @@ function renderPrices(v) {
       <div class="row">${i('cost', 'My cost (£)', { mode: 'decimal' })}${i('markup', 'Mark-up %', { mode: 'decimal', ph: mk + ' (' + (QUO.num(x.markup) === null ? 'standard' : 'own') + ')' })}</div>
       ${i('price', 'Fixed sale price (£), optional', { mode: 'decimal', ph: 'Leave empty to use cost + mark-up' })}
       ${x.type === 'Labour' ? '' : i('unit', 'Unit', { ph: 'each, metre, pack…' })}
+      <label class="f"><span>Supplier details</span><textarea data-pi="supplier" data-id="${x.id}" rows="3" placeholder="Where the price came from and where to order it: supplier, phone, website, product code">${esc(x.supplier || '')}</textarea></label>
       <p class="small muted" style="margin:0 0 10px">Sale price before VAT: <b>${sale === null ? 'needs a cost price' : money(sale)}</b>${sale !== null && QUO.num(x.cost) ? ` · profit ${money(sale - QUO.num(x.cost))}` : ''}</p>
       <button type="button" class="btn ghost" data-act="pDel" data-id="${x.id}">Delete this item</button></div>` : ''}</div>`;
   };
@@ -2232,11 +2238,11 @@ function invTabs() {
 function renderQuotes(v) {
   const f = ui.qFilter || 'all';
   const all = records.filter(r => typeOf(r) === 'quote').sort((a, b) => (b.inspectionDate || '').localeCompare(a.inspectionDate || '') || (b.updated || 0) - (a.updated || 0));
-  const waiting = all.filter(qWaiting), chase = all.filter(qChase), toSched = calOn() ? all.filter(r => r.qStatus === 'accepted' && !r.qBooked) : [];
+  const waiting = all.filter(r => qWaiting(r) && qSentDay(r)), chase = all.filter(qChase), toSched = calOn() ? all.filter(r => r.qStatus === 'accepted' && !r.qBooked) : [], unsent = all.filter(r => r.status === 'complete' && !r.qStatus && !qSentDay(r));
   const val = r => { try { return QUO.totals(r, settings).total; } catch (e) { return 0; } };
   const pend = waiting.reduce((a, r) => a + val(r), 0);
   const pass = {
-    all: () => true, waiting: r => qWaiting(r), chase: qChase, accepted: r => r.qStatus === 'accepted', sched: r => r.qStatus === 'accepted' && !r.qBooked, declined: r => r.qStatus === 'declined', draft: r => r.status === 'draft'
+    all: () => true, waiting: r => qWaiting(r) && !!qSentDay(r), chase: qChase, accepted: r => r.qStatus === 'accepted', sched: r => r.qStatus === 'accepted' && !r.qBooked, unsent: r => r.status === 'complete' && !r.qStatus && !qSentDay(r), declined: r => r.qStatus === 'declined', draft: r => r.status === 'draft'
   };
   const shown = all.filter(pass[f] || pass.all);
   const chip = (k, l) => `<button class="chip ${f === k ? 'on' : ''}" data-act="qFilter" data-f="${k}">${l}</button>`;
@@ -2244,16 +2250,16 @@ function renderQuotes(v) {
     <h1>Quotes</h1>
     ${invTabs()}
     <div class="card"><div class="row sp"><div><div class="small muted">Waiting for an answer</div><div style="font-size:24px;font-weight:700;color:var(--gold2)">${money(pend)}</div></div>
-      <div style="text-align:right"><div class="small muted">${waiting.length} awaiting reply</div>${chase.length ? `<div class="small" style="color:var(--bad);font-weight:700">${chase.length} to chase up</div>` : ''}${toSched.length ? `<div class="small" style="color:var(--gold2);font-weight:700">${toSched.length} to schedule</div>` : ''}</div></div></div>
+      <div style="text-align:right"><div class="small muted">${waiting.length} awaiting reply</div>${chase.length ? `<div class="small" style="color:var(--bad);font-weight:700">${chase.length} to chase up</div>` : ''}${unsent.length ? `<div class="small" style="color:var(--gold2);font-weight:700">${unsent.length} not sent yet</div>` : ''}${toSched.length ? `<div class="small" style="color:var(--gold2);font-weight:700">${toSched.length} to schedule</div>` : ''}</div></div></div>
     ${recOn('quote') ? `<button class="btn gold block" data-act="newRec" data-type="quote">+ New boiler quote</button><div style="height:8px"></div>` : ''}
     ${recOn('gquote') ? `<button class="btn gold block" data-act="newRec" data-type="gquote">+ New quote (any job)</button><div style="height:8px"></div>` : ''}
     <div style="height:6px"></div>
-    <div class="chips">${chip('all', 'All')}${chip('waiting', 'Awaiting reply')}${chase.length ? chip('chase', 'Chase up (' + chase.length + ')') : ''}${toSched.length ? chip('sched', 'To schedule (' + toSched.length + ')') : ''}${chip('accepted', 'Accepted')}${chip('declined', 'Declined')}${all.some(r => r.status === 'draft') ? chip('draft', 'Drafts') : ''}</div>
+    <div class="chips">${chip('all', 'All')}${chip('waiting', 'Awaiting reply')}${chase.length ? chip('chase', 'Chase up (' + chase.length + ')') : ''}${unsent.length ? chip('unsent', 'Not sent (' + unsent.length + ')') : ''}${toSched.length ? chip('sched', 'To schedule (' + toSched.length + ')') : ''}${chip('accepted', 'Accepted')}${chip('declined', 'Declined')}${all.some(r => r.status === 'draft') ? chip('draft', 'Drafts') : ''}</div>
     ${shown.length ? shown.map(r => `${r.status === 'draft' ? '<div class="itemw">' : ''}
       <button class="item" data-act="openRec" data-id="${r.id}">
         <div class="row sp"><span class="t">${esc(r.customer.name || 'No customer yet')}</span><span class="badges">${r.status === 'draft' ? '<span class="badge draft">draft</span>' : quoBadge(r)}</span></div>
         <div class="s">${esc(r.general ? (r.title || 'Quote') : 'Boiler quote')} · ${esc(addrFirst(r.jobAddress || '') || 'No address yet')}</div>
-        <div class="row sp"><span class="s">${esc(r.ref)} · ${ukDate(r.inspectionDate)}</span><span class="t">${val(r) ? money(val(r)) : ''}</span></div>
+        <div class="row sp"><span class="s">${esc(r.ref)} · ${ukDate(r.inspectionDate)}${r.status === 'complete' ? (qSentDay(r) ? ' · sent ' + ukDate(qSentDay(r)) : ' · not sent') : ''}</span><span class="t">${val(r) ? money(val(r)) : ''}</span></div>
       </button>${r.status === 'draft' ? `<button class="draftdel" data-act="delDraft" data-id="${r.id}">Delete draft</button></div>` : quoSched(r) ? `<div style="margin:-4px 0 14px">${quoSched(r)}</div>` : ''}`).join('') : `<div class="empty">${all.length ? 'No quotes in this view.' : 'No quotes yet.<br>Tap a button above to make one.'}</div>`}`;
 }
 function renderInvoices(v) {
@@ -2538,7 +2544,7 @@ function initSigs() {
 
 /* ---------- events ---------- */
 /* when the subscription has ended the app is read-only: look, download and export, but no new or changed records */
-const LOCKED_WRITES = new Set(['invDiscMode', 'invPlPick', 'impGo', 'bookSave', 'bookStart', 'bookFromPick', 'custNoRem', 'newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'sameName', 'engSigTog', 'engSigUse', 'invNone', 'invNoneVisit', 'invUndoNone', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod', 'invPickCust', 'invPickProp', 'invPickSug']);
+const LOCKED_WRITES = new Set(['qSentToggle', 'invDiscMode', 'invPlPick', 'impGo', 'bookSave', 'bookStart', 'bookFromPick', 'custNoRem', 'newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'sameName', 'engSigTog', 'engSigUse', 'invNone', 'invNoneVisit', 'invUndoNone', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod', 'invPickCust', 'invPickProp', 'invPickSug']);
 const lockedMsg = () => toast('Your subscription has ended. Subscribe to create or change records.');
 document.addEventListener('click', async e => {
   /* tap the logo / name at the top to go back to the home screen – a form you are part way through is kept as a draft */
@@ -2896,6 +2902,7 @@ document.addEventListener('click', async e => {
       if (toVisit) { try { ui.invPdf = { id: inv.id, blob: await buildInvPdf(inv, settings), name: invFileName(inv) }; } catch (err) { ui.invPdf = null; } } else ui.invPdf = null;
       render(); window.scrollTo(0, y); break;
     }
+    case 'qSentToggle': { const q = records.find(x => x.id === b.dataset.id); if (!q) break; q.qSent = qSentDay(q) ? '' : Date.now(); persistRec(q); const y = window.scrollY; render(); window.scrollTo(0, y); break; }
     case 'qOutcome': { const q = records.find(x => x.id === b.dataset.id); if (!q) break; q.qStatus = q.qStatus === b.dataset.v ? '' : b.dataset.v; q.qDate = q.qStatus ? todayISO() : ''; persistRec(q); const y = window.scrollY; render(); window.scrollTo(0, y); break; }
     case 'qChase': {
       const q = records.find(x => x.id === b.dataset.id); if (!q) break;
@@ -3167,9 +3174,9 @@ async function sharePdf(r) {
   const text = isQuo(r) ? `Hi ${first},\n\nThank you for the chance to quote. Please find attached your quotation for ${addr}. It is valid for 30 days.\n\nIf you would like to go ahead, just reply to this email and I will call you to arrange a date for the ${r.general ? 'work' : 'installation'}.\n\nKind regards,\n${signOff()}`
     : `Hi ${first},\n\nPlease find attached your ${doc} for ${addr}, carried out on ${ukDate(r.inspectionDate)}.${due ? '\n' + due + ' ' + ukDate(r.renewal) + '.' : ''}\n\nKind regards,\n${signOff()}`;
   try {
-    if (canShareFiles({ files: [file] })) { await navigator.share({ files: [file], title: subject, text }); return; }
+    if (canShareFiles({ files: [file] })) { await navigator.share({ files: [file], title: subject, text }); markQuoSent(r); return; }
   } catch (err) { if (err.name === 'AbortError') return; console.warn(err); }
-  downloadPdf(r);
+  downloadPdf(r); markQuoSent(r);
   openMail(`mailto:${mailAddr(r.customer.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text + '\n\n(Attach the downloaded PDF)')}`);
 }
 async function sharePdfAll(sel) {
@@ -3179,9 +3186,9 @@ async function sharePdfAll(sel) {
   const subject = `${m.map(r => SUBJ[typeOf(r)]).join(', ')} – ${addrFirst(r0.jobAddress || '')}`;
   const text = `Hi ${first},\n\nPlease find attached your records for ${addr}, carried out on ${ukDate(r0.inspectionDate)}:\n${m.map(r => `- ${docLine(r)}`).join('\n')}\n\nKind regards,\n${signOff()}`;
   try {
-    if (canShareFiles({ files })) { await navigator.share({ files, title: subject, text }); return; }
+    if (canShareFiles({ files })) { await navigator.share({ files, title: subject, text }); m.forEach(markQuoSent); return; }
   } catch (err) { if (err.name === 'AbortError') return; console.warn(err); }
-  m.forEach(r => downloadPdf(r));
+  m.forEach(r => downloadPdf(r)); m.forEach(markQuoSent);
   openMail(`mailto:${mailAddr(r0.customer.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text + '\n\n(Attach the downloaded PDFs)')}`);
 }
 function downloadPdf(r) {
