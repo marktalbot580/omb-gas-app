@@ -819,7 +819,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v160';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v161';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1100,6 +1100,13 @@ function renderSettings(v) {
     </div>
     </div>
     <div data-stab="app" ${(ui.sTab || 'business') === 'app' ? '' : 'hidden'}>
+    <h2>App version</h2>
+    <div class="card">
+      <p class="small muted" style="margin-top:0">This phone is running <b id="verHere" style="color:var(--txt)">${APP_VERSION}</b> · newest online: <b id="verNew" style="color:var(--txt)">checking…</b></p>
+      <button class="btn block" data-act="forceUpdate">Update app now</button>
+      <p class="small" id="updMsg" style="margin:8px 0 0;font-weight:600"></p>
+      <p class="small muted" style="margin-bottom:0">Clears the saved copy of the app and reloads the newest version. Your records, customers and photos are not touched.</p>
+    </div>
     <h2>Services to show</h2>
     <div class="card">
       ${[['recGas', 'Gas safety record'], ['recService', 'Boiler service record'], ['recLeg', 'Legionella risk assessment'], ['recAc', 'Air conditioning commissioning'], ['recQuote', 'Boiler quote'], ['recGQuote', 'Quote for any job']].map(([k, l]) => `<label class="f"><span>${l}</span><select data-s="${k}"><option value="on" ${settings[k] === 'off' ? '' : 'selected'}>Show</option><option value="off" ${settings[k] === 'off' ? 'selected' : ''}>Hide</option></select></label>`).join('')}
@@ -1124,13 +1131,6 @@ function renderSettings(v) {
     <div class="card">
       <p class="small muted" style="margin-top:0">${SAMPLE.has() ? 'Sample customers and example forms are on this phone, marked “Sample”. Open them to see how the forms and PDFs look.' : 'Adds two made-up customers and an example of every form so you can see how they look.'}</p>
       ${SAMPLE.has() ? '<button class="btn block" data-act="sampleOff">Remove sample data</button>' : '<button class="btn block" data-act="sampleOn">Add sample data</button>'}
-    </div>
-    <h2>App version</h2>
-    <div class="card">
-      <p class="small muted" style="margin-top:0">This phone is running <b id="verHere" style="color:var(--txt)">${APP_VERSION}</b> · newest online: <b id="verNew" style="color:var(--txt)">checking…</b></p>
-      <button class="btn block" data-act="forceUpdate">Update app now</button>
-      <p class="small" id="updMsg" style="margin:8px 0 0;font-weight:600"></p>
-      <p class="small muted" style="margin-bottom:0">Clears the saved copy of the app and reloads the newest version. Your records, customers and photos are not touched.</p>
     </div>
     ${installCard(true)}
     ${CLOUD.on ? accountCard() : ''}
