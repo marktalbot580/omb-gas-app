@@ -243,8 +243,8 @@ async function drawOilPdf(rec, s, lv, kind) {
   }
 
   /* sign-off */
-  const sh = Math.round(32 * Math.max(P, 0.8) * 10) / 10 + 11; ensure(sh + 1);
-  const sw = (CW - g3) / 2, sigH = sh - 17;
+  const sh = Math.round(32 * Math.max(P, 0.8) * 10) / 10 + 15; ensure(sh + 1);
+  const sw = (CW - g3) / 2, sigH = sh - 21;
   const sigBox = (x, title, sigImg, lines, noOne) => {
     bar(title, x, sw, y); doc.setDrawColor(...LINE); doc.rect(x, y + BAR, sw, sh - BAR);
     if (sigImg) doc.addImage(sigImg, 'PNG', x + 3, y + BAR + 1.2, 50, sigH * 0.95, undefined, 'FAST');
