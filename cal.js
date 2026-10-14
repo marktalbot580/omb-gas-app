@@ -8,10 +8,24 @@ const calOn = () => settings.calOn !== 'off';
 /* a UK mobile number (07… or +44 7…): only these get the on my way text */
 const isMobileNo = p => /^(?:\+?44|0)7\d{9}$/.test(String(p || '').replace(/\(0\)/, '').replace(/[^\d+]/g, ''));
 /* the "on my way" text: {name} {time} {address} {business} are filled in (wording editable in Settings → Calendar) */
-const OTW_DEFAULT = 'Hi {name}, just to let you know I am on my way for your {time} appointment at {address}. See you shortly.\n{business}';
+const OTW_DEFAULT = 'Hi {name}, just to let you know I am on my way for your {time} appointment at {address}. {eta}\n{business}';
+/* travel time sentence for the on my way text, from the phone-location drive time remembered for this booking */
+function otwEta(b) {
+  if (settings.calOtwEta === 'off' || settings.gpsDrive === 'off' || typeof driveNow === 'undefined') return '';
+  const d = driveNow[b.id]; if (!d || Date.now() - d.t > 15 * 60000) return '';
+  const mins = Math.max(1, d.mins - Math.round((Date.now() - d.t) / 60000)), a = arriveInfo(b, mins);
+  const w = mins < 60 ? mins + ' minute' + (mins === 1 ? '' : 's') : Math.floor(mins / 60) + ' hour' + (mins >= 120 ? 's' : '') + (mins % 60 ? ' ' + (mins % 60) + ' minutes' : '');
+  return a && a.lateBy > 0 ? 'I will be with you in about ' + w + ', sorry I am running behind schedule.' : 'I will be with you in about ' + w + '.';
+}
 function otwText(b) {
   const first = greetName(b.name), map = { name: first, time: b.time || '', address: String(b.address || '').replace(/\s*\n+\s*/g, ', '), business: settings.businessName || '' };
-  return String(settings.calOtw || OTW_DEFAULT).replace(/\{(\w+)\}/g, (m, k) => (k in map ? map[k] : m)).replace(/\s+at\s*([.,])/g, '$1').replace(/\n{3,}/g, '\n\n').trim();   // no address: drop the dangling "at"
+  const eta = otwEta(b), tpl = String(settings.calOtw || OTW_DEFAULT);
+  if (tpl.includes('{eta}')) map.eta = eta || (settings.calOtw ? '' : 'See you shortly.');
+  else { map.eta = ''; if (eta) { const i = tpl.indexOf('\n'); return otwText0(b, i < 0 ? tpl + ' ' + eta : tpl.slice(0, i) + ' ' + eta + tpl.slice(i), map); } }
+  return otwText0(b, tpl, map);
+}
+function otwText0(b, tpl, map) {
+  return String(tpl).replace(/\{(\w+)\}/g, (m, k) => (k in map ? map[k] : m)).replace(/\s+at\s*([.,])/g, '$1').replace(/ {2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();   // no address: drop the dangling "at"
 }
 /* day-before reminder: tap-to-send text / email for tomorrow's appointments (nothing is sent automatically) */
 const CALREM_DEFAULT = 'Hi {name}, just a reminder that I am booked in to see you tomorrow at {time} for your {job}.\n{business}';

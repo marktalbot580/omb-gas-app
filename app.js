@@ -892,7 +892,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v172';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v174';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1138,7 +1138,8 @@ function renderSettings(v) {
     <h2>On my way text</h2>
     <div class="card">
       <label class="f"><span>Show the “I’m on my way” button on appointments</span><select data-s="calOtwOn"><option value="on" ${settings.calOtwOn === 'off' ? '' : 'selected'}>Yes</option><option value="off" ${settings.calOtwOn === 'off' ? 'selected' : ''}>No</option></select></label>
-      <label class="f"><span>Message wording</span><textarea data-s="calOtw" rows="4">${esc(settings.calOtw || OTW_DEFAULT)}</textarea><small>Opens a text to the customer, ready to send. {name} {time} {address} {business} are filled in for you.</small></label>
+      <label class="f"><span>Add my travel time to the text</span><select data-s="calOtwEta"><option value="on" ${settings.calOtwEta === 'off' ? '' : 'selected'}>Yes</option><option value="off" ${settings.calOtwEta === 'off' ? 'selected' : ''}>No</option></select><small>Adds “I will be with you in about 15 minutes”, or says sorry if you are running behind. Uses your phone’s location for the next job.</small></label>
+      <label class="f"><span>Message wording</span><textarea data-s="calOtw" rows="4">${esc(settings.calOtw || OTW_DEFAULT)}</textarea><small>Opens a text to the customer, ready to send. {name} {time} {address} {business} {eta} are filled in for you.</small></label>
       <button class="btn block ghost" data-act="calOtwReset">Put the original wording back</button>
     </div>
     <h2>Appointment reminders</h2>

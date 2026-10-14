@@ -168,12 +168,26 @@ function showRoute(off) {
   const seg = `<div class="seg" style="margin-bottom:10px"><button type="button" class="${off ? '' : 'on'}" data-act="routeOpen" data-day="0">Today</button><button type="button" class="${off ? 'on' : ''}" data-act="routeOpen" data-day="1">Tomorrow</button></div>`;
   d.innerHTML = `<div class="sheet" role="dialog" aria-label="Route"><div class="grab"></div><h2>Route</h2>${seg}
     ${all.length ? `<p class="muted" style="margin:0 0 10px">${all.length} job${all.length === 1 ? '' : 's'}, in appointment order.${off ? ' Plan tonight and text each customer when you will arrive.' : ''}</p>` : `<p class="muted">Nothing booked ${off ? 'tomorrow' : 'for the rest of today'}.</p>`}
+    ${all.length && hasPostcode(all[0].address) ? '<div id="routeHere" class="small muted" style="margin:-4px 0 10px"></div>' : ''}
     ${all.map((b, k) => `<div class="line" style="flex-wrap:wrap"><b style="width:28px;height:28px;border-radius:50%;background:var(--gold);color:var(--btn-ink,#1a1405);display:flex;align-items:center;justify-content:center;flex:none">${k + 1}</b><span class="main"><b>${esc(b.time)} ${esc(b.name || 'No name')}</b><span>${esc(addrFirst(b.address || '') || 'No address')} · ${esc(bkLabel(b))}</span></span>${String(b.address || '').trim().length >= 4 ? `<a class="btn" href="${esc(mapsUrl(b.address))}" target="_blank" rel="noopener">Go</a>` : ''}${isMobileNo(b.phone) ? `<button type="button" class="btn" data-act="etaText" data-id="${b.id}" data-day="${off}">Text ETA${b.etaAt ? ' (sent)' : ''}</button>` : ''}</div>${k < all.length - 1 ? `<div class="small muted" data-leg="${k}" style="margin:2px 0 2px 40px"></div>` : ''}`).join('')}
     ${list.length >= 2 ? `<button type="button" class="btn block" data-act="routeTimes" data-day="${off}" style="margin-top:10px">Show drive times</button><div id="routeTot" class="small muted" style="margin-top:6px"></div>` : ''}
     ${list.length >= 2 ? `<a class="btn gold block" style="text-align:center;text-decoration:none;margin-top:10px" href="${esc(routeUrl(list))}" target="_blank" rel="noopener">Start route</a>` : ''}
     <button type="button" class="btn block" data-act="routeClose" style="margin-top:8px">Close</button></div>`;
   document.body.appendChild(d);
   if (list.length >= 2) routeTimes(off, null);
+  routeHere(all[0]);
+}
+/* the drive from where you are now (phone location) to the first job of the list, shown under the job count */
+async function routeHere(b) {
+  const el = document.getElementById('routeHere'); if (!el || !b || !hasPostcode(b.address) || !CLOUD.signedIn()) return;
+  const me = await whereAmI(); if (!me) return;
+  const toPc = pcOf(b.address), k = [me.lat.toFixed(3), me.lng.toFixed(3), toPc, Math.floor(Date.now() / 600000)].join('_');
+  let hit = driveMem[k];
+  if (!hit) { el.textContent = 'Working out the drive to the first job...'; try { const r = await CLOUD.post('route-times', { from: me, stops: [toPc + ', UK'] }); hit = r && r.legs && r.legs[0]; if (hit) driveMem[k] = hit; } catch (e) { hit = null; } }
+  const e2 = document.getElementById('routeHere'); if (!e2) return;
+  if (!hit) { e2.textContent = ''; return; }
+  driveNow[b.id] = { mins: hit.mins, t: Date.now() };
+  paintDrive(e2, b, hit, 'From here to the first job: about ' + hit.mins + ' min (' + hit.miles + ' miles)');
 }
 document.addEventListener('click', e => {
   const bg = document.getElementById('routeSheet');
@@ -237,10 +251,24 @@ function whereAmI() {
   });
 }
 const driveMem = {};
+/* drive times measured from the phone's location, remembered per booking so the On my way text and the colours can use them */
+const driveNow = {};
+function arriveInfo(b, mins) {
+  if (!b || b.date !== localISO() || !/^\d\d:\d\d$/.test(b.time || '')) return null;
+  const [h, m] = b.time.split(':').map(Number), now = new Date(), appt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+  const lateBy = Math.round((now.getTime() + mins * 60000 - appt.getTime()) / 60000);
+  return { lateBy, cls: lateBy <= 0 ? 'green' : lateBy <= 15 ? 'amber' : 'red', color: lateBy <= 0 ? '#2ea043' : lateBy <= 15 ? '#d9a200' : '#e5484d' };
+}
+function paintDrive(el, b, hit, text) {
+  el.textContent = text; el.style.color = ''; el.style.fontWeight = '';
+  const a = arriveInfo(b, hit.mins); if (!a) return;
+  el.style.color = a.color; el.style.fontWeight = '600'; el.dataset.arrive = a.cls;
+  el.textContent = text + (a.lateBy > 0 ? ' \u00b7 about ' + a.lateBy + ' min late' : '');
+}
 async function nextDrive() {
   const el = document.getElementById('nextDrive'); if (!el) return;
   const td = nextBookings(), nx = todayNext(td); if (!nx || !hasPostcode(nx.address)) return;
-  const toPc = pcOf(nx.address), show = (hit, who) => { const e2 = document.getElementById('nextDrive'); if (e2 && hit) e2.textContent = 'About ' + hit.mins + ' min drive (' + hit.miles + ' miles) from ' + who; };
+  const toPc = pcOf(nx.address), show = (hit, who) => { const e2 = document.getElementById('nextDrive'); if (!e2 || !hit) return; const txt = 'About ' + hit.mins + ' min drive (' + hit.miles + ' miles) from ' + who; if (who === 'here') { driveNow[nx.id] = { mins: hit.mins, t: Date.now() }; paintDrive(e2, nx, hit, txt); } else e2.textContent = txt; };
   const me = CLOUD.signedIn() ? await whereAmI() : null;
   if (me) {
     const k = [me.lat.toFixed(3), me.lng.toFixed(3), toPc, Math.floor(Date.now() / 600000)].join('_');
