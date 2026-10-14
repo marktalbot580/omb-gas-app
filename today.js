@@ -167,7 +167,8 @@ function showRoute(off) {
   const seg = `<div class="seg" style="margin-bottom:10px"><button type="button" class="${off ? '' : 'on'}" data-act="routeOpen" data-day="0">Today</button><button type="button" class="${off ? 'on' : ''}" data-act="routeOpen" data-day="1">Tomorrow</button></div>`;
   d.innerHTML = `<div class="sheet" role="dialog" aria-label="Route"><div class="grab"></div><h2>Route</h2>${seg}
     ${all.length ? `<p class="muted" style="margin:0 0 10px">${all.length} job${all.length === 1 ? '' : 's'}, in appointment order.${off ? ' Plan tonight and text each customer when you will arrive.' : ''}</p>` : `<p class="muted">Nothing booked ${off ? 'tomorrow' : 'for the rest of today'}.</p>`}
-    ${all.map((b, k) => `<div class="line" style="flex-wrap:wrap"><b style="width:28px;height:28px;border-radius:50%;background:var(--gold);color:var(--btn-ink,#1a1405);display:flex;align-items:center;justify-content:center;flex:none">${k + 1}</b><span class="main"><b>${esc(b.time)} ${esc(b.name || 'No name')}</b><span>${esc(addrFirst(b.address || '') || 'No address')} · ${esc(bkLabel(b))}</span></span>${String(b.address || '').trim().length >= 4 ? `<a class="btn" href="${esc(mapsUrl(b.address))}" target="_blank" rel="noopener">Go</a>` : ''}${isMobileNo(b.phone) ? `<button type="button" class="btn" data-act="etaText" data-id="${b.id}" data-day="${off}">Text ETA${b.etaAt ? ' (sent)' : ''}</button>` : ''}</div>`).join('')}
+    ${all.map((b, k) => `<div class="line" style="flex-wrap:wrap"><b style="width:28px;height:28px;border-radius:50%;background:var(--gold);color:var(--btn-ink,#1a1405);display:flex;align-items:center;justify-content:center;flex:none">${k + 1}</b><span class="main"><b>${esc(b.time)} ${esc(b.name || 'No name')}</b><span>${esc(addrFirst(b.address || '') || 'No address')} · ${esc(bkLabel(b))}</span></span>${String(b.address || '').trim().length >= 4 ? `<a class="btn" href="${esc(mapsUrl(b.address))}" target="_blank" rel="noopener">Go</a>` : ''}${isMobileNo(b.phone) ? `<button type="button" class="btn" data-act="etaText" data-id="${b.id}" data-day="${off}">Text ETA${b.etaAt ? ' (sent)' : ''}</button>` : ''}</div>${k < all.length - 1 ? `<div class="small muted" data-leg="${k}" style="margin:2px 0 2px 40px"></div>` : ''}`).join('')}
+    ${list.length >= 2 ? `<button type="button" class="btn block" data-act="routeTimes" data-day="${off}" style="margin-top:10px">Show drive times</button><div id="routeTot" class="small muted" style="margin-top:6px"></div>` : ''}
     ${list.length >= 2 ? `<a class="btn gold block" style="text-align:center;text-decoration:none;margin-top:10px" href="${esc(routeUrl(list))}" target="_blank" rel="noopener">Start route</a>` : ''}
     <button type="button" class="btn block" data-act="routeClose" style="margin-top:8px">Close</button></div>`;
   document.body.appendChild(d);
@@ -186,4 +187,28 @@ document.addEventListener('click', e => {
     b.textContent = 'Text ETA (sent)';
   }
   else if (b.dataset.act === 'routeClose' && bg) bg.remove();
+  else if (b.dataset.act === 'routeTimes') routeTimes(+b.dataset.day, b);
 }, true);
+
+/* drive times between the stops (Google, through our server so the key stays secret). Asked for only when you tap, in the same order as the list. */
+async function routeTimes(off, btn) {
+  const all = routeDay(off), withAddr = all.filter(b => String(b.address || '').trim().length >= 4);
+  if (withAddr.length < 2) return;
+  if (!CLOUD.signedIn()) { toast('Sign in to see drive times'); return; }
+  btn.disabled = true; const t0 = btn.textContent; btn.textContent = 'Working it out...';
+  try {
+    const r = await CLOUD.post('route-times', { stops: withAddr.map(b => b.address.replace(/\s*\n\s*/g, ', ')) });
+    const legs = (r && r.legs) || [];
+    if (!legs.length) throw new Error('No route found');
+    let li = 0, mins = 0, miles = 0;
+    all.forEach((b, k) => {
+      const el = document.querySelector(`#routeSheet [data-leg="${k}"]`); if (!el) return;
+      const nxt = all[k + 1];
+      if (!withAddr.includes(b) || !nxt || !withAddr.includes(nxt)) { el.textContent = ''; return; }
+      const l = legs[li++]; if (!l) return; mins += l.mins; miles += l.miles;
+      el.textContent = '\u2193 about ' + l.mins + ' min \u00b7 ' + l.miles + ' miles';
+    });
+    const tot = document.getElementById('routeTot'); if (tot) tot.textContent = 'Driving about ' + mins + ' min, ' + Math.round(miles * 10) / 10 + ' miles in total. Estimates without live traffic.';
+    btn.remove();
+  } catch (e) { btn.disabled = false; btn.textContent = t0; toast(e.status === 429 ? String(e.message) : 'Could not get drive times just now'); }
+}
