@@ -2496,6 +2496,7 @@ function renderInvoices(v) {
     ${invTabs()}
     <div class="card"><div class="row sp"><div><div class="small muted">Outstanding</div><div style="font-size:24px;font-weight:700;color:var(--gold2)">${money(owed)}</div></div>
       <div style="text-align:right"><div class="small muted">${open.length} unpaid</div>${late.length ? `<div class="small" style="color:var(--bad);font-weight:700">${late.length} overdue</div>` : ''}</div></div></div>
+    ${late.length ? `<div class="card" style="border-color:var(--bad)"><div class="row sp"><b>${money(late.reduce((a, i) => a + invTotals(i).total, 0))} overdue</b><span class="small muted">${late.length} invoice${late.length === 1 ? '' : 's'}</span></div><button type="button" class="btn gold block" style="margin-top:10px" data-act="chaseAll">Chase ${late.length === 1 ? 'it' : 'them'}</button><p class="small muted" style="margin:8px 0 0">You choose Text, WhatsApp or Email. Nothing is sent until you tap send.</p></div>` : ''}
     <button class="btn gold block" data-act="newInvBlank">+ New invoice</button>
     <div style="height:8px"></div>
     <button class="btn block" data-act="prtOpen">Print for accountant (VAT quarter / bulk)</button>
@@ -2505,8 +2506,8 @@ function renderInvoices(v) {
     <div class="chips">${chip('all', 'All')}${chip('unpaid', 'Unpaid')}${late.length ? chip('overdue', 'Overdue (' + late.length + ')') : ''}${chip('paid', 'Paid')}</div>
     ${shown.length ? shown.map(i => `
       <button class="item" data-act="openInv" data-id="${i.id}">
-        <div class="row sp"><span class="t">${esc(i.customer.name || 'No customer')}</span><span class="badge ${invStatus(i)}">${invStatus(i)}</span></div>
-        <div class="s">${esc(addrFirst(i.jobAddress || '') || 'No address')}</div>
+        <div class="row sp"><span class="t">${esc(i.customer.name || 'No customer')}</span><span class="badge ${invStatus(i)}">${invStatus(i) === 'overdue' && typeof daysLate === 'function' ? daysLate(i) + (daysLate(i) === 1 ? ' day late' : ' days late') : invStatus(i)}</span></div>
+        <div class="s">${esc(addrFirst(i.jobAddress || '') || 'No address')}${i.chases ? ' · chased ' + i.chases + '×' : ''}</div>
         <div class="row sp"><span class="s">${esc(i.number)} · ${ukDate(i.date)}${i.paid ? '' : ' · due ' + ukDate(i.due)}</span><span class="t">${money(invTotals(i).total)}</span></div>
       </button>`).join('') : `<div class="empty">${invoices.length ? 'No invoices in this view.' : 'No invoices yet.<br>Finish a visit and tap “Create invoice” on the last screen, or start one here.'}</div>`}`;
 }

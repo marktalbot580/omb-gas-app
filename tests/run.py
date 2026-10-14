@@ -713,6 +713,23 @@ def run():
         check('no page errors with the register', not errs, errs)
         ctx.close()
 
+        # ---------- 12z. chase overdue invoices ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "(()=>{const T=localISO();invoices.push({id:'ci1',number:'INV-1',date:addDays(T,-30),due:addDays(T,-9),paid:false,sent:true,customer:{name:'Courtney Cole',email:'c@x.com',phone:'07700900111'},lines:[{d:'x',q:'1',p:'240'}],vatRate:'0',disc:''});saveInvoices();ui.view='invoices';ui.invTab='inv';ui.invFilter='all';render();})()")
+        txt = ev(pg, "document.querySelector('#view').innerText")
+        check('invoices list shows overdue total, days late and a chase button', '£240' in txt and '9 days late' in txt and ev(pg, "!!document.querySelector('[data-act=chaseAll]')"), txt[:200])
+        pg.click('[data-act=chaseAll]')
+        check('chase sheet offers Text, WhatsApp, Email and Mark as paid', all(ev(pg, f"!!document.querySelector('#chaseSheet [data-how={h}]')") for h in ['sms', 'wa', 'mail', 'paid']))
+        ev(pg, "document.addEventListener('click',e=>{const a=e.target.closest('a[href^=\"sms:\"]');if(a){window.__sms=a.getAttribute('href');e.preventDefault();}},true)")
+        pg.click('#chaseSheet [data-how=sms]')
+        got = ev(pg, "({n:invoices[0].chases,r:invoices[0].remindedAt,s:window.__sms||''})")
+        check('Text chase records the chase and opens a message', got['n'] == 1 and got['r'] and got['s'].startswith('sms:07700900111'), got)
+        check('chased invoice shows chased count', 'chased 1' in ev(pg, "document.querySelector('#view').innerText"))
+        ev(pg, "showChase('ci1')"); pg.click('#chaseSheet [data-how=paid]')
+        check('Mark as paid from the chase sheet', ev(pg, "invoices[0].paid===true"))
+        check('no page errors with chasing', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()
