@@ -193,28 +193,30 @@ document.addEventListener('click', e => {
 
 /* drive times between the stops (Google, through our server so the key stays secret). Asked for only when you tap, in the same order as the list. */
 const routeCache = {};   // remembered for this visit, so reopening the sheet does not ask Google again
+const hasPostcode = a => /\b[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}\b/i.test(String(a || ''));
 async function routeTimes(off, btn) {
-  const all = routeDay(off), withAddr = all.filter(b => String(b.address || '').trim().length >= 4);
-  if (withAddr.length < 2) return;
+  const all = routeDay(off), usable = all.filter(b => hasPostcode(b.address)), lacking = all.filter(b => String(b.address || '').trim().length >= 4 && !hasPostcode(b.address));
+  const note = lacking.length ? ' Add a postcode to ' + lacking.map(b => b.name || addrFirst(b.address)).join(', ') + ' for an accurate time.' : '';
+  const tot = document.getElementById('routeTot');
+  if (usable.length < 2) { if (tot && lacking.length) tot.textContent = note.trim(); return; }
   if (!CLOUD.signedIn()) { if (btn) toast('Sign in to see drive times'); return; }
-  const stops = withAddr.map(b => b.address.replace(/\s*\n\s*/g, ', ')), ck = stops.join('|');
+  const stops = usable.map(b => b.address.replace(/\s*\n\s*/g, ', ')), ck = stops.join('|');
   const t0 = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Working it out...'; }
-  const tot = document.getElementById('routeTot'); if (tot && !btn) tot.textContent = 'Working out drive times...';
+  if (tot && !btn) tot.textContent = 'Working out drive times...';
   try {
     const legs = routeCache[ck] || ((await CLOUD.post('route-times', { stops })) || {}).legs || [];
     if (!legs.length) throw new Error('No route found');
     routeCache[ck] = legs;
-    let li = 0, mins = 0, miles = 0;
-    all.forEach((b, k) => {
-      const el = document.querySelector(`#routeSheet [data-leg="${k}"]`); if (!el) return;
-      const nxt = all[k + 1];
-      if (!withAddr.includes(b) || !nxt || !withAddr.includes(nxt)) { el.textContent = ''; return; }
-      const l = legs[li++]; if (!l) return; mins += l.mins; miles += l.miles;
-      el.textContent = '\u2193 about ' + l.mins + ' min \u00b7 ' + l.miles + ' miles';
+    let mins = 0, miles = 0;
+    usable.forEach((b, i) => {
+      const l = legs[i]; if (!l || i === usable.length - 1) return;
+      const el = document.querySelector(`#routeSheet [data-leg="${all.indexOf(b)}"]`); if (!el) return;
+      mins += l.mins; miles += l.miles;
+      el.textContent = '\u2193 about ' + l.mins + ' min \u00b7 ' + l.miles + ' miles' + (all[all.indexOf(b) + 1] === usable[i + 1] ? '' : ' to the next stop with a postcode');
     });
-    const t2 = document.getElementById('routeTot'); if (t2) t2.textContent = 'Driving about ' + mins + ' min, ' + Math.round(miles * 10) / 10 + ' miles in total. Estimates without live traffic.';
-    if (btn) btn.remove(); else { const b2 = document.querySelector('#routeSheet [data-act=routeTimes]'); if (b2) b2.remove(); }
+    const t2 = document.getElementById('routeTot'); if (t2) t2.textContent = 'Driving about ' + mins + ' min, ' + Math.round(miles * 10) / 10 + ' miles in total. Estimates without live traffic.' + note;
+    const b2 = btn || document.querySelector('#routeSheet [data-act=routeTimes]'); if (b2) b2.remove();
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = t0; toast(e.status === 429 ? String(e.message) : 'Could not get drive times just now'); }
     else { const t2 = document.getElementById('routeTot'); if (t2) t2.textContent = e.status === 429 ? String(e.message) : 'Drive times are not available just now.'; }
