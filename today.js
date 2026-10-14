@@ -198,9 +198,9 @@ const pcOf = a => { const m = String(a || '').match(/\b([A-Z]{1,2}\d[A-Z\d]?)\s*
 const hasPostcode = a => /\b[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}\b/i.test(String(a || ''));
 async function routeTimes(off, btn) {
   const all = routeDay(off), usable = all.filter(b => hasPostcode(b.address)), lacking = all.filter(b => String(b.address || '').trim().length >= 4 && !hasPostcode(b.address));
-  const note = lacking.length ? ' Add a postcode to ' + lacking.map(b => b.name || addrFirst(b.address)).join(', ') + ' for an accurate time.' : '';
+  const note = lacking.length ? ' Tap to add a postcode for accurate times: ' + lacking.map(b => `<button type="button" class="btn" style="min-height:36px;padding:0 10px" data-act="routeFixPc" data-id="${b.id}">${esc(b.name || addrFirst(b.address))}</button>`).join(' ') : '';
   const tot = document.getElementById('routeTot');
-  if (usable.length < 2) { if (tot && lacking.length) tot.textContent = note.trim(); return; }
+  if (usable.length < 2) { if (tot && lacking.length) tot.innerHTML = note.trim(); return; }
   if (!CLOUD.signedIn()) { if (btn) toast('Sign in to see drive times'); return; }
   const stops = usable.map(b => pcOf(b.address) + ', UK'), ck = stops.join('|');
   const t0 = btn ? btn.textContent : '';
@@ -217,7 +217,7 @@ async function routeTimes(off, btn) {
       mins += l.mins; miles += l.miles;
       el.textContent = '\u2193 about ' + l.mins + ' min \u00b7 ' + l.miles + ' miles' + (all[all.indexOf(b) + 1] === usable[i + 1] ? '' : ' to the next stop with a postcode');
     });
-    const t2 = document.getElementById('routeTot'); if (t2) t2.textContent = 'Driving about ' + mins + ' min, ' + Math.round(miles * 10) / 10 + ' miles in total. Estimates without live traffic.' + note;
+    const t2 = document.getElementById('routeTot'); if (t2) t2.innerHTML = 'Driving about ' + mins + ' min, ' + Math.round(miles * 10) / 10 + ' miles in total. Estimates without live traffic.' + note;
     const b2 = btn || document.querySelector('#routeSheet [data-act=routeTimes]'); if (b2) b2.remove();
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = t0; toast(e.status === 429 ? String(e.message) : 'Could not get drive times just now'); }
@@ -259,3 +259,13 @@ async function nextDrive() {
   }
   show(hit, who);
 }
+
+/* tap a name in the "add a postcode" note: opens that job with the cursor in its postcode box */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act="routeFixPc"]'); if (!b) return;
+  const x = bookings.find(z => z.id === b.dataset.id); if (!x) return;
+  e.stopImmediatePropagation();
+  const rs = document.getElementById('routeSheet'); if (rs) rs.remove();
+  ui.book = { ...x, types: [...(x.types || [])], addrNew: true }; ui.bookFrom = 'home'; ui.view = 'book'; render(); window.scrollTo(0, 0);   // addrNew shows the address box even when it came from a saved property
+  setTimeout(() => { const a = document.querySelector('#view textarea[data-bk="address"]'); if (a) { a.scrollIntoView({ block: 'center' }); a.focus(); a.setSelectionRange(a.value.length, a.value.length); } }, 60);
+}, true);
