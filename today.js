@@ -168,27 +168,43 @@ function showRoute(off) {
   const seg = `<div class="seg" style="margin-bottom:10px"><button type="button" class="${off ? '' : 'on'}" data-act="routeOpen" data-day="0">Today</button><button type="button" class="${off ? 'on' : ''}" data-act="routeOpen" data-day="1">Tomorrow</button></div>`;
   d.innerHTML = `<div class="sheet" role="dialog" aria-label="Route"><div class="grab"></div><h2>Route</h2>${seg}
     ${all.length ? `<p class="muted" style="margin:0 0 10px">${all.length} job${all.length === 1 ? '' : 's'}, in appointment order.${off ? ' Plan tonight and text each customer when you will arrive.' : ''}</p>` : `<p class="muted">Nothing booked ${off ? 'tomorrow' : 'for the rest of today'}.</p>`}
-    ${!off && all.length && hasPostcode(all[0].address) ? '<div id="routeHere" class="small muted" style="margin:-4px 0 10px"></div>' : ''}
+    ${all.length && hasPostcode(all[0].address) ? '<div id="routeHere" class="small muted" style="margin:-4px 0 10px"></div>' : ''}
     ${all.map((b, k) => `<div class="line" style="flex-wrap:wrap"><b style="width:28px;height:28px;border-radius:50%;background:var(--gold);color:var(--btn-ink,#1a1405);display:flex;align-items:center;justify-content:center;flex:none">${k + 1}</b><span class="main"><b>${esc(b.time)} ${esc(b.name || 'No name')}</b><span>${esc(addrFirst(b.address || '') || 'No address')} · ${esc(bkLabel(b))}</span></span>${String(b.address || '').trim().length >= 4 ? `<a class="btn" href="${esc(mapsUrl(b.address))}" target="_blank" rel="noopener">Go</a>` : ''}${isMobileNo(b.phone) ? `<button type="button" class="btn" data-act="etaText" data-id="${b.id}" data-day="${off}">Text ETA${b.etaAt ? ' (sent)' : ''}</button>` : ''}</div>${k < all.length - 1 ? `<div class="small muted" data-leg="${k}" style="margin:2px 0 2px 40px"></div>` : ''}`).join('')}
     ${list.length >= 2 ? `<button type="button" class="btn block" data-act="routeTimes" data-day="${off}" style="margin-top:10px">Show drive times</button><div id="routeTot" class="small muted" style="margin-top:6px"></div>` : ''}
     ${list.length >= 2 ? `<a class="btn gold block" style="text-align:center;text-decoration:none;margin-top:10px" href="${esc(routeUrl(list))}" target="_blank" rel="noopener">Start route</a>` : ''}
     <button type="button" class="btn block" data-act="routeClose" style="margin-top:8px">Close</button></div>`;
   document.body.appendChild(d);
   if (list.length >= 2) routeTimes(off, null);
-  if (!off) routeHere(all[0]);
+  routeHere(all[0], off);
 }
-/* the drive from where you are now (phone location) to the first job of the list, shown under the job count */
-async function routeHere(b) {
+/* the drive to the first job: from your phone's location today, or from the postcode of your address in Settings (your base or home) when planning tomorrow or when the phone location is not available */
+async function routeHere(b, off) {
   const el = document.getElementById('routeHere'); if (!el || !b || !hasPostcode(b.address) || !CLOUD.signedIn()) return;
-  const me = await whereAmI(); if (!me) return;
-  const toPc = pcOf(b.address), k = [me.lat.toFixed(3), me.lng.toFixed(3), toPc, Math.floor(Date.now() / 600000)].join('_');
-  let hit = driveMem[k];
-  if (!hit) { el.textContent = 'Working out the drive to the first job...'; try { const r = await CLOUD.post('route-times', { from: me, stops: [toPc + ', UK'] }); hit = r && r.legs && r.legs[0]; if (hit) driveMem[k] = hit; } catch (e) { hit = null; } }
+  const toPc = pcOf(b.address), me = off ? null : await whereAmI();
+  let hit, label;
+  if (me) {
+    label = 'From here to the first job';
+    const k = [me.lat.toFixed(3), me.lng.toFixed(3), toPc, Math.floor(Date.now() / 600000)].join('_');
+    hit = driveMem[k];
+    if (!hit) { el.textContent = 'Working out the drive to the first job...'; try { const r = await CLOUD.post('route-times', { from: me, stops: [toPc + ', UK'] }); hit = r && r.legs && r.legs[0]; if (hit) driveMem[k] = hit; } catch (e) { hit = null; } }
+  } else {
+    const basePc = pcOf(settings.address); label = 'From your base (' + basePc + ') to the first job';
+    if (!basePc) { el.textContent = 'Add a postcode to your address in Settings to see the drive to the first job.'; return; }
+    if (basePc === toPc) { el.textContent = 'The first job is at the same postcode as your base.'; return; }
+    const k = 'omb_drv_base_' + basePc + '_' + toPc;
+    hit = routeCache[k] || LS.get(k, null);
+    if (!hit) { el.textContent = 'Working out the drive to the first job...'; try { const r = await CLOUD.post('route-times', { stops: [basePc + ', UK', toPc + ', UK'] }); hit = r && r.legs && r.legs[0]; if (hit) { routeCache[k] = hit; LS.set(k, hit); } } catch (e) { hit = null; } }
+  }
   const e2 = document.getElementById('routeHere'); if (!e2) return;
   if (!hit) { e2.textContent = ''; return; }
-  driveNow[b.id] = { mins: hit.mins, t: Date.now() };
   routeAgg.here = hit; paintTot();
-  paintDrive(e2, b, hit, 'From here to the first job: about ' + mn(hit.mins) + ' (' + hit.miles + ' miles)');
+  const txt = label + ': about ' + mn(hit.mins) + ' (' + hit.miles + ' miles)';
+  if (me) { driveNow[b.id] = { mins: hit.mins, t: Date.now() }; paintDrive(e2, b, hit, txt); return; }
+  e2.textContent = txt;
+  if (off && /^\d\d:\d\d$/.test(b.time || '')) {   // tomorrow: when to leave to arrive on time
+    const [h, m] = b.time.split(':').map(Number), at = h * 60 + m - hit.mins, hh = Math.floor((((at % 1440) + 1440) % 1440) / 60), mm = ((at % 60) + 60) % 60;
+    e2.textContent = txt + '. Leave by ' + String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0') + ' to be there for ' + b.time + '.';
+  }
 }
 document.addEventListener('click', e => {
   const bg = document.getElementById('routeSheet');

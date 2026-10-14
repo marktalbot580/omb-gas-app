@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v181', items: ['Tomorrow\u2019s route now starts from the postcode of your address in Settings. It shows the drive from there to the first job, says when to leave to be there on time, and includes that drive in the total. Today, if your phone\u2019s location is not available, it does the same from your Settings address.'] },
   { v: 'v180', items: ['If an accepted quote is booked in the calendar and you then mark it Declined, the app asks whether to remove it from the calendar too.'] },
   { v: 'v179', items: ['Fixed: if you delete the appointment you booked from an accepted quote, the quote no longer says it is booked in. It goes back to Book the job.'] },
   { v: 'v178', items: ['Tomorrow\u2019s route no longer shows a drive from where you are now, since you plan it from tonight. That line and the extra minutes in the total are for today only.'] },

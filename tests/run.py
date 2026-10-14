@@ -816,7 +816,10 @@ def run():
         ev(pg, "settings.gpsDrive='off';saveSettings();hereMem.t=0;CLOUD.post=async()=>({legs:[{mins:18,miles:15.2}]});localStorage.clear&&Object.keys(localStorage).filter(k=>k.startsWith('omb_drv_')).forEach(k=>localStorage.removeItem(k));ui.view='home';render();")
         pg.wait_for_timeout(500)
         check('next job shows the drive time to it', 'About 18 mins drive' in ev(pg, "document.querySelector('#view').innerText"), ev(pg, "JSON.stringify({el:!!document.querySelector('#nextDrive'),t:(document.querySelector('#nextDrive')||{}).innerText,nx:(typeof todayNext==='function'&&todayNext(nextBookings())||{}).address,s:settings.address})"))
-        check('route works out drive times by itself when opened', 'about 12 min' in rt and 'about 26 min' in rt and 'about 38 min' in rt, rt)
+        check('route works out drive times by itself when opened', 'about 12 min' in rt and 'about 26 min' in rt and 'about 50 min' in rt and 'From your base' in rt, rt)
+        ev(pg, "settings.address='1 Test Road\\nLincoln\\nLN1 2BN';saveSettings();document.querySelector('#routeSheet')&&document.querySelector('#routeSheet').remove();showRoute(1)"); pg.wait_for_timeout(600)
+        tm = ev(pg, "(document.getElementById('routeHere')||{}).innerText")
+        check('tomorrow route starts from the Settings postcode and says when to leave', tm and 'From your base (LN1 2BN)' in tm and 'Leave by 08:42 to be there for 09:00' in tm, tm)
         check('no page errors with the route', not errs, errs)
         ctx.close()
 
