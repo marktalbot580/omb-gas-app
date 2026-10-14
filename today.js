@@ -195,8 +195,8 @@ async function routeHere(b, off) {
     if (!basePc) { el.textContent = 'Add a start postcode in Settings, under Calendar, to see the drive to the first job.'; return; }
     if (basePc === toPc) { el.textContent = 'The first job is at the same postcode as your base.'; return; }
     const k = 'omb_drv_base_' + basePc + '_' + toPc;
-    hit = routeCache[k] || LS.get(k, null);
-    if (!hit) { el.textContent = 'Working out the drive to the first job...'; try { const r = await CLOUD.post('route-times', { stops: [basePc + ', UK', toPc + ', UK'] }); hit = r && r.legs && r.legs[0]; if (hit) { routeCache[k] = hit; LS.set(k, hit); } } catch (e) { hit = null; } }
+    hit = routeCache[k] || pairGet(basePc, toPc);
+    if (!hit) { el.textContent = 'Working out the drive to the first job...'; try { const r = await CLOUD.post('route-times', { stops: [basePc + ', UK', toPc + ', UK'] }); hit = r && r.legs && r.legs[0]; if (hit) { routeCache[k] = hit; pairSet(basePc, toPc, hit); } } catch (e) { hit = null; } }
   }
   const e2 = document.getElementById('routeHere'); if (!e2) return;
   if (!hit) { e2.textContent = ''; return; }
@@ -239,6 +239,14 @@ document.addEventListener('click', e => {
 
 /* drive times between the stops (Google, through our server so the key stays secret). Asked for only when you tap, in the same order as the list. */
 const routeCache = {};
+/* drive times between two postcodes are remembered on the phone for 45 days (estimates without live traffic hardly change), so a regular pair of customers never costs a second lookup */
+const pairMem = (() => { try { return LS.get('omb_pairs', {}) || {}; } catch (e) { return {}; } })();
+const pairGet = (a, b2) => { const h = pairMem[a + '>' + b2]; return h && Date.now() - h.t < 45 * 864e5 ? { mins: h.mins, miles: h.miles } : null; };
+function pairSet(a, b2, hit) {
+  if (!hit || a === b2) return; pairMem[a + '>' + b2] = { mins: hit.mins, miles: hit.miles, t: Date.now() };
+  const ks = Object.keys(pairMem); if (ks.length > 400) ks.sort((x, y) => pairMem[x].t - pairMem[y].t).slice(0, ks.length - 300).forEach(k => delete pairMem[k]);
+  try { LS.set('omb_pairs', pairMem); } catch (e) { }
+}
 const routeAgg = { ok: false, mins: 0, miles: 0, note: '', here: null };   // the legs between stops, plus the drive from where you are to the first job
 function paintTot() {
   const t2 = document.getElementById('routeTot'); if (!t2 || !routeAgg.ok) return;
@@ -261,9 +269,10 @@ async function routeTimes(off, btn) {
   if (btn) { btn.disabled = true; btn.textContent = 'Working it out...'; }
   if (tot && !btn) tot.textContent = 'Working out drive times...';
   try {
-    const legs = routeCache[ck] || ((await CLOUD.post('route-times', { stops })) || {}).legs || [];
+    const pcs = usable.map(b => pcOf(b.address)), cached = pcs.slice(0, -1).map((p, i) => (p === pcs[i + 1] ? { mins: 0, miles: 0 } : pairGet(p, pcs[i + 1])));
+    const legs = routeCache[ck] || (cached.every(Boolean) ? cached : ((await CLOUD.post('route-times', { stops })) || {}).legs || []);
     if (!legs.length) throw new Error('No route found');
-    routeCache[ck] = legs;
+    routeCache[ck] = legs; legs.forEach((l, i) => { if (pcs[i + 1]) pairSet(pcs[i], pcs[i + 1], l); });
     let mins = 0, miles = 0;
     usable.forEach((b, i) => {
       const l = legs[i]; if (!l || i === usable.length - 1) return;
@@ -323,10 +332,10 @@ async function nextDrive() {
   const fromPc = prev ? pcOf(prev.address) : routeBasePc(); if (!fromPc) return;
   if (fromPc === toPc) { el.textContent = 'Same postcode as ' + (prev ? 'the last job' : 'your base'); return; }
   const key = 'omb_drv_' + localISO() + '_' + fromPc + '_' + toPc, who = prev ? 'the last job' : 'your base';
-  let hit = LS.get(key, null);
+  let hit = LS.get(key, null) || pairGet(fromPc, toPc);
   if (!hit) {
     if (!CLOUD.signedIn()) return;
-    try { const r = await CLOUD.post('route-times', { stops: [fromPc + ', UK', toPc + ', UK'] }); hit = r && r.legs && r.legs[0]; if (hit) LS.set(key, hit); } catch (e) { return; }
+    try { const r = await CLOUD.post('route-times', { stops: [fromPc + ', UK', toPc + ', UK'] }); hit = r && r.legs && r.legs[0]; if (hit) { LS.set(key, hit); pairSet(fromPc, toPc, hit); } } catch (e) { return; }
   }
   show(hit, who);
 }
@@ -401,9 +410,16 @@ document.addEventListener('click', e => {
 const ceil5 = m => Math.ceil(m / 5) * 5, hhmm = m => String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
 async function planLeg(a, b2) {
   if (a === b2) return { mins: 0, miles: 0 };
-  const k = 'plan_' + a + '>' + b2; if (routeCache[k]) return routeCache[k];
+  const c = pairGet(a, b2); if (c) return c;
   const r = await CLOUD.post('route-times', { stops: [a + ', UK', b2 + ', UK'] }), hit = r && r.legs && r.legs[0];
-  if (!hit) throw new Error('No route found'); routeCache[k] = hit; return hit;
+  if (!hit) throw new Error('No route found'); pairSet(a, b2, hit); return hit;
+}
+/* one lookup for a whole chain of stops when several legs are missing, instead of one lookup per leg */
+async function planChain(pcs) {
+  const chain = pcs.filter((p, i) => i === 0 || p !== pcs[i - 1]);
+  if (chain.length < 3 || chain.length > 10) return;
+  if (chain.slice(0, -1).every((p, i) => pairGet(p, chain[i + 1]))) return;
+  try { const r = await CLOUD.post('route-times', { stops: chain.map(p => p + ', UK') }); ((r && r.legs) || []).forEach((l, i) => pairSet(chain[i], chain[i + 1], l)); } catch (e) { }
 }
 async function planDay(off) {
   off = off ? 1 : 0;
@@ -418,6 +434,7 @@ async function planDay(off) {
   try {
     const from = await Promise.all(jobs.map(b => planLeg(base, pcOf(b.address))));
     const order = jobs.map((b, i) => ({ b, d: from[i].mins })).sort((x, y) => x.d - y.d || toMin(x.b.time) - toMin(y.b.time)).map(x => x.b);
+    await planChain(order.map(b => pcOf(b.address)));
     const dayStart = toMin(settings.dayStart || '09:00'), now = new Date(), nowM = now.getHours() * 60 + now.getMinutes();
     let cur = off ? dayStart : Math.max(dayStart, ceil5(nowM)), prevPc = null; const rows = [];
     for (let i = 0; i < order.length; i++) {

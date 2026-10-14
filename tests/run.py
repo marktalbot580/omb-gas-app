@@ -861,6 +861,13 @@ def run():
         check('plan my day keeps a fixed job and fits ticked jobs around it', pv2 == 'Mid Cat 9:00|Far Ann 11:15' and ev(pg, "bookings.find(b=>b.id==='pl_b').time") == '10:00', pv2)
         pg.click('[data-act=planClose]')
         ev(pg, "bookings=bookings.filter(b=>!b.id.startsWith('pl_'));saveBookings();document.querySelector('#routeSheet')&&document.querySelector('#routeSheet').remove()")
+        ev(pg, "var D2=addDays(localISO(),1);bookings=bookings.filter(b=>b.date!==D2);['QA1 1AA','QA2 2AA','QA3 3AA'].forEach((pc,i)=>bookings.push({id:'qq'+i,date:D2,time:'0'+(8+i)+':00',mins:60,name:'Q'+i,address:'1 St\\n'+pc,types:['service'],status:'booked',phone:'',email:''}));saveBookings();window.__n=0;CLOUD.post=async(n,b)=>{window.__n++;return {legs:b.stops.slice(1).map(()=>({mins:11,miles:4}))}};document.querySelector('#routeSheet')&&document.querySelector('#routeSheet').remove();showRoute(1)"); pg.wait_for_timeout(700)
+        ev(pg, "Object.keys(pairMem).forEach(k=>delete pairMem[k]);window.__n=0"); pg.click('[data-act=planDay]'); pg.wait_for_timeout(900)
+        n1 = ev(pg, "window.__n"); pg.click('[data-act=planClose]')
+        ev(pg, "window.__n=0"); pg.click('[data-act=planDay]'); pg.wait_for_timeout(900)
+        n2 = ev(pg, "window.__n"); pg.click('[data-act=planClose]')
+        check('plan uses one lookup per job plus one for all legs, then none when repeated', n1 == 4 and n2 == 0, [n1, n2])
+        ev(pg, "bookings=bookings.filter(b=>!b.id.startsWith('qq'));saveBookings();document.querySelector('#routeSheet')&&document.querySelector('#routeSheet').remove()")
         check('no page errors with the route', not errs, errs)
         ctx.close()
 
