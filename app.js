@@ -691,11 +691,13 @@ const markQuoSent = r => { if (r && isQuo(r) && r.status === 'complete') { r.qSe
 const qWaiting = r => typeOf(r) === 'quote' && r.status === 'complete' && !r.qStatus;
 const qChase = r => qWaiting(r) && !!qSentDay(r) && qAge(r) >= 14;
 /* an accepted quote: a button to put the job in the calendar, or the date it is booked for */
+/* a quote counts as booked only while a calendar appointment made from it still exists (deleting the appointment frees it up again) */
+const quoBooked = r => !!r.qBooked && bookings.some(b => b.fromQuote === r.id);
 function quoSched(r, cls) {
   if (r.qStatus !== 'accepted') return '';
-  const inv = r.qInv && invoices.find(x => x.id === r.qInv), booked = calOn() && r.qBooked;
+  const inv = r.qInv && invoices.find(x => x.id === r.qInv), booked = calOn() && quoBooked(r);
   let h = '';
-  if (calOn()) h += booked ? `<div class="small" style="color:var(--gold2);font-weight:700;margin:6px 0">Booked in for ${esc(dayShort(r.qBooked))}</div>` : `<button type="button" class="btn gold block ${cls || ''}" data-act="quoBook" data-id="${r.id}" style="margin:8px 0 0">Book the job</button>`;
+  if (calOn()) h += booked ? `<div class="small" style="color:var(--gold2);font-weight:700;margin:6px 0">Booked in for ${esc(dayShort((bookings.find(b => b.fromQuote === r.id) || {}).date || r.qBooked))}</div>` : `<button type="button" class="btn gold block ${cls || ''}" data-act="quoBook" data-id="${r.id}" style="margin:8px 0 0">Book the job</button>`;
   h += inv ? `<button type="button" class="btn block ${cls || ''}" data-act="openInv" data-id="${inv.id}" style="margin:8px 0 0">Open invoice ${esc(inv.number)}</button>`
     : `<button type="button" class="btn ${calOn() && !booked ? '' : 'gold'} block ${cls || ''}" data-act="quoInvoice" data-id="${r.id}" style="margin:8px 0 0">Create invoice from this quote</button>`;
   return h;
@@ -892,7 +894,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v177';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v179';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -2465,11 +2467,11 @@ function invTabs() {
 function renderQuotes(v) {
   const f = ui.qFilter || 'all';
   const all = records.filter(r => typeOf(r) === 'quote').sort((a, b) => (b.inspectionDate || '').localeCompare(a.inspectionDate || '') || (b.updated || 0) - (a.updated || 0));
-  const waiting = all.filter(r => qWaiting(r) && qSentDay(r)), chase = all.filter(qChase), toSched = calOn() ? all.filter(r => r.qStatus === 'accepted' && !r.qBooked) : [], unsent = all.filter(r => r.status === 'complete' && !r.qStatus && !qSentDay(r));
+  const waiting = all.filter(r => qWaiting(r) && qSentDay(r)), chase = all.filter(qChase), toSched = calOn() ? all.filter(r => r.qStatus === 'accepted' && !quoBooked(r)) : [], unsent = all.filter(r => r.status === 'complete' && !r.qStatus && !qSentDay(r));
   const val = r => { try { return QUO.totals(r, settings).total; } catch (e) { return 0; } };
   const pend = waiting.reduce((a, r) => a + val(r), 0);
   const pass = {
-    all: () => true, waiting: r => qWaiting(r) && !!qSentDay(r), chase: qChase, accepted: r => r.qStatus === 'accepted', sched: r => r.qStatus === 'accepted' && !r.qBooked, unsent: r => r.status === 'complete' && !r.qStatus && !qSentDay(r), declined: r => r.qStatus === 'declined', draft: r => r.status === 'draft'
+    all: () => true, waiting: r => qWaiting(r) && !!qSentDay(r), chase: qChase, accepted: r => r.qStatus === 'accepted', sched: r => r.qStatus === 'accepted' && !quoBooked(r), unsent: r => r.status === 'complete' && !r.qStatus && !qSentDay(r), declined: r => r.qStatus === 'declined', draft: r => r.status === 'draft'
   };
   const shown = all.filter(pass[f] || pass.all);
   const chip = (k, l) => `<button class="chip ${f === k ? 'on' : ''}" data-act="qFilter" data-f="${k}">${l}</button>`;

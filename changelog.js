@@ -1,5 +1,7 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v179', items: ['Fixed: if you delete the appointment you booked from an accepted quote, the quote no longer says it is booked in. It goes back to Book the job.'] },
+  { v: 'v178', items: ['Tomorrow\u2019s route no longer shows a drive from where you are now, since you plan it from tonight. That line and the extra minutes in the total are for today only.'] },
   { v: 'v177', items: ['The Route total now includes the drive from where you are to the first job.'] },
   { v: 'v176', items: ['Drive times now read \u201c2 mins\u201d instead of \u201c2 min\u201d (and \u201c1 min\u201d for one).'] },
   { v: 'v175', items: ['The Next job card now shows \u201cSet off in 12 min to arrive on time\u201d under the drive time when you can still make it.'] },
