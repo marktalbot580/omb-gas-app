@@ -5,11 +5,11 @@
 'use strict';
 const OIL = (() => {
   const STEPS = ['Customer', 'Boiler', 'Checks', 'Combustion', 'Finish', 'Sign off', 'Review'];
-  const LOCATION = ['Kitchen', 'Utility room', 'Garage', 'Boiler house', 'Outbuilding', 'Outside (external boiler)', 'Airing cupboard', 'Loft', 'Other'];
-  const MAKE = ['Grant', 'Worcester Bosch', 'Firebird', 'Warmflow', 'Viessmann', 'Trianco', 'Other'];
+  const LOCATION = ['Kitchen', 'Utility room', 'Integral garage', 'Detached garage', 'Boiler house', 'Outbuilding', 'Outside (external boiler)', 'Cellar / basement', 'Other'];
+  const MAKE = ['Grant', 'Firebird', 'Worcester Bosch', 'Warmflow', 'Boulter Buderus', 'Trianco', 'Viessmann', 'Other'];
   const TYPE = ['Combi', 'System', 'Regular (heat only)', 'Other'];
-  const FUEL = ['Kerosene', 'Gas oil', 'HVO', 'Other'];
-  const FLUE = ['Conventional flue (chimney / liner)', 'Balanced flue (room sealed)', 'Fanned / pressure jet flue', 'Other'];
+  const FUEL = ['Kerosene (28 sec)', 'Gas oil (35 sec)', 'HVO', 'Other'];
+  const FLUE = ['Conventional flue (chimney / liner)', 'Balanced flue (through the wall)', 'Vertical flue (external boiler)', 'Other'];
   const REASON = ['Service', 'Commissioning', 'Repair'];
   const PFN = ['PASS', 'FAIL', 'NA'];
   const YN = ['YES', 'NO'];
