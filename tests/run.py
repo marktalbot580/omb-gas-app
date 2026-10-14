@@ -754,10 +754,9 @@ def run():
         eta = ev(pg, "[etaText(bookings.find(b=>b.id==='rt1'),1),etaText(bookings.find(b=>b.id==='rt2'),1),document.querySelectorAll('#routeSheet [data-act=etaText]').length]")
         check('tomorrow route lists jobs with ETA text from the booked time', eta[2] == 2 and 'around 9am tomorrow' in eta[0] and 'around 2:30pm tomorrow' in eta[1] and 'Mrs Hale' in eta[0].replace('Jo ', ''), eta)
         ev(pg, "CLOUD.signedIn=()=>true;CLOUD.post=async()=>({legs:[{mins:12,miles:5.1},{mins:26,miles:11.8}]});document.querySelector('#routeSheet')&&document.querySelector('#routeSheet').remove();showRoute(0)")
-        pg.click('#routeSheet [data-act=routeTimes]')
-        pg.wait_for_timeout(300)
+        pg.wait_for_timeout(400)
         rt = ev(pg, "document.querySelector('#routeSheet').innerText")
-        check('route shows drive times between stops and a total', 'about 12 min' in rt and 'about 26 min' in rt and 'about 38 min' in rt, rt)
+        check('route works out drive times by itself when opened', 'about 12 min' in rt and 'about 26 min' in rt and 'about 38 min' in rt, rt)
         check('no page errors with the route', not errs, errs)
         ctx.close()
 

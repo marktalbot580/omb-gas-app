@@ -172,6 +172,7 @@ function showRoute(off) {
     ${list.length >= 2 ? `<a class="btn gold block" style="text-align:center;text-decoration:none;margin-top:10px" href="${esc(routeUrl(list))}" target="_blank" rel="noopener">Start route</a>` : ''}
     <button type="button" class="btn block" data-act="routeClose" style="margin-top:8px">Close</button></div>`;
   document.body.appendChild(d);
+  if (list.length >= 2) routeTimes(off, null);
 }
 document.addEventListener('click', e => {
   const bg = document.getElementById('routeSheet');
@@ -191,15 +192,19 @@ document.addEventListener('click', e => {
 }, true);
 
 /* drive times between the stops (Google, through our server so the key stays secret). Asked for only when you tap, in the same order as the list. */
+const routeCache = {};   // remembered for this visit, so reopening the sheet does not ask Google again
 async function routeTimes(off, btn) {
   const all = routeDay(off), withAddr = all.filter(b => String(b.address || '').trim().length >= 4);
   if (withAddr.length < 2) return;
-  if (!CLOUD.signedIn()) { toast('Sign in to see drive times'); return; }
-  btn.disabled = true; const t0 = btn.textContent; btn.textContent = 'Working it out...';
+  if (!CLOUD.signedIn()) { if (btn) toast('Sign in to see drive times'); return; }
+  const stops = withAddr.map(b => b.address.replace(/\s*\n\s*/g, ', ')), ck = stops.join('|');
+  const t0 = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Working it out...'; }
+  const tot = document.getElementById('routeTot'); if (tot && !btn) tot.textContent = 'Working out drive times...';
   try {
-    const r = await CLOUD.post('route-times', { stops: withAddr.map(b => b.address.replace(/\s*\n\s*/g, ', ')) });
-    const legs = (r && r.legs) || [];
+    const legs = routeCache[ck] || ((await CLOUD.post('route-times', { stops })) || {}).legs || [];
     if (!legs.length) throw new Error('No route found');
+    routeCache[ck] = legs;
     let li = 0, mins = 0, miles = 0;
     all.forEach((b, k) => {
       const el = document.querySelector(`#routeSheet [data-leg="${k}"]`); if (!el) return;
@@ -208,7 +213,10 @@ async function routeTimes(off, btn) {
       const l = legs[li++]; if (!l) return; mins += l.mins; miles += l.miles;
       el.textContent = '\u2193 about ' + l.mins + ' min \u00b7 ' + l.miles + ' miles';
     });
-    const tot = document.getElementById('routeTot'); if (tot) tot.textContent = 'Driving about ' + mins + ' min, ' + Math.round(miles * 10) / 10 + ' miles in total. Estimates without live traffic.';
-    btn.remove();
-  } catch (e) { btn.disabled = false; btn.textContent = t0; toast(e.status === 429 ? String(e.message) : 'Could not get drive times just now'); }
+    const t2 = document.getElementById('routeTot'); if (t2) t2.textContent = 'Driving about ' + mins + ' min, ' + Math.round(miles * 10) / 10 + ' miles in total. Estimates without live traffic.';
+    if (btn) btn.remove(); else { const b2 = document.querySelector('#routeSheet [data-act=routeTimes]'); if (b2) b2.remove(); }
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = t0; toast(e.status === 429 ? String(e.message) : 'Could not get drive times just now'); }
+    else { const t2 = document.getElementById('routeTot'); if (t2) t2.textContent = e.status === 429 ? String(e.message) : 'Drive times are not available just now.'; }
+  }
 }
