@@ -433,7 +433,7 @@ async function planDay(off) {
   if (btn) { btn.disabled = true; btn.textContent = 'Working out the best order...'; }
   try {
     const from = await Promise.all(jobs.map(b => planLeg(base, pcOf(b.address))));
-    const order = jobs.map((b, i) => ({ b, d: from[i].mins })).sort((x, y) => x.d - y.d || toMin(x.b.time) - toMin(y.b.time)).map(x => x.b);
+    const order = jobs.map((b, i) => ({ b, d: from[i].mins })).sort((x, y) => (settings.planOrder === 'far' ? y.d - x.d : x.d - y.d) || toMin(x.b.time) - toMin(y.b.time)).map(x => x.b);
     await planChain(order.map(b => pcOf(b.address)));
     const dayStart = toMin(settings.dayStart || '09:00'), now = new Date(), nowM = now.getHours() * 60 + now.getMinutes();
     let cur = off ? dayStart : Math.max(dayStart, ceil5(nowM)), prevPc = null; const rows = [];
@@ -451,7 +451,7 @@ async function planDay(off) {
     window.__plan = { off, rows };
     const d = document.createElement('div'); d.id = 'planSheet'; d.className = 'sheetbg';
     d.innerHTML = `<div class="sheet" role="dialog" aria-label="Plan my day"><div class="grab"></div><h2>Plan my day</h2>
-      <p class="muted" style="margin:0 0 10px">${allFlex ? 'No job is ticked Auto schedule, so every job here can move. ' : ''}Nearest to your start (${esc(base)}) first, furthest last, starting at ${esc(hhmm(rows[0].start))}. Each job keeps its usual length, with the drive added before the next.${fixed.length ? ' Jobs not ticked Auto schedule keep their time and the others are fitted around them.' : ''}</p>
+      <p class="muted" style="margin:0 0 10px">${allFlex ? 'No job is ticked Auto schedule, so every job here can move. ' : ''}${settings.planOrder === 'far' ? 'Furthest from' : 'Nearest to'} your start (${esc(base)}) first, ${settings.planOrder === 'far' ? 'closest' : 'furthest'} last, starting at ${esc(hhmm(rows[0].start))}. Each job keeps its usual length, with the drive added before the next.${fixed.length ? ' Jobs not ticked Auto schedule keep their time and the others are fitted around them.' : ''}</p>
       ${shown.map((r, i) => `<div class="line" style="flex-wrap:wrap"><b style="width:28px;height:28px;border-radius:50%;background:${r.fixed ? 'var(--line,#ccc)' : 'var(--gold)'};color:var(--btn-ink,#1a1405);display:flex;align-items:center;justify-content:center;flex:none">${i + 1}</b><span class="main"><b>${esc(hhmm(r.start))} to ${esc(hhmm(r.end))} ${esc(r.b.name || 'No name')}</b><span>${esc(addrFirst(r.b.address || ''))}${r.fixed ? ' \u00b7 fixed time' : r.b.time !== hhmm(r.start) ? ' \u00b7 was ' + esc(r.b.time) : ''}</span></span></div>${!r.fixed && !r.first && r.drive ? `<div class="small muted" style="margin:2px 0 2px 40px">\u2193 ${esc(mn(r.drive))} drive before this job</div>` : ''}`).join('')}
       ${lacking.length ? `<p class="small muted">Left as they are, with no postcode: ${lacking.map(b => esc(b.name || addrFirst(b.address))).join(', ')}.</p>` : ''}
       <p class="small muted">Drive times are estimates without live traffic. This changes the appointment times in your calendar. Nothing is texted until you tap send.</p>

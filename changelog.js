@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v188', items: ['Plan my day order: in Settings \\u2192 Calendar choose Closest first, furthest last (the default) or Furthest first, closest last.'] },
   { v: 'v187', items: ['Drive times are remembered between postcodes for 45 days, and Plan my day works out all the legs in a single lookup, so regular customers and repeat plans cost almost nothing.'] },
   { v: 'v186', items: ['Auto schedule tick box on the appointment, under the start time. Plan my day only moves jobs that are ticked, and fits them around the ones you have agreed a fixed time for. If none are ticked it can move them all.'] },
   { v: 'v185', items: ['Plan my day: on the Route sheet, tap Plan my day. It puts the jobs nearest to your start postcode first and the furthest last, gives each its time slot and adds the drive between jobs (first job 9 to 10, next one 10:10 if it is 10 minutes away). You see the new times first and nothing changes until you tap Put these times in my calendar. Then Text the next customer sends each their arrival time, one tap at a time. Set the start time in Settings \u2192 Calendar \u2192 Day starts at.'] },
