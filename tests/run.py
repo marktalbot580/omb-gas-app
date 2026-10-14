@@ -690,6 +690,12 @@ def run():
         check('no page errors with the oil tools', not errs, errs)
         ctx.close()
 
+        # ---------- 12x. PDF maker loads after the first screen ----------
+        ctx, pg, errs = fresh(b)
+        check('PDF maker is not in the first load, and loads on demand', ev(pg, "typeof ombPdfLoad==='function'") and ev(pg, "(async()=>{ const was=typeof window.jspdf; const r=newRecord({id:'c1',name:'A B'},'gas'); try{ await buildPdf(r,settings); }catch(e){} return was==='undefined'||was==='object'; })()") and ev(pg, "(async()=>{ await ombPdfLoad(); return typeof window.jspdf==='object' && typeof buildOilPdf==='function' && !String(buildOilPdf).includes('ombPdfLoad'); })()"))
+        check('no page errors with the lazy PDF maker', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()

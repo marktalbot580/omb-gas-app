@@ -19,6 +19,7 @@ function invTotals(inv) {
 
 /* ext = { doc, addPage } draws this invoice into an existing PDF (used by the bulk print) instead of making its own */
 async function buildInvPdf(inv, s, ext) {
+  if (!window.jspdf && typeof ombPdfLoad === 'function') await ombPdfLoad();
   const { jsPDF } = window.jspdf;
   const doc = ext ? ext.doc : new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   if (ext && ext.addPage) doc.addPage();
