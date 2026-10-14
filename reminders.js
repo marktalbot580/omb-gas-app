@@ -9,14 +9,14 @@ const remNorm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const remAdd = (iso, n) => { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const remWindow = () => { const n = parseInt(settings.remDays, 10); return n >= 7 && n <= 365 ? n : 56; };
 const remLong = iso => { const [y, m, d] = String(iso).split('-').map(Number); return `${d} ${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][m - 1]} ${y}`; };
-const REM_WHAT = { gas: 'gas safety check', service: 'boiler service', legionella: 'Legionella risk assessment' };
+const REM_WHAT = { gas: 'gas safety check', service: 'boiler service', legionella: 'Legionella risk assessment', oil: 'oil boiler service', oiltank: 'oil tank check', oillord: 'landlord oil safety check' };
 
 /* the newest completed gas check / service for each customer + property, if due within the window (or overdue) */
 function remItems(allDays) {
   const st = remGet(), today = todayISO(), limit = remAdd(today, remWindow()), best = {};
   records.forEach(r => {
     const t = typeOf(r);
-    if ((t !== 'gas' && t !== 'service' && t !== 'legionella') || r.status !== 'complete' || !r.renewal) return;
+    if ((t !== 'gas' && t !== 'service' && t !== 'legionella' && t !== 'oil' && t !== 'oiltank' && t !== 'oillord') || r.status !== 'complete' || !r.renewal) return;
     const who = r.customerId || remNorm(r.customer && r.customer.name), key = [who, remNorm(r.jobAddress), t].join('|');
     const c = best[key];
     if (!c || String(r.inspectionDate) > String(c.inspectionDate) || (r.inspectionDate === c.inspectionDate && (r.updated || 0) > (c.updated || 0))) best[key] = r;

@@ -145,6 +145,18 @@ const PH = (() => {
       [...SVC.APP, ...SVC.SAFE].forEach(c => {
         if (rec.chk && rec.chk[c.k] === 'FAIL') add('FAILED CHECK – ' + c.label.toUpperCase(), (rec.fotos || {})[c.k], [row('Check', c.label), row('Result', 'FAIL'), row('Failure details', (rec.fault || {})[c.k])]);
       });
+    } else if (t === 'oil') {
+      OIL.ALL.forEach(c => {
+        if (rec.chk && rec.chk[c.k] === 'FAIL') add('FAILED CHECK – ' + c.label.toUpperCase(), (rec.fotos || {})[c.k], [row('Check', c.label), row('Result', 'FAIL'), row('Failure details', (rec.fault || {})[c.k])]);
+      });
+    } else if (OFORM.of(rec)) {
+      OFORM.fieldsOf(rec).forEach(fd => {
+        if (fd.t === 'pfn' && rec.f[fd.k] === 'FAIL') add('FAILED CHECK – ' + fd.l.toUpperCase(), (rec.fotos || {})[fd.k], [row('Check', fd.l), row('Result', 'FAIL'), row('Failure details', rec.f[fd.k + '_d'])]);
+      });
+    } else if (t === 'oiltank') {
+      TANK.CHK.forEach(c => {
+        if (rec.chk && rec.chk[c.k] === 'FAIL') add('FAILED CHECK – ' + c.label.toUpperCase(), (rec.fotos || {})[c.k], [row('Check', c.label), row('Result', 'FAIL'), row('Failure details', (rec.fault || {})[c.k])]);
+      });
     } else if (t === 'aircon') {
       [['drain', 'Condensate drain'], ['electrical', 'Electrical supply, isolator and connections']].forEach(([k, label]) => {
         if (rec[k] === 'FAIL') add('FAILED CHECK – ' + label.toUpperCase(), (rec.fotos || {})[k], [row('Check', label), row('Result', 'FAIL'), row('Engineer notes', rec.notes)]);

@@ -3,7 +3,7 @@
 'use strict';
 
 /* ---------- calendar: appointments kept on this phone ---------- */
-const BK_TYPES = [['gas', 'Gas safety check'], ['service', 'Boiler service'], ['legionella', 'Legionella risk assessment'], ['aircon', 'Air conditioning'], ['quote', 'Boiler quote'], ['other', 'Other job']];
+const BK_TYPES = [['gas', 'Gas safety check'], ['service', 'Boiler service'], ['legionella', 'Legionella risk assessment'], ['aircon', 'Air conditioning'], ['oil', 'Oil boiler service'], ['oiltank', 'Oil tank check'], ['oilcomp', 'Oil installation'], ['oillord', 'Landlord oil check'], ['quote', 'Boiler quote'], ['other', 'Other job']];
 const calOn = () => settings.calOn !== 'off';
 /* a UK mobile number (07… or +44 7…): only these get the on my way text */
 const isMobileNo = p => /^(?:\+?44|0)7\d{9}$/.test(String(p || '').replace(/\(0\)/, '').replace(/[^\d+]/g, ''));

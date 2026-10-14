@@ -39,12 +39,15 @@ const isWarn = r => !!r && r.type === 'warning';
 const isAc = r => !!r && r.type === 'aircon';
 const isCom = r => !!r && r.type === 'commission';
 const isQuo = r => !!r && r.type === 'quote';
+const isOil = r => !!r && r.type === 'oil';
+const isTank = r => !!r && r.type === 'oiltank';
+const isOF = r => !!OFORM.of(r);
 const typeOf = r => (r && r.type) || 'gas';
-const stepsOf = r => (isLeg(r) ? LEG.STEPS : isSvc(r) ? SVC.STEPS : isWarn(r) ? WARN.STEPS : isAc(r) ? AC.STEPS : isCom(r) ? COM.STEPS : isQuo(r) ? (r.general ? QUO.STEPS_GEN : QUO.STEPS) : STEPS);
-const ORDER = { gas: 0, service: 1, legionella: 2, aircon: 3, commission: 4, warning: 5, quote: 6 };
-const FORM_NAME = { gas: 'Gas safety record', service: 'Boiler service record', legionella: 'Legionella risk assessment', aircon: 'Air conditioning commissioning report', commission: 'Boiler commissioning checklist', quote: 'Boiler quotation', warning: 'Danger / Do Not Use warning notice' };
+const stepsOf = r => (isLeg(r) ? LEG.STEPS : isSvc(r) ? SVC.STEPS : isWarn(r) ? WARN.STEPS : isAc(r) ? AC.STEPS : isOil(r) ? OIL.STEPS : isTank(r) ? TANK.STEPS : isOF(r) ? OFORM.steps(OFORM.of(r)) : isCom(r) ? COM.STEPS : isQuo(r) ? (r.general ? QUO.STEPS_GEN : QUO.STEPS) : STEPS);
+const ORDER = { gas: 0, service: 1, legionella: 2, aircon: 3, commission: 4, warning: 5, quote: 6, oil: 7, oiltank: 8 };
+const FORM_NAME = { gas: 'Gas safety record', service: 'Boiler service record', legionella: 'Legionella risk assessment', aircon: 'Air conditioning commissioning report', commission: 'Boiler commissioning checklist', quote: 'Boiler quotation', oil: 'Oil boiler service record', oiltank: 'Oil tank check', warning: 'Danger / Do Not Use warning notice' };
 const formName = r => (r.general ? 'Quotation' : FORM_NAME[typeOf(r)]);
-const FORM_SHORT = { gas: 'Gas check', service: 'Boiler service', legionella: 'Legionella', aircon: 'Air conditioning', commission: 'Boiler commissioning', quote: 'Quotation', warning: 'Warning notice' };
+const FORM_SHORT = { gas: 'Gas check', service: 'Boiler service', legionella: 'Legionella', aircon: 'Air conditioning', commission: 'Boiler commissioning', quote: 'Quotation', oil: 'Oil boiler', oiltank: 'Oil tank', warning: 'Warning notice' };
 /* copy the customer's email address so it can be pasted into the To box (the iPhone share sheet can't fill it in) */
 function copyEmail(email) {
   email = String(email || '').trim(); if (!email) return;
@@ -68,7 +71,7 @@ function greetName(full) {
   return i >= t.length ? 'there' : `${titles} ${sn[0].toUpperCase()}${sn.slice(1)}`;
 }
 /* wording used in email subjects: "<form> – <first line of the property address>" */
-const SUBJ = { gas: 'Landlord Gas Safety Check', service: 'Boiler Service', legionella: 'Legionella Risk Assessment', aircon: 'Air Conditioning Commissioning', commission: 'Boiler Commissioning Checklist', quote: 'Boiler Quotation', warning: 'Danger Do Not Use Warning Notice' };
+const SUBJ = { gas: 'Landlord Gas Safety Check', service: 'Boiler Service', legionella: 'Legionella Risk Assessment', aircon: 'Air Conditioning Commissioning', commission: 'Boiler Commissioning Checklist', quote: 'Boiler Quotation', oil: 'Oil Boiler Service', oiltank: 'Oil Tank Check', warning: 'Danger Do Not Use Warning Notice' };
 const FORM_DOC = {
   gas: ['Gas Safety Record', 'Your next safety check is due by'],
   service: ['Gas Boiler Service Record', 'Your next boiler service is due by'],
@@ -76,11 +79,15 @@ const FORM_DOC = {
   aircon: ['Air Conditioning Commissioning Report', ''],
   commission: ['Boiler Commissioning Checklist', 'Your next boiler service is due by'],
   quote: ['Boiler Quotation', ''],
+  oil: ['Oil Boiler Service Record', 'Your next oil boiler service is due by'],
+  oiltank: ['Oil Tank Check', 'Your next oil tank check is due by'],
   warning: ['Danger Do Not Use Warning Notice', '']
 };
+/* the oil forms described in oform-config.js join the same lookup tables */
+Object.entries(OFORM.SPECS).forEach(([k, sp], n) => { ORDER[k] = 9 + n; FORM_NAME[k] = sp.name[0].toUpperCase() + sp.name.slice(1); FORM_SHORT[k] = sp.short; SUBJ[k] = sp.subj; FORM_DOC[k] = [sp.subj, sp.docNote]; });
 /* one line per document in the emails; the warning notice has no due date */
 const docLine = r => (FORM_DOC[typeOf(r)][1] ? `${FORM_DOC[typeOf(r)][0]} (${FORM_DOC[typeOf(r)][1].replace(/^Your /, '').replace(/ is due by$/, '')} due ${ukDate(r.renewal)})` : FORM_DOC[typeOf(r)][0]);
-const billable = m => (m ? m.filter(r => typeOf(r) !== 'warning' && typeOf(r) !== 'quote') : m);
+const billable = m => (m ? m.filter(r => !['warning', 'quote', 'oilwarn', 'oilrisk', 'oilcond'].includes(typeOf(r))) : m);
 
 /* appliance type on the gas safety record: "Other" has its own text box (typeOther); older records may hold older type names, which still display */
 const COOK_MAKES = ['Indesit', 'Whirlpool', 'Hotpoint', 'AEG', 'Lamona', 'Bosch', 'Beko'];
@@ -99,7 +106,7 @@ const blankDefect = () => ({ text: '', cls: '', action: '' });
 const DEFAULT_SETTINGS = {
   businessName: '', logo: '', accent: '#c9a24b', refPrefix: 'REC', updated: 0, address: '', phone: '', email: '',
   gasSafeReg: '', engineerName: '', gasSafeId: '', engSig: '', syncUrl: '', syncToken: '', gasSafeLogo: '', gasSafeLogoAR: 1,
-  priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', priceCom: '', quoteIncluded: QUO.DEFAULT_INCLUDED, quoteTerms: QUO.DEFAULT_TERMS, qItemsText: '', qList: [], qMarkup: {}, qMarkupDef: '30', discType: '£', discValue: '',
+  priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', priceCom: '', priceOil: '', priceTank: '', priceOilInst: '', priceOilLord: '', oftecReg: '', workType: 'gas', recOil: 'on', recOilTank: 'on', quoteIncluded: QUO.DEFAULT_INCLUDED, quoteTerms: QUO.DEFAULT_TERMS, qItemsText: '', qList: [], qMarkup: {}, qMarkupDef: '30', discType: '£', discValue: '',
   invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '', vatQtr: '2', yearDay: '6', yearMonth: '4',
   bankName: '', accName: '', sortCode: '', accNo: '', invFooter: 'Thank you for your business.',
   remText: '', qChaseText: '', invRemText: '', invAsk: 'on', invHead: 'Work and materials', logoBg: 'white', calOn: 'on', calHome: 'on', calMins: '60', recGas: 'on', recService: 'on', recLeg: 'on', recAc: 'on', recQuote: 'on', remDays: '56', toolGas: 'on', toolPipe: 'on', toolIv: 'on', toolHeat: 'on'
@@ -183,6 +190,42 @@ function newAcRecord(customer) {
     updated: Date.now(), _dirty: true
   };
 }
+function newOilRecord(customer) {
+  const d = todayISO();
+  const n = records.filter(r => typeOf(r) === 'oil' && r.inspectionDate === d).length + 1;
+  return {
+    id: uid(), type: 'oil', ref: 'OIL-' + d.replace(/-/g, '') + '-' + String(n).padStart(2, '0'),
+    status: 'draft', inspectionDate: d, renewal: plusYear(d),
+    customerId: customer?.id || '', customer: { name: customer?.name || '', phone: customer?.phone || '', email: customer?.email || '', billing: customer?.billing || '' },
+    jobAddress: '', ...OIL.blank(),
+    notes: '', customerPresent: '', customerName: '', customerSig: '', engineerSig: '',
+    updated: Date.now(), _dirty: true
+  };
+}
+function newTankRecord(customer) {
+  const d = todayISO();
+  const n = records.filter(r => typeOf(r) === 'oiltank' && r.inspectionDate === d).length + 1;
+  return {
+    id: uid(), type: 'oiltank', ref: 'TNK-' + d.replace(/-/g, '') + '-' + String(n).padStart(2, '0'),
+    status: 'draft', inspectionDate: d, renewal: plusYear(d),
+    customerId: customer?.id || '', customer: { name: customer?.name || '', phone: customer?.phone || '', email: customer?.email || '', billing: customer?.billing || '' },
+    jobAddress: '', ...TANK.blank(),
+    notes: '', customerPresent: '', customerName: '', customerSig: '', engineerSig: '',
+    updated: Date.now(), _dirty: true
+  };
+}
+function newOFRecord(customer, type) {
+  const sp = OFORM.SPECS[type], d = todayISO();
+  const n = records.filter(r => typeOf(r) === type && r.inspectionDate === d).length + 1;
+  return {
+    id: uid(), type, ref: sp.prefix + '-' + d.replace(/-/g, '') + '-' + String(n).padStart(2, '0'),
+    status: 'draft', inspectionDate: d, renewal: sp.renew ? plusYear(d) : '',
+    customerId: customer?.id || '', customer: { name: customer?.name || '', phone: customer?.phone || '', email: customer?.email || '', billing: customer?.billing || '' },
+    jobAddress: '', ...OFORM.blank(type),
+    notes: '', customerPresent: '', customerName: '', customerSig: '', engineerSig: '',
+    updated: Date.now(), _dirty: true
+  };
+}
 function newQuoRecord(customer) {
   const d = todayISO();
   const n = records.filter(r => typeOf(r) === 'quote' && r.inspectionDate === d).length + 1;
@@ -237,6 +280,9 @@ function newRecord(customer, type) {
   if (type === 'legionella') return newLegRecord(customer);
   if (type === 'service') return newSvcRecord(customer);
   if (type === 'aircon') return newAcRecord(customer);
+  if (type === 'oil') return newOilRecord(customer);
+  if (type === 'oiltank') return newTankRecord(customer);
+  if (OFORM.SPECS[type]) return newOFRecord(customer, type);
   if (type === 'commission') return newComRecord(customer);
   if (type === 'quote') return newQuoRecord(customer);
   if (type === 'gquote') { const q = newQuoRecord(customer); q.general = true; q.title = ''; q.scope = ''; q.labourDesc = 'Labour'; return q; }
@@ -324,7 +370,7 @@ function goBack() {
   if (seq) { const q = seq[pos - 1]; goTo(q.rec, q.step); } else { ui.step--; ui.appTab = 0; render(); }
 }
 function startJob() {
-  const pk = ui.pick, types = ['gas', 'service', 'legionella', 'aircon', 'commission', 'quote', 'gquote'].filter(t => pk.types[t]);
+  const pk = ui.pick, types = ['gas', 'service', 'legionella', 'aircon', 'commission', 'oil', 'oiltank', ...OFORM.TYPES, 'quote', 'gquote'].filter(t => pk.types[t]);
   if (!types.length) { toast('Choose at least one form'); return; }
   const jobId = types.length > 1 ? uid() : '';
   const recs = types.map(t => { const r = newRecord(pk.customer, t); if (jobId) r.jobId = jobId; return r; });
@@ -347,6 +393,9 @@ function commitCustomer(rec) {
 function validate(rec) {
   if (isLeg(rec)) return LEG.validate(rec);
   if (isAc(rec)) return AC.validate(rec);
+  if (isOil(rec)) return OIL.validate(rec);
+  if (isTank(rec)) return TANK.validate(rec);
+  if (isOF(rec)) return OFORM.validate(rec);
   if (isCom(rec)) return COM.validate(rec);
   if (isQuo(rec)) return QUO.validate(rec);
   if (isSvc(rec)) return SVC.validate(rec);
@@ -386,6 +435,9 @@ function validate(rec) {
 function warnings(rec) {
   if (isLeg(rec)) return LEG.warnings(rec, settings);
   if (isAc(rec)) return AC.warnings(rec, settings);
+  if (isOil(rec)) return OIL.warnings(rec, settings);
+  if (isTank(rec)) return TANK.warnings(rec, settings);
+  if (isOF(rec)) return OFORM.warnings(rec, settings);
   if (isCom(rec)) return COM.warnings(rec, settings);
   if (isQuo(rec)) return QUO.warnings(rec, settings);
   if (isSvc(rec)) return SVC.warnings(rec, settings);
@@ -679,7 +731,7 @@ function bkBanner() {
   return `<div class="notice">Time for your monthly backup. ${d.last ? 'Your last one was on ' + ukDate(d.last) + '.' : 'You have not made one yet.'} Save the file somewhere safe, like your email or cloud storage.<div style="height:8px"></div><button class="btn gold block" data-act="expAll">Back up now</button><div style="height:6px"></div><button class="btn block ghost" data-act="bkLater">Remind me in a week</button></div>`;
 }
 function renderHome(v) {
-  const missing = !settings.address || !settings.gasSafeReg || !settings.engineerName || !settings.gasSafeId;
+  const missing = workType() === 'oil' ? (!settings.address || !settings.oftecReg || !settings.engineerName) : (!settings.address || !settings.gasSafeReg || !settings.engineerName || !settings.gasSafeId);
   const list = [...records].sort((a, b) => b.updated - a.updated);
   v.innerHTML = `
     <h1>Services</h1>
@@ -688,7 +740,7 @@ function renderHome(v) {
     ${newsBanner()}
     ${(() => { const c = records.filter(qChase).sort((a, b) => (a.inspectionDate || '').localeCompare(b.inspectionDate || '')); return c.length ? `<button type="button" class="notice" style="display:block;width:100%;text-align:left" data-act="openRec" data-id="${c[0].id}"><b>${c.length} quote${c.length > 1 ? 's' : ''} sent over 2 weeks ago with no answer.</b> Tap to chase ${esc(c[0].customer.name || 'the oldest')}.</button>` : ''; })()}
     ${(() => { const c = invOverdueAsk(); return c.length ? `<button type="button" class="notice" style="display:block;width:100%;text-align:left" data-act="invAsk"><b>${c.length} overdue invoice${c.length > 1 ? 's' : ''}.</b> Tap to send ${esc(c[0].customer.name || 'a customer')} a payment reminder.</button>` : ''; })()}
-    ${missing ? `<div class="notice">Add the business address, Gas Safe register number and engineer details in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a> before issuing certificates.</div>` : ''}
+    ${missing ? `<div class="notice">Add the business address, ${workType() === 'oil' ? 'OFTEC registration number' : 'Gas Safe register number'} and engineer details in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a> before issuing certificates.</div>` : ''}
     ${REC_HOME.filter(([t]) => recOn(t)).map(([t, l]) => `<button class="btn gold block" data-act="newRec" data-type="${t}">${l}</button><div style="height:10px"></div>`).join('')}
     ${calOn() ? '' : remHomeBtn()}
     ${calHomeHtml()}
@@ -714,6 +766,9 @@ function renderPick(v) {
     ${!recOn('service') ? '' : opt('service', 'Boiler service record', 'Service or repair of a gas boiler')}
     ${!recOn('legionella') ? '' : opt('legionella', 'Legionella risk assessment', 'Hot and cold water system checks')}
     ${!recOn('aircon') ? '' : opt('aircon', 'Air conditioning commissioning', 'Install and commissioning report for an AC system')}
+    ${!recOn('oil') ? '' : opt('oil', 'Oil boiler service record', 'Service, commissioning or repair of an oil boiler')}
+    ${!recOn('oiltank') ? '' : opt('oiltank', 'Oil tank check', 'Tank, bund and oil supply pipework')}
+    ${OFORM.TYPES.map(k => !recOn(k) ? '' : opt(k, OFORM.SPECS[k].name[0].toUpperCase() + OFORM.SPECS[k].name.slice(1), OFORM.SPECS[k].sub.replace(/\.$/, ''))).join('')}
     ${!recOn('quote') ? '' : opt('quote', 'Boiler quote', 'A quotation for a new boiler installation')}
     ${!recOn('gquote') ? '' : opt('gquote', 'Quote for any job', 'Bathrooms, radiators, repairs and any other work')}
     ${T.gas && !T.service ? `<div class="notice">Doing a gas safety check? Tick <b>Boiler service record</b> as well to complete both forms in one go – the boiler details from the gas check are copied across.</div>` : ''}
@@ -825,7 +880,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v162';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v163';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -965,6 +1020,7 @@ function renderSettings(v) {
       ${f('phone', 'Telephone', { type: 'tel' })}
       ${f('email', 'Email', { type: 'email', cap: 'none' })}
       ${f('gasSafeReg', 'Gas Safe Register number')}
+      ${workType() === 'gas' ? '' : f('oftecReg', 'OFTEC registration number')}
     </div>
     <h2>Bank details (printed on invoices)</h2>
     <div class="card">
@@ -1016,6 +1072,7 @@ function renderSettings(v) {
       ${f('priceSvc', 'Boiler service (£)', { mode: 'decimal' })}
       ${f('priceLeg', 'Legionella risk assessment (£)', { mode: 'decimal' })}
       ${f('priceAc', 'Air conditioning commissioning (£)', { mode: 'decimal' })}
+      ${workType() === 'gas' ? '' : f('priceOil', 'Oil boiler service (£)', { mode: 'decimal' }) + f('priceTank', 'Oil tank check (£)', { mode: 'decimal' }) + f('priceOilInst', 'Oil installation completion (£)', { mode: 'decimal' }) + f('priceOilLord', 'Landlord oil check (£)', { mode: 'decimal' })}
     </div>
     <h2>Combined service discount</h2>
     <div class="card">
@@ -1115,7 +1172,8 @@ function renderSettings(v) {
     </div>
     <h2>Services to show</h2>
     <div class="card">
-      ${[['recGas', 'Gas safety record'], ['recService', 'Boiler service record'], ['recLeg', 'Legionella risk assessment'], ['recAc', 'Air conditioning commissioning'], ['recQuote', 'Boiler quote'], ['recGQuote', 'Quote for any job']].map(([k, l]) => `<label class="f"><span>${l}</span><select data-s="${k}"><option value="on" ${settings[k] === 'off' ? '' : 'selected'}>Show</option><option value="off" ${settings[k] === 'off' ? 'selected' : ''}>Hide</option></select></label>`).join('')}
+      <label class="f"><span>What work do you do?</span><select data-s="workType"><option value="gas" ${workType() === 'gas' ? 'selected' : ''}>Gas</option><option value="oil" ${workType() === 'oil' ? 'selected' : ''}>Oil</option><option value="both" ${workType() === 'both' ? 'selected' : ''}>Gas and oil</option></select><small class="muted">Oil shows the oil boiler record and oil tank check, and hides the gas safety record, gas boiler service and gas tools. Gas and oil shows everything. Records you have already made stay in your list.</small></label>
+      ${[['recGas', 'Gas safety record'], ['recService', 'Boiler service record'], ['recOil', 'Oil boiler service record'], ['recOilTank', 'Oil tank check'], ['recOilComp', 'Oil installation completion report'], ['recOilLord', 'Landlord oil check'], ['recOilWarn', 'Oil warning notice'], ['recOilRisk', 'Oil tank risk assessment'], ['recOilCond', 'Condensing boiler assessment'], ['recLeg', 'Legionella risk assessment'], ['recAc', 'Air conditioning commissioning'], ['recQuote', 'Boiler quote'], ['recGQuote', 'Quote for any job']].map(([k, l]) => `<label class="f"><span>${l}</span><select data-s="${k}"><option value="on" ${settings[k] === 'off' ? '' : 'selected'}>Show</option><option value="off" ${settings[k] === 'off' ? 'selected' : ''}>Hide</option></select></label>`).join('')}
       <small class="muted">Hidden types leave the home screen and the “Forms for this visit” list. Records you have already made stay in your list. Turn one back on any time.</small>
     </div>
     <h2>Backup</h2>
@@ -1210,6 +1268,9 @@ function renderForm(v, nav) {
   else if (t === 'legionella') body = [null, legSystem, legTemps, legTanks, legRisk, legFindings][s]();
   else if (t === 'warning') body = [null, warnFaults][s]();
   else if (t === 'aircon') body = [null, acSystem, acRefrig][s]();
+  else if (t === 'oil') body = [null, oilBoiler, oilChecks, oilCombustion, oilFinish][s]();
+  else if (t === 'oiltank') body = [null, tankDetails, tankChecks, tankFinish][s]();
+  else if (isOF(r)) body = ofStep(s - 1);
   else if (t === 'quote') body = [null, r.general ? quoJob : quoBoiler, quoExtras][s]();
   else if (t === 'commission') body = [null, comBoiler, comWater, comReadings, comHandover][s]();
   else if (t === 'service') body = [null, svcBoiler, svcChecks, svcSafety, svcOperating, svcFinish][s]();
@@ -1356,7 +1417,7 @@ function stepCustomer() {
       <div id="navBtn">${navBtnHtml(r.jobAddress)}</div>
     </div>
     ${prevCard(r)}
-    <div class="card">${txt('inspectionDate', isLeg(r) ? 'Date of assessment' : isAc(r) || isCom(r) ? 'Date of commissioning' : isQuo(r) ? 'Date of quotation' : 'Date of inspection', { type: 'date' })}</div>`;
+    <div class="card">${txt('inspectionDate', isLeg(r) ? 'Date of assessment' : isAc(r) || isCom(r) ? 'Date of commissioning' : isQuo(r) ? 'Date of quotation' : isOF(r) ? OFORM.of(r).dateLabel : 'Date of inspection', { type: 'date' })}</div>`;
 }
 
 /* Worcester Bosch boilers also get an optional fan speed reading */
@@ -1454,7 +1515,7 @@ function stepSign() {
     <div class="sigactions"><span class="small muted">Use your finger</span><button data-act="sigClear" data-key="${key}">Clear</button></div></div>`;
   return `
     <div class="card">
-      <p class="small muted" style="margin-top:0">Engineer: <b style="color:var(--txt)">${esc(settings.engineerName || '(set in Settings)')}</b>${isLeg(r) || isAc(r) ? '' : ` · Gas Safe ID <b style="color:var(--txt)">${esc(settings.gasSafeId || '(set in Settings)')}</b>`}</p>
+      <p class="small muted" style="margin-top:0">Engineer: <b style="color:var(--txt)">${esc(settings.engineerName || '(set in Settings)')}</b>${isOil(r) || isTank(r) || isOF(r) ? ` · OFTEC reg <b style="color:var(--txt)">${esc(settings.oftecReg || '(set in Settings)')}</b>` : isLeg(r) || isAc(r) ? '' : ` · Gas Safe ID <b style="color:var(--txt)">${esc(settings.gasSafeId || '(set in Settings)')}</b>`}</p>
       ${sig('engineerSig', "Engineer's signature", true)}
       ${settings.engSig && !r.engineerSig ? `<button type="button" class="btn block" style="margin-bottom:10px" data-act="engSigUse">Use my saved signature</button>` : ''}
       <button type="button" class="item tog ${settings.engSig ? 'on' : ''}" data-act="engSigTog" style="margin-bottom:0"><span class="box"></span><span><span class="t">Remember my signature</span><span class="s" style="display:block">${settings.engSig ? 'Saved – it is added to your new forms automatically. Tap to remove it.' : 'Sign above, then tick to add it to all your future forms automatically.'}</span></span></button>
@@ -1480,6 +1541,9 @@ function recSummary(r) {
   let rows = dl('Record', r.ref) + dl('Date', ukDate(r.inspectionDate)) + dl('Client', r.customer.name) + dl('Property', r.jobAddress);
   if (t === 'legionella') rows += dl('Temperatures', LEG.temps(r).map(x => `${x.label}: ${x.n === null ? '?' : x.n + '°C'} – ${x.pass === null ? '?' : x.pass ? 'pass' : 'FAIL'}`).join('\n')) + dl('Overall risk', r.overall) + dl('Risks / defects', String(r.defects.length)) + dl('Next assessment', ukDate(r.renewal));
   else if (t === 'aircon') rows += dl('System', [AC.makeText(r), r.indoorModel].filter(Boolean).join(' ')) + dl('Gas', [AC.gasText(r), r.charge ? r.charge + ' g' : ''].filter(Boolean).join(' · ')) + dl('Pressure / vacuum', [r.pressure ? r.pressure + ' bar' : '', r.vacuum ? r.vacuum + ' hrs' : ''].filter(Boolean).join(' · ')) + dl('Drain / electrical', `${r.drain || '?'} / ${r.electrical || '?'}`);
+  else if (t === 'oil') rows += dl('Boiler', [OIL.makeText(r), r.model].filter(Boolean).join(' ')) + dl('Fuel', OIL.fuelText(r)) + dl('Visit', r.reason) + dl('Checks failed', String(OIL.failCount(r))) + dl('CO₂ / CO / smoke', r.fgDone === 'YES' ? [r.fgCo2 ? r.fgCo2 + ' %' : '', r.fgCo ? r.fgCo + ' ppm' : '', r.fgSmoke ? 'smoke ' + r.fgSmoke : ''].filter(Boolean).join(' · ') : r.fgDone || '') + dl('Safe to use', r.safe) + dl('Defects', r.defectClass) + dl('Next service', ukDate(r.renewal));
+  else if (isOF(r)) rows += OFORM.of(r).sum(r).map(([k, v]) => dl(k, v)).join('');
+  else if (t === 'oiltank') rows += dl('Tank', [TANK.matText(r), r.capacity ? r.capacity + ' litres' : '', r.bunded === 'YES' ? 'bunded' : r.bunded === 'NO' ? 'not bunded' : ''].filter(Boolean).join(' · ')) + dl('Checks failed', String(TANK.failCount(r))) + dl('Pollution risk', r.risk) + dl('Safe to use', r.safe) + dl('Defects', r.defectClass) + dl('Next check', ukDate(r.renewal));
   else if (t === 'quote') { const T = QUO.totals(r, settings); rows += dl(r.general ? 'Job' : 'Boiler', r.general ? r.title : [QUO.makeText(r), r.model, r.kw ? r.kw + ' kW' : ''].filter(Boolean).join(' ')) + dl('Quote total', QUO.money(T.total) + (T.rate ? ' inc. VAT' : '')); }
   else if (t === 'commission') rows += dl('Boiler', [COM.makeText(r), r.model].filter(Boolean).join(' ')) + dl('Type', r.kind) + dl('Max CO / CO₂', [r.maxCo ? r.maxCo + ' ppm' : '', r.maxCo2 ? r.maxCo2 + ' %' : ''].filter(Boolean).join(' · ')) + dl('Next service', ukDate(r.renewal));
   else if (t === 'warning') rows += dl('Faults', r.faults.slice(0, +r.faultCount || 1).map((f, i) => `${i + 1}. ${f.type || '?'} – ${f.cls || '?'}${f.riddor === 'YES' ? ' (RIDDOR)' : ''}`).join('\n'));
@@ -1540,9 +1604,12 @@ async function sendSel() {
 /* open the email app without leaving the page (a plain location change leaves a blank screen in some browsers, e.g. Firefox with no mail app set) */
 const mailAddr = a => encodeURIComponent(String(a || '').trim()).replace(/%40/g, '@').replace(/%2C/g, ',');
 /* which record types show on the home screen and in the visit picker (Settings → Business → Services to show) */
-const REC_KEYS = { gas: 'recGas', service: 'recService', legionella: 'recLeg', aircon: 'recAc', quote: 'recQuote', gquote: 'recGQuote' };
-const recOn = t => settings[REC_KEYS[t]] !== 'off';
-const REC_HOME = [['gas', '+ New Gas Safety Record'], ['service', '+ New Boiler Service Record'], ['legionella', '+ New Legionella Risk Assessment'], ['aircon', '+ New Air Conditioning Commissioning'], ['quote', '+ New Boiler Quote'], ['gquote', '+ New Quote (any job)']];
+const REC_KEYS = { gas: 'recGas', service: 'recService', legionella: 'recLeg', aircon: 'recAc', oil: 'recOil', oiltank: 'recOilTank', oilcomp: 'recOilComp', oillord: 'recOilLord', oilwarn: 'recOilWarn', oilrisk: 'recOilRisk', oilcond: 'recOilCond', quote: 'recQuote', gquote: 'recGQuote' };
+/* what work do you do: Gas (default), Oil, or Both. Oil leaves out the gas-only forms; Gas leaves out the oil forms. */
+const workType = () => (settings.workType === 'oil' || settings.workType === 'both' ? settings.workType : 'gas');
+const GAS_ONLY = ['gas', 'service', 'commission'], OIL_ONLY = ['oil', 'oiltank', ...OFORM.TYPES];
+const recOn = t => (workType() === 'oil' && GAS_ONLY.includes(t)) || (workType() === 'gas' && OIL_ONLY.includes(t)) ? false : settings[REC_KEYS[t]] !== 'off';
+const REC_HOME = [['gas', '+ New Gas Safety Record'], ['service', '+ New Boiler Service Record'], ['legionella', '+ New Legionella Risk Assessment'], ['aircon', '+ New Air Conditioning Commissioning'], ['oil', '+ New Oil Boiler Service Record'], ['oiltank', '+ New Oil Tank Check'], ['oilcomp', '+ New Oil Installation Completion'], ['oillord', '+ New Landlord Oil Check'], ['oilwarn', '+ New Oil Warning Notice'], ['oilrisk', '+ New Oil Tank Risk Assessment'], ['oilcond', '+ New Condensing Boiler Assessment'], ['quote', '+ New Boiler Quote'], ['gquote', '+ New Quote (any job)']];
 /* wording of the quote chase email / text (editable in Settings → Quotes). {name} {address} {ref} {business} {signoff} are filled in */
 const QCHASE_DEFAULT = 'Hi {name},\n\nI just wanted to check that you received my quote for your new boiler at {address}. If you have any questions, or would like to go ahead, just let me know and I will arrange a date for the installation.\n\nKind regards,\n{signoff}';
 function chaseText(q) {
@@ -1950,6 +2017,145 @@ function comHandover() {
   <h2>Notes</h2>
   <div class="card">${txt('notes', 'Engineer notes', { area: 1, rows: 4 })}</div>`;
 }
+/* ---------- Oil boiler service / commissioning steps ---------- */
+function oilCheck(c) {
+  const r = ui.rec;
+  return choice('chk.' + c.k, c.q, OIL.PFN, { req: 1 }) + (r.chk[c.k] === 'FAIL' ? txt('fault.' + c.k, c.f, { req: 1, area: 1, rows: 2 }) + PH.field(r, 'fotos.' + c.k) : '');
+}
+function oilBoiler() {
+  const r = ui.rec;
+  return `<div class="card">
+    ${choice('location', 'Where is the appliance located?', OIL.LOCATION, { req: 1, wrap: 1 })}
+    ${r.location === 'Other' ? txt('locationOther', 'Describe the location', { req: 1 }) : ''}
+    ${choice('make', 'Appliance make', OIL.MAKE, { req: 1, wrap: 1 })}
+    ${r.make === 'Other' ? txt('makeOther', 'Make', { req: 1 }) : ''}
+    ${txt('model', 'Appliance model', { req: 1 })}
+    ${choice('systemType', 'System type', OIL.TYPE, { req: 1, wrap: 1 })}
+    ${r.systemType === 'Other' ? txt('systemOther', 'Describe the system type', { req: 1 }) : ''}
+    ${txt('serial', 'Serial number', { req: 1, cap: 'characters', copy: 1 })}
+    ${txt('burner', 'Burner make and model', { ph: 'If separate from the boiler' })}
+    ${choice('fuel', 'Fuel', OIL.FUEL, { req: 1, wrap: 1 })}
+    ${r.fuel === 'Other' ? txt('fuelOther', 'Describe the fuel', { req: 1 }) : ''}
+    ${choice('flue', 'Flue type', OIL.FLUE, { req: 1, wrap: 1 })}
+    ${r.flue === 'Other' ? txt('flueOther', 'Describe the flue', { req: 1 }) : ''}
+  </div>
+  <h2>Visit</h2>
+  <div class="card">
+    ${choice('reason', 'Reason for visit', OIL.REASON, { req: 1 })}
+    ${ageUnknown(r) ? `<div class="f"><span>Age of boiler <b>*</b></span><input type="text" value="Unknown" disabled></div>` : txt('age', 'Age of boiler', { req: 1, ph: 'e.g. 8 years' })}
+    <label class="row" style="align-items:center;gap:12px;margin-top:4px;min-height:44px"><input type="checkbox" data-act="ageUnknown" style="width:24px;height:24px;flex:none" ${ageUnknown(r) ? 'checked' : ''}><span>Age unknown</span></label>
+  </div>`;
+}
+function oilChecks() {
+  return `<p class="small muted" style="margin-top:0">Mark each check Pass, Fail or N/A. If a check fails, say what the fault is.</p>
+  <h2 style="margin-top:0">Appliance</h2>
+  <div class="card">${OIL.APP.map(oilCheck).join('')}</div>
+  <h2>Flue, oil supply and safety</h2>
+  <div class="card">${OIL.SAFE.map(oilCheck).join('')}</div>`;
+}
+function oilCombustion() {
+  const r = ui.rec, on = r.fgDone === 'YES';
+  return `<h2 style="margin-top:0">Burner settings</h2>
+  <div class="card">
+    ${txt('nozzleSize', 'Nozzle size and spray angle', { req: 1, ph: 'e.g. 0.60 80°S', cap: 'characters' })}
+    ${txt('pumpPressure', 'Pump pressure (bar)', { req: 1, mode: 'decimal' })}
+    ${choice('filterChanged', 'Oil filter element cleaned or replaced?', OIL.YNNA, { req: 1 })}
+  </div>
+  <h2>Flue gas analysis</h2>
+  <div class="card">
+    <p class="small muted" style="margin-top:0">Record the readings from the analyser, then choose the outcome against the manufacturer’s figures.</p>
+    ${on ? `${txt('fgCo2', 'CO₂ (%)', { req: 1, mode: 'decimal' })}
+    ${txt('fgO2', 'O₂ (%)', { mode: 'decimal' })}
+    ${txt('fgCo', 'CO (ppm)', { req: 1, mode: 'decimal' })}
+    ${txt('fgTemp', 'Flue gas temperature (°C)', { req: 1, mode: 'decimal' })}
+    ${txt('fgAmb', 'Ambient temperature (°C)', { mode: 'decimal' })}
+    ${txt('fgEff', 'Net efficiency (%)', { mode: 'decimal' })}
+    ${txt('fgSmoke', 'Smoke number (0–9)', { req: 1, mode: 'decimal' })}
+    ${txt('fgDraught', 'Flue draught (mbar)', { mode: 'decimal', ph: 'e.g. -0.10' })}
+    ${txt('analyser', 'Analyser make and serial number', { cap: 'characters' })}` : ''}
+    ${choice('fgDone', 'Flue gas analysis performed?', OIL.YNNA, { req: 1 })}
+    ${on ? choice('fgResult', 'Are the readings within the manufacturer’s figures?', ['PASS', 'FAIL'], { req: 1 }) : ''}
+  </div>`;
+}
+function oilFinish() {
+  const r = ui.rec, bad = OIL.failCount(r) > 0;
+  return `${bad ? '<div class="notice err">Something on this service has failed. Say what it is below and whether the appliance is safe to use.</div>' : ''}<div class="card">
+    ${choice('manufacturer', 'Does the installation meet the manufacturer’s instructions?', OIL.YN, { req: 1, yn: 1 })}
+    ${choice('safe', 'Is the appliance / installation safe to use?', OIL.YN, { req: 1, yn: 1 })}
+    ${choice('defectClass', 'Defects found', OIL.CLASS, { req: 1, wrap: 1 })}
+    ${r.defectClass && r.defectClass !== 'None' ? txt('defects', 'Defects found and advice given', { req: 1, area: 1, rows: 4 }) : ''}
+  </div>
+  <div class="card">
+    ${txt('renewal', 'Next service due by', { type: 'date', req: 1, hint: 'Pre-filled as 12 months from today.' })}
+    ${txt('notes', 'Engineer notes', { area: 1, rows: 5 })}
+  </div>`;
+}
+
+/* ---------- the oil forms described in oform-config.js ---------- */
+function ofField(fd) {
+  const r = ui.rec, p = OFORM.path(fd);
+  if (!OFORM.visible(fd, r)) return '';
+  const req = fd.opt ? {} : { req: 1 };
+  if (fd.t === 'info') return `<p class="small muted">${esc(fd.l)}</p>`;
+  if (fd.t === 'pick') return choice(p, fd.l, fd.o, { ...req, wrap: 1 }) + (fd.other && r.f[fd.k] === 'Other' ? txt('f.' + fd.k + 'Other', 'Describe: ' + fd.l.toLowerCase().replace(/\?$/, ''), { req: 1 }) : '');
+  if (fd.t === 'yn') return choice(p, fd.l, OFORM.YN, { ...req, yn: 1 });
+  if (fd.t === 'ynna') return choice(p, fd.l, OFORM.YNNA, req);
+  if (fd.t === 'pfn') return choice(p, fd.l, OFORM.PFN, req) + (r.f[fd.k] === 'FAIL' ? txt('f.' + fd.k + '_d', 'Details of the fault', { req: 1, area: 1, rows: 2 }) + PH.field(r, 'fotos.' + fd.k) : '');
+  if (fd.t === 'area') return txt(p, fd.l, { ...req, area: 1, rows: 4 });
+  if (fd.t === 'date') return txt(p, fd.l, { ...req, type: 'date' });
+  if (fd.t === 'num') return txt(p, fd.l, { ...req, mode: 'decimal', ph: fd.ph });
+  return txt(p, fd.l, { ...req, cap: fd.caps ? 'characters' : undefined, ph: fd.ph });
+}
+function ofStep(i) {
+  const sp = OFORM.of(ui.rec), sec = sp.sections[i];
+  if (!sec) return '';
+  const warn = i === 0 && sp.stamp(ui.rec) ? '' : '';
+  return `${warn}<div class="card">${sec.fields.map(ofField).join('')}</div>`;
+}
+
+/* ---------- Oil tank check steps ---------- */
+function tankDetails() {
+  const r = ui.rec;
+  return `<div class="card">
+    ${choice('position', 'Where is the tank?', TANK.POSITION, { req: 1, wrap: 1 })}
+    ${r.position === 'Other' ? txt('positionOther', 'Describe where the tank is', { req: 1 }) : ''}
+    ${choice('material', 'Tank material', TANK.MATERIAL, { req: 1 })}
+    ${r.material === 'Other' ? txt('materialOther', 'Describe the material', { req: 1 }) : ''}
+    ${choice('bunded', 'Is the tank bunded?', TANK.YN, { req: 1 })}
+    ${txt('capacity', 'Capacity (litres)', { req: 1, mode: 'decimal' })}
+    ${txt('tankMake', 'Tank make', {})}
+    ${txt('tankAge', 'Age of tank', { ph: 'e.g. 10 years or Unknown' })}
+    ${choice('fuel', 'Fuel stored', OIL.FUEL, { req: 1, wrap: 1 })}
+  </div>
+  <h2>Position</h2>
+  <div class="card">
+    ${txt('distBuilding', 'Distance from the building (m)', { req: 1, mode: 'decimal' })}
+    ${txt('distBoundary', 'Distance from the boundary (m)', { req: 1, mode: 'decimal' })}
+    ${choice('fireProt', 'Fire protection (wall or barrier) in place where needed?', TANK.YNNA, { req: 1 })}
+    ${choice('nearWater', 'Close to a watercourse, drain, well or borehole?', TANK.YN, { req: 1 })}
+  </div>`;
+}
+function tankChecks() {
+  const r = ui.rec;
+  return `<p class="small muted" style="margin-top:0">Mark each check Pass, Fail or N/A. If a check fails, say what the fault is.</p>
+  <div class="card">${TANK.CHK.map(c => choice('chk.' + c.k, c.q, TANK.PFN, { req: 1 }) + (r.chk[c.k] === 'FAIL' ? txt('fault.' + c.k, c.f, { req: 1, area: 1, rows: 2 }) + PH.field(r, 'fotos.' + c.k) : '')).join('')}</div>
+  <h2>Water in the fuel</h2>
+  <div class="card">${choice('waterTest', 'Water test (dip the bottom of the tank)', TANK.WATER, { req: 1, wrap: 1 })}</div>`;
+}
+function tankFinish() {
+  const r = ui.rec, bad = TANK.failCount(r) > 0;
+  return `${bad ? '<div class="notice err">Something on this check has failed. Say what it is below and whether the tank is safe to use.</div>' : ''}<div class="card">
+    ${choice('safe', 'Is the oil storage safe to use?', TANK.YN, { req: 1, yn: 1 })}
+    ${choice('risk', 'Pollution risk if the tank or pipework leaked', TANK.RISK, { req: 1 })}
+    ${choice('defectClass', 'Defects found', TANK.CLASS, { req: 1, wrap: 1 })}
+    ${r.defectClass && r.defectClass !== 'None' ? txt('defects', 'Defects found and advice given', { req: 1, area: 1, rows: 4 }) : ''}
+  </div>
+  <div class="card">
+    ${txt('renewal', 'Next check due by', { type: 'date', req: 1, hint: 'Pre-filled as 12 months from today.' })}
+    ${txt('notes', 'Engineer notes', { area: 1, rows: 5 })}
+  </div>`;
+}
+
 /* ---------- Air conditioning commissioning steps ---------- */
 function acSystem() {
   const r = ui.rec;
@@ -2134,8 +2340,8 @@ function svcFinish() {
 }
 
 /* ---------- invoices ---------- */
-const SVC_PRICE = { gas: 'priceGas', service: 'priceSvc', legionella: 'priceLeg', aircon: 'priceAc', commission: 'priceCom' };
-const INV_DESC = { gas: 'Landlord gas safety check and record', service: 'Gas boiler service', legionella: 'Legionella risk assessment', aircon: 'Air conditioning commissioning', commission: 'Boiler commissioning' };
+const SVC_PRICE = { gas: 'priceGas', service: 'priceSvc', legionella: 'priceLeg', aircon: 'priceAc', commission: 'priceCom', oil: 'priceOil', oiltank: 'priceTank', oilcomp: 'priceOilInst', oillord: 'priceOilLord' };
+const INV_DESC = { gas: 'Landlord gas safety check and record', service: 'Gas boiler service', legionella: 'Legionella risk assessment', aircon: 'Air conditioning commissioning', commission: 'Boiler commissioning', oil: 'Oil boiler service', oiltank: 'Oil tank check', oilcomp: 'Oil heating installation', oillord: 'Landlord oil installation check and record' };
 const addDays = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const priceStr = v => (numOf(v) > 0 ? numOf(v).toFixed(2) : '');
 const invStatus = i => (i.paid ? 'paid' : i.due && i.due < todayISO() ? 'overdue' : 'unpaid');
@@ -2981,7 +3187,7 @@ document.addEventListener('input', e => {
     if (had) { const bx = $('#invPdfBox'); if (bx) bx.innerHTML = invPdfHtml(); }
     return;
   }
-  if (t.dataset.s) { settings[t.dataset.s] = t.value; saveSettings(); if (/^rem(Auto|Days|Text)$/.test(t.dataset.s)) { syncAll(); if (t.dataset.s === 'remAuto') { const y = window.scrollY; render(); window.scrollTo(0, y); return; } } if (/^inv(Prefix|Next|Digits)$/.test(t.dataset.s)) { const pv = document.getElementById('invPreview'); if (pv) pv.textContent = invNumberFor(settings.invNext); } if (t.dataset.s === 'discValue' || /^price/.test(t.dataset.s)) { clearTimeout(settingsRefresh._t); settingsRefresh._t = setTimeout(settingsRefresh, 900); } return; }
+  if (t.dataset.s) { settings[t.dataset.s] = t.value; saveSettings(); if (t.dataset.s === 'workType') { if (t.value === 'oil') { if (!settings.quoteIncluded || settings.quoteIncluded === QUO.DEFAULT_INCLUDED) settings.quoteIncluded = QUO.OIL_INCLUDED; if (!settings.quoteTerms || settings.quoteTerms === QUO.DEFAULT_TERMS) settings.quoteTerms = QUO.OIL_TERMS; } else if (t.value === 'gas') { if (settings.quoteIncluded === QUO.OIL_INCLUDED) settings.quoteIncluded = QUO.DEFAULT_INCLUDED; if (settings.quoteTerms === QUO.OIL_TERMS) settings.quoteTerms = QUO.DEFAULT_TERMS; } saveSettings(); const y = window.scrollY; render(); window.scrollTo(0, y); return; } if (/^rem(Auto|Days|Text)$/.test(t.dataset.s)) { syncAll(); if (t.dataset.s === 'remAuto') { const y = window.scrollY; render(); window.scrollTo(0, y); return; } } if (/^inv(Prefix|Next|Digits)$/.test(t.dataset.s)) { const pv = document.getElementById('invPreview'); if (pv) pv.textContent = invNumberFor(settings.invNext); } if (t.dataset.s === 'discValue' || /^price/.test(t.dataset.s)) { clearTimeout(settingsRefresh._t); settingsRefresh._t = setTimeout(settingsRefresh, 900); } return; }
   if (t.dataset.c) { ui.cust[t.dataset.c] = t.value; }
 });
 document.addEventListener('input', e => {
@@ -3123,7 +3329,7 @@ function onChoice(path, val) {
 }
 function goNext() {
   const r = ui.rec, s = ui.step;
-  const issues = validate(r).filter(x => x.step === s && (isLeg(r) || isSvc(r) || isWarn(r) || isAc(r) || isCom(r) || isQuo(r) || s !== 1 || x.app === ui.appTab));
+  const issues = validate(r).filter(x => x.step === s && (isLeg(r) || isSvc(r) || isWarn(r) || isAc(r) || isCom(r) || isQuo(r) || isOil(r) || isTank(r) || isOF(r) || s !== 1 || x.app === ui.appTab));
   if (issues.length) { ui.showErr = true; render(); toast('Please complete the highlighted fields'); const f = document.querySelector('.f.bad'); if (f) f.scrollIntoView({ block: 'center' }); return; }
   ui.showErr = false;
   if (s === 0) commitCustomer(r);

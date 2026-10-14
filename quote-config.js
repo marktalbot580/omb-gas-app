@@ -25,6 +25,21 @@ const QUO = (() => {
     'Your boiler warranty is subject to the manufacturer\'s terms, which include an annual service by a Gas Safe registered engineer.'
   ].join('\n');
 
+  /* the same standard wording for an oil installation (used when the work type is Oil, unless the wording was changed by hand) */
+  const OIL_INCLUDED = [
+    'Removal of your old boiler: we isolate and drain down the system, remove the old boiler and dispose of it responsibly.',
+    'Your new boiler: fitted to the manufacturer\'s instructions.',
+    'New flue: fitted and sealed to current regulations.',
+    'Pipework: oil, water and heating pipework connected, with the condensate run to a suitable drain.',
+    'Oil supply: oil line, filter and fire valve checked, and the supply tested for leaks.',
+    'System protection: the system cleaned and protected with inhibitor.',
+    'Commissioning: the burner set up, combustion tested and the commissioning record completed.',
+    'Paperwork: Building Regulations notification through OFTEC, and your warranty registered with the manufacturer.',
+    'Handover: we show you how to use the boiler and controls and leave you with the documents.',
+    'Clean and tidy: floors and furniture protected, and all old parts and packaging removed.'
+  ].join('\n');
+  const OIL_TERMS = DEFAULT_TERMS.replace('Gas Safe registered engineer', 'OFTEC registered technician');
+
   const getP = (o, p) => p.split('.').reduce((a, k) => (a == null ? a : a[k]), o);
   const num = v => { const n = parseFloat(String(v ?? '').replace(/[£,\s]/g, '')); return Number.isFinite(n) ? n : null; };
   const n0 = v => num(v) || 0;
@@ -134,5 +149,5 @@ const QUO = (() => {
     if (s.vatReg === 'Yes' && !n0(s.vatRate)) w.push('VAT registered is on but no VAT rate is set in Settings.');
     return w;
   }
-  return { STEPS_GEN, SHEET_HEAD, STARTER, TYPES, MAIN, newId, markupOf, saleOf, saleText, itemsFromRows, rowsFromItems, itemsOf, label, costOf, STEPS, KIND, WARRANTY, DEFAULT_INCLUDED, DEFAULT_TERMS, num, blank, makeText, rows, totals, money, parseItems, validate, warnings };
+  return { OIL_INCLUDED, OIL_TERMS, STEPS_GEN, SHEET_HEAD, STARTER, TYPES, MAIN, newId, markupOf, saleOf, saleText, itemsFromRows, rowsFromItems, itemsOf, label, costOf, STEPS, KIND, WARRANTY, DEFAULT_INCLUDED, DEFAULT_TERMS, num, blank, makeText, rows, totals, money, parseItems, validate, warnings };
 })();

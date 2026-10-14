@@ -457,7 +457,7 @@ function renderTools(v) {
       <div style="height:10px"></div>${ui.toolBack === 'custEdit' ? '<button class="btn ghost block" data-tl="backCust">Back to the customer</button>' : '<button class="btn ghost block" data-nav="home">Back</button>'}`;
   }
 }
-const toolOn = k => settings['tool' + k[0].toUpperCase() + k.slice(1)] !== 'off';
+const toolOn = k => (typeof workType === 'function' && workType() === 'oil' && ['gas', 'pipe', 'iv'].includes(k)) ? false : settings['tool' + k[0].toUpperCase() + k.slice(1)] !== 'off';
 function toolsForCustomer(c) {
   const same = TL.prop.cid === c.id;
   if (!same) { TL = TL_DEFAULT(); ui.toolPdf = null; try { delete ui.calc['tool-gas']; } catch (e) { } }

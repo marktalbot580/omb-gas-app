@@ -615,6 +615,48 @@ def run():
         check('no page errors with the settings cog', not errs, errs)
         ctx.close()
 
+        # ---------- 12v. oil forms and the work type setting ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "settings.oftecReg='R12345'; saveSettings()")
+        check('gas is the default work type: oil forms hidden', ev(pg, "workType()==='gas' && !recOn('oil') && !recOn('oilcomp') && recOn('gas')"))
+        ev(pg, "settings.workType='oil'; saveSettings()")
+        check('oil work type hides gas forms and gas tools', ev(pg, "recOn('oil') && recOn('oillord') && !recOn('gas') && !recOn('service') && !toolOn('gas') && !toolOn('pipe') && toolOn('heat')"))
+        ev(pg, "settings.workType='both'; saveSettings()")
+        check('gas and oil shows both', ev(pg, "recOn('gas') && recOn('oil') && recOn('oiltank') && OFORM.TYPES.every(recOn)"))
+        # every oil form: opens, every step draws, validation lists missing items, a filled one makes a PDF
+        res = ev(pg, """(async()=>{
+          const out={}, cust={id:'c9',name:'Mr Oil Test',phone:'07000',email:'o@t.co',billing:''};
+          const sig='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+          for (const t of ['oil','oiltank',...OFORM.TYPES]) {
+            const r=newRecord(cust,t); r.jobAddress='1 Tank Lane, Lincoln, LN1 1AA';
+            ui.rec=r; ui.view='form'; const n=stepsOf(r).length; let drew=0;
+            for (let s=0;s<n;s++){ ui.step=s; try{ render(); if(document.querySelector('#view').innerText.length>20) drew++; }catch(e){ out[t+'_err']=String(e); } }
+            const missing=validate(r).length;
+            r.engineerSig=sig; r.customerPresent='No';
+            if (OFORM.of(r)) OFORM.of(r).sections.forEach(sec=>sec.fields.forEach(fd=>{ let v=''; if(fd.t==='pick')v=fd.o[0]; else if(['yn','ynna'].includes(fd.t))v='YES'; else if(fd.t==='pfn')v='PASS'; else if(fd.t==='num')v='2'; else if(fd.t==='date')v='2027-10-01'; else if(fd.t==='area'||fd.t==='txt')v='x'; else return; if(fd.top) r[fd.k]=v; else r.f[fd.k]=v; }));
+            else if (t==='oil') { Object.assign(r,{location:'Kitchen',make:'Grant',model:'M',systemType:'Combi',serial:'S',fuel:'Kerosene',flue:'Conventional flue (chimney / liner)',reason:'Service',age:'5',nozzleSize:'0.6',pumpPressure:'10',filterChanged:'YES',fgDone:'N/A',manufacturer:'YES',safe:'YES',defectClass:'None',renewal:'2027-10-01'}); OIL.ALL.forEach(c=>r.chk[c.k]='PASS'); }
+            else { Object.assign(r,{position:'Outside, on the ground',material:'Plastic',bunded:'YES',capacity:'1000',fuel:'Kerosene',distBuilding:'3',distBoundary:'2',fireProt:'N/A',nearWater:'NO',waterTest:'No water found',safe:'YES',risk:'Low',defectClass:'None',renewal:'2027-10-01'}); TANK.CHK.forEach(c=>r.chk[c.k]='PASS'); }
+            const left=validate(r).map(x=>x.path);
+            let pdf=0; try{ const bl=await buildPdf(r,settings); pdf=bl.size; }catch(e){ out[t+'_pdf']=String(e); }
+            out[t]={n,drew,missing,left,pdf,name:formName(r)};
+          }
+          return out; })()""")
+        for t in ['oil', 'oiltank', 'oilcomp', 'oillord', 'oilwarn', 'oilrisk', 'oilcond']:
+            o = res.get(t) or {}
+            check(f'oil form {t}: every step draws', o.get('drew') == o.get('n') and not res.get(t + '_err'), res.get(t + '_err'))
+            check(f'oil form {t}: blank form lists what is missing, filled form is complete', o.get('missing', 0) > 5 and o.get('left') == [], o)
+            check(f'oil form {t}: PDF builds', o.get('pdf', 0) > 3000, res.get(t + '_pdf'))
+        check('oil forms: failed check needs fault details and marks the landlord check unsafe', ev(pg, """(()=>{ const r=newRecord({id:'c8',name:'A B'}, 'oillord'); r.f.leaks='FAIL'; const v=validate(r).map(x=>x.path); r.f.safe='NO'; return v.includes('f.leaks_d') && OFORM.stamp(r) && OFORM.failCount(r)===1; })()"""))
+        check('oil forms: warning notice stamps when immediately dangerous', ev(pg, "(()=>{ const r=newRecord({id:'c8',name:'A B'}, 'oilwarn'); r.f.cls='Immediately dangerous'; return OFORM.stamp(r); })()"))
+        check('oil forms: Mr Smith greeting still used', ev(pg, "greetName('Mr John Smith')==='Mr Smith'"))
+        # settings page shows the work type and OFTEC number
+        ev(pg, "ui.view='settings'; ui.sTab='app'; render()")
+        check('settings has the work type choice', ev(pg, "!!document.querySelector('[data-s=workType]')"))
+        ev(pg, "ui.sTab='business'; render()")
+        check('settings has the OFTEC number when oil is on', ev(pg, "!!document.querySelector('[data-s=oftecReg]')"))
+        check('no page errors with the oil forms', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()

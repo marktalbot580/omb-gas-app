@@ -18,6 +18,12 @@ const HELP = [
 <p><b>Android (use Chrome):</b></p>
 <ol><li>Open app.ombgas.com in Chrome.</li><li>Tap the three dots at the top right.</li><li>Tap <b>Install app</b> (or <b>Add to Home screen</b>).</li></ol>` },
 
+  { t: 'Oil boilers and OFTEC work', k: 'oil oftec kerosene tank cd10 cd11 cd12 cd14 ti133d cd30 landlord warning notice condensing work type',
+    h: `<p>Oil heating engineers can switch the app to oil. Go to <b>Settings → App → Services to show</b> and set <b>What work do you do?</b> to <b>Oil</b> (or <b>Gas and oil</b> if you do both). Then add your OFTEC registration number in <b>Settings → Business</b>.</p>
+<p>Oil leaves out the gas safety record, gas boiler service and gas tools, and adds these records:</p>
+<ul><li><b>Oil boiler service record</b>: service, commissioning or repair, with the checks, nozzle, pump pressure and flue gas readings</li><li><b>Oil tank check</b>: the tank, bund and oil supply pipework</li><li><b>Oil firing installation completion report</b></li><li><b>Landlord oil installation check record</b></li><li><b>Oil warning and advice notice</b></li><li><b>Oil tank spillage and fire risk assessment</b></li><li><b>Condensing oil boiler assessment</b></li></ul>
+<p>These follow the headings of the usual OFTEC forms, but they are this app's own records. They have no OFTEC logo or serial number and they do not replace anything issued through OFTEC, such as a completion certificate used to notify Building Control. Check what your scheme requires.</p>
+<p>Prices for the oil records go in <b>Settings → Invoicing → Prices</b>. The landlord check and boiler service show in <b>Annual checks due</b> once they are completed.</p>` },
   { t: 'Starting a new record', k: 'new gas safety boiler service legionella air conditioning quote visit forms draft hide records',
     h: `<p>On the <b>Services</b> screen tap the type of job you are doing:</p>
 <ul><li><b>Gas safety record</b> (landlord gas safety check)</li><li><b>Boiler service record</b></li><li><b>Legionella risk assessment</b></li><li><b>Air conditioning commissioning</b></li><li><b>Boiler quote</b> (see <i>Boiler quotes</i>)</li></ul>
