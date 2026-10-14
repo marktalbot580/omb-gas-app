@@ -742,6 +742,16 @@ def run():
         check('no page errors with quote to invoice', not errs, errs)
         ctx.close()
 
+        # ---------- 12zy. route for the day ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "(()=>{settings.calOn='on';saveSettings();const T=localISO();[['09:00','Ann Beck','14 Larch Road\\nLincoln\\nLN2 4AB'],['11:30','Dan Cole','6 Elm Rd\\nLincoln\\nLN6 7QD'],['14:00','Oakfield','1 Oak St\\nLincoln\\nLN1 3XY']].forEach((x,k)=>bookings.push({id:'rb'+k,date:T,time:x[0],mins:60,name:x[1],address:x[2],types:['service'],status:'booked',phone:'',email:''}));saveBookings&&saveBookings();ui.view='home';render();})()")
+        check('Today shows a Route button with 3 stops', '3 stops' in ev(pg, "document.querySelector('#view').innerText"))
+        pg.click('[data-act=routeOpen]')
+        hrefs = ev(pg, "[...document.querySelectorAll('#routeSheet a.btn')].map(a=>a.href)")
+        check('route sheet has a Go link per stop and a Start route link', len(hrefs) == 4 and 'waypoints=' in hrefs[-1] and 'Oak' in hrefs[-1], hrefs)
+        check('no page errors with the route', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()

@@ -144,3 +144,28 @@ document.addEventListener('click', e => {
   const inv = (q.qInv && invoices.find(x => x.id === q.qInv)) || invoiceFromQuote(q);
   ui.invTab = 'quotes'; invGo(inv, 'quotes'); window.scrollTo(0, 0);
 }, true);
+
+/* ---------- route for the day: today's jobs in appointment order, a Go link for each and one tap to start the whole run in your maps app ---------- */
+const routeStops = () => nextBookings().filter(b => String(b.address || '').trim().length >= 4);
+function routeUrl(list) {
+  const a = list.map(b => String(b.address).replace(/\s*\n\s*/g, ', ').trim()), last = a[a.length - 1], via = a.slice(0, -1).slice(0, 9);
+  return 'https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=' + encodeURIComponent(last) + (via.length ? '&waypoints=' + encodeURIComponent(via.join('|')) : '');
+}
+function showRoute() {
+  const old = document.getElementById('routeSheet'); if (old) old.remove();
+  const list = routeStops(); if (!list.length) { toast('No jobs with an address today'); return; }
+  const d = document.createElement('div'); d.id = 'routeSheet'; d.className = 'sheetbg';
+  d.innerHTML = `<div class="sheet" role="dialog" aria-label="Route for today"><div class="grab"></div><h2>Route for today</h2>
+    <p class="muted" style="margin:0 0 10px">${list.length} stop${list.length === 1 ? '' : 's'}, in appointment order. Opens in your maps app.</p>
+    ${list.map((b, k) => `<div class="line"><b style="width:28px;height:28px;border-radius:50%;background:var(--gold);color:var(--btn-ink,#1a1405);display:flex;align-items:center;justify-content:center;flex:none">${k + 1}</b><span class="main"><b>${esc(b.time)} ${esc(b.name || 'No name')}</b><span>${esc(addrFirst(b.address))} · ${esc(bkLabel(b))}</span></span><a class="btn" href="${esc(mapsUrl(b.address))}" target="_blank" rel="noopener">Go</a></div>`).join('')}
+    ${list.length >= 2 ? `<a class="btn gold block" style="text-align:center;text-decoration:none;margin-top:10px" href="${esc(routeUrl(list))}" target="_blank" rel="noopener">Start route</a>` : ''}
+    <button type="button" class="btn block" data-act="routeClose" style="margin-top:8px">Close</button></div>`;
+  document.body.appendChild(d);
+}
+document.addEventListener('click', e => {
+  const bg = document.getElementById('routeSheet');
+  if (bg && e.target === bg) { bg.remove(); return; }
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  if (b.dataset.act === 'routeOpen') showRoute();
+  else if (b.dataset.act === 'routeClose' && bg) bg.remove();
+}, true);
