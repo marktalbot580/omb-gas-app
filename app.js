@@ -655,6 +655,8 @@ function trialBanner() {
   if (!CLOUD.on) return '';
   const a = CLOUD.access();
   if (CLOUD.locked()) return `<div class="notice err">Your subscription has ended. You can still view, download and export your records, but not create or change them.<div style="height:8px"></div><button class="btn gold block" data-act="billing">Subscribe to continue</button></div>`;
+  if (a.trial && a.days <= 2) return `<div class="notice err">${a.days === 0 ? 'Your free trial ends today.' : 'Only ' + a.days + ' day' + (a.days === 1 ? '' : 's') + ' left on your free trial.'} After that you can view and export your records but not create or change them, and the Tools switch off.<div style="height:8px"></div><button class="btn gold block" data-act="billing">Subscribe now</button></div>`;
+  if (a.paid && a.graceDays > 0 && a.graceDays <= 2) return `<div class="notice err">Your subscription has not renewed. ${a.graceDays === 1 ? 'Only 1 day' : a.graceDays + ' days'} left before the app goes read-only. Check your card in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a>.</div>`;
   if (a.trial && a.days <= 5) return `<div class="notice">Your free trial ends in ${a.days} day${a.days === 1 ? '' : 's'}. <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Subscribe in Settings</a> to keep going.</div>`;
   if (a.pastDue) return `<div class="notice err">Your last payment failed. Update your card in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a>.</div>`;
   return '';

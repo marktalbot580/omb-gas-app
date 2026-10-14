@@ -117,7 +117,7 @@ const CLOUD = (() => {
     if (sub.status === 'trialing') { const end = Date.parse(sub.trial_end); return end > now ? { ok: true, trial: true, days: Math.max(0, Math.ceil((end - now) / 864e5)) } : { ok: false, why: 'trial' }; }
     if (sub.status === 'active' || sub.status === 'past_due') {
       const end = sub.period_end ? Date.parse(sub.period_end) + 3 * 864e5 : now + 864e5;
-      return end > now ? { ok: true, paid: true, pastDue: sub.status === 'past_due' } : { ok: false, why: 'lapsed' };
+      return end > now ? { ok: true, paid: true, pastDue: sub.status === 'past_due', graceDays: Date.parse(sub.period_end) < now ? Math.max(0, Math.ceil((end - now) / 864e5)) : 0 } : { ok: false, why: 'lapsed' };
     }
     return { ok: false, why: 'canceled' };
   }
