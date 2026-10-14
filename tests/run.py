@@ -33,6 +33,11 @@ def fresh(browser, mobile=False):
     return ctx, pg, errs
 
 
+def new_rec(pg, t):
+    pg.click('[data-act=newSheet]')
+    pg.click(f'#newSheet [data-act=newRec][data-type={t}]')
+
+
 def ev(pg, js):
     return pg.evaluate(js)
 
@@ -83,7 +88,7 @@ def run():
 
         # ---------- 3. records: create from the UI, validation, drafts ----------
         ctx, pg, errs = fresh(b)
-        pg.click('[data-act=newRec][data-type=gas]')
+        new_rec(pg, 'gas')
         check('new record opens the forms picker', ev(pg, "ui.view==='pick'"))
         pg.click('[data-act=pickGo]')
         check('Start opens the form', ev(pg, "ui.view==='form'"))
@@ -159,7 +164,7 @@ def run():
         ctx, pg, errs = fresh(b, mobile=True)
         ev(pg, "customers.push({id:'c1',name:'Jane Smith',phone:'07700 900123',email:'',billing:'',properties:['1 High St\\nLincoln\\nLN1 1AA','2 Low Rd\\nGrantham\\nNG31 1AA']},{id:'c2',name:'Janet Brown',phone:'01522 123456',email:'',billing:'',properties:[]});render()")
         check('home shows today\'s appointments but no month grid', ev(pg, "!document.querySelector('.calg') && /today/i.test(document.querySelector('#view').innerText)"))
-        pg.click('[data-act=newRec][data-type=gas]'); pg.click('[data-act=bookFromPick]')
+        new_rec(pg, 'gas'); pg.click('[data-act=bookFromPick]')
         check('Schedule in opens the booking form with the job ticked', ev(pg, "ui.view==='book' && ui.book.types.join()==='gas'"))
         pg.click('[data-bk=name]'); pg.keyboard.type('jan', delay=20)
         check('customer search suggests matches', ev(pg, "document.querySelectorAll('#bkNameSug .cpick').length===2"))
@@ -197,7 +202,7 @@ def run():
         check('Start the forms creates a record with the address', ev(pg, "ui.view==='form' && (ui.rec.jobAddress||'').length>3 && bookings.some(b=>b.status==='done')"))
         ev(pg, "settings.calOn='off';ui.view='home';render()")
         check('calendar off hides it from the home screen', ev(pg, "!document.querySelector('.calg') && !document.querySelector('[data-act=bookNew]')"))
-        pg.click('[data-act=newRec][data-type=gas]')
+        new_rec(pg, 'gas')
         check('calendar off hides Schedule in', ev(pg, "!document.querySelector('[data-act=bookFromPick]')"))
         ev(pg, "settings.calOn='on';settings.calHome='off';ui.view='home';render()")
         check('home screen option hides just the home calendar', ev(pg, "!document.querySelector('.calg')"))
@@ -318,7 +323,7 @@ def run():
         check('customer list no longer has the import button', not ev(pg, "!!document.querySelector('#view [data-act=impOpen]')"))
         sub = lambda v: (ev(pg, "ui.view='%s'; render()" % v), ev(pg, "document.getElementById('barSub').textContent"))[1]
         got = [sub(v) for v in ['home', 'customers', 'invoices', 'tools', 'settings', 'cal']]
-        check('header subtitle follows the section', got == ['Services', 'Customers', 'Invoices', 'Tools', 'Settings', 'Calendar'], got)
+        check('header subtitle follows the section', got == ['Today', 'Customers', 'Invoices', 'Tools', 'Settings', 'Calendar'], got)
         check('no page errors in import/summary', not errs, errs)
         ctx.close()
 
@@ -389,7 +394,7 @@ def run():
 
         # ---------- 12h. quote for any job ----------
         ctx, pg, errs = fresh(b)
-        ev(pg, "document.querySelector('[data-act=newRec][data-type=gquote]').click()")
+        new_rec(pg, 'gquote')
         pg.wait_for_timeout(300)
         g = ev(pg, "({g:ui.rec.general,v:ui.view,steps:stepsOf(ui.rec).join('|'),issues:validate(ui.rec).map(x=>x.label)})")
         check('Quote for any job starts with its own steps and asks for the job', g['g'] and g['v'] == 'form' and g['steps'] == 'Customer|The job|Items & labour|Review' and 'What the job is' in g['issues'] and 'Boiler make' not in g['issues'], g)

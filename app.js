@@ -106,12 +106,20 @@ const blankDefect = () => ({ text: '', cls: '', action: '' });
 const DEFAULT_SETTINGS = {
   businessName: '', logo: '', accent: '#c9a24b', refPrefix: 'REC', updated: 0, address: '', phone: '', email: '',
   gasSafeReg: '', engineerName: '', gasSafeId: '', engSig: '', syncUrl: '', syncToken: '', gasSafeLogo: '', gasSafeLogoAR: 1,
-  priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', priceCom: '', priceOil: '', priceTank: '', priceOilInst: '', priceOilLord: '', oftecReg: '', workType: 'gas', recOil: 'on', recOilTank: 'on', quoteIncluded: QUO.DEFAULT_INCLUDED, quoteTerms: QUO.DEFAULT_TERMS, qItemsText: '', qList: [], qMarkup: {}, qMarkupDef: '30', discType: '£', discValue: '',
+  priceGas: '', priceSvc: '', priceLeg: '', priceAc: '', priceCom: '', priceOil: '', priceTank: '', priceOilInst: '', priceOilLord: '', oftecReg: '', workType: 'gas', theme: 'auto', recOil: 'on', recOilTank: 'on', quoteIncluded: QUO.DEFAULT_INCLUDED, quoteTerms: QUO.DEFAULT_TERMS, qItemsText: '', qList: [], qMarkup: {}, qMarkupDef: '30', discType: '£', discValue: '',
   invPrefix: 'INV-', invNext: '1', invDigits: '3', payDays: '14', vatReg: 'Yes', vatRate: '20', vatNumber: '', vatQtr: '2', yearDay: '6', yearMonth: '4',
   bankName: '', accName: '', sortCode: '', accNo: '', invFooter: 'Thank you for your business.',
   remText: '', qChaseText: '', invRemText: '', invAsk: 'on', invHead: 'Work and materials', logoBg: 'white', calOn: 'on', calHome: 'on', calMins: '60', recGas: 'on', recService: 'on', recLeg: 'on', recAc: 'on', recQuote: 'on', remDays: '56', toolGas: 'on', toolPipe: 'on', toolIv: 'on', toolHeat: 'on'
 };
 let settings = Object.assign({}, DEFAULT_SETTINGS, LS.get('omb_settings', {}));
+function applyTheme() {
+  let t = settings.theme || 'auto';
+  if (t === 'auto') t = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  document.documentElement.dataset.theme = t;
+  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = t === 'light' ? '#f5f2ea' : '#0c0e10';
+}
+applyTheme();
+try { matchMedia('(prefers-color-scheme: light)').addEventListener('change', applyTheme); } catch (e) { }
 let customers = LS.get('omb_customers', []);
 let records = LS.get('omb_records', []);
 let invoices = LS.get('omb_invoices', []);
@@ -667,11 +675,11 @@ const ICON = {
 function renderTabs(nav) {
   nav.className = 'tabs';
   const t = (id, label, ic, on) => `<button data-nav="${id}" class="${on ? 'on' : ''}">${ic}${label}</button>`;
-  nav.innerHTML = t('home', 'Services', ICON.rec, ui.view === 'home' || ui.view === 'pick' || (!calOn() && ui.view === 'due')) + (calOn() ? `<button data-act="calOpen" class="${ui.view === 'cal' || ui.view === 'book' || ui.view === 'due' ? 'on' : ''}">${ICON.cal}Calendar</button>` : '') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit' || ui.view === 'import') + t('invoices', 'Sales', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' || ui.view === 'summary') + (['gas', 'pipe', 'iv', 'heat', ...(typeof OT_IDS !== 'undefined' ? OT_IDS : [])].some(toolOn) ? `<button data-act="toolsOpen" class="${ui.view === 'tools' ? 'on' : ''}">${ICON.tools}Tools</button>` : '');
+  nav.innerHTML = t('home', 'Today', ICON.rec, ui.view === 'home' || ui.view === 'pick' || (!calOn() && ui.view === 'due')) + (calOn() ? `<button data-act="calOpen" class="${ui.view === 'cal' || ui.view === 'book' || ui.view === 'due' ? 'on' : ''}">${ICON.cal}Calendar</button>` : '') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit' || ui.view === 'import') + t('invoices', 'Sales', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' || ui.view === 'summary') + (['gas', 'pipe', 'iv', 'heat', ...(typeof OT_IDS !== 'undefined' ? OT_IDS : [])].some(toolOn) ? `<button data-act="toolsOpen" class="${ui.view === 'tools' ? 'on' : ''}">${ICON.tools}Tools</button>` : '');
   { const sb = $('#setBtn'); if (sb) sb.classList.toggle('on', ['settings', 'prices', 'admin', 'help', 'news', 'feedback'].includes(ui.view)); }
   { const v = ui.view, in_ = a => a.includes(v);
     $('#barSub').textContent = in_(['invoices', 'invEdit', 'invPrint', 'summary']) ? (v === 'invoices' && ui.invTab === 'quotes' ? 'Quotes' : 'Invoices') : in_(['customers', 'custEdit', 'import']) ? 'Customers' : in_(['cal', 'book', 'due']) ? 'Calendar' : v === 'tools' ? 'Tools'
-      : in_(['settings', 'prices', 'admin', 'news', 'feedback']) ? 'Settings' : v === 'help' ? 'Help' : 'Services'; }
+      : in_(['settings', 'prices', 'admin', 'news', 'feedback']) ? 'Settings' : v === 'help' ? 'Help' : 'Today'; }
 }
 
 /* invoice reminder shown on completed records: green once the invoice has been sent, otherwise a reminder */
@@ -731,27 +739,23 @@ function bkBanner() {
   return `<div class="notice">Time for your monthly backup. ${d.last ? 'Your last one was on ' + ukDate(d.last) + '.' : 'You have not made one yet.'} Save the file somewhere safe, like your email or cloud storage.<div style="height:8px"></div><button class="btn gold block" data-act="expAll">Back up now</button><div style="height:6px"></div><button class="btn block ghost" data-act="bkLater">Remind me in a week</button></div>`;
 }
 function renderHome(v) {
-  const missing = workType() === 'oil' ? (!settings.address || !settings.oftecReg || !settings.engineerName) : (!settings.address || !settings.gasSafeReg || !settings.engineerName || !settings.gasSafeId);
   const list = [...records].sort((a, b) => b.updated - a.updated);
+  const qc = (() => { const c = records.filter(qChase).sort((a, b) => (a.inspectionDate || '').localeCompare(b.inspectionDate || '')); return c.length ? `<button type="button" class="notice" style="display:block;width:100%;text-align:left" data-act="openRec" data-id="${c[0].id}"><b>${c.length} quote${c.length > 1 ? 's' : ''} sent over two weeks ago with no reply.</b> Tap to chase ${esc(c[0].customer.name || 'a customer')}.</button>` : ''; })();
   v.innerHTML = `
-    <h1>Services</h1>
     ${trialBanner()}
     ${bkBanner()}
     ${newsBanner()}
-    ${(() => { const c = records.filter(qChase).sort((a, b) => (a.inspectionDate || '').localeCompare(b.inspectionDate || '')); return c.length ? `<button type="button" class="notice" style="display:block;width:100%;text-align:left" data-act="openRec" data-id="${c[0].id}"><b>${c.length} quote${c.length > 1 ? 's' : ''} sent over 2 weeks ago with no answer.</b> Tap to chase ${esc(c[0].customer.name || 'the oldest')}.</button>` : ''; })()}
-    ${(() => { const c = invOverdueAsk(); return c.length ? `<button type="button" class="notice" style="display:block;width:100%;text-align:left" data-act="invAsk"><b>${c.length} overdue invoice${c.length > 1 ? 's' : ''}.</b> Tap to send ${esc(c[0].customer.name || 'a customer')} a payment reminder.</button>` : ''; })()}
-    ${missing ? `<div class="notice">Add the business address, ${workType() === 'oil' ? 'OFTEC registration number' : 'Gas Safe register number'} and engineer details in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a> before issuing certificates.</div>` : ''}
-    ${REC_HOME.filter(([t]) => recOn(t)).map(([t, l]) => `<button class="btn gold block" data-act="newRec" data-type="${t}">${l}</button><div style="height:10px"></div>`).join('')}
-    ${calOn() ? '' : remHomeBtn()}
-    ${calHomeHtml()}
-    
-    <h2>Recent</h2>
+    ${qc}
+    ${setupHtml()}
+    ${todayHtml()}
+    ${calOn() ? (settings.calHome === 'off' ? '' : tomorrowHtml()) : remHomeBtn()}
+    <div class="sechead"><h2>Recent jobs</h2></div>
     ${list.length ? list.slice(0, 5).map(r => `${r.status === 'draft' ? '<div class="itemw">' : ''}
       <button class="item" data-act="openRec" data-id="${r.id}">
         <div class="row sp"><span class="t">${esc(r.customer.name || 'No customer yet')}</span><span class="badges"><span class="badge ${r.status}">${r.status}</span>${invBadge(r)}</span></div>
         <div class="s">${esc(addrFirst(r.jobAddress || '') || 'No address yet')}</div>
         <div class="s">${FORM_SHORT[typeOf(r)]} · ${esc(r.ref)} · ${ukDate(r.inspectionDate)}${r._dirty ? ' · not synced' : ''}</div>
-      </button>${r.status === 'draft' ? `<button class="draftdel" data-act="delDraft" data-id="${r.id}">Delete draft</button></div>` : ''}`).join('') : `<div class="empty">No records yet.<br>Tap one of the buttons above to start.<br>You can do several forms for one customer in a single visit.</div>`}
+      </button>${r.status === 'draft' ? `<button class="draftdel" data-act="delDraft" data-id="${r.id}">Delete draft</button></div>` : ''}`).join('') : `<div class="empty">No records yet.<br>Tap New to start one.<br>You can do several forms for one customer in a single visit.</div>`}
     ${list.length > 5 ? `<p class="small muted" style="text-align:center">Showing the last 5 jobs. Older ones are under <a href="#" data-nav="customers" style="color:inherit;font-weight:700">Customers</a> – tap a customer to see all their jobs.</p>` : ''}`;
 }
 
@@ -880,7 +884,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v166';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v167';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1169,6 +1173,10 @@ function renderSettings(v) {
       <button class="btn block" data-act="forceUpdate">Update app now</button>
       <p class="small" id="updMsg" style="margin:8px 0 0;font-weight:600"></p>
       <p class="small muted" style="margin-bottom:0">Clears the saved copy of the app and reloads the newest version. Your records, customers and photos are not touched.</p>
+    </div>
+    <h2>Appearance</h2>
+    <div class="card">
+      <label class="f"><span>Screen colours</span><select data-s="theme"><option value="auto" ${(settings.theme || 'auto') === 'auto' ? 'selected' : ''}>Match my phone</option><option value="dark" ${settings.theme === 'dark' ? 'selected' : ''}>Dark</option><option value="light" ${settings.theme === 'light' ? 'selected' : ''}>Light (easier in bright sun)</option></select></label>
     </div>
     <h2>Services to show</h2>
     <div class="card">
@@ -3187,7 +3195,7 @@ document.addEventListener('input', e => {
     if (had) { const bx = $('#invPdfBox'); if (bx) bx.innerHTML = invPdfHtml(); }
     return;
   }
-  if (t.dataset.s) { settings[t.dataset.s] = t.value; saveSettings(); if (t.dataset.s === 'workType') { if (t.value === 'oil') { if (!settings.quoteIncluded || settings.quoteIncluded === QUO.DEFAULT_INCLUDED) settings.quoteIncluded = QUO.OIL_INCLUDED; if (!settings.quoteTerms || settings.quoteTerms === QUO.DEFAULT_TERMS) settings.quoteTerms = QUO.OIL_TERMS; } else if (t.value === 'gas') { if (settings.quoteIncluded === QUO.OIL_INCLUDED) settings.quoteIncluded = QUO.DEFAULT_INCLUDED; if (settings.quoteTerms === QUO.OIL_TERMS) settings.quoteTerms = QUO.DEFAULT_TERMS; } saveSettings(); const y = window.scrollY; render(); window.scrollTo(0, y); return; } if (/^rem(Auto|Days|Text)$/.test(t.dataset.s)) { syncAll(); if (t.dataset.s === 'remAuto') { const y = window.scrollY; render(); window.scrollTo(0, y); return; } } if (/^inv(Prefix|Next|Digits)$/.test(t.dataset.s)) { const pv = document.getElementById('invPreview'); if (pv) pv.textContent = invNumberFor(settings.invNext); } if (t.dataset.s === 'discValue' || /^price/.test(t.dataset.s)) { clearTimeout(settingsRefresh._t); settingsRefresh._t = setTimeout(settingsRefresh, 900); } return; }
+  if (t.dataset.s) { settings[t.dataset.s] = t.value; saveSettings(); if (t.dataset.s === 'theme') applyTheme(); if (t.dataset.s === 'workType') { if (t.value === 'oil') { if (!settings.quoteIncluded || settings.quoteIncluded === QUO.DEFAULT_INCLUDED) settings.quoteIncluded = QUO.OIL_INCLUDED; if (!settings.quoteTerms || settings.quoteTerms === QUO.DEFAULT_TERMS) settings.quoteTerms = QUO.OIL_TERMS; } else if (t.value === 'gas') { if (settings.quoteIncluded === QUO.OIL_INCLUDED) settings.quoteIncluded = QUO.DEFAULT_INCLUDED; if (settings.quoteTerms === QUO.OIL_TERMS) settings.quoteTerms = QUO.DEFAULT_TERMS; } saveSettings(); const y = window.scrollY; render(); window.scrollTo(0, y); return; } if (/^rem(Auto|Days|Text)$/.test(t.dataset.s)) { syncAll(); if (t.dataset.s === 'remAuto') { const y = window.scrollY; render(); window.scrollTo(0, y); return; } } if (/^inv(Prefix|Next|Digits)$/.test(t.dataset.s)) { const pv = document.getElementById('invPreview'); if (pv) pv.textContent = invNumberFor(settings.invNext); } if (t.dataset.s === 'discValue' || /^price/.test(t.dataset.s)) { clearTimeout(settingsRefresh._t); settingsRefresh._t = setTimeout(settingsRefresh, 900); } return; }
   if (t.dataset.c) { ui.cust[t.dataset.c] = t.value; }
 });
 document.addEventListener('input', e => {
