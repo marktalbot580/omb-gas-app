@@ -749,6 +749,10 @@ def run():
         pg.click('[data-act=routeOpen]')
         hrefs = ev(pg, "[...document.querySelectorAll('#routeSheet a.btn')].map(a=>a.href)")
         check('route sheet has a Go link per stop and a Start route link', len(hrefs) == 4 and 'waypoints=' in hrefs[-1] and 'Oak' in hrefs[-1], hrefs)
+        ev(pg, "bookings.push({id:'rt1',date:addDays(localISO(),1),time:'09:00',mins:60,name:'Mrs Jo Hale',address:'3 Mill Ln\\nLincoln\\nLN1 1AA',types:['service'],status:'booked',phone:'07700900333',email:''},{id:'rt2',date:addDays(localISO(),1),time:'14:30',mins:60,name:'Tom Smith',address:'9 Fen Rd\\nLincoln\\nLN2 2BB',types:['service'],status:'booked',phone:'07700900444',email:''});saveBookings();ui.view='home';render();")
+        ev(pg, "localStorage.setItem('omb_noinstall','true');document.querySelector('#routeSheet').remove();document.querySelector('#instPop')&&document.querySelector('#instPop').remove()"); pg.click('#view [data-act=routeOpen][data-day="1"]')
+        eta = ev(pg, "[etaText(bookings.find(b=>b.id==='rt1'),1),etaText(bookings.find(b=>b.id==='rt2'),1),document.querySelectorAll('#routeSheet [data-act=etaText]').length]")
+        check('tomorrow route lists jobs with ETA text from the booked time', eta[2] == 2 and 'around 9am tomorrow' in eta[0] and 'around 2:30pm tomorrow' in eta[1] and 'Mrs Hale' in eta[0].replace('Jo ', ''), eta)
         check('no page errors with the route', not errs, errs)
         ctx.close()
 

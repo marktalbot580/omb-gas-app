@@ -59,6 +59,7 @@ function todayHtml() {
   return `<h1 style="margin-bottom:4px">${esc(dayLong(t))}</h1>
     <div class="muted" style="margin-bottom:16px">${esc(parts.join(' · ') || 'Nothing on today')}</div>
     <button type="button" class="btn gold newbtn" data-act="newSheet"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New</button>
+    ${calOn() && bkOn(addDays(t, 1)).length ? `<button type="button" class="btn block" style="margin-top:10px" data-act="routeOpen" data-day="1">Tomorrow: ${bkOn(addDays(t, 1)).length} job${bkOn(addDays(t, 1)).length === 1 ? '' : 's'}, text arrival times</button>` : ''}
     ${nx ? `<div class="nextjob"><div class="row sp"><span class="tag gold"><i></i>Next job · ${esc(minsText(nx))}</span><span class="when">${esc(nx.time)}</span></div>
       <div><div class="big">${esc(nx.name || 'No name')}</div>${nx.address ? `<div class="muted">${esc(addrLine(nx.address))}</div>` : ''}<div style="margin-top:6px;font-weight:600">${esc(bkLabel(nx))}</div></div>
       <div class="acts">${phone(nx).length >= 5 ? `<a class="btn" href="tel:${esc(phone(nx))}">Call</a>` : ''}${isMobileNo(nx.phone) ? `<button type="button" class="btn" data-act="todayOtw" data-id="${nx.id}">On my way</button>` : ''}${String(nx.address || '').trim().length >= 4 ? `<a class="btn" href="${esc(mapsUrl(nx.address))}" target="_blank" rel="noopener">Navigate</a>` : ''}</div>
@@ -146,18 +147,27 @@ document.addEventListener('click', e => {
 }, true);
 
 /* ---------- route for the day: today's jobs in appointment order, a Go link for each and one tap to start the whole run in your maps app ---------- */
-const routeStops = () => nextBookings().filter(b => String(b.address || '').trim().length >= 4);
+const routeDay = off => { const d = off ? addDays(localISO(), off) : localISO(); return off ? bkOn(d).filter(b => b.status !== 'done') : nextBookings(); };
+const routeStops = off => routeDay(off).filter(b => String(b.address || '').trim().length >= 4);
 function routeUrl(list) {
   const a = list.map(b => String(b.address).replace(/\s*\n\s*/g, ', ').trim()), last = a[a.length - 1], via = a.slice(0, -1).slice(0, 9);
   return 'https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=' + encodeURIComponent(last) + (via.length ? '&waypoints=' + encodeURIComponent(via.join('|')) : '');
 }
-function showRoute() {
+/* "9am", "9:30am", "2pm" from the booked time */
+function timeWords(t) { const m = /^(\d{1,2}):(\d{2})/.exec(t || ''); if (!m) return t || ''; const h = +m[1], mi = m[2], h12 = h % 12 || 12; return h12 + (mi === '00' ? '' : ':' + mi) + (h < 12 ? 'am' : 'pm'); }
+function etaText(b, off) {
+  const addr = String(b.address || '').replace(/\s*\n+\s*/g, ', ').trim();
+  return `Hi ${greetName(b.name)}, just to let you know I will be with you around ${timeWords(b.time)} ${off ? 'tomorrow' : 'today'}${addr ? ' at ' + addr : ''}.\n${settings.businessName || ''}`.trim();
+}
+function showRoute(off) {
+  off = off ? 1 : 0;
   const old = document.getElementById('routeSheet'); if (old) old.remove();
-  const list = routeStops(); if (!list.length) { toast('No jobs with an address today'); return; }
+  const all = routeDay(off), list = routeStops(off);
   const d = document.createElement('div'); d.id = 'routeSheet'; d.className = 'sheetbg';
-  d.innerHTML = `<div class="sheet" role="dialog" aria-label="Route for today"><div class="grab"></div><h2>Route for today</h2>
-    <p class="muted" style="margin:0 0 10px">${list.length} stop${list.length === 1 ? '' : 's'}, in appointment order. Opens in your maps app.</p>
-    ${list.map((b, k) => `<div class="line"><b style="width:28px;height:28px;border-radius:50%;background:var(--gold);color:var(--btn-ink,#1a1405);display:flex;align-items:center;justify-content:center;flex:none">${k + 1}</b><span class="main"><b>${esc(b.time)} ${esc(b.name || 'No name')}</b><span>${esc(addrFirst(b.address))} · ${esc(bkLabel(b))}</span></span><a class="btn" href="${esc(mapsUrl(b.address))}" target="_blank" rel="noopener">Go</a></div>`).join('')}
+  const seg = `<div class="seg" style="margin-bottom:10px"><button type="button" class="${off ? '' : 'on'}" data-act="routeOpen" data-day="0">Today</button><button type="button" class="${off ? 'on' : ''}" data-act="routeOpen" data-day="1">Tomorrow</button></div>`;
+  d.innerHTML = `<div class="sheet" role="dialog" aria-label="Route"><div class="grab"></div><h2>Route</h2>${seg}
+    ${all.length ? `<p class="muted" style="margin:0 0 10px">${all.length} job${all.length === 1 ? '' : 's'}, in appointment order.${off ? ' Plan tonight and text each customer when you will arrive.' : ''}</p>` : `<p class="muted">Nothing booked ${off ? 'tomorrow' : 'for the rest of today'}.</p>`}
+    ${all.map((b, k) => `<div class="line" style="flex-wrap:wrap"><b style="width:28px;height:28px;border-radius:50%;background:var(--gold);color:var(--btn-ink,#1a1405);display:flex;align-items:center;justify-content:center;flex:none">${k + 1}</b><span class="main"><b>${esc(b.time)} ${esc(b.name || 'No name')}</b><span>${esc(addrFirst(b.address || '') || 'No address')} · ${esc(bkLabel(b))}</span></span>${String(b.address || '').trim().length >= 4 ? `<a class="btn" href="${esc(mapsUrl(b.address))}" target="_blank" rel="noopener">Go</a>` : ''}${isMobileNo(b.phone) ? `<button type="button" class="btn" data-act="etaText" data-id="${b.id}" data-day="${off}">Text ETA${b.etaAt ? ' (sent)' : ''}</button>` : ''}</div>`).join('')}
     ${list.length >= 2 ? `<a class="btn gold block" style="text-align:center;text-decoration:none;margin-top:10px" href="${esc(routeUrl(list))}" target="_blank" rel="noopener">Start route</a>` : ''}
     <button type="button" class="btn block" data-act="routeClose" style="margin-top:8px">Close</button></div>`;
   document.body.appendChild(d);
@@ -166,6 +176,14 @@ document.addEventListener('click', e => {
   const bg = document.getElementById('routeSheet');
   if (bg && e.target === bg) { bg.remove(); return; }
   const b = e.target.closest('[data-act]'); if (!b) return;
-  if (b.dataset.act === 'routeOpen') showRoute();
+  if (b.dataset.act === 'routeOpen') showRoute(+b.dataset.day);
+  else if (b.dataset.act === 'etaText') {
+    const x = bookings.find(z => z.id === b.dataset.id); if (!x) return;
+    const body = etaText(x, +b.dataset.day), ph = String(x.phone || '').replace(/[^\d+]/g, '');
+    x.etaAt = Date.now(); x.updated = Date.now(); saveBookings(); if (typeof syncAll === 'function') syncAll();
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) { const el = document.createElement('a'); el.href = 'sms:' + ph + '?&body=' + encodeURIComponent(body); document.body.appendChild(el); el.click(); el.remove(); }
+    else { try { navigator.clipboard.writeText(body); toast('Message copied. Paste it into a text to ' + x.phone); } catch (err) { toast('Texts open on a phone.'); } }
+    b.textContent = 'Text ETA (sent)';
+  }
   else if (b.dataset.act === 'routeClose' && bg) bg.remove();
 }, true);
