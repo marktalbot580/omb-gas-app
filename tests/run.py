@@ -657,6 +657,39 @@ def run():
         check('no page errors with the oil forms', not errs, errs)
         ctx.close()
 
+        # ---------- 12w. oil tools ----------
+        ctx, pg, errs = fresh(b)
+        check('gas work type hides the oil tools', ev(pg, "OT_IDS.every(k=>!toolOn(k)) && toolOn('gas')"))
+        ev(pg, "settings.workType='oil'; saveSettings()")
+        check('oil work type shows all six oil tools', ev(pg, "OT_IDS.length===6 && OT_IDS.every(toolOn)"))
+        ev(pg, "settings.toolFire='off'; saveSettings()")
+        check('an oil tool can be switched off in settings', ev(pg, "!toolOn('fire') && toolOn('tank')"))
+        ev(pg, "settings.toolFire='on'; saveSettings(); ui.view='tools'; ui.tool='menu'; render()")
+        check('tools menu lists the oil tools', ev(pg, "['Tank volume','Burner firing','Combustion efficiency','Fuel use','Oil supply pipe','Ventilation sizing'].every(t=>document.querySelector('#view').innerText.toLowerCase().includes(t.toLowerCase()))"))
+        calc = ev(pg, """(()=>{ const o=otS(), r={};
+          Object.assign(o.tank,{shape:'rect',l:'2000',w:'1000',h:'1000',bl:'2400',bw:'1400',bh:'800'}); let c=otTank(); r.tank=[Math.round(c.L),Math.round(c.need),Math.round(c.B),c.ok];
+          o.tank.bl='1800'; r.tankBad=otTank().ok;
+          Object.assign(o.tank,{shape:'cyl',orient:'h',d:'1000',l:'2000',bund:''}); r.cyl=Math.round(otTank().L);
+          Object.assign(o.fire,{nozzle:'0.60',p:'10',unit:'bar',fuel:'kero',cv:''}); c=otFire(); r.fire=[+c.lh.toFixed(2),+c.gross.toFixed(1)];
+          o.fire.unit='psi'; o.fire.p='100'; r.psi=+otFire().lh.toFixed(2);
+          Object.assign(o.eff,{co2:'11.5',tf:'180',ta:'20'}); r.eff=+otEff().net.toFixed(1);
+          Object.assign(o.fuel,{kw:'20',hrs:'1000',old:'70',neu:'90',price:'60',fuel:'kero',cv:''}); c=otFuel(); r.fuel=[Math.round(c.lOld),Math.round(c.lNew),Math.round(c.cOld)];
+          Object.assign(o.vent,{kw:'24',flue:'open',stab:'no'}); r.vent=Math.round(otVent().area); o.vent.stab='yes'; r.ventStab=Math.round(otVent().area); o.vent.flue='sealed'; r.sealed=!!otVent().sealed;
+          Object.assign(o.opipe,{sys:'single',pos:'above',ht:'0.5',kw:'24',len:'15',fuel:'kero'}); c=otPipe(); r.pipe=c.best&&c.best.n; o.opipe.len='100000'; r.pipeNone=!otPipe().best;
+          return r; })()""")
+        check('oil tools: tank volume and bund (rectangular, cylinder, too small)', calc['tank'] == [2000, 2200, 2688, True] and calc['tankBad'] is False and calc['cyl'] == 1571, calc)
+        check('oil tools: firing rate (nozzle 0.60 at 10 bar, psi unit)', calc['fire'] == [2.74, 28.2] and calc['psi'] == 2.27, calc)
+        check('oil tools: combustion efficiency (Siegert)', calc['eff'] == 89.4, calc)
+        check('oil tools: fuel use and cost', calc['fuel'] == [2774, 2157, 1664], calc)
+        check('oil tools: ventilation sizing', calc['vent'] == 10450 and calc['ventStab'] == 17650 and calc['sealed'], calc)
+        check('oil tools: pipe sizing gives a size, and none when far too long', calc['pipe'] == '8 mm' and calc['pipeNone'], calc)
+        ui_ok = ev(pg, """(()=>{ let ok=true; for (const k of OT_IDS){ ui.view='tools'; ui.tool=k; TL.work=true; try{ render(); if(!document.getElementById('tlOtRes')) ok=false; }catch(e){ ok=false; } } TL.work=false; return ok; })()""")
+        check('oil tools: every tool screen draws with workings on', ui_ok)
+        ev(pg, "TL.used.otank=1; TL.used.ofire=1; TL.used.oeff=1; TL.used.ofuel=1; TL.used.opipe=1; TL.used.ovent=1")
+        check('oil tools: results go into the tools report', ev(pg, "otSections().length>=5 && tlSections().some(x=>x.id==='ofire')"))
+        check('no page errors with the oil tools', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()

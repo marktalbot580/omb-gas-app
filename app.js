@@ -667,7 +667,7 @@ const ICON = {
 function renderTabs(nav) {
   nav.className = 'tabs';
   const t = (id, label, ic, on) => `<button data-nav="${id}" class="${on ? 'on' : ''}">${ic}${label}</button>`;
-  nav.innerHTML = t('home', 'Services', ICON.rec, ui.view === 'home' || ui.view === 'pick' || (!calOn() && ui.view === 'due')) + (calOn() ? `<button data-act="calOpen" class="${ui.view === 'cal' || ui.view === 'book' || ui.view === 'due' ? 'on' : ''}">${ICON.cal}Calendar</button>` : '') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit' || ui.view === 'import') + t('invoices', 'Sales', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' || ui.view === 'summary') + (['gas', 'pipe', 'iv', 'heat'].some(toolOn) ? `<button data-act="toolsOpen" class="${ui.view === 'tools' ? 'on' : ''}">${ICON.tools}Tools</button>` : '');
+  nav.innerHTML = t('home', 'Services', ICON.rec, ui.view === 'home' || ui.view === 'pick' || (!calOn() && ui.view === 'due')) + (calOn() ? `<button data-act="calOpen" class="${ui.view === 'cal' || ui.view === 'book' || ui.view === 'due' ? 'on' : ''}">${ICON.cal}Calendar</button>` : '') + t('customers', 'Customers', ICON.cust, ui.view === 'customers' || ui.view === 'custEdit' || ui.view === 'import') + t('invoices', 'Sales', ICON.inv, ui.view === 'invoices' || ui.view === 'invEdit' || ui.view === 'invPrint' || ui.view === 'summary') + (['gas', 'pipe', 'iv', 'heat', ...(typeof OT_IDS !== 'undefined' ? OT_IDS : [])].some(toolOn) ? `<button data-act="toolsOpen" class="${ui.view === 'tools' ? 'on' : ''}">${ICON.tools}Tools</button>` : '');
   { const sb = $('#setBtn'); if (sb) sb.classList.toggle('on', ['settings', 'prices', 'admin', 'help', 'news', 'feedback'].includes(ui.view)); }
   { const v = ui.view, in_ = a => a.includes(v);
     $('#barSub').textContent = in_(['invoices', 'invEdit', 'invPrint', 'summary']) ? (v === 'invoices' && ui.invTab === 'quotes' ? 'Quotes' : 'Invoices') : in_(['customers', 'custEdit', 'import']) ? 'Customers' : in_(['cal', 'book', 'due']) ? 'Calendar' : v === 'tools' ? 'Tools'
@@ -865,7 +865,7 @@ function renderCustEdit(v) {
     <button type="button" class="btn block" data-act="addCustProp">+ Add another property address</button><div style="height:10px"></div>
     <button class="btn gold block" data-act="saveCust">Save customer</button>
     ${c._new ? '' : `<div style="height:10px"></div><button class="btn block" data-act="recForCust">Start forms for this customer</button>
-      ${toolOn('gas') || toolOn('pipe') || toolOn('iv') || toolOn('heat') ? '<div style="height:10px"></div><button class="btn block" data-act="custTools">Tools and calculation report</button>' : ''}
+      ${['gas', 'pipe', 'iv', 'heat', ...(typeof OT_IDS !== 'undefined' ? OT_IDS : [])].some(toolOn) ? '<div style="height:10px"></div><button class="btn block" data-act="custTools">Tools and calculation report</button>' : ''}
     <div style="height:10px"></div><button class="btn danger block" data-act="delCust">Delete customer</button>`}
     </div>
     ${c._new ? '' : `<div data-ctab="nav" ${cTab === 'nav' ? '' : 'hidden'}>
@@ -1158,7 +1158,7 @@ function renderSettings(v) {
     <div data-stab="tools" ${(ui.sTab || 'business') === 'tools' ? '' : 'hidden'}>
     <h2>Tools</h2>
     <div class="card">
-      ${[['toolGas', 'Gas rate calculator'], ['toolPipe', 'Gas pipe sizing'], ['toolIv', 'Tightness test volume'], ['toolHeat', 'Heat loss and radiator sizing']].map(([k, l]) => `<label class="f"><span>${l}</span><select data-s="${k}"><option value="on" ${settings[k] === 'off' ? '' : 'selected'}>Show</option><option value="off" ${settings[k] === 'off' ? 'selected' : ''}>Hide</option></select></label>`).join('')}
+      ${[['toolGas', 'Gas rate calculator'], ['toolPipe', 'Gas pipe sizing'], ['toolIv', 'Tightness test volume'], ['toolHeat', 'Heat loss and radiator sizing'], ...(typeof OT_TOOLS !== 'undefined' && workType() !== 'gas' ? OT_TOOLS.map(([k, l]) => ['tool' + k[0].toUpperCase() + k.slice(1), l]) : [])].map(([k, l]) => `<label class="f"><span>${l}</span><select data-s="${k}"><option value="on" ${settings[k] === 'off' ? '' : 'selected'}>Show</option><option value="off" ${settings[k] === 'off' ? 'selected' : ''}>Hide</option></select></label>`).join('')}
       <small class="muted">Hidden tools disappear from the Tools list. Hide all three and the Tools button leaves the home screen.</small>
     </div>
     </div>

@@ -5,9 +5,10 @@ const TL_DEFAULT = () => ({
   work: false, skip: {}, prop: { same: false, name: '', addr: '', phone: '', email: '', cid: '' }, pulled: {}, note: {}, used: {},
   pipe: { kw: '24', basis: 'net', len: '6', dp: '1', f: { b90: '2', e90: '0', b45: '0', tin: '0', tout: '0' } },
   iv: { gas: 'ng', meter: 'u6', mvol: '', runs: [{ pipe: 'cu15', len: '', v: '' }] },
-  heat: { outside: '-3', sys: 'cond', flow: '70', ret: '50', room: '', factor: '1.5', rooms: [] }
+  heat: { outside: '-3', sys: 'cond', flow: '70', ret: '50', room: '', factor: '1.5', rooms: [] },
+  ot: (typeof OT_DEFAULT === 'function' ? OT_DEFAULT() : {})
 });
-let TL = (() => { try { const o = JSON.parse(localStorage.getItem(TL_KEY)); if (o && o.pipe && o.heat) { const d = TL_DEFAULT(); if (!o.iv) o.iv = d.iv; if (!o.prop) o.prop = d.prop; if (!o.pulled) o.pulled = {}; if (!o.note) o.note = {}; if (!o.used) o.used = {}; return o; } } catch (e) { } return TL_DEFAULT(); })();
+let TL = (() => { try { const o = JSON.parse(localStorage.getItem(TL_KEY)); if (o && o.pipe && o.heat) { const d = TL_DEFAULT(); if (!o.iv) o.iv = d.iv; if (!o.ot) o.ot = d.ot; if (!o.prop) o.prop = d.prop; if (!o.pulled) o.pulled = {}; if (!o.note) o.note = {}; if (!o.used) o.used = {}; return o; } } catch (e) { } return TL_DEFAULT(); })();
 const tlUse = () => { try { return JSON.parse(localStorage.getItem('omb_tooluse')) || {}; } catch (e) { return {}; } };
 const tlCount = k => { try { const u = tlUse(); u[k] = (u[k] || 0) + 1; localStorage.setItem('omb_tooluse', JSON.stringify(u)); } catch (e) { } };
 const tlFav = () => { try { return JSON.parse(localStorage.getItem('omb_toolfav')) || {}; } catch (e) { return {}; } };
@@ -352,7 +353,7 @@ function tlSections() {
     { t: 'table', head: ['Room', 'Temp', 'Heat loss', 'Radiator needed', 'Catalogue size (ΔT50)'], w: [38, 16, 26, 32, 36], a: ['l', 'r', 'r', 'r', 'r'], rows: rooms.map(({ r, c }) => { const re = radEquiv(c.watts, tlNum(r.temp)); return [r.name + ' ' + r.l + '×' + r.w + '×' + r.h + ' m', r.temp + '°C', (c.lo !== undefined ? Math.round(c.lo) + ' to ' : '') + Math.round(c.watts) + ' W', Math.round(c.watts) + ' W', re ? Math.round(re.rated) + ' W' : '–']; }) },
     { t: 'kv', bold: ['Whole-house heat loss'], rows: [['Whole-house heat loss', f2(sm.tot / 1000, 2) + ' kW'], ['Radiators to fit (catalogue ΔT50)', f2(sm.rated / 1000, 2) + ' kW'], ['Boiler, rule of thumb (× ' + f2(fct, 1) + ')', f2(sm.tot * fct / 1000, 1) + ' kW']] },
     { t: 'note', text: 'An estimate using typical U-values and the room-by-room method. Check against a full heat loss calculation for new systems and heat pumps.' }] }); }
-  return out;
+  return out.concat(typeof otSections === 'function' ? otSections() : []);
 }
 const tlPicked = () => tlSections().filter(x => !(TL.skip && TL.skip[x.id]));
 function tlPickBox() {
@@ -435,11 +436,13 @@ function renderTools(v) {
     v.innerHTML = pipeView() + '<div style="height:10px"></div><button class="btn ghost block" data-tl="go" data-v="menu">Back to tools</button>';
   } else if (t === 'iv') {
     v.innerHTML = ivView() + '<div style="height:10px"></div><button class="btn ghost block" data-tl="go" data-v="menu">Back to tools</button>';
+  } else if (typeof OT_VIEW !== 'undefined' && OT_VIEW[t]) {
+    v.innerHTML = OT_VIEW[t]() + '<div style="height:10px"></div><button class="btn ghost block" data-tl="go" data-v="menu">Back to tools</button>';
   } else if (t === 'heat') {
     if (!TL.heat.rooms.length) { TL.heat.rooms.push(newRoom()); tlSave(); }
     v.innerHTML = heatView() + '<div style="height:10px"></div><button class="btn ghost block" data-tl="go" data-v="menu">Back to tools</button>';
   } else {
-    const use = tlUse(), fav = tlFav(), list = [['gas', 'Gas rate calculator'], ['pipe', 'Gas pipe sizing'], ['iv', 'Tightness test volume (new regs)'], ['heat', 'Heat loss and radiator sizing']]
+    const use = tlUse(), fav = tlFav(), list = [['gas', 'Gas rate calculator'], ['pipe', 'Gas pipe sizing'], ['iv', 'Tightness test volume (new regs)'], ['heat', 'Heat loss and radiator sizing']].concat(typeof OT_TOOLS !== 'undefined' ? OT_TOOLS : [])
       .filter(x => toolOn(x[0])).map((x, i) => ({ k: x[0], l: x[1], n: use[x[0]] || 0, f: !!fav[x[0]], i })).sort((a, b) => (b.f ? 1 : 0) - (a.f ? 1 : 0) || b.n - a.n || a.i - b.i);
     v.innerHTML = `<h1>Tools</h1><p class="small muted" style="margin-top:0">Quick calculators for the van. None of these makes a certificate. Tap the heart to pin one to the top. After that, the ones you use most come first.</p>
       ${list.map(x => `<div class="item crow" style="padding:0;margin-bottom:10px"><button type="button" class="btn grow toolbtn" style="flex:1" data-tl="go" data-v="${x.k}">${x.l}</button><button type="button" class="heart ${x.f ? 'on' : ''}" data-tl="favTool" data-v="${x.k}" aria-label="${x.f ? 'Unpin' : 'Pin to the top'}">${x.f ? '♥' : '♡'}</button></div>`).join('')}
@@ -457,7 +460,7 @@ function renderTools(v) {
       <div style="height:10px"></div>${ui.toolBack === 'custEdit' ? '<button class="btn ghost block" data-tl="backCust">Back to the customer</button>' : '<button class="btn ghost block" data-nav="home">Back</button>'}`;
   }
 }
-const toolOn = k => (typeof workType === 'function' && workType() === 'oil' && ['gas', 'pipe', 'iv'].includes(k)) ? false : settings['tool' + k[0].toUpperCase() + k.slice(1)] !== 'off';
+const toolOn = k => (typeof workType === 'function' && workType() === 'oil' && ['gas', 'pipe', 'iv'].includes(k)) ? false : (typeof OT_IDS !== 'undefined' && OT_IDS.includes(k) && typeof workType === 'function' && workType() === 'gas') ? false : settings['tool' + k[0].toUpperCase() + k.slice(1)] !== 'off';
 function toolsForCustomer(c) {
   const same = TL.prop.cid === c.id;
   if (!same) { TL = TL_DEFAULT(); ui.toolPdf = null; try { delete ui.calc['tool-gas']; } catch (e) { } }
@@ -471,6 +474,7 @@ function toolsForCustomer(c) {
 /* ---------- events (kept separate from the main app handlers) ---------- */
 function tlSet(path, val) {
   if (/^(pipe|heat)\./.test(path)) TL.used[path.split('.')[0]] = 1;
+  if (path.startsWith('ot.')) { const sg = path.split('.')[1]; TL.used[sg === 'opipe' ? 'opipe' : 'o' + sg] = 1; }
   const k = path.split('.'); let o = TL; for (let i = 0; i < k.length - 1; i++) o = o[k[i]]; o[k[k.length - 1]] = val; tlSave();
 }
 function tlRepaint() { const y = window.scrollY; render(); window.scrollTo(0, y); }
@@ -510,7 +514,8 @@ document.addEventListener('input', e => {
   if (p === 'prop.name') { const el = document.getElementById('tlCustSug'); if (el) el.innerHTML = tlCustSug(TL.prop.cid ? '' : t.value); }
   if (p === 'prop.addr') { const el = document.getElementById('tlAddrSug'); if (el) el.innerHTML = tlAddrSug(t.value); }
   if (p.startsWith('prop.')) return;
-  if (p.startsWith('pipe.')) { const el = document.getElementById('tlPipeRes'); if (el) el.innerHTML = pipeResHtml(); }
+  if (p.startsWith('ot.')) { const el = document.getElementById('tlOtRes'); if (el && OT_RES[ui.tool]) el.innerHTML = OT_RES[ui.tool](); }
+  else if (p.startsWith('pipe.')) { const el = document.getElementById('tlPipeRes'); if (el) el.innerHTML = pipeResHtml(); }
   else if (p.startsWith('iv.')) { const el = document.getElementById('tlIvRes'); if (el) el.innerHTML = ivResHtml(); }
   else if (p.startsWith('heat.')) {
     const m = p.match(/^heat\.rooms\.(\d+)\./);
