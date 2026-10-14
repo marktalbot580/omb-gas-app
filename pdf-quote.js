@@ -12,7 +12,7 @@ async function buildQuotePdf(rec, s) {
   const ukd = iso => (iso ? iso.split('-').reverse().join('/') : '');
   const addDays = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
   const T = QUO.totals(rec, s), R = QUO.rows(rec), money = QUO.money;
-  const first = String(rec.customer.name || '').trim().split(/\s+/)[0] || 'there';
+  const first = greetName(rec.customer.name);
   let y = 0, SC = 1;   // SC scales the text below the cover picture: 1.12 normal, 1.32 large
   const BIG = rec.textSize === 'Large' ? 1.26 : 1.12;
 
@@ -180,7 +180,7 @@ async function buildGeneralQuotePdf1(rec, s, extra, info) {
   const logo = await getLogo();
   const ukd = iso => (iso ? iso.split('-').reverse().join('/') : '');
   const T = QUO.totals(rec, s), R = QUO.rows(rec), money = QUO.money;
-  const first = String(rec.customer.name || '').trim().split(/\s+/)[0] || 'there';
+  const first = greetName(rec.customer.name);
   const SC = rec.textSize === 'Large' ? 1.26 : 1.1;
   let y = 0;
   const txt = (t, x, yy, o = {}) => { doc.setFont('helvetica', o.b ? 'bold' : 'normal'); doc.setFontSize((o.fs || 9) * (o.raw ? 1 : SC)); doc.setTextColor(...(o.c || INK)); doc.text(String(t), x, yy, o.align ? { align: o.align } : undefined); };

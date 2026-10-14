@@ -1546,7 +1546,7 @@ const REC_HOME = [['gas', '+ New Gas Safety Record'], ['service', '+ New Boiler 
 /* wording of the quote chase email / text (editable in Settings → Quotes). {name} {address} {ref} {business} {signoff} are filled in */
 const QCHASE_DEFAULT = 'Hi {name},\n\nI just wanted to check that you received my quote for your new boiler at {address}. If you have any questions, or would like to go ahead, just let me know and I will arrange a date for the installation.\n\nKind regards,\n{signoff}';
 function chaseText(q) {
-  const first = String(q.customer.name || '').trim().split(/\s+/)[0] || 'there', map = { name: first, address: q.jobAddress ? String(q.jobAddress).replace(/\s*\n+\s*/g, ', ') : 'your property', ref: q.ref || '', business: settings.businessName || '', signoff: signOff() };
+  const first = greetName(q.customer.name), map = { name: first, address: q.jobAddress ? String(q.jobAddress).replace(/\s*\n+\s*/g, ', ') : 'your property', ref: q.ref || '', business: settings.businessName || '', signoff: signOff() };
   return (settings.qChaseText || QCHASE_DEFAULT).replace(/\{(name|address|ref|business|signoff)\}/gi, (m, k) => map[k.toLowerCase()]).replace(/your new boiler/gi, q.general ? (q.title ? 'your ' + q.title.toLowerCase() : 'the work') : '$&');
 }
 /* Chrome on a Mac only offers AirDrop and Messages when sharing a PDF (no Mail), so there we skip the share menu and use the save-then-attach steps instead */

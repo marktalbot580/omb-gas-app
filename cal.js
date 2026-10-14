@@ -10,13 +10,13 @@ const isMobileNo = p => /^(?:\+?44|0)7\d{9}$/.test(String(p || '').replace(/\(0\
 /* the "on my way" text: {name} {time} {address} {business} are filled in (wording editable in Settings → Calendar) */
 const OTW_DEFAULT = 'Hi {name}, just to let you know I am on my way for your {time} appointment at {address}. See you shortly.\n{business}';
 function otwText(b) {
-  const first = String(b.name || '').trim().split(/\s+/)[0] || 'there', map = { name: first, time: b.time || '', address: String(b.address || '').replace(/\s*\n+\s*/g, ', '), business: settings.businessName || '' };
+  const first = greetName(b.name), map = { name: first, time: b.time || '', address: String(b.address || '').replace(/\s*\n+\s*/g, ', '), business: settings.businessName || '' };
   return String(settings.calOtw || OTW_DEFAULT).replace(/\{(\w+)\}/g, (m, k) => (k in map ? map[k] : m)).replace(/\s+at\s*([.,])/g, '$1').replace(/\n{3,}/g, '\n\n').trim();   // no address: drop the dangling "at"
 }
 /* day-before reminder: tap-to-send text / email for tomorrow's appointments (nothing is sent automatically) */
 const CALREM_DEFAULT = 'Hi {name}, just a reminder that I am booked in to see you tomorrow at {time} for your {job}.\n{business}';
 function remindText(b) {
-  const first = String(b.name || '').trim().split(/\s+/)[0] || 'there', map = { name: first, time: b.time || '', job: bkLabel(b).toLowerCase(), address: String(b.address || '').replace(/\s*\n+\s*/g, ', '), business: settings.businessName || '' };
+  const first = greetName(b.name), map = { name: first, time: b.time || '', job: bkLabel(b).toLowerCase(), address: String(b.address || '').replace(/\s*\n+\s*/g, ', '), business: settings.businessName || '' };
   return String(settings.calRemText || CALREM_DEFAULT).replace(/\{(\w+)\}/g, (m, k) => (k in map ? map[k] : m)).replace(/\n{3,}/g, '\n\n').trim();
 }
 const remPending = () => bkOn(addDays(localISO(), 1)).filter(b => b.status !== 'done' && !b.remindedAt && isMobileNo(b.phone));
