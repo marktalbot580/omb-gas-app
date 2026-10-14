@@ -747,6 +747,12 @@ def run():
         pg.click('[data-act=bookDel]')
         ev(pg, "ui.view='invoices';ui.invTab='quotes';render()")
         check('deleting the appointment frees the quote to be booked again', ev(pg, "!!document.querySelector('[data-act=quoBook]')") and not ev(pg, "records.find(r=>r.type==='quote').qBooked"))
+        ev(pg, "ui.view='invoices';ui.invTab='quotes';render()")
+        pg.click('[data-act=quoBook]'); pg.click('[data-act=bookSave]')
+        n0 = ev(pg, "bookings.length")
+        ev(pg, "(()=>{const q=records.find(r=>r.type==='quote');const bt=document.createElement('button');bt.id='tmpOut';bt.dataset.act='qOutcome';bt.dataset.id=q.id;bt.dataset.v='declined';document.body.appendChild(bt);})()")
+        pg.click('#tmpOut')
+        check('declining a booked quote offers to remove it from the calendar', n0 == 1 and ev(pg, "bookings.length") == 0 and ev(pg, "records.find(r=>r.type==='quote').qStatus") == 'declined' and not ev(pg, "records.find(r=>r.type==='quote').qBooked"), [n0, ev(pg, "bookings.length")])
         check('no page errors with quote to invoice', not errs, errs)
         ctx.close()
 

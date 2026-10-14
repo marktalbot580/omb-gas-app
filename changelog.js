@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v180', items: ['If an accepted quote is booked in the calendar and you then mark it Declined, the app asks whether to remove it from the calendar too.'] },
   { v: 'v179', items: ['Fixed: if you delete the appointment you booked from an accepted quote, the quote no longer says it is booked in. It goes back to Book the job.'] },
   { v: 'v178', items: ['Tomorrow\u2019s route no longer shows a drive from where you are now, since you plan it from tonight. That line and the extra minutes in the total are for today only.'] },
   { v: 'v177', items: ['The Route total now includes the drive from where you are to the first job.'] },

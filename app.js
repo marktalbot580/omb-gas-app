@@ -894,7 +894,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v179';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v180';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -3133,7 +3133,14 @@ document.addEventListener('click', async e => {
       render(); window.scrollTo(0, y); break;
     }
     case 'qSentToggle': { const q = records.find(x => x.id === b.dataset.id); if (!q) break; q.qSent = qSentDay(q) ? '' : Date.now(); persistRec(q); const y = window.scrollY; render(); window.scrollTo(0, y); break; }
-    case 'qOutcome': { const q = records.find(x => x.id === b.dataset.id); if (!q) break; q.qStatus = q.qStatus === b.dataset.v ? '' : b.dataset.v; q.qDate = q.qStatus ? todayISO() : ''; persistRec(q); const y = window.scrollY; render(); window.scrollTo(0, y); break; }
+    case 'qOutcome': { const q = records.find(x => x.id === b.dataset.id); if (!q) break;
+      if (b.dataset.v === 'declined' && q.qStatus !== 'declined') {   // customer changed their mind: offer to free up the calendar
+        const bk = bookings.filter(x => x.fromQuote === q.id);
+        if (bk.length && confirm('This quote is booked in the calendar for ' + bk.map(x => dayShort(x.date) + ' at ' + x.time).join(' and ') + '. Remove it from the calendar?')) {
+          bk.forEach(x => deleteRemote('booking', x.id)); bookings = bookings.filter(x => x.fromQuote !== q.id); saveBookings(); syncAll(); q.qBooked = ''; toast('Removed from the calendar');
+        }
+      }
+      q.qStatus = q.qStatus === b.dataset.v ? '' : b.dataset.v; q.qDate = q.qStatus ? todayISO() : ''; persistRec(q); const y = window.scrollY; render(); window.scrollTo(0, y); break; }
     case 'qChase': {
       const q = records.find(x => x.id === b.dataset.id); if (!q) break;
       const body = chaseText(q);
