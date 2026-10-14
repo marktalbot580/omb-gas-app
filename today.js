@@ -267,5 +267,5 @@ document.addEventListener('click', e => {
   e.stopImmediatePropagation();
   const rs = document.getElementById('routeSheet'); if (rs) rs.remove();
   ui.book = { ...x, types: [...(x.types || [])], addrNew: true }; ui.bookFrom = 'home'; ui.view = 'book'; render(); window.scrollTo(0, 0);   // addrNew shows the address box even when it came from a saved property
-  setTimeout(() => { const a = document.querySelector('#view textarea[data-bk="address"]'); if (a) { a.scrollIntoView({ block: 'center' }); a.focus(); a.setSelectionRange(a.value.length, a.value.length); } }, 60);
+  setTimeout(() => { const a = document.querySelector('#view input[data-bk="addrpc"]') || document.querySelector('#view textarea[data-bk="address"]'); if (a) { a.scrollIntoView({ block: 'center' }); a.focus(); try { a.setSelectionRange(a.value.length, a.value.length); } catch (e) { } } }, 60);
 }, true);

@@ -133,7 +133,7 @@ function renderBook(v) {
     <div class="card">
       ${f('name', 'Customer name')}<div id="bkNameSug"></div>${c ? '<p class="small muted" style="margin:-4px 0 12px">Saved customer. Change the name to book someone new.</p>' : '<p class="small muted" style="margin:-4px 0 12px">Start typing to find a saved customer, or fill in the details for a new one.</p>'}${f('phone', 'Phone', { type: 'tel' })}${f('email', 'Email', { type: 'email' })}
       ${props.length ? `<label class="f"><span>Address of the job</span><select data-bk="propPick">${B.addrNew || inList ? '' : '<option value="">Choose an address</option>'}${props.map((p, i) => `<option value="${i}" ${!B.addrNew && p === B.address ? 'selected' : ''}>${esc(addrFirst(p) + (p.split('\n')[1] ? ', ' + p.split('\n')[1] : ''))}</option>`).join('')}<option value="__new" ${B.addrNew ? 'selected' : ''}>+ Add a new address</option></select></label>` : ''}
-      ${!props.length || B.addrNew || (B.address && !inList) ? f('address', props.length ? 'New address' : 'Address of the job', { area: 1 }) : ''}
+      ${!props.length || B.addrNew || (B.address && !inList) ? (() => { const sp = splitAddr(B.address || ''); return `<div class="f addrw"><span>${props.length ? 'New address' : 'Address of the job'}</span><textarea data-bk="address" rows="3" autocapitalize="words">${esc(sp.addr)}</textarea><input class="pc" data-bk="addrpc" type="text" placeholder="Postcode" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Postcode" value="${esc(sp.pc)}"></div>`; })() : ''}
     </div>
     <h2>Notes</h2><div class="card">${f('notes', 'Anything to remember', { area: 1 })}</div>
     <button class="btn gold block" data-act="bookSave">${isNew ? 'Add to calendar' : 'Save changes'}</button>
@@ -253,6 +253,7 @@ async function calAct(a, b) {
 }
 document.addEventListener('input', e => {
   const t = e.target, k = t && t.dataset && t.dataset.bk; if (!k || !ui.book || t.tagName === 'SELECT') return;
+  if (k === 'address' || k === 'addrpc') { if (k === 'addrpc') t.value = t.value.toUpperCase(); const w = t.closest('.addrw'); ui.book.address = joinAddr(w.querySelector('textarea').value, w.querySelector('.pc').value); return; }
   ui.book[k] = t.value;
   if (k === 'phone') { const ob = document.getElementById('bkOtw'); if (ob) ob.hidden = !isMobileNo(t.value); }
   if (k === 'name') { if (ui.book.customerId) { const c = customers.find(x => x.id === ui.book.customerId); if (!c || c.name !== t.value) { ui.book.customerId = ''; ui.book.addrNew = false; } } const el = document.getElementById('bkNameSug'); if (el) el.innerHTML = nameSugHtml(ui.book, t.value, 'bookPickCust'); }
@@ -263,5 +264,6 @@ document.addEventListener('change', e => {
   const k = t && t.dataset && t.dataset.bk; if (!k || !ui.book) return;
   const B = ui.book, y = window.scrollY;
   if (k === 'propPick') { const c = customers.find(x => x.id === B.customerId), ps = c ? (c.properties || []).filter(Boolean) : []; if (t.value === '__new') { B.addrNew = true; B.address = ''; } else if (t.value !== '') { B.addrNew = false; B.address = ps[+t.value] || ''; } render(); window.scrollTo(0, y); }
+  else if (k === 'address' || k === 'addrpc') { const w = t.closest('.addrw'); B.address = joinAddr(w.querySelector('textarea').value, w.querySelector('.pc').value); }
   else B[k] = t.value;
 });
