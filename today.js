@@ -335,3 +335,49 @@ document.addEventListener('click', e => {
   if (!pc) { toast('Add a postcode to your business address first'); return; }
   settings.routeStart = pc; saveSettings(); const y = window.scrollY; render(); window.scrollTo(0, y); toast('Start postcode set to ' + pc);
 }, true);
+
+/* running late: move today's appointment to a new time and (optionally) text the customer */
+function bkLate(b) {
+  if (!b || b.date !== localISO() || b.status === 'done' || !/^\d\d:\d\d$/.test(b.time || '')) return false;
+  const [h, m] = b.time.split(':').map(Number), n = new Date();
+  if (n.getHours() * 60 + n.getMinutes() > h * 60 + m) return true;
+  const d = driveNow[b.id], a = d && Date.now() - d.t < 15 * 60000 ? arriveInfo(b, d.mins) : null;
+  return !!(a && a.lateBy > 0);
+}
+const reschedPhone = b => String(b.phone || '').replace(/[^\d+]/g, '');
+function reschedText(b, d, t) {
+  const first = typeof greetName === 'function' ? greetName(b.name) : '';
+  return 'Hi ' + first + ', sorry, I am running behind and need to move your appointment to ' + dayShort(d) + ' at ' + t + '. Is that OK? Let me know if another time suits you better.' + (settings.businessName ? '\n' + settings.businessName : '');
+}
+document.addEventListener('click', e => {
+  const bg = document.getElementById('reschedSheet');
+  if (bg && e.target === bg) { bg.remove(); return; }
+  const b = e.target.closest('[data-act^="resched"], [data-act="bookResched"]'); if (!b) return;
+  const act = b.dataset.act; e.stopImmediatePropagation();
+  if (act === 'bookResched') {
+    const B = ui.book; if (!B) return;
+    const n = new Date(Date.now() + 30 * 60000), r = Math.ceil((n.getHours() * 60 + n.getMinutes()) / 15) * 15, hh = String(Math.floor(r / 60) % 24).padStart(2, '0'), mm = String(r % 60).padStart(2, '0');
+    const d = document.createElement('div'); d.id = 'reschedSheet'; d.className = 'sheetbg';
+    d.innerHTML = `<div class="sheet" role="dialog" aria-label="Reschedule"><div class="grab"></div><h2>Reschedule</h2>
+      <p class="muted" style="margin:0 0 10px">${esc(B.name || 'This customer')} is booked for ${esc(B.time)} today. Pick a new day and time.</p>
+      <label class="f"><span>New date</span><input id="rsDate" type="date" value="${localISO()}"></label>
+      <label class="f"><span>New start time</span><input id="rsTime" type="time" value="${hh}:${mm}"></label>
+      ${isMobileNo(B.phone) ? '<button type="button" class="btn gold block" data-act="reschedText">Move it and text the customer</button>' : ''}
+      <button type="button" class="btn ${isMobileNo(B.phone) ? '' : 'gold '}block" data-act="reschedSave" style="margin-top:8px">Move it, no text</button>
+      <button type="button" class="btn block" data-act="reschedClose" style="margin-top:8px">Cancel</button></div>`;
+    document.body.appendChild(d); return;
+  }
+  if (act === 'reschedClose') { if (bg) bg.remove(); return; }
+  const B = ui.book, d = (document.getElementById('rsDate') || {}).value, t = (document.getElementById('rsTime') || {}).value;
+  if (!B || !d || !t) { toast('Pick a date and time'); return; }
+  const x = bookings.find(z => z.id === B.id);
+  if (x) { x.date = d; x.time = t; x.etaAt = 0; x.remindedAt = 0; x.updated = Date.now(); saveBookings(); if (typeof syncAll === 'function') syncAll(); }
+  B.date = d; B.time = t;
+  if (B.fromQuote) { const q = records.find(z => z.id === B.fromQuote); if (q) { q.qBooked = d; persistRec(q); } }
+  if (act === 'reschedText' && isMobileNo(B.phone)) {
+    const body = reschedText(B, d, t);
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) { const el = document.createElement('a'); el.href = 'sms:' + reschedPhone(B) + '?&body=' + encodeURIComponent(body); document.body.appendChild(el); el.click(); el.remove(); }
+    else { try { navigator.clipboard.writeText(body); toast('Message copied. Paste it into a text to ' + B.phone); } catch (err) { toast('Texts open on a phone.'); } }
+  } else toast('Moved to ' + dayShort(d) + ' at ' + t);
+  if (bg) bg.remove(); render();
+}, true);

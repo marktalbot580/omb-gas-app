@@ -133,7 +133,8 @@ function renderBook(v) {
   const B = ui.book, isNew = !bookings.some(x => x.id === B.id), c = customers.find(x => x.id === B.customerId);
   const props = c ? (c.properties || []).filter(Boolean) : [], inList = props.includes(B.address);
   const f = (k, l, o = {}) => `<label class="f"><span>${l}</span>${o.area ? `<textarea data-bk="${k}" rows="2">${esc(B[k])}</textarea>` : `<input data-bk="${k}" value="${esc(B[k])}" ${o.type ? `type="${o.type}"` : ''} autocomplete="off">`}</label>`;
-  const top = isNew ? '' : (settings.calOtwOn === 'off' ? '' : `<button class="btn gold block" id="bkOtw" data-act="bookOtw" style="margin-bottom:10px" ${isMobileNo(B.phone) ? '' : 'hidden'}>Text: I’m on my way</button>`) + (String(B.address || '').trim() ? `<a class="btn block" style="text-align:center;text-decoration:none;margin-bottom:10px" href="${esc(mapsUrl(B.address))}" target="_blank" rel="noopener">Navigate to ${esc(addrFirst(B.address))}</a>` : '');
+  const late = !isNew && typeof bkLate === 'function' && bkLate(B);
+  const top = isNew ? '' : (settings.calOtwOn === 'off' ? '' : `<button class="btn gold block" id="bkOtw" data-act="bookOtw" style="margin-bottom:10px" ${isMobileNo(B.phone) ? '' : 'hidden'}>Text: I’m on my way</button>`) + (late ? `<button class="btn block" data-act="bookResched" style="margin-bottom:10px;border-color:#d9a200">Running late? Reschedule</button>` : '') + (String(B.address || '').trim() ? `<a class="btn block" style="text-align:center;text-decoration:none;margin-bottom:10px" href="${esc(mapsUrl(B.address))}" target="_blank" rel="noopener">Navigate to ${esc(addrFirst(B.address))}</a>` : '');
   v.innerHTML = `<h1>${isNew ? 'Schedule in' : 'Appointment'}</h1>
     ${top}
     <h2 style="margin-top:${top ? '14px' : '0'}">What is the job?</h2>
