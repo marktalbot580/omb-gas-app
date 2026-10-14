@@ -160,8 +160,9 @@ function etaText(b, off) {
   const addr = String(b.address || '').replace(/\s*\n+\s*/g, ', ').trim();
   return `Hi ${greetName(b.name)}, just to let you know I will be with you around ${timeWords(b.time)} ${off ? 'tomorrow' : 'today'}${addr ? ' at ' + addr : ''}.\n${settings.businessName || ''}`.trim();
 }
+let routeDayDate = '';
 function showRoute(off) {
-  off = off ? 1 : 0;
+  off = off ? 1 : 0; routeDayDate = off ? addDays(localISO(), 1) : localISO();
   const old = document.getElementById('routeSheet'); if (old) old.remove();
   const all = routeDay(off), list = routeStops(off);
   const d = document.createElement('div'); d.id = 'routeSheet'; d.className = 'sheetbg';
@@ -170,6 +171,8 @@ function showRoute(off) {
     ${all.length ? `<p class="muted" style="margin:0 0 10px">${all.length} job${all.length === 1 ? '' : 's'}, in appointment order.${off ? ' Plan tonight and text each customer when you will arrive.' : ''}</p>` : `<p class="muted">Nothing booked ${off ? 'tomorrow' : 'for the rest of today'}.</p>`}
     ${all.length && hasPostcode(all[0].address) ? '<div id="routeHere" class="small muted" style="margin:-4px 0 10px"></div>' : ''}
     ${all.map((b, k) => `<div class="line" style="flex-wrap:wrap"><b style="width:28px;height:28px;border-radius:50%;background:var(--gold);color:var(--btn-ink,#1a1405);display:flex;align-items:center;justify-content:center;flex:none">${k + 1}</b><span class="main" role="button" tabindex="0" data-act="routeJob" data-id="${b.id}" style="cursor:pointer"><b>${esc(b.time)} ${esc(b.name || 'No name')}</b><span>${esc(addrFirst(b.address || '') || 'No address')} · ${esc(bkLabel(b))}</span></span>${String(b.address || '').trim().length >= 4 ? `<a class="btn" href="${esc(mapsUrl(b.address))}" target="_blank" rel="noopener">Go</a>` : ''}${isMobileNo(b.phone) ? `<button type="button" class="btn" data-act="etaText" data-id="${b.id}" data-day="${off}">Text ETA${b.etaAt ? ' (sent)' : ''}</button>` : ''}</div>${k < all.length - 1 ? `<div class="small muted" data-leg="${k}" style="margin:2px 0 2px 40px"></div>` : ''}`).join('')}
+    ${list.length >= 2 && all.some(b => hasPostcode(b.address)) ? `<button type="button" class="btn gold block" data-act="planDay" data-day="${off}" style="margin-top:10px">Plan my day</button><p class="small muted" style="margin:6px 0 0">Puts the jobs nearest to your start first and the furthest last, gives each its time slot and adds the drive between jobs. You check it before anything changes.</p>` : ''}
+    ${all.filter(b => isMobileNo(b.phone) && !b.etaAt).length > 1 ? '<button type="button" class="btn block" data-act="etaNext" style="margin-top:10px">Text the next customer (' + all.filter(b => isMobileNo(b.phone) && !b.etaAt).length + ' left)</button>' : ''}
     ${list.length >= 2 ? `<button type="button" class="btn block" data-act="routeTimes" data-day="${off}" style="margin-top:10px">Show drive times</button><div id="routeTot" class="small muted" style="margin-top:6px"></div>` : ''}
     ${list.length >= 2 ? `<a class="btn gold block" style="text-align:center;text-decoration:none;margin-top:10px" href="${esc(routeUrl(list))}" target="_blank" rel="noopener">Start route</a>` : ''}
     <button type="button" class="btn block" data-act="routeClose" style="margin-top:8px">Close</button></div>`;
@@ -224,6 +227,12 @@ document.addEventListener('click', e => {
     e.stopImmediatePropagation(); if (bg) bg.remove();
     ui.book = { ...x, types: [...(x.types || [])] }; ui.bookFrom = 'home'; ui.view = 'book'; render(); window.scrollTo(0, 0);
   }
+  else if (b.dataset.act === 'etaNext') {
+    const nx = [...document.querySelectorAll('#routeSheet [data-act=etaText]')].find(z => !/sent/.test(z.textContent)); if (nx) nx.click();
+    const left = bookings.filter(z => z.date === (routeDayDate || localISO()) && isMobileNo(z.phone) && !z.etaAt && z.status !== 'done').length;
+    b.textContent = left > 1 ? 'Text the next customer (' + (left - 1) + ' left)' : 'Text the next customer'; if (left <= 1) b.hidden = true;
+  }
+  else if (b.dataset.act === 'planDay') planDay(+b.dataset.day);
   else if (b.dataset.act === 'routeClose' && bg) bg.remove();
   else if (b.dataset.act === 'routeTimes') routeTimes(+b.dataset.day, b);
 }, true);
@@ -385,4 +394,66 @@ document.addEventListener('click', e => {
     else { try { navigator.clipboard.writeText(body); toast('Message copied. Paste it into a text to ' + B.phone); } catch (err) { toast('Texts open on a phone.'); } }
   } else toast('Moved to ' + dayShort(d) + ' at ' + t);
   if (bg) bg.remove(); render();
+}, true);
+
+/* Plan my day: nearest job to your start first, furthest last; each gets its time slot with the drive between jobs added.
+   Nothing changes until you tap Apply. Uses one drive lookup per job plus one per leg. */
+const ceil5 = m => Math.ceil(m / 5) * 5, hhmm = m => String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+async function planLeg(a, b2) {
+  if (a === b2) return { mins: 0, miles: 0 };
+  const k = 'plan_' + a + '>' + b2; if (routeCache[k]) return routeCache[k];
+  const r = await CLOUD.post('route-times', { stops: [a + ', UK', b2 + ', UK'] }), hit = r && r.legs && r.legs[0];
+  if (!hit) throw new Error('No route found'); routeCache[k] = hit; return hit;
+}
+async function planDay(off) {
+  off = off ? 1 : 0;
+  const all = routeDay(off), withPc = all.filter(b => hasPostcode(b.address)), base = routeBasePc();
+  if (!CLOUD.signedIn()) { toast('Sign in to plan the day'); return; }
+  if (!base) { toast('Add a start postcode in Settings, under Calendar, first'); return; }
+  const ticked = withPc.filter(b => b.auto), allFlex = !ticked.length, jobs = allFlex ? withPc : ticked;
+  const fixed = all.filter(b => !jobs.includes(b)), lacking = all.filter(b => !hasPostcode(b.address) && !fixed.includes(b));
+  if (jobs.length < 1 || (allFlex && jobs.length < 2)) { toast('Add a postcode to at least two jobs first'); return; }
+  const rs = document.getElementById('routeSheet'); const btn = rs && rs.querySelector('[data-act=planDay]'); const t0 = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Working out the best order...'; }
+  try {
+    const from = await Promise.all(jobs.map(b => planLeg(base, pcOf(b.address))));
+    const order = jobs.map((b, i) => ({ b, d: from[i].mins })).sort((x, y) => x.d - y.d || toMin(x.b.time) - toMin(y.b.time)).map(x => x.b);
+    const dayStart = toMin(settings.dayStart || '09:00'), now = new Date(), nowM = now.getHours() * 60 + now.getMinutes();
+    let cur = off ? dayStart : Math.max(dayStart, ceil5(nowM)), prevPc = null; const rows = [];
+    for (let i = 0; i < order.length; i++) {
+      const job = order[i], len = +job.mins || 60, pc = pcOf(job.address); let leg = null, start = cur;
+      for (let guard = 0; guard <= fixed.length; guard++) {
+        leg = prevPc ? await planLeg(prevPc, pc) : null; start = prevPc ? ceil5(cur + leg.mins) : cur;
+        const clash = fixed.find(F => toMin(F.time) < start + len && start < toMin(F.time) + (+F.mins || 60));
+        if (!clash) break;
+        cur = toMin(clash.time) + (+clash.mins || 60); if (hasPostcode(clash.address)) prevPc = pcOf(clash.address);
+      }
+      rows.push({ b: job, start, end: start + len, drive: leg ? leg.mins : from[jobs.indexOf(job)].mins, first: !leg }); cur = start + len; prevPc = pc;
+    }
+    const shown = rows.map(r => ({ ...r })).concat(fixed.map(F => ({ b: F, start: toMin(F.time), end: toMin(F.time) + (+F.mins || 60), fixed: true }))).sort((x, y) => x.start - y.start);
+    window.__plan = { off, rows };
+    const d = document.createElement('div'); d.id = 'planSheet'; d.className = 'sheetbg';
+    d.innerHTML = `<div class="sheet" role="dialog" aria-label="Plan my day"><div class="grab"></div><h2>Plan my day</h2>
+      <p class="muted" style="margin:0 0 10px">${allFlex ? 'No job is ticked Auto schedule, so every job here can move. ' : ''}Nearest to your start (${esc(base)}) first, furthest last, starting at ${esc(hhmm(rows[0].start))}. Each job keeps its usual length, with the drive added before the next.${fixed.length ? ' Jobs not ticked Auto schedule keep their time and the others are fitted around them.' : ''}</p>
+      ${shown.map((r, i) => `<div class="line" style="flex-wrap:wrap"><b style="width:28px;height:28px;border-radius:50%;background:${r.fixed ? 'var(--line,#ccc)' : 'var(--gold)'};color:var(--btn-ink,#1a1405);display:flex;align-items:center;justify-content:center;flex:none">${i + 1}</b><span class="main"><b>${esc(hhmm(r.start))} to ${esc(hhmm(r.end))} ${esc(r.b.name || 'No name')}</b><span>${esc(addrFirst(r.b.address || ''))}${r.fixed ? ' \u00b7 fixed time' : r.b.time !== hhmm(r.start) ? ' \u00b7 was ' + esc(r.b.time) : ''}</span></span></div>${!r.fixed && !r.first && r.drive ? `<div class="small muted" style="margin:2px 0 2px 40px">\u2193 ${esc(mn(r.drive))} drive before this job</div>` : ''}`).join('')}
+      ${lacking.length ? `<p class="small muted">Left as they are, with no postcode: ${lacking.map(b => esc(b.name || addrFirst(b.address))).join(', ')}.</p>` : ''}
+      <p class="small muted">Drive times are estimates without live traffic. This changes the appointment times in your calendar. Nothing is texted until you tap send.</p>
+      <button type="button" class="btn gold block" data-act="planApply">Put these times in my calendar</button>
+      <button type="button" class="btn block" data-act="planClose" style="margin-top:8px">Cancel</button></div>`;
+    document.body.appendChild(d);
+  } catch (e) { toast(e.status === 429 ? String(e.message) : 'Could not plan the day just now'); }
+  if (btn) { btn.disabled = false; btn.textContent = t0; }
+}
+document.addEventListener('click', e => {
+  const bg = document.getElementById('planSheet');
+  if (bg && e.target === bg) { bg.remove(); return; }
+  const b = e.target.closest('[data-act="planApply"], [data-act="planClose"]'); if (!b) return;
+  e.stopImmediatePropagation();
+  if (b.dataset.act === 'planApply' && window.__plan) {
+    const p = window.__plan; let n = 0;
+    p.rows.forEach(r => { const x = bookings.find(z => z.id === r.b.id); if (x) { if (x.time !== hhmm(r.start)) n++; x.time = hhmm(r.start); x.etaAt = 0; x.remindedAt = 0; x.updated = Date.now(); } });
+    saveBookings(); if (typeof syncAll === 'function') syncAll(); window.__plan = null;
+    if (bg) bg.remove(); toast(n ? n + ' appointment' + (n === 1 ? '' : 's') + ' moved' : 'Times already match'); showRoute(p.off); return;
+  }
+  if (bg) bg.remove();
 }, true);
