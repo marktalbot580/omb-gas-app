@@ -62,7 +62,7 @@ function todayHtml0() {
     <button type="button" class="btn gold newbtn" data-act="newSheet"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New</button>
     ${calOn() && bkOn(addDays(t, 1)).length ? `<button type="button" class="btn block" style="margin-top:10px" data-act="routeOpen" data-day="1">Tomorrow: ${bkOn(addDays(t, 1)).length} job${bkOn(addDays(t, 1)).length === 1 ? '' : 's'}, text arrival times</button>` : ''}
     ${nx ? `<div class="nextjob"><div class="row sp"><span class="tag gold"><i></i>Next job · ${esc(minsText(nx))}</span><span class="when">${esc(nx.time)}</span></div>
-      <div><div class="big">${esc(nx.name || 'No name')}</div>${nx.address ? `<div class="muted">${esc(addrLine(nx.address))}</div>` : ''}<div style="margin-top:6px;font-weight:600">${esc(bkLabel(nx))}</div><div id="nextDrive" class="muted" style="margin-top:4px"></div></div>
+      <div><div class="big">${esc(nx.name || 'No name')}</div>${nx.address ? `<div class="muted">${esc(addrLine(nx.address))}</div>` : ''}<div style="margin-top:6px;font-weight:600">${esc(bkLabel(nx))}</div><div id="nextDrive" class="muted" style="margin-top:4px"></div><div id="nextSetOff" style="margin-top:2px;font-weight:600"></div></div>
       <div class="acts">${phone(nx).length >= 5 ? `<a class="btn" href="tel:${esc(phone(nx))}">Call</a>` : ''}${isMobileNo(nx.phone) ? `<button type="button" class="btn" data-act="todayOtw" data-id="${nx.id}">On my way</button>` : ''}${String(nx.address || '').trim().length >= 4 ? `<a class="btn" href="${esc(mapsUrl(nx.address))}" target="_blank" rel="noopener">Navigate</a>` : ''}</div>
       <button type="button" class="btn gold block" data-act="bookOpen" data-id="${nx.id}">Open the job</button></div>` : (calOn() && settings.calHome !== 'off' ? `<div class="line" style="justify-content:space-between"><span class="muted">Nothing booked in today.</span><button type="button" class="btn" data-act="bookNew" data-d="${t}">+ Appointment</button></div>` : '')}
     ${rest.length ? `<div class="sechead"><h2>Later today</h2>${stops.length >= 2 ? `<button type="button" class="btn" data-act="routeOpen">Route · ${stops.length} stops</button>` : ''}</div>
@@ -264,6 +264,8 @@ function paintDrive(el, b, hit, text) {
   const a = arriveInfo(b, hit.mins); if (!a) return;
   el.style.color = a.color; el.style.fontWeight = '600'; el.dataset.arrive = a.cls;
   el.textContent = text + (a.lateBy > 0 ? ' \u00b7 about ' + a.lateBy + ' min late' : '');
+  const so = el.id === 'nextDrive' ? document.getElementById('nextSetOff') : null;
+  if (so) { const slack = -a.lateBy; so.textContent = a.lateBy > 0 ? '' : slack < 1 ? 'Set off now to arrive on time' : 'Set off in ' + slack + ' min to arrive on time'; so.style.color = a.color; }
 }
 async function nextDrive() {
   const el = document.getElementById('nextDrive'); if (!el) return;
