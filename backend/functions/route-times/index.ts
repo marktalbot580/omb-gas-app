@@ -3,7 +3,7 @@
 // Signed-in subscribers only, with a daily cap per person and for the whole app.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, content-type, apikey, x-client-info' };
-const PER_USER_DAY = 40, APP_DAY = 1500, MAX_STOPS = 10;
+const PER_USER_DAY = 100, APP_DAY = 1500, MAX_STOPS = 10;
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
@@ -15,9 +15,11 @@ Deno.serve(async (req) => {
     const { data: sub } = await sb.from('subscriptions').select('status,trial_end,period_end').eq('user_id', u.user.id).maybeSingle();
     const now = Date.now(), ok = sub && ((sub.status === 'trialing' && Date.parse(sub.trial_end) > now) || (['active', 'past_due'].includes(sub.status) && (!sub.period_end || Date.parse(sub.period_end) > now - 3 * 864e5)));
     if (!ok) return json({ error: 'Subscription needed' }, 402);
-    const { stops } = await req.json();
+    const { stops, from } = await req.json();
+    const fl = from && Number(from.lat), fg = from && Number(from.lng);
+    const here = from && fl >= 49 && fl <= 61 && fg >= -9 && fg <= 2 ? { location: { latLng: { latitude: fl, longitude: fg } } } : null;   // phone location, UK only; used for this one lookup and never stored
     const list: string[] = (Array.isArray(stops) ? stops : []).map((s) => String(s || '').slice(0, 200).trim()).filter(Boolean).slice(0, MAX_STOPS);
-    if (list.length < 2) return json({ legs: [] });
+    if (list.length < (here ? 1 : 2)) return json({ legs: [] });
     const { data: use, error: ue } = await sb.rpc('route_use', { p_user: u.user.id });
     if (ue) return json({ error: 'Usage check failed' }, 500);
     const row = Array.isArray(use) ? use[0] : use;
@@ -27,7 +29,7 @@ Deno.serve(async (req) => {
     const g = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': Deno.env.get('GOOGLE_ROUTES_KEY')!, 'X-Goog-FieldMask': 'routes.legs.duration,routes.legs.distanceMeters' },
-      body: JSON.stringify({ origin: wp(list[0]), destination: wp(list[list.length - 1]), intermediates: list.slice(1, -1).map(wp), travelMode: 'DRIVE', regionCode: 'GB', units: 'IMPERIAL' }),
+      body: JSON.stringify({ origin: here || wp(list[0]), destination: wp(list[list.length - 1]), intermediates: (here ? list.slice(0, -1) : list.slice(1, -1)).map(wp), travelMode: 'DRIVE', regionCode: 'GB', units: 'IMPERIAL' }),
     });
     if (!g.ok) return json({ error: 'Google could not work out the route' }, 502);
     const d = await g.json();

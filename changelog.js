@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v171', items: ['The next job now shows the drive time from where you are, using your phone\u2019s location (your phone asks permission the first time). It is used for that one lookup and not saved. Switch it off in Settings \u2192 Calendar to measure from your last job or business address instead.'] },
   { v: 'v170', items: ['The next job on Today now shows the drive time to it, from the job before it or, for the first job of the day, from your business address in Settings. It needs a postcode on the job address, and is remembered for the day so it only asks once.'] },
   { v: 'v169', items: ['Drive times now appear by themselves when you open the Route sheet, and are remembered so opening it again does not ask again. Jobs whose address has no postcode are left out and flagged, because a short address like 2A Ashfield can match the wrong town.'] },
   { v: 'v168', items: ['Drive times on the Route sheet. Tap Show drive times to see how long each leg between your stops takes and the total for the day. They are estimates without live traffic, and a daily limit stops it being overused.'] },

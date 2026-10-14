@@ -225,18 +225,37 @@ async function routeTimes(off, btn) {
   }
 }
 
-/* the drive to the next job: from the job before it today, or from your business address when it is the first one. Remembered for the day. */
+/* the drive to the next job: from your phone's location when allowed, otherwise from the job before it today or your business address.
+   Your location is sent for that one lookup only and is not saved. Remembered for 10 minutes so reopening the app does not ask again. */
+const hereMem = { t: 0, lat: 0, lng: 0 };
+function whereAmI() {
+  return new Promise(res => {
+    if (Date.now() - hereMem.t < 600000 && hereMem.lat) return res({ lat: hereMem.lat, lng: hereMem.lng });
+    if (!navigator.geolocation || settings.gpsDrive === 'off') return res(null);
+    const go = () => navigator.geolocation.getCurrentPosition(p => { hereMem.t = Date.now(); hereMem.lat = p.coords.latitude; hereMem.lng = p.coords.longitude; res({ lat: hereMem.lat, lng: hereMem.lng }); }, () => res(null), { timeout: 8000, maximumAge: 300000 });
+    if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: 'geolocation' }).then(q => (q.state === 'denied' ? res(null) : go()), go); else go();
+  });
+}
+const driveMem = {};
 async function nextDrive() {
   const el = document.getElementById('nextDrive'); if (!el) return;
   const td = nextBookings(), nx = todayNext(td); if (!nx || !hasPostcode(nx.address)) return;
-  const k = td.indexOf(nx), prev = td.slice(0, k).reverse().find(b => hasPostcode(b.address));
+  const toPc = pcOf(nx.address), show = (hit, who) => { const e2 = document.getElementById('nextDrive'); if (e2 && hit) e2.textContent = 'About ' + hit.mins + ' min drive (' + hit.miles + ' miles) from ' + who; };
+  const me = CLOUD.signedIn() ? await whereAmI() : null;
+  if (me) {
+    const k = [me.lat.toFixed(3), me.lng.toFixed(3), toPc, Math.floor(Date.now() / 600000)].join('_');
+    let hit = driveMem[k];
+    if (!hit) { try { const r = await CLOUD.post('route-times', { from: me, stops: [toPc + ', UK'] }); hit = r && r.legs && r.legs[0]; if (hit) driveMem[k] = hit; } catch (e) { hit = null; } }
+    if (hit) return show(hit, 'here');
+  }
+  const i = td.indexOf(nx), prev = td.slice(0, i).reverse().find(b => hasPostcode(b.address));
   const fromPc = prev ? pcOf(prev.address) : pcOf(settings.address); if (!fromPc) return;
-  const toPc = pcOf(nx.address); if (fromPc === toPc) { el.textContent = 'Same postcode as ' + (prev ? 'the last job' : 'your base'); return; }
+  if (fromPc === toPc) { el.textContent = 'Same postcode as ' + (prev ? 'the last job' : 'your base'); return; }
   const key = 'omb_drv_' + localISO() + '_' + fromPc + '_' + toPc, who = prev ? 'the last job' : 'your base';
   let hit = LS.get(key, null);
   if (!hit) {
     if (!CLOUD.signedIn()) return;
     try { const r = await CLOUD.post('route-times', { stops: [fromPc + ', UK', toPc + ', UK'] }); hit = r && r.legs && r.legs[0]; if (hit) LS.set(key, hit); } catch (e) { return; }
   }
-  const e2 = document.getElementById('nextDrive'); if (e2 && hit) e2.textContent = 'About ' + hit.mins + ' min drive (' + hit.miles + ' miles) from ' + who;
+  show(hit, who);
 }
