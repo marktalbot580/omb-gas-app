@@ -854,7 +854,7 @@ function renderCustEdit(v) {
   const c = ui.cust, cTab = c._new ? 'cust' : (ui.cTab || 'cust');
   v.innerHTML = `
     <h1>${c._new ? 'New customer' : 'Edit customer'}</h1>
-    ${c._new ? '' : `<div class="stabs grid">${[['cust', 'Customer'], ['nav', 'Navigate'], ['jobs', 'Previous jobs']].map(([k, l]) => `<button type="button" class="${cTab === k ? 'on' : ''}" data-act="cTab" data-t="${k}">${l}</button>`).join('')}</div>`}
+    ${c._new ? '' : `<div class="stabs grid">${[['cust', 'Customer'], ['nav', 'Navigate'], ['appl', 'Appliances'], ['jobs', 'Previous jobs']].map(([k, l]) => `<button type="button" class="${cTab === k ? 'on' : ''}" data-act="cTab" data-t="${k}">${l}</button>`).join('')}</div>`}
     <div data-ctab="cust" ${cTab === 'cust' ? '' : 'hidden'}>
     <div class="card">
       <label class="f"><span>Name <b>*</b></span><input data-c="name" value="${esc(c.name)}" autocomplete="off"></label>
@@ -875,6 +875,10 @@ function renderCustEdit(v) {
     ${c._new ? '' : `<div data-ctab="nav" ${cTab === 'nav' ? '' : 'hidden'}>
     <h2 style="margin-top:0">Navigate</h2>
 ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties.map(p => `<a class="item" style="display:block;text-decoration:none;color:inherit" href="${esc(mapsUrl(p))}" target="_blank" rel="noopener"><div class="t">&#128205; ${esc(addrFirst(p))}</div><div class="s">${esc(p.split('\n').slice(1).join(', ') || 'Open in Google Maps')}</div></a>`).join('') : '<div class="empty">No property addresses yet. Add one on the Customer tab.</div>'}
+    </div>`}
+    ${c._new ? '' : `<div data-ctab="appl" ${cTab === 'appl' ? '' : 'hidden'}>
+    <p class="small muted" style="margin-top:0">Every appliance on this customer's records, with the make, model and GC number. It fills itself in each time you complete a record.</p>
+    ${registerHtml(c)}
     </div>`}
     ${c._new ? '' : `<div data-ctab="jobs" ${cTab === 'jobs' ? '' : 'hidden'}>
     ${custAppts(c)}
@@ -1344,10 +1348,11 @@ function custPicker(r) {
 }
 /* ---------- repeat visit: copy the appliance details (make, model, GC number…) from the last visit to the same property ---------- */
 const PREV_GAS = ['location', 'locationOther', 'type', 'typeOther', 'manufacturer', 'model', 'gc', 'ownership', 'flue'];
+const PREV_OIL = ['location', 'locationOther', 'make', 'makeOther', 'model', 'systemType', 'systemOther', 'serial', 'fuel', 'fuelOther', 'flue', 'flueOther'];
 const PREV_SVC = ['location', 'locationOther', 'make', 'makeOther', 'model', 'systemType', 'systemOther', 'serial', 'gc', 'flue'];
 const pickKeys = (o, keys) => Object.fromEntries(keys.map(k => [k, (o && o[k]) || '']));
 function prevVisit(r) {
-  const t = typeOf(r); if (t !== 'gas' && t !== 'service') return null;
+  const t = typeOf(r); if (t !== 'gas' && t !== 'service' && t !== 'oil') return null;
   const addr = String(r.jobAddress || '').trim().toLowerCase(), nm = String(r.customer.name || '').trim().toLowerCase();
   if (!addr || (!r.customerId && !nm)) return null;
   const hasData = x => t === 'gas' ? (x.appliances || []).some(a => a.model || a.manufacturer) : !!(x.model || x.make);
@@ -1371,7 +1376,7 @@ function applyPrev(r) {
     r.applianceCount = String(n);
     r.appliances = Array.from({ length: n }, (_, i) => ({ ...blankAppliance(), ...pickKeys(p.appliances[i], PREV_GAS) }));
     r.appliances.forEach(a => { if (!a.ownership) a.ownership = 'Landlord'; });
-  } else Object.assign(r, pickKeys(p, PREV_SVC));
+  } else Object.assign(r, pickKeys(p, typeOf(r) === 'oil' ? PREV_OIL : PREV_SVC));
   persistRec(r); toast('Appliance details copied – check they are still right');
 }
 /* ---------- finding a property: type to search the customer's addresses (or every customer's, if none is chosen yet) ---------- */

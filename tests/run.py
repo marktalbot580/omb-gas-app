@@ -701,6 +701,18 @@ def run():
         check('no page errors with the lazy PDF maker', not errs, errs)
         ctx.close()
 
+        # ---------- 12y. appliance register ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "(()=>{const c={id:'rc1',name:'Ann Beck',phone:'07700900000',address:'14 Larch Road\\nLincoln\\nLN2 4AB'};customers.push(c);saveCustomers();const r=newRecord(c,'service');r.customerId='rc1';r.jobAddress='14 Larch Road\\nLincoln\\nLN2 4AB';r.make='Worcester';r.model='Greenstar 30i';r.gc='47 311 74';r.serial='7736123456';r.inspectionDate=localISO();r.renewal=new Date(Date.now()+12*864e5).toISOString().slice(0,10);records.push(r);saveRecords();ui.view='custEdit';ui.cust=JSON.parse(JSON.stringify(c));ui.cTab='appl';render();})()")
+        txt = ev(pg, "document.querySelector('[data-ctab=appl]').innerText")
+        check('register shows make, model, GC and serial', all(x in txt for x in ['Worcester', 'Greenstar 30i', '47 311 74', '7736123456']), txt)
+        check('register shows service due tag', 'Due in 12 days' in txt, txt)
+        pg.click('[data-act=regStart]')
+        got = ev(pg, "({v:ui.view,m:ui.rec&&ui.rec.make,g:ui.rec&&ui.rec.gc,s:ui.rec&&ui.rec.serial,a:ui.rec&&ui.rec.jobAddress})")
+        check('register start opens a pre-filled service record', got.get('m') == 'Worcester' and got.get('g') == '47 311 74' and 'Larch' in (got.get('a') or ''), got)
+        check('no page errors with the register', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()
