@@ -50,7 +50,8 @@ function tagFor(b) {
   if (typeof bkClash === 'function' && bkClash(b)) return '<span class="tag bad"><i></i>Clash</span>';
   return '<span class="tag mut"><i></i>Booked</span>';
 }
-function todayHtml() {
+function todayHtml() { setTimeout(nextDrive, 0); return todayHtml0(); }
+function todayHtml0() {
   const t = localISO(), td = calOn() && settings.calHome !== 'off' ? nextBookings() : [], nx = todayNext(td), rest = td.filter(b => b !== nx);
   const soon = dueSoon(), late = overdueInvs(), nJobs = bkOn(t).length;
   const parts = []; if (calOn()) parts.push(nJobs + (nJobs === 1 ? ' job today' : ' jobs today')); if (soon.length) parts.push(soon.length + ' due this week'); if (late.length) parts.push(money(owedLate()) + ' overdue');
@@ -61,7 +62,7 @@ function todayHtml() {
     <button type="button" class="btn gold newbtn" data-act="newSheet"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New</button>
     ${calOn() && bkOn(addDays(t, 1)).length ? `<button type="button" class="btn block" style="margin-top:10px" data-act="routeOpen" data-day="1">Tomorrow: ${bkOn(addDays(t, 1)).length} job${bkOn(addDays(t, 1)).length === 1 ? '' : 's'}, text arrival times</button>` : ''}
     ${nx ? `<div class="nextjob"><div class="row sp"><span class="tag gold"><i></i>Next job · ${esc(minsText(nx))}</span><span class="when">${esc(nx.time)}</span></div>
-      <div><div class="big">${esc(nx.name || 'No name')}</div>${nx.address ? `<div class="muted">${esc(addrLine(nx.address))}</div>` : ''}<div style="margin-top:6px;font-weight:600">${esc(bkLabel(nx))}</div></div>
+      <div><div class="big">${esc(nx.name || 'No name')}</div>${nx.address ? `<div class="muted">${esc(addrLine(nx.address))}</div>` : ''}<div style="margin-top:6px;font-weight:600">${esc(bkLabel(nx))}</div><div id="nextDrive" class="muted" style="margin-top:4px"></div></div>
       <div class="acts">${phone(nx).length >= 5 ? `<a class="btn" href="tel:${esc(phone(nx))}">Call</a>` : ''}${isMobileNo(nx.phone) ? `<button type="button" class="btn" data-act="todayOtw" data-id="${nx.id}">On my way</button>` : ''}${String(nx.address || '').trim().length >= 4 ? `<a class="btn" href="${esc(mapsUrl(nx.address))}" target="_blank" rel="noopener">Navigate</a>` : ''}</div>
       <button type="button" class="btn gold block" data-act="bookOpen" data-id="${nx.id}">Open the job</button></div>` : (calOn() && settings.calHome !== 'off' ? `<div class="line" style="justify-content:space-between"><span class="muted">Nothing booked in today.</span><button type="button" class="btn" data-act="bookNew" data-d="${t}">+ Appointment</button></div>` : '')}
     ${rest.length ? `<div class="sechead"><h2>Later today</h2>${stops.length >= 2 ? `<button type="button" class="btn" data-act="routeOpen">Route · ${stops.length} stops</button>` : ''}</div>
@@ -222,4 +223,20 @@ async function routeTimes(off, btn) {
     if (btn) { btn.disabled = false; btn.textContent = t0; toast(e.status === 429 ? String(e.message) : 'Could not get drive times just now'); }
     else { const t2 = document.getElementById('routeTot'); if (t2) t2.textContent = e.status === 429 ? String(e.message) : 'Drive times are not available just now.'; }
   }
+}
+
+/* the drive to the next job: from the job before it today, or from your business address when it is the first one. Remembered for the day. */
+async function nextDrive() {
+  const el = document.getElementById('nextDrive'); if (!el) return;
+  const td = nextBookings(), nx = todayNext(td); if (!nx || !hasPostcode(nx.address)) return;
+  const k = td.indexOf(nx), prev = td.slice(0, k).reverse().find(b => hasPostcode(b.address));
+  const fromPc = prev ? pcOf(prev.address) : pcOf(settings.address); if (!fromPc) return;
+  const toPc = pcOf(nx.address); if (fromPc === toPc) { el.textContent = 'Same postcode as ' + (prev ? 'the last job' : 'your base'); return; }
+  const key = 'omb_drv_' + localISO() + '_' + fromPc + '_' + toPc, who = prev ? 'the last job' : 'your base';
+  let hit = LS.get(key, null);
+  if (!hit) {
+    if (!CLOUD.signedIn()) return;
+    try { const r = await CLOUD.post('route-times', { stops: [fromPc + ', UK', toPc + ', UK'] }); hit = r && r.legs && r.legs[0]; if (hit) LS.set(key, hit); } catch (e) { return; }
+  }
+  const e2 = document.getElementById('nextDrive'); if (e2 && hit) e2.textContent = 'About ' + hit.mins + ' min drive (' + hit.miles + ' miles) from ' + who;
 }
