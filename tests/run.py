@@ -730,6 +730,18 @@ def run():
         check('no page errors with chasing', not errs, errs)
         ctx.close()
 
+        # ---------- 12zz. accepted quote -> invoice ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "(()=>{const c={id:'qc1',name:'Dan Cole',phone:'07700900222',email:'d@x.com',billing:'2 High St',properties:['6 Elm Rd\\nLincoln\\nLN6 7QD']};customers.push(c);saveCustomers();const q=newRecord(c,'quote');q.customerId='qc1';q.jobAddress='6 Elm Rd\\nLincoln\\nLN6 7QD';q.make='Worcester';q.model='30i';q.boilerPrice='2240';q.fluePrice='220';q.labourPrice='180';q.labourQty='1';q.lines=[{name:'Magnetic filter',qty:'1',price:'180'}];q.status='complete';q.qStatus='accepted';q.qDate=localISO();records.push(q);saveRecords();ui.view='invoices';ui.invTab='quotes';render();})()")
+        check('accepted quote offers Create invoice', ev(pg, "!!document.querySelector('[data-act=quoInvoice]')"))
+        pg.click('[data-act=quoInvoice]')
+        inv = ev(pg, "({v:ui.view,n:(ui.inv||{}).lines&&ui.inv.lines.length,sum:ui.inv&&ui.inv.lines.reduce((a,l)=>a+l.q*l.p,0),cust:ui.inv&&ui.inv.customer.name,addr:ui.inv&&ui.inv.jobAddress,linked:records.find(r=>r.type==='quote').qInv===(ui.inv||{}).id})")
+        check('quote becomes an invoice with the same lines, customer and address', inv['v'] == 'invEdit' and inv['n'] == 4 and inv['sum'] == 2820 and inv['cust'] == 'Dan Cole' and 'Elm' in inv['addr'] and inv['linked'], inv)
+        ev(pg, "ui.view='invoices';ui.invTab='quotes';render()")
+        check('quote then shows Open invoice, not a second one', ev(pg, "!document.querySelector('[data-act=quoInvoice]') && !!document.querySelector('[data-act=openInv]')") and ev(pg, "invoices.length") == 1)
+        check('no page errors with quote to invoice', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()

@@ -125,3 +125,22 @@ document.addEventListener('click', async e => {
   chaseMark(i); if (bg) bg.remove();
   const el = document.createElement('a'); el.href = url; if (how === 'wa') el.target = '_blank'; el.rel = 'noopener'; document.body.appendChild(el); el.click(); el.remove();
 }, true);
+
+/* an accepted quote becomes the invoice: same customer, address and priced lines, no retyping */
+function invoiceFromQuote(q) {
+  const inv = newInvoice(null), cu = customers.find(c => c.id === q.customerId), c = q.customer || {};
+  inv.lines = QUO.rows(q).map(x => ({ d: x.d, q: String(x.q), p: String(x.p) }));
+  if (!inv.lines.length) inv.lines = [{ d: q.general ? (q.title || 'Quoted work') : 'Boiler installation', q: '1', p: '' }];
+  inv.customerId = q.customerId || ''; inv.customer = { name: (cu && cu.name) || c.name || '', phone: (cu && cu.phone) || c.phone || '', email: (cu && cu.email) || c.email || '', billing: c.billing || (cu && cu.billing) || '' };
+  inv.jobAddress = q.jobAddress || ''; inv.workDate = todayISO(); inv.fromQuote = q.id; inv.notes = inv.notes || ('Quote ' + (q.ref || ''));
+  persistInv(inv); q.qInv = inv.id; persistRec(q);
+  return inv;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act="quoInvoice"]'); if (!b) return;
+  if (CLOUD.locked()) { lockedMsg(); return; }
+  const q = records.find(x => x.id === b.dataset.id); if (!q) return;
+  e.stopImmediatePropagation();
+  const inv = (q.qInv && invoices.find(x => x.id === q.qInv)) || invoiceFromQuote(q);
+  ui.invTab = 'quotes'; invGo(inv, 'quotes'); window.scrollTo(0, 0);
+}, true);

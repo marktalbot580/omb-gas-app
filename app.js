@@ -692,9 +692,13 @@ const qWaiting = r => typeOf(r) === 'quote' && r.status === 'complete' && !r.qSt
 const qChase = r => qWaiting(r) && !!qSentDay(r) && qAge(r) >= 14;
 /* an accepted quote: a button to put the job in the calendar, or the date it is booked for */
 function quoSched(r, cls) {
-  if (r.qStatus !== 'accepted' || !calOn()) return '';
-  if (r.qBooked) return `<div class="small" style="color:var(--gold2);font-weight:700;margin:6px 0">Booked in for ${esc(dayShort(r.qBooked))}</div>`;
-  return `<button type="button" class="btn gold block ${cls || ''}" data-act="quoBook" data-id="${r.id}" style="margin:8px 0 0">Schedule into the calendar</button>`;
+  if (r.qStatus !== 'accepted') return '';
+  const inv = r.qInv && invoices.find(x => x.id === r.qInv), booked = calOn() && r.qBooked;
+  let h = '';
+  if (calOn()) h += booked ? `<div class="small" style="color:var(--gold2);font-weight:700;margin:6px 0">Booked in for ${esc(dayShort(r.qBooked))}</div>` : `<button type="button" class="btn gold block ${cls || ''}" data-act="quoBook" data-id="${r.id}" style="margin:8px 0 0">Book the job</button>`;
+  h += inv ? `<button type="button" class="btn block ${cls || ''}" data-act="openInv" data-id="${inv.id}" style="margin:8px 0 0">Open invoice ${esc(inv.number)}</button>`
+    : `<button type="button" class="btn ${calOn() && !booked ? '' : 'gold'} block ${cls || ''}" data-act="quoInvoice" data-id="${r.id}" style="margin:8px 0 0">Create invoice from this quote</button>`;
+  return h;
 }
 function quoBadge(r) {
   if (r.status !== 'complete') return '';
