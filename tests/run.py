@@ -776,6 +776,8 @@ def run():
             return ev(pg, "({t:(document.querySelector('#routeHere')||{}).innerText,c:(document.querySelector('#routeHere')||{dataset:{}}).dataset.arrive})")
         r1 = here(21, 53.23)
         check('route sheet shows the drive from here to the first job, green when early', r1['t'] and 'From here to the first job' in r1['t'] and '21 min' in r1['t'] and r1['c'] == 'green', r1)
+        tt = ev(pg, "(document.getElementById('routeTot')||{}).innerText")
+        check('route total includes the drive from here to the first job', tt and 'about 42 mins' in tt and 'including 21 mins from here' in tt, tt)
         ev(pg, "ui.view='home';render()"); pg.wait_for_timeout(700)
         so = ev(pg, "({d:(document.getElementById('nextDrive')||{}).innerText,s:(document.getElementById('nextSetOff')||{}).innerText})")
         check('next job says when to set off to arrive on time', so['s'] and 'Set off in' in so['s'] and 'to arrive on time' in so['s'], so)

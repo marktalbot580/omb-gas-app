@@ -187,6 +187,7 @@ async function routeHere(b) {
   const e2 = document.getElementById('routeHere'); if (!e2) return;
   if (!hit) { e2.textContent = ''; return; }
   driveNow[b.id] = { mins: hit.mins, t: Date.now() };
+  routeAgg.here = hit; paintTot();
   paintDrive(e2, b, hit, 'From here to the first job: about ' + mn(hit.mins) + ' (' + hit.miles + ' miles)');
 }
 document.addEventListener('click', e => {
@@ -207,10 +208,17 @@ document.addEventListener('click', e => {
 }, true);
 
 /* drive times between the stops (Google, through our server so the key stays secret). Asked for only when you tap, in the same order as the list. */
-const routeCache = {};   // remembered for this visit, so reopening the sheet does not ask Google again
+const routeCache = {};
+const routeAgg = { ok: false, mins: 0, miles: 0, note: '', here: null };   // the legs between stops, plus the drive from where you are to the first job
+function paintTot() {
+  const t2 = document.getElementById('routeTot'); if (!t2 || !routeAgg.ok) return;
+  const h = routeAgg.here, m = routeAgg.mins + (h ? h.mins : 0), mi = routeAgg.miles + (h ? h.miles : 0);
+  t2.innerHTML = 'Driving about ' + mn(m) + ', ' + Math.round(mi * 10) / 10 + ' miles in total' + (h ? ' (including ' + mn(h.mins) + ' from here to the first job)' : '') + '. Estimates without live traffic.' + routeAgg.note;
+}   // remembered for this visit, so reopening the sheet does not ask Google again
 const pcOf = a => { const m = String(a || '').match(/\b([A-Z]{1,2}\d[A-Z\d]?)\s*(\d[A-Z]{2})\b/i); return m ? (m[1] + ' ' + m[2]).toUpperCase() : ''; };
 const hasPostcode = a => /\b[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}\b/i.test(String(a || ''));
 async function routeTimes(off, btn) {
+  if (!btn) { routeAgg.ok = false; routeAgg.here = null; }
   const all = routeDay(off), usable = all.filter(b => hasPostcode(b.address)), lacking = all.filter(b => String(b.address || '').trim().length >= 4 && !hasPostcode(b.address));
   const note = lacking.length ? ' Tap to add a postcode for accurate times: ' + lacking.map(b => `<button type="button" class="btn" style="min-height:36px;padding:0 10px" data-act="routeFixPc" data-id="${b.id}">${esc(b.name || addrFirst(b.address))}</button>`).join(' ') : '';
   const tot = document.getElementById('routeTot');
@@ -231,7 +239,7 @@ async function routeTimes(off, btn) {
       mins += l.mins; miles += l.miles;
       el.textContent = '\u2193 about ' + mn(l.mins) + ' \u00b7 ' + l.miles + ' miles' + (all[all.indexOf(b) + 1] === usable[i + 1] ? '' : ' to the next stop with a postcode');
     });
-    const t2 = document.getElementById('routeTot'); if (t2) t2.innerHTML = 'Driving about ' + mn(mins) + ', ' + Math.round(miles * 10) / 10 + ' miles in total. Estimates without live traffic.' + note;
+    routeAgg.mins = mins; routeAgg.miles = miles; routeAgg.note = note; routeAgg.ok = true; paintTot();
     const b2 = btn || document.querySelector('#routeSheet [data-act=routeTimes]'); if (b2) b2.remove();
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = t0; toast(e.status === 429 ? String(e.message) : 'Could not get drive times just now'); }

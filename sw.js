@@ -1,5 +1,5 @@
 // Offline cache so the form still opens with no signal on site.
-const CACHE = 'omb-gas-v176';
+const CACHE = 'omb-gas-v177';
 const FILES = ['./', 'index.html', 'style.css', 'app.js', 'store.js', 'cal.js', 'today.js', 'register.js', 'data-tools.js', 'addr.js', 'help.js', 'reminders.js', 'pdf-lazy.js', 'tools-oil.js', 'tools.js', 'changelog.js', 'leg-config.js', 'svc-config.js', 'ac-config.js', 'oil-config.js', 'oform-config.js', 'pdf-oil.js', 'comm-config.js', 'quote-config.js', 'lib/xlsx.core.min.js', 'pdf-quote.js', 'sample.js', 'pdf-comm.js', 'warn-config.js', 'pdf.js', 'pdf-leg.js', 'pdf-svc.js', 'pdf-ac.js', 'pdf-warn.js', 'pdf-inv.js', 'pdf-stmt.js', 'pdf-tools.js', 'photos.js', 'config.js', 'cloud.js', 'manifest.json',
   'gassafe.png', 'icon-192.png', 'icon-512.png', 'logo.svg', 'fonts/bricolage-grotesque-latin-800-normal.woff2', 'fonts/bricolage-grotesque-latin-700-normal.woff2', 'fonts/instrument-sans-latin-400-normal.woff2', 'fonts/instrument-sans-latin-600-normal.woff2', 'fonts/jetbrains-mono-latin-500-normal.woff2', 'lib/jspdf.umd.min.js'];
 

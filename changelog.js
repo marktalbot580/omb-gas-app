@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v177', items: ['The Route total now includes the drive from where you are to the first job.'] },
   { v: 'v176', items: ['Drive times now read \u201c2 mins\u201d instead of \u201c2 min\u201d (and \u201c1 min\u201d for one).'] },
   { v: 'v175', items: ['The Next job card now shows \u201cSet off in 12 min to arrive on time\u201d under the drive time when you can still make it.'] },
   { v: 'v174', items: ['The Route sheet now shows the drive from where you are (your phone\u2019s location) to the first job, just under the job count. It is green if you will arrive in time, amber if you will be up to 15 minutes late and red if you will be later than that. The same colours show on the Next job card.', 'The On my way text now says \u201cI will be with you in about 15 minutes\u201d, and adds a sorry if you are running behind schedule. Turn it off in Settings \u2192 Calendar \u2192 Add my travel time to the text.'] },
