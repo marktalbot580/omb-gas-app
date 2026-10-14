@@ -187,7 +187,7 @@ async function routeHere(b) {
   const e2 = document.getElementById('routeHere'); if (!e2) return;
   if (!hit) { e2.textContent = ''; return; }
   driveNow[b.id] = { mins: hit.mins, t: Date.now() };
-  paintDrive(e2, b, hit, 'From here to the first job: about ' + hit.mins + ' min (' + hit.miles + ' miles)');
+  paintDrive(e2, b, hit, 'From here to the first job: about ' + mn(hit.mins) + ' (' + hit.miles + ' miles)');
 }
 document.addEventListener('click', e => {
   const bg = document.getElementById('routeSheet');
@@ -229,9 +229,9 @@ async function routeTimes(off, btn) {
       const l = legs[i]; if (!l || i === usable.length - 1) return;
       const el = document.querySelector(`#routeSheet [data-leg="${all.indexOf(b)}"]`); if (!el) return;
       mins += l.mins; miles += l.miles;
-      el.textContent = '\u2193 about ' + l.mins + ' min \u00b7 ' + l.miles + ' miles' + (all[all.indexOf(b) + 1] === usable[i + 1] ? '' : ' to the next stop with a postcode');
+      el.textContent = '\u2193 about ' + mn(l.mins) + ' \u00b7 ' + l.miles + ' miles' + (all[all.indexOf(b) + 1] === usable[i + 1] ? '' : ' to the next stop with a postcode');
     });
-    const t2 = document.getElementById('routeTot'); if (t2) t2.innerHTML = 'Driving about ' + mins + ' min, ' + Math.round(miles * 10) / 10 + ' miles in total. Estimates without live traffic.' + note;
+    const t2 = document.getElementById('routeTot'); if (t2) t2.innerHTML = 'Driving about ' + mn(mins) + ', ' + Math.round(miles * 10) / 10 + ' miles in total. Estimates without live traffic.' + note;
     const b2 = btn || document.querySelector('#routeSheet [data-act=routeTimes]'); if (b2) b2.remove();
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = t0; toast(e.status === 429 ? String(e.message) : 'Could not get drive times just now'); }
@@ -251,6 +251,7 @@ function whereAmI() {
   });
 }
 const driveMem = {};
+const mn = n => n + (n === 1 ? ' min' : ' mins');
 /* drive times measured from the phone's location, remembered per booking so the On my way text and the colours can use them */
 const driveNow = {};
 function arriveInfo(b, mins) {
@@ -263,14 +264,14 @@ function paintDrive(el, b, hit, text) {
   el.textContent = text; el.style.color = ''; el.style.fontWeight = '';
   const a = arriveInfo(b, hit.mins); if (!a) return;
   el.style.color = a.color; el.style.fontWeight = '600'; el.dataset.arrive = a.cls;
-  el.textContent = text + (a.lateBy > 0 ? ' \u00b7 about ' + a.lateBy + ' min late' : '');
+  el.textContent = text + (a.lateBy > 0 ? ' \u00b7 about ' + mn(a.lateBy) + ' late' : '');
   const so = el.id === 'nextDrive' ? document.getElementById('nextSetOff') : null;
-  if (so) { const slack = -a.lateBy; so.textContent = a.lateBy > 0 ? '' : slack < 1 ? 'Set off now to arrive on time' : 'Set off in ' + slack + ' min to arrive on time'; so.style.color = a.color; }
+  if (so) { const slack = -a.lateBy; so.textContent = a.lateBy > 0 ? '' : slack < 1 ? 'Set off now to arrive on time' : 'Set off in ' + mn(slack) + ' to arrive on time'; so.style.color = a.color; }
 }
 async function nextDrive() {
   const el = document.getElementById('nextDrive'); if (!el) return;
   const td = nextBookings(), nx = todayNext(td); if (!nx || !hasPostcode(nx.address)) return;
-  const toPc = pcOf(nx.address), show = (hit, who) => { const e2 = document.getElementById('nextDrive'); if (!e2 || !hit) return; const txt = 'About ' + hit.mins + ' min drive (' + hit.miles + ' miles) from ' + who; if (who === 'here') { driveNow[nx.id] = { mins: hit.mins, t: Date.now() }; paintDrive(e2, nx, hit, txt); } else e2.textContent = txt; };
+  const toPc = pcOf(nx.address), show = (hit, who) => { const e2 = document.getElementById('nextDrive'); if (!e2 || !hit) return; const txt = 'About ' + mn(hit.mins) + ' drive (' + hit.miles + ' miles) from ' + who; if (who === 'here') { driveNow[nx.id] = { mins: hit.mins, t: Date.now() }; paintDrive(e2, nx, hit, txt); } else e2.textContent = txt; };
   const me = CLOUD.signedIn() ? await whereAmI() : null;
   if (me) {
     const k = [me.lat.toFixed(3), me.lng.toFixed(3), toPc, Math.floor(Date.now() / 600000)].join('_');
