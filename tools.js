@@ -425,6 +425,7 @@ function tlAddrBox() {
 
 /* ---------- screens ---------- */
 function renderTools(v) {
+  if (typeof CLOUD !== 'undefined' && CLOUD.locked()) { v.innerHTML = `<h1>Tools</h1><div class="notice err">Your subscription has ended, so the calculators and reports are switched off. Your saved records are still here to view, download and export.<div style="height:8px"></div><button class="btn gold block" data-act="billing">Subscribe to continue</button></div>`; return; }
   const t = ui.tool || 'menu';
   if (t === 'gas') {
     const s = calcState('tool-gas'); if (s.open === false && !s._seen) { s.open = true; s._seen = true; }
