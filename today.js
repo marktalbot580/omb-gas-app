@@ -169,7 +169,7 @@ function showRoute(off) {
   d.innerHTML = `<div class="sheet" role="dialog" aria-label="Route"><div class="grab"></div><h2>Route</h2>${seg}
     ${all.length ? `<p class="muted" style="margin:0 0 10px">${all.length} job${all.length === 1 ? '' : 's'}, in appointment order.${off ? ' Plan tonight and text each customer when you will arrive.' : ''}</p>` : `<p class="muted">Nothing booked ${off ? 'tomorrow' : 'for the rest of today'}.</p>`}
     ${all.length && hasPostcode(all[0].address) ? '<div id="routeHere" class="small muted" style="margin:-4px 0 10px"></div>' : ''}
-    ${all.map((b, k) => `<div class="line" style="flex-wrap:wrap"><b style="width:28px;height:28px;border-radius:50%;background:var(--gold);color:var(--btn-ink,#1a1405);display:flex;align-items:center;justify-content:center;flex:none">${k + 1}</b><span class="main"><b>${esc(b.time)} ${esc(b.name || 'No name')}</b><span>${esc(addrFirst(b.address || '') || 'No address')} · ${esc(bkLabel(b))}</span></span>${String(b.address || '').trim().length >= 4 ? `<a class="btn" href="${esc(mapsUrl(b.address))}" target="_blank" rel="noopener">Go</a>` : ''}${isMobileNo(b.phone) ? `<button type="button" class="btn" data-act="etaText" data-id="${b.id}" data-day="${off}">Text ETA${b.etaAt ? ' (sent)' : ''}</button>` : ''}</div>${k < all.length - 1 ? `<div class="small muted" data-leg="${k}" style="margin:2px 0 2px 40px"></div>` : ''}`).join('')}
+    ${all.map((b, k) => `<div class="line" style="flex-wrap:wrap"><b style="width:28px;height:28px;border-radius:50%;background:var(--gold);color:var(--btn-ink,#1a1405);display:flex;align-items:center;justify-content:center;flex:none">${k + 1}</b><span class="main" role="button" tabindex="0" data-act="routeJob" data-id="${b.id}" style="cursor:pointer"><b>${esc(b.time)} ${esc(b.name || 'No name')}</b><span>${esc(addrFirst(b.address || '') || 'No address')} · ${esc(bkLabel(b))}</span></span>${String(b.address || '').trim().length >= 4 ? `<a class="btn" href="${esc(mapsUrl(b.address))}" target="_blank" rel="noopener">Go</a>` : ''}${isMobileNo(b.phone) ? `<button type="button" class="btn" data-act="etaText" data-id="${b.id}" data-day="${off}">Text ETA${b.etaAt ? ' (sent)' : ''}</button>` : ''}</div>${k < all.length - 1 ? `<div class="small muted" data-leg="${k}" style="margin:2px 0 2px 40px"></div>` : ''}`).join('')}
     ${list.length >= 2 ? `<button type="button" class="btn block" data-act="routeTimes" data-day="${off}" style="margin-top:10px">Show drive times</button><div id="routeTot" class="small muted" style="margin-top:6px"></div>` : ''}
     ${list.length >= 2 ? `<a class="btn gold block" style="text-align:center;text-decoration:none;margin-top:10px" href="${esc(routeUrl(list))}" target="_blank" rel="noopener">Start route</a>` : ''}
     <button type="button" class="btn block" data-act="routeClose" style="margin-top:8px">Close</button></div>`;
@@ -218,6 +218,11 @@ document.addEventListener('click', e => {
     if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) { const el = document.createElement('a'); el.href = 'sms:' + ph + '?&body=' + encodeURIComponent(body); document.body.appendChild(el); el.click(); el.remove(); }
     else { try { navigator.clipboard.writeText(body); toast('Message copied. Paste it into a text to ' + x.phone); } catch (err) { toast('Texts open on a phone.'); } }
     b.textContent = 'Text ETA (sent)';
+  }
+  else if (b.dataset.act === 'routeJob') {
+    const x = bookings.find(z => z.id === b.dataset.id); if (!x) return;
+    e.stopImmediatePropagation(); if (bg) bg.remove();
+    ui.book = { ...x, types: [...(x.types || [])] }; ui.bookFrom = 'home'; ui.view = 'book'; render(); window.scrollTo(0, 0);
   }
   else if (b.dataset.act === 'routeClose' && bg) bg.remove();
   else if (b.dataset.act === 'routeTimes') routeTimes(+b.dataset.day, b);

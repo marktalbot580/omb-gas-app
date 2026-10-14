@@ -56,7 +56,7 @@ const dayShort = iso => new Date(iso + 'T12:00:00').toLocaleDateString('en-GB', 
 const monthLong = m => new Date(m + '-01T12:00:00').toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
 const mondayOf = iso => addDays(iso, -((new Date(iso + 'T12:00:00').getDay() + 6) % 7));
 const calState = () => (ui.cal = ui.cal || { m: localISO().slice(0, 7), d: localISO() });
-const bkOn = date => bookings.filter(b => b.date === date).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+const bkOn = date => bookings.filter(b => b.date === date).sort((a, b) => toMin(a.time) - toMin(b.time) || String(a.id).localeCompare(String(b.id)));   // by start time, as a number so 9:00 comes before 10:00
 /* another appointment that overlaps this one (two devices can book the same slot while offline or at the same moment) */
 const bkClash = b => b.status !== 'done' ? bookings.find(x => x.id !== b.id && x.status !== 'done' && x.date === b.date && toMin(x.time) < toMin(b.time) + (+b.mins || 60) && toMin(b.time) < toMin(x.time) + (+x.mins || 60)) : null;
 function bkItem(b, withDate) {
