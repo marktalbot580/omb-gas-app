@@ -193,6 +193,7 @@ document.addEventListener('click', e => {
 
 /* drive times between the stops (Google, through our server so the key stays secret). Asked for only when you tap, in the same order as the list. */
 const routeCache = {};   // remembered for this visit, so reopening the sheet does not ask Google again
+const pcOf = a => { const m = String(a || '').match(/\b([A-Z]{1,2}\d[A-Z\d]?)\s*(\d[A-Z]{2})\b/i); return m ? (m[1] + ' ' + m[2]).toUpperCase() : ''; };
 const hasPostcode = a => /\b[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}\b/i.test(String(a || ''));
 async function routeTimes(off, btn) {
   const all = routeDay(off), usable = all.filter(b => hasPostcode(b.address)), lacking = all.filter(b => String(b.address || '').trim().length >= 4 && !hasPostcode(b.address));
@@ -200,7 +201,7 @@ async function routeTimes(off, btn) {
   const tot = document.getElementById('routeTot');
   if (usable.length < 2) { if (tot && lacking.length) tot.textContent = note.trim(); return; }
   if (!CLOUD.signedIn()) { if (btn) toast('Sign in to see drive times'); return; }
-  const stops = usable.map(b => b.address.replace(/\s*\n\s*/g, ', ')), ck = stops.join('|');
+  const stops = usable.map(b => pcOf(b.address) + ', UK'), ck = stops.join('|');
   const t0 = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Working it out...'; }
   if (tot && !btn) tot.textContent = 'Working out drive times...';
