@@ -299,3 +299,5 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 4px rgba(217,178,95,.14
 /* wide screens: keep the bottom bar in the same column as the page instead of spreading across the whole window */
 @media (min-width:760px){.tabs{padding-left:calc(50% - 360px);padding-right:calc(50% - 360px)}.tabs.wiz{padding-left:calc(50% - 346px);padding-right:calc(50% - 346px)}}
 @media (min-width:760px){.calg button{aspect-ratio:auto;height:54px}}   /* wide screens: shorter day boxes so the whole month fits */
+
+.boot{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;min-height:60vh;color:var(--mut)}.boot img{border-radius:16px}.boot p{margin:0;font-size:14px}.bootspin{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:bootspin .9s linear infinite}@keyframes bootspin{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){.bootspin{animation:none}}
