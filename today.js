@@ -188,8 +188,8 @@ async function routeHere(b, off) {
     hit = driveMem[k];
     if (!hit) { el.textContent = 'Working out the drive to the first job...'; try { const r = await CLOUD.post('route-times', { from: me, stops: [toPc + ', UK'] }); hit = r && r.legs && r.legs[0]; if (hit) driveMem[k] = hit; } catch (e) { hit = null; } }
   } else {
-    const basePc = pcOf(settings.address); label = 'From your base (' + basePc + ') to the first job';
-    if (!basePc) { el.textContent = 'Add a postcode to your address in Settings to see the drive to the first job.'; return; }
+    const basePc = routeBasePc(); label = 'From your base (' + basePc + ') to the first job';
+    if (!basePc) { el.textContent = 'Add a start postcode in Settings, under Calendar, to see the drive to the first job.'; return; }
     if (basePc === toPc) { el.textContent = 'The first job is at the same postcode as your base.'; return; }
     const k = 'omb_drv_base_' + basePc + '_' + toPc;
     hit = routeCache[k] || LS.get(k, null);
@@ -232,6 +232,8 @@ function paintTot() {
   t2.innerHTML = 'Driving about ' + mn(m) + ', ' + Math.round(mi * 10) / 10 + ' miles in total' + (h ? ' (including ' + mn(h.mins) + ' from here to the first job)' : '') + '. Estimates without live traffic.' + routeAgg.note;
 }   // remembered for this visit, so reopening the sheet does not ask Google again
 const pcOf = a => { const m = String(a || '').match(/\b([A-Z]{1,2}\d[A-Z\d]?)\s*(\d[A-Z]{2})\b/i); return m ? (m[1] + ' ' + m[2]).toUpperCase() : ''; };
+/* where the day starts: the route start postcode in Settings, otherwise the postcode of the business address */
+const routeBasePc = () => pcOf(settings.routeStart) || pcOf(settings.address);
 const hasPostcode = a => /\b[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}\b/i.test(String(a || ''));
 async function routeTimes(off, btn) {
   if (!btn) { routeAgg.ok = false; routeAgg.here = null; }
@@ -304,7 +306,7 @@ async function nextDrive() {
     if (hit) return show(hit, 'here');
   }
   const i = td.indexOf(nx), prev = td.slice(0, i).reverse().find(b => hasPostcode(b.address));
-  const fromPc = prev ? pcOf(prev.address) : pcOf(settings.address); if (!fromPc) return;
+  const fromPc = prev ? pcOf(prev.address) : routeBasePc(); if (!fromPc) return;
   if (fromPc === toPc) { el.textContent = 'Same postcode as ' + (prev ? 'the last job' : 'your base'); return; }
   const key = 'omb_drv_' + localISO() + '_' + fromPc + '_' + toPc, who = prev ? 'the last job' : 'your base';
   let hit = LS.get(key, null);
@@ -323,4 +325,13 @@ document.addEventListener('click', e => {
   const rs = document.getElementById('routeSheet'); if (rs) rs.remove();
   ui.book = { ...x, types: [...(x.types || [])], addrNew: true }; ui.bookFrom = 'home'; ui.view = 'book'; render(); window.scrollTo(0, 0);   // addrNew shows the address box even when it came from a saved property
   setTimeout(() => { const a = document.querySelector('#view input[data-bk="addrpc"]') || document.querySelector('#view textarea[data-bk="address"]'); if (a) { a.scrollIntoView({ block: 'center' }); a.focus(); try { a.setSelectionRange(a.value.length, a.value.length); } catch (e) { } } }, 60);
+}, true);
+
+/* Settings: copy the postcode from the business address into the route start box */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act="routeStartCopy"]'); if (!b) return;
+  e.stopImmediatePropagation();
+  const pc = pcOf(settings.address);
+  if (!pc) { toast('Add a postcode to your business address first'); return; }
+  settings.routeStart = pc; saveSettings(); const y = window.scrollY; render(); window.scrollTo(0, y); toast('Start postcode set to ' + pc);
 }, true);

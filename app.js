@@ -894,7 +894,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v181';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v182';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1133,6 +1133,7 @@ function renderSettings(v) {
     ${calOn() ? `<div class="card">
       <label class="f"><span>Show the calendar on the home screen</span><select data-s="calHome"><option value="on" ${settings.calHome === 'off' ? '' : 'selected'}>Yes</option><option value="off" ${settings.calHome === 'off' ? 'selected' : ''}>No</option></select><small>Shows today’s appointments under your service buttons. The month and week views are on the Calendar tab.</small></label>
       <label class="f"><span>Use my phone's location for the drive time</span><select data-s="gpsDrive"><option value="on" ${settings.gpsDrive === 'off' ? '' : 'selected'}>Yes</option><option value="off" ${settings.gpsDrive === 'off' ? 'selected' : ''}>No</option></select><small>The next job shows how long it takes to drive there from where you are. Your location is used for that one lookup and is not saved. Turn this off to measure from your last job or business address instead.</small></label>
+      <div class="f"><span>Start the day's route from (postcode)</span><input data-s="routeStart" type="text" placeholder="Usually your home or yard postcode" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false" value="${esc(settings.routeStart || '')}"><button type="button" class="btn ghost" data-act="routeStartCopy" style="margin-top:8px">Copy the postcode from my business address</button><small>Tomorrow's route measures the drive to your first job from here, and says when to leave. Leave it empty to use the postcode of your business address${(typeof pcOf === 'function' && pcOf(settings.address)) ? ' (' + esc(pcOf(settings.address)) + ')' : ''}.</small></div>
       <label class="f"><span>Calendar opens on</span><select data-s="calView">${[['today', 'Today (daily)'], ['week', 'This week'], ['month', 'This month']].map(([k, l]) => `<option value="${k}" ${(settings.calView || 'today') === k ? 'selected' : ''}>${l}</option>`).join('')}</select><small>The view you see first when you tap Calendar. You can still switch between Today, Week and Month.</small></label>
       <label class="f"><span>Usual appointment length</span><select data-s="calMins">${[['30', '30 minutes'], ['60', '1 hour'], ['90', '1½ hours'], ['120', '2 hours'], ['180', '3 hours']].map(([m, l]) => `<option value="${m}" ${String(settings.calMins || '60') === m ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <button class="btn block" data-act="calOpen">Open the calendar</button>
@@ -3163,6 +3164,7 @@ document.addEventListener('input', e => {
   if (t.classList && t.classList.contains('dtx')) { dtxInput(t, e); return; }
   { const aw = t.closest && t.closest('.addrw'); if (aw) { addrInput(aw, t); return; } }
   if (t.dataset.s === 'sortCode') t.value = fmtSort(t.value);
+  if (t.dataset.s === 'routeStart') t.value = t.value.toUpperCase();
   if (t.id === 'fbText') { ui.fb = ui.fb || { kind: 'fault', text: '' }; ui.fb.text = t.value; return; }
   if (t.id === 'helpSearch') { ui.helpQ = t.value; const hl = document.getElementById('helpList'); if (hl) hl.innerHTML = helpListHtml(t.value); return; }
   if (t.id === 'custSearch') { ui.search = t.value; paintCustList(); return; }

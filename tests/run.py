@@ -820,6 +820,12 @@ def run():
         ev(pg, "settings.address='1 Test Road\\nLincoln\\nLN1 2BN';saveSettings();document.querySelector('#routeSheet')&&document.querySelector('#routeSheet').remove();showRoute(1)"); pg.wait_for_timeout(600)
         tm = ev(pg, "(document.getElementById('routeHere')||{}).innerText")
         check('tomorrow route starts from the Settings postcode and says when to leave', tm and 'From your base (LN1 2BN)' in tm and 'Leave by 08:42 to be there for 09:00' in tm, tm)
+        ev(pg, "settings.address='1 Test Road\\nLincoln\\nLN1 2BN';settings.routeStart='';saveSettings();document.querySelector('#routeSheet')&&document.querySelector('#routeSheet').remove();ui.view='settings';ui.sTab='calendar';render();document.querySelector('[data-act=routeStartCopy]').scrollIntoView()")
+        pg.click('[data-act=routeStartCopy]')
+        check('start postcode can be copied from the business address', ev(pg, "settings.routeStart") == 'LN1 2BN', ev(pg, "settings.routeStart"))
+        ev(pg, "settings.routeStart='dn21 2pd';saveSettings();CLOUD.post=async(n,b)=>{window.__b=JSON.stringify(b);return {legs:[{mins:30,miles:12}]}};document.querySelector('#routeSheet')&&document.querySelector('#routeSheet').remove();showRoute(1)"); pg.wait_for_timeout(600)
+        tm2 = ev(pg, "(document.getElementById('routeHere')||{}).innerText+' '+window.__b")
+        check('route uses the start postcode instead of the business address', 'From your base (DN21 2PD)' in tm2 and 'DN21 2PD, UK' in tm2, tm2)
         check('no page errors with the route', not errs, errs)
         ctx.close()
 

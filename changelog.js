@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v182', items: ['New setting: Settings \u2192 Calendar \u2192 Start the day\u2019s route from. Type the postcode you set off from (home or your yard), or tap Copy the postcode from my business address. Tomorrow\u2019s route and the first drive of the day use it.'] },
   { v: 'v181', items: ['Tomorrow\u2019s route now starts from the postcode of your address in Settings. It shows the drive from there to the first job, says when to leave to be there on time, and includes that drive in the total. Today, if your phone\u2019s location is not available, it does the same from your Settings address.'] },
   { v: 'v180', items: ['If an accepted quote is booked in the calendar and you then mark it Declined, the app asks whether to remove it from the calendar too.'] },
   { v: 'v179', items: ['Fixed: if you delete the appointment you booked from an accepted quote, the quote no longer says it is booked in. It goes back to Book the job.'] },
