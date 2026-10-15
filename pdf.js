@@ -221,7 +221,7 @@ async function drawPdf(rec, s, lv) {
   if (defs.length) {
     table('DEFECTS IDENTIFIED   ·   ID = Immediately Dangerous    AR = At Risk    NCS = Not to Current Standards', [
       { h: 'No.', w: 6, a: 'c' }, { h: 'Defect identified', w: 110 }, { h: 'Remedial action taken', w: 110 }, { h: 'Classification', w: 22, a: 'c' }
-    ], defs.map((d, i) => [{ t: String(i + 1), b: 1 }, d.text, d.action, { t: d.cls, b: 1, c: d.cls === 'ID' ? RED : INK }]));
+    ], defs.map((d, i) => [{ t: String(i + 1), b: 1 }, (d.app !== undefined ? 'Appliance ' + (d.app + 1) + ': ' : '') + d.text, d.action, { t: d.cls, b: 1, c: d.cls === 'ID' ? RED : INK }]));
   } else {
     table('DEFECTS IDENTIFIED', [{ h: 'Result', w: 1 }], [['No defects identified.']]);
   }

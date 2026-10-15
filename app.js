@@ -29,7 +29,7 @@ const OPT = {
   pf: ['Pass', 'Fail'],
   yn: ['Yes', 'No'],
   tight: ['PASS', 'FAIL', 'NA', 'No access to meter', 'No access to communal bank of meters'],
-  defectCount: ['0', '1', '2', '3', '4'],
+  defectCount: ['0', '1', '2', '3', '4', '5', '6', '7', '8'],
   cls: ['ID', 'AR', 'NCS']
 };
 const STEPS = ['Customer', 'Appliances', 'Gas installation', 'Alarms', 'Defects', 'Next check', 'Sign off', 'Review'];
@@ -432,7 +432,8 @@ function validate(rec) {
   need(3, 'smokeAlarm', 'Smoke alarm present'); if (rec.smokeAlarm === 'Yes') need(3, 'smokeAlarmTest', 'Smoke alarm test');
   rec.defects.slice(0, +rec.defectCount || 0).forEach((d, i) => {
     const P = k => `defects.${i}.${k}`, n = `Defect ${i + 1}: `;
-    need(4, P('text'), n + 'description'); need(4, P('cls'), n + 'classification'); need(4, P('action'), n + 'remedial action');
+    const st = d.app === undefined ? 4 : 1, ex = d.app === undefined ? {} : { app: d.app }, nn = d.app === undefined ? n : 'Appliance ' + (d.app + 1) + ' defect: ';
+    need(st, P('text'), nn + 'description', ex); need(st, P('cls'), nn + 'classification', ex); need(st, P('action'), nn + 'remedial action', ex);
   });
   need(5, 'renewal', 'Next safety check due date');
   need(6, 'customerPresent', 'Customer present?');
@@ -894,7 +895,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v189';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v190';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1485,7 +1486,20 @@ function stepAppliances() {
       <div class="row"><div class="grow">${txt(P('ratioMin'), 'Ratio – min', { mode: 'decimal' })}</div><div class="grow">${txt(P('ratioMax'), 'Ratio – max', { mode: 'decimal' })}</div></div>
     </div>
     <h2>Result</h2>
-    <div class="card">${choice(P('safe'), 'Is this appliance safe to use?', OPT.yn, { req: 1 })}</div>`;
+    <div class="card">${choice(P('safe'), 'Is this appliance safe to use?', OPT.yn, { req: 1 })}</div>
+    ${applianceDefects(i)}`;
+}
+/* defects found on this appliance are written here, at the bottom of its page, so nothing has to be remembered until the end.
+   They are the same defects as the Defects step (tagged with the appliance), so the PDF and the checks are unchanged. */
+function applianceDefects(i) {
+  const r = ui.rec, n = +r.defectCount || 0, mine = r.defects.map((d, k) => ({ d, k })).filter(x => x.k < n && x.d.app === i);
+  return `<h2>Defects on this appliance</h2>
+    ${mine.length ? mine.map(({ k }, j) => `<div class="card"><div class="row sp" style="margin-bottom:6px"><b>Defect ${j + 1}</b><button type="button" class="btn ghost" style="min-height:36px;padding:0 10px" data-act="appRmDef" data-k="${k}">Remove</button></div>
+      ${txt(`defects.${k}.text`, 'Identified defect', { req: 1, area: 1, rows: 3 })}
+      ${choice(`defects.${k}.cls`, 'Classification', OPT.cls, { req: 1 })}
+      ${txt(`defects.${k}.action`, 'Remedial action taken', { req: 1, area: 1, rows: 3 })}${quick(`defects.${k}.action`, ['N/A', 'None taken', 'Customer advised'])}
+      ${PH.field(r, `defects.${k}.photos`)}</div>`).join('') + '<p class="small muted"><b>ID</b> Immediately Dangerous · <b>AR</b> At Risk · <b>NCS</b> Not to Current Standards</p>' : '<div class="card"><p class="small muted" style="margin:0">No defects noted on this appliance.</p></div>'}
+    <button type="button" class="btn block" data-act="appAddDef" data-i="${i}">+ Add a defect on this appliance</button>`;
 }
 
 function stepInstall() {
@@ -1516,8 +1530,8 @@ function stepAlarms() {
 const quick = (path, vals) => `<div class="chips" style="margin:-4px 0 12px">${vals.map(v => `<button type="button" class="chip ${getP(ui.rec, path) === v ? 'on' : ''}" data-k="${path}" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div>`;
 function stepDefects() {
   const r = ui.rec, n = +r.defectCount || 0;
-  return `<div class="card">${choice('defectCount', 'How many defects are there to note?', OPT.defectCount, { req: 1 })}</div>
-  ${Array.from({ length: n }, (_, i) => `<h2>Defect ${i + 1}</h2><div class="card">
+  return `<div class="card">${choice('defectCount', 'How many defects are there to note?', OPT.defectCount, { req: 1, wrap: 1 })}<p class="small muted" style="margin:6px 0 0">Defects you note at the bottom of each appliance appear here too.</p></div>
+  ${Array.from({ length: n }, (_, i) => `<h2>Defect ${i + 1}${(r.defects[i] || {}).app !== undefined ? ' · Appliance ' + (r.defects[i].app + 1) : ''}</h2><div class="card">
     ${txt(`defects.${i}.text`, 'Identified defect', { req: 1, area: 1, rows: 3 })}
     ${choice(`defects.${i}.cls`, 'Classification', OPT.cls, { req: 1 })}
     ${txt(`defects.${i}.action`, 'Remedial action taken', { req: 1, area: 1, rows: 3 })}${quick(`defects.${i}.action`, ['N/A', 'None taken', 'Customer advised'])}
@@ -2984,6 +2998,8 @@ document.addEventListener('click', async e => {
     case 'goIssue': { const tgt = records.find(x => x.id === b.dataset.id) || r; ui.showErr = true; goTo(tgt, +b.dataset.step); ui.appTab = b.dataset.app === '' ? 0 : +b.dataset.app; render(); break; }
     case 'sigClear': { const key = b.dataset.key; r[key] = ''; persistRec(r); ui.pdf = null; const cv = document.querySelector(`canvas[data-sig="${key}"]`); cv.getContext('2d').clearRect(0, 0, cv.width, cv.height); document.querySelector(`[data-ph="${key}"]`).style.display = ''; break; }
     case 'photoRm': await PH.remove(r, b.dataset.path, b.dataset.pid); ui.pdf = null; persistRec(r); { const y = window.scrollY; render(); window.scrollTo(0, y); } break;
+    case 'appAddDef': { r.defects = r.defects.slice(0, +r.defectCount || 0); if (r.defects.length >= 8) { toast('Up to 8 defects on one record'); break; } r.defects.push({ ...blankDefect(), app: +b.dataset.i }); r.defectCount = String(r.defects.length); persistRec(r); ui.pdf = null; { const y = window.scrollY; render(); window.scrollTo(0, y); } break; }
+    case 'appRmDef': { const k = +b.dataset.k; PH.dropAll((r.defects[k] || {}).photos || []); r.defects.splice(k, 1); r.defectCount = String(r.defects.length); persistRec(r); ui.pdf = null; { const y = window.scrollY; render(); window.scrollTo(0, y); } break; }
     case 'legAddDef': r.defects.push(blankDefect()); r.defectCount = String(r.defects.length); persistRec(r); ui.pdf = null; render(); break;
     case 'legRmDef': PH.dropAll(r.defects[+b.dataset.i].photos || []); r.defects.splice(+b.dataset.i, 1); r.defectCount = String(r.defects.length); persistRec(r); ui.pdf = null; render(); break;
     case 'legAuto': {

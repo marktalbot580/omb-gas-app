@@ -708,6 +708,24 @@ def run():
         check('signature line is a thin dashed line, not a white box over the signature', sg is not None and sg['h'] <= 2 and sg['bw'] == '0px', sg)
         ctx.close()
 
+        # ---------- defects at the bottom of each appliance ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "(()=>{const c={id:'df1',name:'Def Test',phone:'',address:'1 A St\\nLincoln\\nLN1 1AA'};customers.push(c);saveCustomers();const r=newRecord(c,'gas');ui.rec=r;ui.step=1;ui.appTab=1;r.applianceCount='2';r.appliances.push(blankAppliance());ui.pdfs={};ui.view='form';render();})()")
+        pg.click('[data-act=appAddDef]')
+        pg.fill('textarea[data-f="defects.0.text"], [data-path="defects.0.text"] textarea', 'Flue joint loose') if False else None
+        ev(pg, "setP(ui.rec,'defects.0.text','Flue joint loose');setP(ui.rec,'defects.0.cls','AR');setP(ui.rec,'defects.0.action','Customer advised');render()")
+        dd = ev(pg, "({n:ui.rec.defectCount,app:ui.rec.defects[0].app,btn:!!document.querySelector('[data-act=appAddDef]'),h:document.querySelector('#view').innerText.includes('Defects on this appliance')})")
+        check('defect added at the bottom of appliance 2 is tagged with that appliance', dd['n'] == '1' and dd['app'] == 1 and dd['h'], dd)
+        ev(pg, "ui.step=4;render()")
+        check('the Defects step lists it with its appliance', 'Appliance 2' in ev(pg, "document.querySelector('#view').innerText"))
+        ev(pg, "ui.rec.defects[0].action='';")
+        iss = ev(pg, "validate(ui.rec).filter(x=>/Appliance 2 defect/.test(x.label)).map(x=>x.step+':'+x.app)")
+        check('an unfinished appliance defect is flagged on that appliance step', iss and iss[0] == '1:1', iss)
+        ev(pg, "ui.step=1;ui.appTab=1;render()"); pg.click('[data-act=appRmDef]')
+        check('a defect can be removed from the appliance', ev(pg, "ui.rec.defectCount") == '0' and ev(pg, "ui.rec.defects.length") == 0)
+        check('no page errors with appliance defects', not errs, errs)
+        ctx.close()
+
         # ---------- 12y. appliance register ----------
         ctx, pg, errs = fresh(b)
         ev(pg, "(()=>{const c={id:'rc1',name:'Ann Beck',phone:'07700900000',address:'14 Larch Road\\nLincoln\\nLN2 4AB'};customers.push(c);saveCustomers();const r=newRecord(c,'service');r.customerId='rc1';r.jobAddress='14 Larch Road\\nLincoln\\nLN2 4AB';r.make='Worcester';r.model='Greenstar 30i';r.gc='47 311 74';r.serial='7736123456';r.inspectionDate=localISO();r.renewal=new Date(Date.now()+12*864e5).toISOString().slice(0,10);records.push(r);saveRecords();ui.view='custEdit';ui.cust=JSON.parse(JSON.stringify(c));ui.cTab='appl';render();})()")
