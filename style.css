@@ -96,7 +96,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-of
 .sigwrap{border:1px solid var(--line);border-radius:12px;background:#fff;position:relative;overflow:hidden}
 .sigwrap canvas{display:block;width:100%;height:170px;touch-action:none}
 .sigwrap .ph{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;color:#aaa;pointer-events:none;font-size:14px}
-.sigwrap .line{position:absolute;left:14px;right:14px;bottom:34px;border-bottom:1px dashed #bbb;pointer-events:none}
+.sigwrap .sigline{position:absolute;left:14px;right:14px;bottom:34px;border-bottom:1px dashed #bbb;pointer-events:none}
 .sigactions{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
 .sigactions button{background:none;border:0;color:var(--gold2);font:inherit;padding:6px 2px}
 

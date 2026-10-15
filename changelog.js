@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v189', items: ['Fixed: on the Sign off step a white box covered the lower half of the signature while you signed. The signature itself was always saved correctly; only the box on screen was wrong.'] },
   { v: 'v188', items: ['Plan my day order: in Settings \\u2192 Calendar choose Closest first, furthest last (the default) or Furthest first, closest last.'] },
   { v: 'v187', items: ['Drive times are remembered between postcodes for 45 days, and Plan my day works out all the legs in a single lookup, so regular customers and repeat plans cost almost nothing.'] },
   { v: 'v186', items: ['Auto schedule tick box on the appointment, under the start time. Plan my day only moves jobs that are ticked, and fits them around the ones you have agreed a fixed time for. If none are ticked it can move them all.'] },

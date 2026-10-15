@@ -701,6 +701,13 @@ def run():
         check('no page errors with the lazy PDF maker', not errs, errs)
         ctx.close()
 
+        # ---------- signature pad is not covered by the dashed line ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "(()=>{const c={id:'sg1',name:'Sig Test',phone:'',address:'1 A St\\nLincoln\\nLN1 1AA'};customers.push(c);saveCustomers();const r=newRecord(c,'gas');ui.rec=r;ui.step=6;ui.pdfs={};ui.view='form';render();})()")
+        sg = ev(pg, "(()=>{const l=document.querySelector('.sigwrap .sigline');if(!l)return null;const s=getComputedStyle(l);return {bg:s.backgroundColor,h:l.getBoundingClientRect().height,bw:s.borderTopWidth}})()")
+        check('signature line is a thin dashed line, not a white box over the signature', sg is not None and sg['h'] <= 2 and sg['bw'] == '0px', sg)
+        ctx.close()
+
         # ---------- 12y. appliance register ----------
         ctx, pg, errs = fresh(b)
         ev(pg, "(()=>{const c={id:'rc1',name:'Ann Beck',phone:'07700900000',address:'14 Larch Road\\nLincoln\\nLN2 4AB'};customers.push(c);saveCustomers();const r=newRecord(c,'service');r.customerId='rc1';r.jobAddress='14 Larch Road\\nLincoln\\nLN2 4AB';r.make='Worcester';r.model='Greenstar 30i';r.gc='47 311 74';r.serial='7736123456';r.inspectionDate=localISO();r.renewal=new Date(Date.now()+12*864e5).toISOString().slice(0,10);records.push(r);saveRecords();ui.view='custEdit';ui.cust=JSON.parse(JSON.stringify(c));ui.cTab='appl';render();})()")
@@ -813,7 +820,7 @@ def run():
         pg.wait_for_timeout(500)
         gp = ev(pg, "({t:(document.querySelector('#nextDrive')||{}).innerText,b:JSON.stringify(window.__body)})")
         check('next job uses the phone location when allowed', 'from here' in (gp['t'] or '') and '"from"' in gp['b'], gp)
-        ev(pg, "settings.gpsDrive='off';saveSettings();hereMem.t=0;CLOUD.post=async()=>({legs:[{mins:18,miles:15.2}]});localStorage.clear&&Object.keys(localStorage).filter(k=>k.startsWith('omb_drv_')).forEach(k=>localStorage.removeItem(k));ui.view='home';render();")
+        ev(pg, "settings.gpsDrive='off';saveSettings();Object.keys(pairMem).forEach(k=>delete pairMem[k]);hereMem.t=0;CLOUD.post=async()=>({legs:[{mins:18,miles:15.2}]});localStorage.clear&&Object.keys(localStorage).filter(k=>k.startsWith('omb_drv_')).forEach(k=>localStorage.removeItem(k));ui.view='home';render();")
         pg.wait_for_timeout(500)
         check('next job shows the drive time to it', 'About 18 mins drive' in ev(pg, "document.querySelector('#view').innerText"), ev(pg, "JSON.stringify({el:!!document.querySelector('#nextDrive'),t:(document.querySelector('#nextDrive')||{}).innerText,nx:(typeof todayNext==='function'&&todayNext(nextBookings())||{}).address,s:settings.address})"))
         check('route works out drive times by itself when opened', 'about 12 min' in rt and 'about 26 min' in rt and 'about 50 min' in rt and 'From your base' in rt, rt)

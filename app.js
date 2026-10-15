@@ -894,7 +894,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v188';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v189';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1535,7 +1535,7 @@ function stepSign() {
   /* the engineer's saved signature goes on automatically the first time a form reaches this step (Clear still works afterwards) */
   if (!r.engineerSig && settings.engSig && !r.engAuto) { r.engAuto = true; r.engineerSig = PH.sigStore(settings.engSig); persistRec(r); }
   const sig = (key, label, req) => `<div class="f ${ui.showErr && req && !r[key] ? 'bad' : ''}"><span>${label}${req ? ' <b>*</b>' : ''}</span>
-    <div class="sigwrap"><canvas data-sig="${key}"></canvas><div class="line"></div><div class="ph" data-ph="${key}">Sign here</div></div>
+    <div class="sigwrap"><canvas data-sig="${key}"></canvas><div class="sigline"></div><div class="ph" data-ph="${key}">Sign here</div></div>
     <div class="sigactions"><span class="small muted">Use your finger</span><button data-act="sigClear" data-key="${key}">Clear</button></div></div>`;
   return `
     <div class="card">
