@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v191', items: ['New backup: Settings \u2192 Back up as folders (zip). It makes one zip file with a folder for each customer holding their certificates, invoices and photos (named like "Gas Safety Record 2026-10-15 - Defect 1 - photo 1"), so you can open it on a computer and browse it. You can add a password. Restore from a backup also opens these zip files. The old single-file backup is still there.'] },
   { v: 'v190', items: ['Gas safety record: defects are now written at the bottom of each appliance, so you note a fault while you are looking at it instead of remembering it all until the Defects step. They still appear on the Defects step and on the PDF (marked with the appliance). You can note up to 8 defects.'] },
   { v: 'v189', items: ['Fixed: on the Sign off step a white box covered the lower half of the signature while you signed. The signature itself was always saved correctly; only the box on screen was wrong.'] },
   { v: 'v188', items: ['Plan my day order: in Settings \\u2192 Calendar choose Closest first, furthest last (the default) or Furthest first, closest last.'] },

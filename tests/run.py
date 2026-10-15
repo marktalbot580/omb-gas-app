@@ -901,6 +901,41 @@ def run():
         check('no page errors with the route', not errs, errs)
         ctx.close()
 
+        # ---------- 12d. zip backup (folders) and restore ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, 'SAMPLE.add()')
+        r = ev(pg, """(async()=>{
+          const px='data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=';
+          const rec=records.find(x=>typeOf(x)==='gas'); rec.defects=[{photos:['ph_t1','ph_t2'],text:'x'}]; await PH.put('ph_t1',{data:px,w:1,h:1}); await PH.put('ph_t2',{data:px,w:1,h:1});
+          rec.engineerSig=PH.sigStore(px); await new Promise(r=>setTimeout(r,200));
+          await ZB.load();
+          const z1=fflate.unzipSync(await ZB.build('photos',()=>{}));
+          const names=Object.keys(z1);
+          const z2=fflate.unzipSync(await ZB.build('all',()=>{}));
+          const pdfs=Object.keys(z2).filter(n=>n.endsWith('.pdf'));
+          return {names, pdfs, cust:customers.length, nrec:records.length}})()""")
+        names = r['names']
+        check('zip has a Photos folder per customer with readable names', any('/Photos/' in n and 'Defect 1 - photo 1' in n for n in names) and any('/Photos/' in n and 'Defect 1 - photo 2' in n for n in names), names)
+        check('zip has the restore data and a read me', 'OMB restore data.json' in names and 'READ ME.txt' in names, names)
+        check('zip with PDFs holds certificates and invoices in folders', any('/Certificates/' in n for n in r['pdfs']) and len(r['pdfs']) >= r['nrec'], r['pdfs'])
+        r = ev(pg, """(async()=>{
+          const zip=await ZB.build('photos',()=>{});
+          const f=new File([zip],'b.zip'); const d=await ZB.read(f);
+          const sig=records.find(x=>typeOf(x)==='gas').engineerSig.slice(4);
+          const out={ph:Object.keys(d.photos).includes('ph_t1'), sig:!!d.photos[sig], data:d.photos.ph_t1.data.startsWith('data:image/jpeg'), nr:d.records.length, bank:JSON.stringify(d.settings).includes('sortCode')};
+          const bad=await ZB.read(new File([new Uint8Array([1,2,3,4,5,6,7,8,9])],'x.json')); out.notzip=bad===null;
+          return out})()""")
+        check('zip backup reads back with photos and signatures', r['ph'] and r['sig'] and r['data'] and r['nr'] > 0 and not r['bank'] and r['notzip'], r)
+        r = ev(pg, """(async()=>{
+          const zip=await ZB.build('photos',()=>{}); const f=new File([zip],'b.zip');
+          const n0=records.length; for (const x of records) await PH.dropAll(PH.allIds(x)); records.length=0; customers.length=0; saveRecords(); saveCustomers();
+          await restoreBackup(f); await new Promise(r=>setTimeout(r,300));
+          return {rec:records.length>=n0, cust:customers.length>0, ph:!!(await PH.get('ph_t1'))}})()""")
+        check('restoring from the zip brings back records, customers and photos', r['rec'] and r['cust'] and r['ph'], r)
+        check('settings offers the folder backup and restore accepts zip', ev(pg, "ui.view='settings';render();!!document.querySelector('[data-act=expZip]')&&document.querySelector('#restoreFile').accept.includes('.zip')"))
+        check('no page errors in zip backup', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()

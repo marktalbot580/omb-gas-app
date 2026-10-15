@@ -895,7 +895,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v190';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v191';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1213,7 +1213,9 @@ function renderSettings(v) {
       <div style="height:8px"></div>
       <button class="btn block" data-act="expAll">Back up everything</button>
       <div style="height:8px"></div>
-      <label class="btn block ghost" style="text-align:center">Restore from a backup<input id="restoreFile" type="file" accept=".json,application/json" hidden></label>
+      <button class="btn block" data-act="expZip">Back up as folders (zip, with photos and PDFs)</button>
+      <div style="height:8px"></div>
+      <label class="btn block ghost" style="text-align:center">Restore from a backup<input id="restoreFile" type="file" accept=".json,.zip,.ombzip,application/json,application/zip" hidden></label>
     </div>
     <h2>Sample data</h2>
     <div class="card">
@@ -3047,6 +3049,7 @@ document.addEventListener('click', async e => {
     case 'expCust': exportCustomers(); break;
     case 'forceUpdate': forceUpdate(); break;
     case 'expAll': exportBackup(); break;
+    case 'expZip': ZB.exportZip(); break;
     case 'bkLater': { const d = new Date(); d.setDate(d.getDate() + 7); bkSet({ snooze: d.toISOString().slice(0, 10) }); render(); break; }
     case 'installApp': if (_installEvt) { _installEvt.prompt(); try { await _installEvt.userChoice; } catch (e) { } _installEvt = null; render(); } instPopClose(); break;
     case 'laterInstall': LS.set('omb_instsnooze', Date.now() + 3 * 864e5); instPopClose(); break;
@@ -3526,7 +3529,9 @@ async function exportBackup() {
 }
 async function restoreBackup(file) {
   try {
-    let d = JSON.parse(await file.text());
+    let d = await ZB.read(file);                 // zip backups (folders); null means it is the single-file kind
+    if (d === false) return;
+    if (d === null) d = JSON.parse(await file.text());
     if (d.app !== 'omb-gas') throw new Error('not an OMB backup');
     if (d.encrypted) {
       const pw = await pwBox('open'); if (!pw) return;
@@ -3543,7 +3548,7 @@ async function restoreBackup(file) {
     Object.entries(d.settings || {}).forEach(([k, v]) => { if (k !== 'syncToken' && v && !settings[k]) settings[k] = v; });
     saveCustomers(); saveRecords(); saveSettings(); render();
     toast(`Restored ${addC} customer${addC === 1 ? '' : 's'} and ${addR} record${addR === 1 ? '' : 's'}` + (settings.accNo ? '' : '. Bank details are not kept in backups, so add them again in Settings'));
-  } catch (err) { toast('That file is not a valid backup'); }
+  } catch (err) { console.warn(err); toast('That file is not a valid backup'); }
 }
 
 /* ---------- cloud sync (see cloud.js) ---------- */
