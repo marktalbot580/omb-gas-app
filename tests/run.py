@@ -953,6 +953,15 @@ def run():
         check('no page errors for strip down question', not errs, errs)
         ctx.close()
 
+        # ---------- 12f. owner page shows last active ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "ui.view='admin'; ui.admin={rows:[{user_id:'u1',email:'kyle@x.com',created_at:'2026-09-01T10:00:00Z',last_sign_in:'2026-10-05T09:00:00Z',last_active:'2026-10-16T18:30:00Z',confirmed:true,status:'active',comped:false},{user_id:'u2',email:'old@x.com',created_at:'2026-09-02T10:00:00Z',last_sign_in:'2026-09-03T09:00:00Z',confirmed:true,status:'trialing',trial_end:'2030-01-01T00:00:00Z',comped:false}],err:'',fb:[]}; render()")
+        txt = ev(pg, "document.body.innerText")
+        check('owner page shows last active and last sign-in', 'last active 16/10/2026' in txt.lower() or 'last active 16' in txt.lower(), txt[-400:])
+        check('owner page copes with a user that has no activity yet', 'old@x.com' in txt and 'last sign-in' in txt.lower())
+        check('no page errors on owner page', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()

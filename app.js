@@ -895,7 +895,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v192';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v193';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1266,7 +1266,7 @@ function renderAdmin(v) {
       <div class="row">${['new', 'fixing', 'done'].map(s => `<button class="btn grow ${x.status === s ? 'gold' : 'ghost'}" data-act="adminFbStatus" data-id="${x.id}" data-v="${s}">${s}</button>`).join('')}</div></div>`).join('') || (A.fbErr ? '' : '<p class="muted">No feedback yet.</p>')}
     <h2>Everyone</h2>
     ${rows.map(r => `<div class="card"><div class="t" style="font-weight:700">${esc(r.email)}</div>
-      <div class="small muted">${esc(state(r))}${r.confirmed ? '' : ' · email not confirmed'} · joined ${ukDate((r.created_at || '').slice(0, 10))}${r.last_sign_in ? ' · last in ' + ukDate(r.last_sign_in.slice(0, 10)) : ''}${r.status === 'trialing' && !r.comped ? ' · trial ends ' + ukDate((r.trial_end || '').slice(0, 10)) : ''}</div>
+      <div class="small muted">${esc(state(r))}${r.confirmed ? '' : ' · email not confirmed'} · joined ${ukDate((r.created_at || '').slice(0, 10))}${r.last_active ? ' · last active ' + ukDate(r.last_active.slice(0, 10)) : ''}${r.last_sign_in ? ' · last sign-in ' + ukDate(r.last_sign_in.slice(0, 10)) : ''}${r.status === 'trialing' && !r.comped ? ' · trial ends ' + ukDate((r.trial_end || '').slice(0, 10)) : ''}</div>
       <button class="btn block ${r.comped ? 'ghost' : ''}" style="margin-top:8px" data-act="adminComp" data-id="${r.user_id}" data-v="${r.comped ? '' : '1'}">${r.comped ? 'Remove free pass' : 'Give free pass'}</button>${r.comped || r.status === 'active' ? '' : `<button class="btn block" style="margin-top:8px" data-act="adminExtend" data-id="${r.user_id}">Extend trial by 14 days</button>`}</div>`).join('') || '<p class="muted">Nobody yet.</p>'}`}`;
 }
 async function adminLoad() {
