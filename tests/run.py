@@ -1000,6 +1000,26 @@ def run():
         check('no page errors in appliance history', not errs, errs)
         ctx.close()
 
+        # ---------- 12i. defect follow-up ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, 'SAMPLE.add()')
+        r = ev(pg, """(()=>{
+          const cu=customers[0]; const g=newRecord(cu,'gas'); Object.assign(g,{status:'complete',inspectionDate:addDays(localISO(),-9),jobAddress:'1 Test St, Lincoln',defectCount:'3',defects:[{text:'Gas escape at meter',cls:'ID',action:'Capped'},{text:'Flue loose',cls:'AR',action:'Advised'},{text:'Old paintwork',cls:'NCS',action:''}]}); persistRec(g);
+          const o=newRecord(cu,'oil'); Object.assign(o,{status:'complete',inspectionDate:localISO(),defectClass:'At risk',defects:'Leaking oil line'}); persistRec(o);
+          const d=newRecord(cu,'gas'); Object.assign(d,{status:'draft',defectCount:'1',defects:[{text:'draft only',cls:'ID',action:''}]}); persistRec(d);
+          const it=FU.items(); ui.view='home'; render();
+          return {n:it.length, first:it[0].cls, texts:it.map(x=>x.text), banner:!!document.querySelector('[data-act=fuOpen]'), sampleHidden:!it.some(x=>x.r.sample), gid:g.id}})()""")
+        check('only at risk and immediately dangerous defects on finished records are listed', r['n'] == 3 and r['first'] == 'Immediately dangerous' and 'Old paintwork' not in r['texts'] and 'draft only' not in r['texts'], r)
+        check('Home shows a banner for open safety defects', r['banner'])
+        pg.evaluate("document.querySelector('[data-act=fuOpen]').click()")
+        pg.wait_for_timeout(200)
+        txt = ev(pg, "(document.getElementById('fuSheet')||{}).innerText||''")
+        check('follow-up list shows the defect and its age', 'Gas escape at meter' in txt and '9 days ago' in txt, txt[:300])
+        r = ev(pg, """(()=>{ const b=document.querySelector('#fuSheet [data-act=fuFixed][data-k=g0]'); b.click(); const g=records.find(x=>x.defects&&x.defects[0]&&x.defects[0].text==='Gas escape at meter'); return {fixed:!!(g.dfRes&&g.dfRes.g0), left:FU.items().length, w:FU.wording(FU.items()[0]).includes('safety issue outstanding')}})()""")
+        check('Mark fixed removes it from the list and keeps it on the record', r['fixed'] and r['left'] == 2 and r['w'], r)
+        check('no page errors in defect follow-up', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()
