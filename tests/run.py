@@ -639,7 +639,7 @@ def run():
             const missing=validate(r).length;
             r.engineerSig=sig; r.customerPresent='No';
             if (OFORM.of(r)) OFORM.of(r).sections.forEach(sec=>sec.fields.forEach(fd=>{ let v=''; if(fd.t==='pick')v=fd.o[0]; else if(['yn','ynna'].includes(fd.t))v='YES'; else if(fd.t==='pfn')v='PASS'; else if(fd.t==='num')v='2'; else if(fd.t==='date')v='2027-10-01'; else if(fd.t==='area'||fd.t==='txt')v='x'; else return; if(fd.top) r[fd.k]=v; else r.f[fd.k]=v; }));
-            else if (t==='oil') { Object.assign(r,{location:'Kitchen',make:'Grant',model:'M',systemType:'Combi',serial:'S',fuel:'Kerosene (28 sec)',flue:'Conventional flue (chimney / liner)',reason:'Service',age:'5',nozzleSize:'0.6',pumpPressure:'10',filterChanged:'YES',fgDone:'N/A',manufacturer:'YES',safe:'YES',defectClass:'None',renewal:'2027-10-01'}); OIL.ALL.forEach(c=>r.chk[c.k]='PASS'); }
+            else if (t==='oil') { Object.assign(r,{location:'Kitchen',make:'Grant',model:'M',systemType:'Combi',serial:'S',fuel:'Kerosene (28 sec)',flue:'Conventional flue (chimney / liner)',reason:'Service',stripDown:'Yes',age:'5',nozzleSize:'0.6',pumpPressure:'10',filterChanged:'YES',fgDone:'N/A',manufacturer:'YES',safe:'YES',defectClass:'None',renewal:'2027-10-01'}); OIL.ALL.forEach(c=>r.chk[c.k]='PASS'); }
             else { Object.assign(r,{position:'Outside, on the ground',material:'Plastic',bunded:'YES',capacity:'1000',fuel:'Kerosene (28 sec)',distBuilding:'3',distBoundary:'2',fireProt:'N/A',nearWater:'NO',waterTest:'No water found',safe:'YES',risk:'Low',defectClass:'None',renewal:'2027-10-01'}); TANK.CHK.forEach(c=>r.chk[c.k]='PASS'); }
             const left=validate(r).map(x=>x.path);
             let pdf=0; try{ const bl=await buildPdf(r,settings); pdf=bl.size; }catch(e){ out[t+'_pdf']=String(e); }
@@ -934,6 +934,23 @@ def run():
         check('restoring from the zip brings back records, customers and photos', r['rec'] and r['cust'] and r['ph'], r)
         check('settings offers the folder backup and restore accepts zip', ev(pg, "ui.view='settings';render();!!document.querySelector('[data-act=expZip]')&&document.querySelector('#restoreFile').accept.includes('.zip')"))
         check('no page errors in zip backup', not errs, errs)
+        ctx.close()
+
+        # ---------- 12e. strip down service question on the service forms ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, 'SAMPLE.add()')
+        r = ev(pg, """(()=>{const out={};
+          for (const t of ['service','oil']) {
+            let rec=records.find(x=>typeOf(x)===t); if(!rec){rec=newRecord(null,t);}
+            const has=()=>{const o=validate(rec);const l=Array.isArray(o)?o.map(x=>x.path||x):Object.keys(o||{});return l.includes('stripDown')};
+            rec.stripDown=''; const a=has(); rec.stripDown='No'; const b=has(); rec.age=''; const c=(()=>{const o=validate(rec);const l=Array.isArray(o)?o.map(x=>x.path||x):Object.keys(o||{});return l.includes('age')})();
+            out[t]=[a,b,c];
+          } return out})()""")
+        check('service forms need the strip down Yes/No and no longer need the boiler age', r['service'] == [True, False, False] and r['oil'] == [True, False, False], r)
+        ev(pg, "ui.rec=records.find(x=>typeOf(x)==='service'); ui.step=1; ui.view='form'; render()")
+        txt = ev(pg, "document.body.innerText")
+        check('service form asks about the full strip down service', 'Has a full strip down service been carried out?' in txt and 'Age of boiler (optional)' in txt)
+        check('no page errors for strip down question', not errs, errs)
         ctx.close()
 
         # ---------- 13. offline (service worker) ----------

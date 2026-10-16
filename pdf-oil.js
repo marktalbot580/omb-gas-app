@@ -196,7 +196,7 @@ async function drawOilPdf(rec, s, lv, kind) {
       ['System type', OIL.sysText(rec)], ['Serial number', rec.serial],
       ['Fuel', OIL.fuelText(rec)], ['Flue type', OIL.flueText(rec)],
       ['Location', OIL.locText(rec)], ['Burner', rec.burner],
-      ['Reason for visit', rec.reason], ['Age of boiler', rec.age]
+      ['Reason for visit', rec.reason], ['Full strip down service', rec.stripDown], ['Age of boiler', rec.age]
     ]));
     checksTable('CHECKS', OIL.ALL.map(c => [c.label, rec.chk[c.k], rec.fault[c.k]]));
     table('BURNER SETTINGS AND COMBUSTION', cols4, pairs([

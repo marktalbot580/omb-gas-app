@@ -66,7 +66,7 @@ const SVC = (() => {
   function blank() {
     const keys = [...APP, ...SAFE].map(c => c.k);
     return {
-      location: '', locationOther: '', make: '', makeOther: '', model: '', systemType: '', systemOther: '', serial: '', gc: '', flue: '', reason: '', age: '',
+      location: '', locationOther: '', make: '', makeOther: '', model: '', systemType: '', systemOther: '', serial: '', gc: '', flue: '', reason: '', stripDown: '', age: '',
       chk: Object.fromEntries(keys.map(k => [k, ''])), fault: Object.fromEntries(keys.map(k => [k, ''])),
       tightDone: '', tightResult: '', tightStart: '', tightEnd: '', tightMins: '',
       bpTaken: '', bpResult: '', bpValue: '', grTaken: '', grResult: '', grValue: '',
@@ -88,7 +88,7 @@ const SVC = (() => {
     need(1, 'location', 'Appliance location'); if (rec.location === 'Other') need(1, 'locationOther', 'Appliance location (other)');
     need(1, 'make', 'Appliance make'); if (rec.make === 'Other') need(1, 'makeOther', 'Appliance make (other)');
     need(1, 'model', 'Appliance model'); need(1, 'systemType', 'System type'); if (rec.systemType === 'Other') need(1, 'systemOther', 'System type (other)');
-    need(1, 'serial', 'Serial number'); need(1, 'flue', 'Flue type'); need(1, 'reason', 'Reason for visit'); need(1, 'age', 'Age of boiler');
+    need(1, 'serial', 'Serial number'); need(1, 'flue', 'Flue type'); need(1, 'reason', 'Reason for visit'); need(1, 'stripDown', 'Full strip down service (Yes or No)');
     APP.forEach(c => { need(2, 'chk.' + c.k, c.label); if (rec.chk[c.k] === 'FAIL') need(2, 'fault.' + c.k, c.label + ' – fault details'); });
     SAFE.forEach(c => { need(3, 'chk.' + c.k, c.label); if (rec.chk[c.k] === 'FAIL') need(3, 'fault.' + c.k, c.label + ' – fault details'); });
     need(5, 'tightDone', 'Tightness test'); if (rec.tightDone === 'YES') { need(5, 'tightResult', 'Tightness test result'); need(5, 'tightStart', 'Tightness test start pressure'); need(5, 'tightEnd', 'Tightness test end pressure'); }

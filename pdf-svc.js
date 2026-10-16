@@ -161,8 +161,8 @@ async function drawSvcPdf(rec, s, lv) {
     { h: 'Location', w: 40 }, { h: 'Make', w: 40 }, { h: 'Model', w: 50 }, { h: 'System type', w: 34 }, { h: 'GC number', w: 30 }
   ], [[SVC.locText(rec), SVC.makeText(rec), rec.model, SVC.sysText(rec), rec.gc]]);
   table('', [
-    { h: 'Serial number', w: 60 }, { h: 'Reason for visit', w: 40 }, { h: 'Flue type', w: 50 }, { h: 'Boiler age', w: 44 }
-  ], [[rec.serial, rec.reason, rec.flue, rec.age]]);
+    { h: 'Serial number', w: 48 }, { h: 'Reason for visit', w: 34 }, { h: 'Flue type', w: 42 }, { h: 'Full strip down service', w: 40 }, { h: 'Boiler age', w: 30 }
+  ], [[rec.serial, rec.reason, rec.flue, rec.stripDown, rec.age]]);
 
   const colsChk = [{ h: 'Check', w: 56 }, { h: 'PASS', w: 12, a: 'c' }, { h: 'FAIL', w: 12, a: 'c' }, { h: 'N/A', w: 12, a: 'c' }, { h: 'Further information', w: 102 }];
   table('APPLIANCE CHECKS', colsChk, SVC.APP.map(c => chkRow(c.label, rec.chk[c.k], rec.chk[c.k] === 'FAIL' ? rec.fault[c.k] : '')));

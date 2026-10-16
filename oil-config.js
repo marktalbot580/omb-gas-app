@@ -45,7 +45,7 @@ const OIL = (() => {
   function blank() {
     return {
       location: '', locationOther: '', make: '', makeOther: '', model: '', systemType: '', systemOther: '', fuel: '', fuelOther: '', flue: '', flueOther: '',
-      serial: '', burner: '', reason: '', age: '',
+      serial: '', burner: '', reason: '', stripDown: '', age: '',
       chk: Object.fromEntries(ALL.map(c => [c.k, ''])), fault: Object.fromEntries(ALL.map(c => [c.k, ''])),
       nozzleSize: '', pumpPressure: '', filterChanged: '',
       fgDone: '', fgCo2: '', fgO2: '', fgCo: '', fgTemp: '', fgAmb: '', fgEff: '', fgSmoke: '', fgDraught: '', fgResult: '', analyser: '',
@@ -76,7 +76,7 @@ const OIL = (() => {
     need(1, 'serial', 'Serial number');
     need(1, 'fuel', 'Fuel type'); if (rec.fuel === 'Other') need(1, 'fuelOther', 'Fuel type (other)');
     need(1, 'flue', 'Flue type'); if (rec.flue === 'Other') need(1, 'flueOther', 'Flue type (other)');
-    need(1, 'reason', 'Reason for visit'); need(1, 'age', 'Age of boiler');
+    need(1, 'reason', 'Reason for visit'); need(1, 'stripDown', 'Full strip down service (Yes or No)');
     ALL.forEach(c => { need(2, 'chk.' + c.k, c.label); if (rec.chk[c.k] === 'FAIL') need(2, 'fault.' + c.k, c.label + ' – fault details'); });
     need(3, 'nozzleSize', 'Nozzle size'); numeric(3, 'pumpPressure', 'Pump pressure (bar)'); need(3, 'filterChanged', 'Oil filter cleaned or replaced?');
     need(3, 'fgDone', 'Flue gas analysis performed?');

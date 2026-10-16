@@ -895,7 +895,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v191';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v192';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -2082,8 +2082,8 @@ function oilBoiler() {
   <h2>Visit</h2>
   <div class="card">
     ${choice('reason', 'Reason for visit', OIL.REASON, { req: 1 })}
-    ${ageUnknown(r) ? `<div class="f"><span>Age of boiler <b>*</b></span><input type="text" value="Unknown" disabled></div>` : txt('age', 'Age of boiler', { req: 1, ph: 'e.g. 8 years' })}
-    <label class="row" style="align-items:center;gap:12px;margin-top:4px;min-height:44px"><input type="checkbox" data-act="ageUnknown" style="width:24px;height:24px;flex:none" ${ageUnknown(r) ? 'checked' : ''}><span>Age unknown</span></label>
+    ${choice('stripDown', 'Has a full strip down service been carried out?', ['Yes', 'No'], { req: 1 })}
+    ${txt('age', 'Age of boiler (optional)', { ph: 'e.g. 8 years' })}
   </div>`;
 }
 function oilChecks() {
@@ -2314,8 +2314,8 @@ function svcBoiler() {
   <h2>Visit</h2>
   <div class="card">
     ${choice('reason', 'Reason for visit', SVC.REASON, { req: 1 })}
-    ${ageUnknown(r) ? `<div class="f"><span>Age of boiler <b>*</b></span><input type="text" value="Unknown" disabled></div>` : txt('age', 'Age of boiler', { req: 1, ph: 'e.g. 8 years' })}
-    <label class="row" style="align-items:center;gap:12px;margin-top:4px;min-height:44px"><input type="checkbox" data-act="ageUnknown" style="width:24px;height:24px;flex:none" ${ageUnknown(r) ? 'checked' : ''}><span>Age unknown</span></label>
+    ${choice('stripDown', 'Has a full strip down service been carried out?', ['Yes', 'No'], { req: 1 })}
+    ${txt('age', 'Age of boiler (optional)', { ph: 'e.g. 8 years' })}
   </div>`;
 }
 function svcChecks() {
