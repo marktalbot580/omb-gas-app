@@ -962,6 +962,21 @@ def run():
         check('no page errors on owner page', not errs, errs)
         ctx.close()
 
+        # ---------- 12g. appliance details copied automatically from last visit ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, 'SAMPLE.add()')
+        r = ev(pg, """(()=>{
+          const prev=records.find(x=>typeOf(x)==='service'&&x.model); const cu=customers.find(c=>c.id===prev.customerId);
+          const mk=()=>{const r=newRecord(cu,'service'); r.jobAddress=prev.jobAddress; persistRec(r); return r};
+          const a=mk(); const doneOn=autoPrev(a);
+          settings.autoCopy='off'; const b=mk(); const doneOff=autoPrev(b); settings.autoCopy='on';
+          const c=mk(); c.model='Mine'; const keep=autoPrev(c)||c.model==='Mine';
+          return {on:doneOn&&a.model===prev.model&&a.make===prev.make&&a.serial===prev.serial, off:!doneOff&&!b.model, keep, readings:!a.engineerSig}})()""")
+        check('appliance details fill in automatically for a repeat address', r['on'], r)
+        check('automatic copy can be switched off and never overwrites typed details', r['off'] and r['keep'], r)
+        check('no page errors in automatic copy', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()

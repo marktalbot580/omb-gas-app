@@ -382,7 +382,7 @@ function startJob() {
   if (!types.length) { toast('Choose at least one form'); return; }
   const jobId = types.length > 1 ? uid() : '';
   const recs = types.map(t => { const r = newRecord(pk.customer, t); if (jobId) r.jobId = jobId; return r; });
-  recs.forEach(persistRec);
+  recs.forEach(persistRec); recs.forEach(autoPrev);
   ui.job = jobId ? recs.map(r => r.id) : null;
   ui.rec = recs[0]; ui.step = 0; ui.appTab = 0; ui.showErr = false; ui.pdfs = {}; ui.pick = null; ui.view = 'form'; render();
 }
@@ -1122,6 +1122,7 @@ function renderSettings(v) {
       <label class="f"><span>Message wording</span><textarea data-s="remText" rows="4">${esc(settings.remText || REM_DEFAULT)}</textarea><small>Used for the Text, WhatsApp and Email buttons on the Annual checks due screen. {name}, {business}, {what}, {address} and {date} are filled in for you.</small></label>
       <label class="f"><span>Start listing checks</span><select data-s="remDays">${[['28', '4 weeks before they are due'], ['42', '6 weeks before they are due'], ['56', '8 weeks before they are due'], ['84', '12 weeks before they are due']].map(([k, l]) => `<option value="${k}" ${String(settings.remDays || '56') === k ? 'selected' : ''}>${l}</option>`).join('')}</select><small>A landlord gas safety check can be done up to 2 months early and keep the same yearly date.</small></label>
       <label class="f"><span>Send reminders automatically by email</span><select data-s="remAuto"><option value="off" ${settings.remAuto === 'on' ? '' : 'selected'}>Off</option><option value="on" ${settings.remAuto === 'on' ? 'selected' : ''}>On</option></select><small>When on, customers with an email address saved get an email about 8 weeks before their check is due, and again 2 weeks before. It comes from reminders@ombgas.com with your business name, and their replies come to <b>${esc(settings.email || 'your email in Settings')}</b>. Customers you mark Booked in, Not needed or Stop are skipped, and every email has an unsubscribe link. You need to be signed in so it can run.${settings.remAuto === 'on' && !settings.email ? ' <b style="color:var(--gold2)">Add your email address under Business first, or replies will have nowhere to go.</b>' : ''}</small></label>
+      <label class="f"><span>Fill in the appliance details from last time</span><select data-s="autoCopy"><option value="on" ${settings.autoCopy === 'off' ? '' : 'selected'}>Automatically, when I pick the customer and address</option><option value="off" ${settings.autoCopy === 'off' ? 'selected' : ''}>Only when I tap the button</option></select><small>For gas safety, boiler service and oil service records at a property you have visited before. It copies the make, model, location and flue. Test readings and signatures are left blank.</small></label>
       ${settings.remAuto === 'on' ? '<button class="btn block" data-act="remTest">Send me a sample reminder</button><div style="height:8px"></div>' : ''}
       <button class="btn block ghost" data-act="remReset">Put the original wording back</button>
     </div>
@@ -1341,7 +1342,7 @@ function applyCust(id) {
   r.customerId = c ? c.id : '';
   r.customer = c ? { name: c.name, phone: c.phone, email: c.email, billing: c.billing } : { name: '', phone: '', email: '', billing: '' };
   if (c && (c.properties || []).length === 1) r.jobAddress = c.properties[0];
-  persistRec(r); const y = window.scrollY; render(); window.scrollTo(0, y);
+  persistRec(r); autoPrev(r); const y = window.scrollY; render(); window.scrollTo(0, y);
 }
 function recentCusts(n) {
   const last = {}; records.forEach(r => { if (r.customerId && (last[r.customerId] || 0) < (r.updated || 0)) last[r.customerId] = r.updated || 0; });
@@ -1383,7 +1384,13 @@ function prevCard(r) {
     <button class="btn gold block" data-act="copyPrev">Copy the appliance details from last time</button>
     <p class="small muted" style="margin-bottom:0">Fills in the make, model, Gas Council number, location and type. Test readings and signatures are left blank for you to do again.</p></div>`;
 }
-function applyPrev(r) {
+const prevBlank = r => { const t = typeOf(r); return t === 'gas' ? !(r.appliances || []).some(a => a.model || a.manufacturer) : (t === 'service' || t === 'oil') ? !(r.model || r.make) : false; };
+/* when a repeat customer's address is chosen and the appliance details are still empty, copy them from the last visit (switch off in Settings) */
+function autoPrev(r) {
+  if (!r || settings.autoCopy === 'off' || !prevBlank(r) || !prevVisit(r)) return false;
+  applyPrev(r, true); return true;
+}
+function applyPrev(r, auto) {
   const p = prevVisit(r); if (!p) return;
   if (typeOf(r) === 'gas') {
     const n = Math.min(+p.applianceCount || 1, 4);
@@ -1391,7 +1398,7 @@ function applyPrev(r) {
     r.appliances = Array.from({ length: n }, (_, i) => ({ ...blankAppliance(), ...pickKeys(p.appliances[i], PREV_GAS) }));
     r.appliances.forEach(a => { if (!a.ownership) a.ownership = 'Landlord'; });
   } else Object.assign(r, pickKeys(p, typeOf(r) === 'oil' ? PREV_OIL : PREV_SVC));
-  persistRec(r); toast('Appliance details copied – check they are still right');
+  persistRec(r); toast(auto ? 'Filled in from your visit on ' + ukDate(p.inspectionDate) + ' – check it is still right' : 'Appliance details copied – check they are still right');
 }
 /* ---------- finding a property: type to search the customer's addresses (or every customer's, if none is chosen yet) ---------- */
 const addrKey = a => String(a || '').toLowerCase().replace(/\s+/g, ' ').trim();
@@ -2990,13 +2997,13 @@ document.addEventListener('click', async e => {
       try { navigator.clipboard.writeText(v.trim()).then(ok, () => toast('Could not copy – press and hold the box to copy')); } catch (e) { toast('Could not copy – press and hold the box to copy'); }
       break;
     }
-    case 'sameAddr': r.jobAddress = r.customer.billing; persistRec(r); render(); break;
+    case 'sameAddr': r.jobAddress = r.customer.billing; persistRec(r); autoPrev(r); render(); break;
     case 'pickSug': {
       const c = customers.find(x => x.id === b.dataset.c); if (!c) break;
       if (r.customerId !== c.id) { r.customerId = c.id; r.customer = { name: c.name, phone: c.phone, email: c.email, billing: c.billing }; }
-      r.jobAddress = b.dataset.a; persistRec(r); render(); break;
+      r.jobAddress = b.dataset.a; persistRec(r); autoPrev(r); render(); break;
     }
-    case 'pickProp': r.jobAddress = customers.find(c => c.id === r.customerId).properties[+b.dataset.i]; persistRec(r); render(); break;
+    case 'pickProp': r.jobAddress = customers.find(c => c.id === r.customerId).properties[+b.dataset.i]; persistRec(r); autoPrev(r); render(); break;
     case 'goIssue': { const tgt = records.find(x => x.id === b.dataset.id) || r; ui.showErr = true; goTo(tgt, +b.dataset.step); ui.appTab = b.dataset.app === '' ? 0 : +b.dataset.app; render(); break; }
     case 'sigClear': { const key = b.dataset.key; r[key] = ''; persistRec(r); ui.pdf = null; const cv = document.querySelector(`canvas[data-sig="${key}"]`); cv.getContext('2d').clearRect(0, 0, cv.width, cv.height); document.querySelector(`[data-ph="${key}"]`).style.display = ''; break; }
     case 'photoRm': await PH.remove(r, b.dataset.path, b.dataset.pid); ui.pdf = null; persistRec(r); { const y = window.scrollY; render(); window.scrollTo(0, y); } break;

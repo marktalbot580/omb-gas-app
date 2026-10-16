@@ -207,7 +207,7 @@ function bkStart() {
   const bk = bookings.find(x => x.id === B.id); if (bk) { bk.customerId = cu.id; bk.status = 'done'; bk.updated = Date.now(); saveBookings(); syncAll(); }
   ui.pick = { types: Object.fromEntries(types.map(t => [t, true])), customer: cu }; ui.formFrom = { view: 'book', book: { ...B } }; ui.book = null; startJob();
   { const bk2 = bookings.find(x => x.id === B.id); if (bk2) { bk2.recIds = (jobRecs() || [ui.rec]).map(r => r.id); saveBookings(); } }   // remember which forms this appointment made
-  if (a) { (jobRecs() || [ui.rec]).forEach(r => { r.jobAddress = a; persistRec(r); }); render(); }
+  if (a) { (jobRecs() || [ui.rec]).forEach(r => { r.jobAddress = a; persistRec(r); autoPrev(r); }); render(); }
 }
 async function calAct(a, b) {
   switch (a) {
