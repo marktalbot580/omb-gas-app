@@ -896,7 +896,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v196';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v197';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1066,6 +1066,8 @@ function renderSettings(v) {
       ${f('engineerName', 'Engineer name')}
       ${f('gasSafeId', 'Gas Safe ID card number')}
     </div>
+    <h2>Saved defect wording</h2>
+    <div class="card">${CF.settingsHtml()}</div>
     </div>
     <div data-stab="invoicing" ${(ui.sTab || 'business') === 'invoicing' ? '' : 'hidden'}>
     <h2>Invoice details</h2>
@@ -1505,7 +1507,7 @@ function applianceDefects(i) {
   const r = ui.rec, n = +r.defectCount || 0, mine = r.defects.map((d, k) => ({ d, k })).filter(x => x.k < n && x.d.app === i);
   return `<h2>Defects on this appliance</h2>
     ${mine.length ? mine.map(({ k }, j) => `<div class="card"><div class="row sp" style="margin-bottom:6px"><b>Defect ${j + 1}</b><button type="button" class="btn ghost" style="min-height:36px;padding:0 10px" data-act="appRmDef" data-k="${k}">Remove</button></div>
-      ${txt(`defects.${k}.text`, 'Identified defect', { req: 1, area: 1, rows: 3 })}
+      ${txt(`defects.${k}.text`, 'Identified defect', { req: 1, area: 1, rows: 3 })}${CF.chips(`defects.${k}.text`)}
       ${choice(`defects.${k}.cls`, 'Classification', OPT.cls, { req: 1 })}
       ${txt(`defects.${k}.action`, 'Remedial action taken', { req: 1, area: 1, rows: 3 })}${quick(`defects.${k}.action`, ['N/A', 'None taken', 'Customer advised'])}
       ${PH.field(r, `defects.${k}.photos`)}</div>`).join('') + '<p class="small muted"><b>ID</b> Immediately Dangerous · <b>AR</b> At Risk · <b>NCS</b> Not to Current Standards</p>' : '<div class="card"><p class="small muted" style="margin:0">No defects noted on this appliance.</p></div>'}
@@ -1542,7 +1544,7 @@ function stepDefects() {
   const r = ui.rec, n = +r.defectCount || 0;
   return `<div class="card">${choice('defectCount', 'How many defects are there to note?', OPT.defectCount, { req: 1, wrap: 1 })}<p class="small muted" style="margin:6px 0 0">Defects you note at the bottom of each appliance appear here too.</p></div>
   ${Array.from({ length: n }, (_, i) => `<h2>Defect ${i + 1}${(r.defects[i] || {}).app !== undefined ? ' · Appliance ' + (r.defects[i].app + 1) : ''}</h2><div class="card">
-    ${txt(`defects.${i}.text`, 'Identified defect', { req: 1, area: 1, rows: 3 })}
+    ${txt(`defects.${i}.text`, 'Identified defect', { req: 1, area: 1, rows: 3 })}${CF.chips(`defects.${i}.text`)}
     ${choice(`defects.${i}.cls`, 'Classification', OPT.cls, { req: 1 })}
     ${txt(`defects.${i}.action`, 'Remedial action taken', { req: 1, area: 1, rows: 3 })}${quick(`defects.${i}.action`, ['N/A', 'None taken', 'Customer advised'])}
     ${PH.field(r, `defects.${i}.photos`)}</div>`).join('')}
@@ -2131,7 +2133,7 @@ function oilFinish() {
     ${choice('manufacturer', 'Does the installation meet the manufacturer’s instructions?', OIL.YN, { req: 1, yn: 1 })}
     ${choice('safe', 'Is the appliance / installation safe to use?', OIL.YN, { req: 1, yn: 1 })}
     ${choice('defectClass', 'Defects found', OIL.CLASS, { req: 1, wrap: 1 })}
-    ${r.defectClass && r.defectClass !== 'None' ? txt('defects', 'Defects found and advice given', { req: 1, area: 1, rows: 4 }) : ''}
+    ${r.defectClass && r.defectClass !== 'None' ? txt('defects', 'Defects found and advice given', { req: 1, area: 1, rows: 4 }) + CF.chips('defects') : ''}
   </div>
   <div class="card">
     ${txt('renewal', 'Next service due by', { type: 'date', req: 1, hint: 'Pre-filled as 12 months from today.' })}
@@ -2286,7 +2288,7 @@ function legFindings() {
   <h2>Risks / defects and recommendations</h2>
   ${f ? `<button class="btn block" data-act="legAuto">Add failed checks (${f}) to the list</button><div style="height:12px"></div>` : ''}
   ${r.defects.map((d, i) => `<div class="card">
-    ${txt(`defects.${i}.text`, `Risk / defect ${i + 1}`, { req: 1, area: 1, rows: 3 })}
+    ${txt(`defects.${i}.text`, `Risk / defect ${i + 1}`, { req: 1, area: 1, rows: 3 })}${CF.chips(`defects.${i}.text`)}
     ${choice(`defects.${i}.cls`, 'Priority', LEG.PRIORITY, { req: 1 })}
     ${txt(`defects.${i}.action`, 'Recommendation', { req: 1, area: 1, rows: 3 })}${quick(`defects.${i}.action`, ['N/A', 'None needed'])}
     ${PH.field(r, `defects.${i}.photos`)}

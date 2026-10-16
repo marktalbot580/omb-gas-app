@@ -1020,6 +1020,30 @@ def run():
         check('no page errors in defect follow-up', not errs, errs)
         ctx.close()
 
+        # ---------- 12j. saved defect wording ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, 'SAMPLE.add()')
+        r = ev(pg, """(()=>{
+          const g=newRecord(customers[0],'gas'); g.defectCount='1'; g.defects=[{text:'',cls:'',action:''}]; persistRec(g); ui.rec=g; ui.step=4; ui.view='form'; render();
+          const chips=document.querySelectorAll('[data-act=cfUse]').length;
+          document.querySelector('[data-act=cfUse][data-i="0"]').click();
+          const a={text:g.defects[0].text, cls:g.defects[0].cls, action:g.defects[0].action};
+          g.defects[0].text='Radiator valve leaking'; g.defects[0].cls='AR'; g.defects[0].action='Isolated'; render();
+          const hasSave=!!document.querySelector('[data-act=cfSave]'); document.querySelector('[data-act=cfSave]').click();
+          const saved=settings.commonFaults&&settings.commonFaults.find(x=>x.t==='Radiator valve leaking');
+          const g2=newRecord(customers[0],'gas'); g2.defectCount='1'; g2.defects=[{text:'',cls:'',action:''}]; persistRec(g2); ui.rec=g2; render();
+          const idx=settings.commonFaults.findIndex(x=>x.t==='Radiator valve leaking'); document.querySelector('[data-act=cfUse][data-i="'+idx+'"]').click();
+          const b2={text:g2.defects[0].text, cls:g2.defects[0].cls, action:g2.defects[0].action};
+          const lg=newRecord(customers[0],'legionella'); lg.defects=[{text:'',cls:'',action:''}]; persistRec(lg); ui.rec=lg; ui.step=5; render();
+          const li=document.querySelector('[data-act=cfUse][data-i="0"]'); li.click(); const lc=lg.defects[0];
+          return {chips,a,hasSave,saved:!!saved&&saved.c==='AR'&&saved.a==='Isolated',b2,leg:[lc.text.length>0, lc.cls]}})()""")
+        check('saved wording shows under the defect box', r['chips'] >= 4, r)
+        check('tapping a wording fills the defect, its classification and action', r['a']['text'].startswith('No carbon monoxide') and r['a']['cls'] == 'NCS' and r['a']['action'], r)
+        check('a new wording can be saved with its classification and reused', r['hasSave'] and r['saved'] and r['b2']['text'] == 'Radiator valve leaking' and r['b2']['cls'] == 'AR' and r['b2']['action'] == 'Isolated', r)
+        check('legionella defects get the wording but never a gas classification', r['leg'][0] and r['leg'][1] == '', r)
+        check('no page errors in saved wording', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()
