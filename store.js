@@ -62,5 +62,5 @@ const OMBSTORE = (() => {
   return api;
 })();
 OMBSTORE.ready.then(() => {
-  ['cal.js', 'data-tools.js', 'zip-backup.js', 'today.js', 'register.js', 'app.js'].forEach(src => { const s = document.createElement('script'); s.src = src; s.async = false; document.body.appendChild(s); });
+  ['cal.js', 'data-tools.js', 'zip-backup.js', 'today.js', 'register.js', 'history.js', 'app.js'].forEach(src => { const s = document.createElement('script'); s.src = src; s.async = false; document.body.appendChild(s); });
 });

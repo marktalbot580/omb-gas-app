@@ -977,6 +977,29 @@ def run():
         check('no page errors in automatic copy', not errs, errs)
         ctx.close()
 
+        # ---------- 12h. appliance history ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, 'SAMPLE.add()')
+        r = ev(pg, """(()=>{
+          const prev=records.find(x=>typeOf(x)==='service'&&x.model); const cu=customers.find(c=>c.id===prev.customerId);
+          const mk=(d,fail)=>{const r=newRecord(cu,'service'); Object.assign(r,{jobAddress:prev.jobAddress,make:prev.make,model:prev.model,inspectionDate:d,status:'complete',bpValue:'20'}); SVC.APP.forEach(c=>r.chk[c.k]='PASS'); SVC.SAFE.forEach(c=>r.chk[c.k]='PASS'); if(fail){r.chk.burner='FAIL'; r.fault.burner='dirty injectors'} persistRec(r); return r};
+          prev.inspectionDate='2023-10-01';
+          mk('2024-10-01',true); mk('2025-10-01',true); mk('2026-10-01',true);
+          const item=registerItems(cu).find(i=>i.t==='service'&&addrKey(i.addr)===addrKey(prev.jobAddress));
+          const vs=HIST.visitsFor(item,cu); const rp=HIST.repeats(vs);
+          ui.cTab='appl'; ui.cust=JSON.parse(JSON.stringify(cu)); ui.view='custEdit'; render();
+          window._hid=item.id; return {n:vs.length, rp:rp.map(p=>[p.label,p.run]), btn:!!document.querySelector('[data-act=apHist]')}})()""")
+        check('history finds every visit for the appliance', r['n'] >= 3, r)
+        check('history spots a check that failed on the last 3 visits running', any(p[0] == 'Burner / injectors' and p[1] == 3 for p in r['rp']), r)
+        pg.evaluate("document.querySelector('[data-act=apHist][data-id=\"'+window._hid+'\"]').click()")
+        pg.wait_for_timeout(200)
+        txt = ev(pg, "(document.getElementById('histSheet')||{}).innerText||''")
+        check('history screen opens from the appliance card with readings and failures', 'visits on record' in txt and 'Burner / injectors' in txt and '20 mbar' in txt and 'dirty injectors' in txt, txt[:300])
+        pg.evaluate("document.querySelector('#histSheet [data-act=histClose]').click()")
+        check('history screen closes', ev(pg, "!document.getElementById('histSheet')"))
+        check('no page errors in appliance history', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()

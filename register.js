@@ -26,7 +26,8 @@ function registerHtml(c) {
     return `<div class="card"><div class="row sp" style="align-items:flex-start;gap:10px"><div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:18px">${esc(x.title)}${x.loc ? ' · ' + esc(x.loc) : ''}</div>${tag}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin:12px 0">
         ${kv('Make and model', [x.make, x.model].filter(Boolean).join(' '))}${kv('Type', x.kind)}${kv('GC number (Gas Council)', x.gc)}${kv('Serial number', x.serial)}${kv('Flue', x.flue)}${kv('Fuel', x.fuel)}${kv('Age', x.age)}${kv('Last visit', x.last ? ukDate(x.last) : '')}</div>
-      <button type="button" class="btn gold block" data-act="regStart" data-id="${x.id}">${startLabel[x.t]}</button></div>`;
+      <button type="button" class="btn gold block" data-act="regStart" data-id="${x.id}">${startLabel[x.t]}</button>
+      <button type="button" class="btn block ghost" style="margin-top:8px" data-act="apHist" data-id="${x.id}">History: every visit, readings and defects</button></div>`;
   }).join('')}`).join('');
 }
 document.addEventListener('click', e => {

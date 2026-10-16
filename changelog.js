@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v195', items: ['Appliance history: on a customer, open Appliances and tap History under any appliance. It lists every visit for that appliance at that property, newest first, with the readings, failed checks and defects, and warns you when the same check has failed on the last few visits running.'] },
   { v: 'v194', items: ['Appliance details now fill in by themselves for a repeat customer. When you pick the customer and address on a gas safety, boiler service or oil service record, the make, model, location and flue are copied from your last visit there, so you only do the checks. Test readings and signatures are left blank. You can switch it off in Settings \u2192 Reminders.'] },
   { v: 'v193', items: ['Owner page: each user now shows when they were last active (when their data last synced), as well as their last sign-in. The sign-in date only changes when someone types their password, so a person who stays signed in looked like they had stopped using the app.'] },
   { v: 'v192', items: ['Boiler service and oil boiler service: a new Yes / No question, \u201cHas a full strip down service been carried out?\u201d, replaces the required boiler age. The age is still there as an optional box. The answer is printed on the PDF.'] },
