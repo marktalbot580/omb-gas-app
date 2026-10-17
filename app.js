@@ -896,7 +896,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v197';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v198';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1318,7 +1318,7 @@ function renderForm(v, nav) {
 function warnFaults() {
   const r = ui.rec, n = +r.faultCount || 1;
   const w = records.find(x => x.id === r.warnFor);
-  return `<div class="notice err">Complete one section for each appliance or installation classed as Immediately Dangerous (ID) or At Risk (AR).${w ? ' The boiler details and the failed checks from the service have been filled in for you.' : ''}</div>
+  return `<div class="notice err">Complete one section for each appliance or installation classed as Immediately Dangerous (ID) or At Risk (AR).${w ? ' The appliance details, failed checks and defects from the visit have been filled in for you. Check them and add any serial number that is missing.' : ''}</div>
   <div class="card">${choice('faultCount', 'How many faults are there to record?', ['1', '2', '3', '4'], { req: 1 })}</div>
   ${Array.from({ length: n }, (_, i) => {
     const f = r.faults[i], P = k => `faults.${i}.${k}`;
@@ -1329,6 +1329,7 @@ function warnFaults() {
       ${txt(P('make'), 'Make', { req: 1 })}
       ${txt(P('model'), 'Model', { req: 1 })}
       ${txt(P('serial'), 'Serial number', { req: 1, cap: 'characters', copy: 1 })}
+      ${txt(P('gc'), 'Gas Council (GC) number', { cap: 'characters', copy: 1 })}
       ${choice(P('cls'), 'Has the appliance / installation been assessed as Immediately Dangerous (ID) or At Risk (AR)?', WARN.CLS, { req: 1 })}
       <p class="small muted" style="margin:-8px 0 14px"><b>ID</b> Immediately Dangerous · <b>AR</b> At Risk</p>
       ${choice(P('riddor'), 'Is this required to be notified to the Health & Safety Executive via RIDDOR?', ['YES', 'NO'], { req: 1 })}
@@ -2910,7 +2911,9 @@ document.addEventListener('click', async e => {
       const w = newWarnRecord({ id: svc.customerId, ...svc.customer });
       w.jobId = svc.jobId; w.warnFor = svc.id; w.jobAddress = svc.jobAddress; w.inspectionDate = svc.inspectionDate; w.customerId = svc.customerId; w.customer = { ...svc.customer };
       ['customerPresent', 'customerName', 'customerSig', 'engineerSig'].forEach(k => { w[k] = svc[k]; });
-      WARN.prefillFrom(w, svc);
+      /* a gas check has no serial box, so borrow one from an earlier service of the same make and model at this customer */
+      const serialFor = a => { const m = String(a.model || '').trim().toLowerCase(); if (!m) return ''; const o = records.filter(x => x.id !== svc.id && x.serial && String(x.model || '').trim().toLowerCase() === m && (x.customerId === svc.customerId || x.jobAddress === svc.jobAddress)).sort((p, q) => (q.inspectionDate || '').localeCompare(p.inspectionDate || ''))[0]; return o ? o.serial : ''; };
+      WARN.prefillFrom(w, svc, serialFor);
       persistRec(svc); persistRec(w);
       ui.job = mates(svc).map(x => x.id); ui.rec = w; ui.step = 1; ui.appTab = 0; ui.showErr = false; ui.pdfs = {}; ui.view = 'form'; render(); break;
     }

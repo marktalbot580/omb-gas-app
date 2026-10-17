@@ -1044,6 +1044,21 @@ def run():
         check('no page errors in saved wording', not errs, errs)
         ctx.close()
 
+        # ---------- 12k. warning notice pulls the appliance details through ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, 'SAMPLE.add()')
+        r = ev(pg, """(()=>{
+          const g=newRecord(customers[0],'gas'); g.applianceCount='2';
+          g.appliances[0]=Object.assign(blankAppliance(),{location:'Kitchen',type:'Boiler',manufacturer:'Worcester',model:'Greenstar 30i',gc:'4731 2345',vent:'Pass',terminal:'Pass',flueOp:'Fail',safety:'Pass',safe:'No'});
+          g.appliances[1]=Object.assign(blankAppliance(),{location:'Lounge',type:'Fire',manufacturer:'Valor',model:'Homeflame',gc:'41-123-45',vent:'Pass',terminal:'Pass',flueOp:'Pass',safety:'Pass'});
+          g.defectCount='2'; g.defects=[{text:'Flue leaking products',cls:'ID',action:'Capped off',app:0},{text:'No vent',cls:'AR',action:'Advised',app:1}];
+          const w=newWarnRecord({id:g.customerId,...g.customer}); WARN.prefillFrom(w,g,a=>a.model==='Greenstar 30i'?'SN123':'');
+          return {n:w.faultCount,f:w.faults.slice(0,2).map(f=>[f.location,f.type,f.make,f.model,f.gc,f.serial,f.cls,f.notes])};
+        })()""")
+        check('warning notice: one fault per appliance with details, GC, serial and defects', r['n']=='2' and r['f'][0][:7]==['Kitchen','Boiler','Worcester','Greenstar 30i','4731 2345','SN123','ID'] and 'Flue leaking products' in r['f'][0][7] and r['f'][1][:7]==['Lounge','Fire','Valor','Homeflame','41-123-45','','AR'], r)
+        check('no page errors in warning prefill', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()

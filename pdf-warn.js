@@ -155,10 +155,10 @@ async function drawWarnPdf(rec, s, lv) {
   const n = Math.max(1, Math.min(4, +rec.faultCount || 1));
   const fl = (rec.faults || []).slice(0, n);
   table('APPLIANCES / INSTALLATIONS CLASSIFIED AS DANGEROUS OR AT RISK', [
-    { h: 'Location', w: 22 }, { h: 'Type', w: 19 }, { h: 'Make', w: 20 }, { h: 'Model', w: 22 }, { h: 'Serial number', w: 22 },
-    { h: 'ID', w: 7, a: 'c' }, { h: 'AR', w: 7, a: 'c' }, { h: 'RIDDOR II(1)', w: 12, a: 'c' }, { h: 'RIDDOR II(2)', w: 12, a: 'c' }, { h: 'Reason / notes', w: 56 }
+    { h: 'Location', w: 20 }, { h: 'Type', w: 18 }, { h: 'Make', w: 18 }, { h: 'Model', w: 21 }, { h: 'Serial number', w: 20 }, { h: 'GC number', w: 18 },
+    { h: 'ID', w: 7, a: 'c' }, { h: 'AR', w: 7, a: 'c' }, { h: 'RIDDOR II(1)', w: 11, a: 'c' }, { h: 'RIDDOR II(2)', w: 11, a: 'c' }, { h: 'Reason / notes', w: 48 }
   ], fl.map(f => [
-    WARN.locText(f), f.type, f.make, f.model, f.serial,
+    WARN.locText(f), f.type, f.make, f.model, f.serial, f.gc,
     dotIf(f.cls === 'ID'), dotIf(f.cls === 'AR'), dotIf(f.riddor === 'YES' && /II\(1\)/.test(f.riddorType)), dotIf(f.riddor === 'YES' && /II\(2\)/.test(f.riddorType)),
     { t: f.notes, keep: 1 }
   ]));

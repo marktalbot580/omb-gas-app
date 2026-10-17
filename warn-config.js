@@ -7,7 +7,7 @@ const WARN = (() => {
   const TYPES = ['Boiler', 'Fire', 'Range Cooker', 'Water Heater', 'Gas Meter', 'Cooker', 'Hob', 'Oven', 'Gas Pipework', 'Warm Air Unit'];
   const CLS = ['ID', 'AR'];
   const RIDDOR = ['RIDDOR II(1) - Gas Incident', 'RIDDOR II(2) - Dangerous Gas Fitting'];
-  const blankFault = () => ({ location: '', locationOther: '', type: '', make: '', model: '', serial: '', cls: '', riddor: '', riddorType: '', notes: '' });
+  const blankFault = () => ({ location: '', locationOther: '', type: '', make: '', model: '', serial: '', gc: '', cls: '', riddor: '', riddorType: '', notes: '' });
   const locText = f => (f.location === 'Other' ? f.locationOther : f.location);
   const blank = () => ({ faultCount: '1', faults: [1, 2, 3, 4].map(blankFault) });
 
@@ -30,7 +30,7 @@ const WARN = (() => {
   function prefill(w, s) {
     const f = w.faults[0];
     f.location = s.location || ''; f.locationOther = s.locationOther || '';
-    f.type = 'Boiler'; f.make = SVC.makeText(s) || ''; f.model = s.model || ''; f.serial = s.serial || '';
+    f.type = 'Boiler'; f.make = SVC.makeText(s) || ''; f.model = s.model || ''; f.serial = s.serial || ''; f.gc = s.gc || '';
     const r = reasons(s);
     f.notes = r.length ? 'Boiler service: ' + r.join('; ') + '.' : '';
     w.faultCount = '1';
@@ -64,28 +64,42 @@ const WARN = (() => {
   /* the red FAIL – DO NOT USE stamp on the record itself */
   const stamp = r => (!r ? false : r.type === 'service' ? r.safe === 'NO' : isGas(r) ? gasProblems(r).length > 0 : false);
 
-  function prefillGas(w, g) {
-    const drafts = [];
-    gasProblems(g).forEach(x => {
-      if (x.kind === 'app') {
-        const a = x.a, f = blankFault();
-        f.location = a.location || ''; f.locationOther = a.locationOther || ''; f.type = /boiler/i.test(a.type || '') ? 'Boiler' : TYPES.includes(a.type) ? a.type : '';
-        f.make = a.manufacturer || ''; f.model = a.model || ''; f.notes = 'Gas safety check: ' + x.p.join(', ') + '.';
-        drafts.push(f);
-      } else if (x.kind === 'inst') {
-        const f = blankFault(); f.type = 'Gas Pipework'; f.make = 'n/a'; f.model = 'n/a'; f.serial = 'n/a'; f.notes = 'Gas safety check: ' + x.p.join(', ') + '.';
-        drafts.push(f);
-      } else {
-        const f = blankFault(); f.cls = x.d.cls; f.notes = `Gas safety check defect: ${x.d.text || ''}${x.d.action ? ' (action taken: ' + x.d.action + ')' : ''}`;
-        drafts.push(f);
-      }
+  /* one fault per appliance: its location, type, make, model and GC number, every failed check and every ID/AR defect noted on it.
+     serialFor(appliance) may supply a serial number remembered from an earlier visit. Defects not tied to an appliance get their own fault. */
+  function prefillGas(w, g, serialFor) {
+    const drafts = [], n = Math.max(1, Math.min(4, +g.applianceCount || 1));
+    const defs = (g.defects || []).slice(0, +g.defectCount || 0).filter(d => d.cls === 'ID' || d.cls === 'AR');
+    const mine = i => defs.filter(d => d.app === i);
+    const dtext = d => `Defect (${d.cls}): ${d.text || ''}${d.action ? ' (action taken: ' + d.action + ')' : ''}`;
+    const fromApp = (a, ds) => {
+      const f = blankFault();
+      f.location = a.location || ''; f.locationOther = a.locationOther || ''; f.type = /boiler/i.test(a.type || '') ? 'Boiler' : TYPES.includes(a.type) ? a.type : '';
+      f.make = a.manufacturer || ''; f.model = a.model || ''; f.gc = a.gc || ''; f.serial = (serialFor && serialFor(a)) || '';
+      f.cls = ds.some(d => d.cls === 'ID') ? 'ID' : ds.length ? 'AR' : '';
+      return f;
+    };
+    const probs = gasProblems(g), failed = new Set(probs.filter(x => x.kind === 'app').map(x => x.i));
+    for (let i = 0; i < n; i++) {
+      const a = (g.appliances || [])[i], ds = mine(i), x = probs.find(p => p.kind === 'app' && p.i === i);
+      if (!a || (!x && !ds.length)) continue;
+      const f = fromApp(a, ds);
+      f.notes = (x ? ['Gas safety check: ' + x.p.join(', ') + '.'] : []).concat(ds.map(dtext)).join(' ');
+      drafts.push(f);
+    }
+    probs.filter(x => x.kind === 'inst').forEach(x => {
+      const f = blankFault(); f.type = 'Gas Pipework'; f.make = 'n/a'; f.model = 'n/a'; f.serial = 'n/a'; f.gc = 'n/a'; f.notes = 'Gas safety check: ' + x.p.join(', ') + '.';
+      drafts.push(f);
+    });
+    defs.filter(d => !(d.app >= 0 && d.app < n && (g.appliances || [])[d.app])).forEach(d => {
+      const f = blankFault(); f.cls = d.cls; f.notes = 'Gas safety check. ' + dtext(d);
+      drafts.push(f);
     });
     if (!drafts.length) drafts.push(blankFault());
     if (drafts.length > 4) { const rest = drafts.splice(3); drafts[3] = Object.assign(blankFault(), { notes: rest.map(f => f.notes).join(' ') }); }   // more than 4: the extras go into the last fault's notes
-    drafts.forEach((f, i) => { w.faults[i] = f; });
+    w.faults = [1, 2, 3, 4].map((_, i) => drafts[i] || blankFault());
     w.faultCount = String(drafts.length);
   }
-  const prefillFrom = (w, src) => (src.type === 'service' ? prefill(w, src) : prefillGas(w, src));
+  const prefillFrom = (w, src, serialFor) => (src.type === 'service' ? prefill(w, src) : prefillGas(w, src, serialFor));
 
   function validate(rec) {
     const out = [];
