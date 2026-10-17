@@ -9,7 +9,7 @@ function registerItems(c) {
   const add = x => { const k = [addrKey(x.addr), x.t, (x.make + '|' + x.model).toLowerCase(), (x.loc || '').toLowerCase()].join('|'); if (seen.has(k)) return; seen.add(k); out.push(x); };
   mine.forEach(r => {
     const t = typeOf(r), base = { addr: r.jobAddress || '', t, id: r.id, last: r.inspectionDate, due: r.renewal || '' };
-    if (t === 'gas') (r.appliances || []).slice(0, +r.applianceCount || 1).forEach(a => { if (a.model || a.manufacturer) add({ ...base, title: oth(a.type, a.typeOther) || 'Appliance', loc: oth(a.location, a.locationOther), make: a.manufacturer || '', model: a.model || '', gc: a.gc || '', serial: '', flue: a.flue || '' }); });
+    if (t === 'gas') (r.appliances || []).slice(0, +r.applianceCount || 1).forEach(a => { if (a.model || a.manufacturer) add({ ...base, title: oth(a.type, a.typeOther) || 'Appliance', loc: oth(a.location, a.locationOther), make: a.manufacturer || '', model: a.model || '', gc: a.gc || '', serial: a.serial || '', flue: a.flue || '' }); });
     else if ((r.make || r.model)) add({ ...base, title: t === 'oil' ? 'Oil boiler' : 'Boiler', loc: oth(r.location, r.locationOther), make: oth(r.make, r.makeOther), model: r.model || '', gc: r.gc || '', serial: r.serial || '', flue: oth(r.flue, r.flueOther), kind: oth(r.systemType, r.systemOther), fuel: t === 'oil' ? oth(r.fuel, r.fuelOther) : '', age: r.age || '' });
   });
   return out;

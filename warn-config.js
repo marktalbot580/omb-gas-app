@@ -74,7 +74,7 @@ const WARN = (() => {
     const fromApp = (a, ds) => {
       const f = blankFault();
       f.location = a.location || ''; f.locationOther = a.locationOther || ''; f.type = /boiler/i.test(a.type || '') ? 'Boiler' : TYPES.includes(a.type) ? a.type : '';
-      f.make = a.manufacturer || ''; f.model = a.model || ''; f.gc = a.gc || ''; f.serial = (serialFor && serialFor(a)) || '';
+      f.make = a.manufacturer || ''; f.model = a.model || ''; f.gc = a.gc || ''; f.serial = a.serial || (serialFor && serialFor(a)) || '';
       f.cls = ds.some(d => d.cls === 'ID') ? 'ID' : ds.length ? 'AR' : '';
       return f;
     };

@@ -96,7 +96,7 @@ const typeText = a => (a.type === 'Other' ? (String(a.typeOther || '').trim() ||
 const isBoilerType = t => /boiler/i.test(String(t || ''));
 const makesFor = t => (isBoilerType(t) || !t ? SVC.MAKE.filter(x => x !== 'Other') : /^(cooker|hob|oven|range cooker)$/i.test(t) ? COOK_MAKES : /^fire$/i.test(t) ? FIRE_MAKES : t === 'Other' ? [] : SVC.MAKE.filter(x => x !== 'Other'));
 const blankAppliance = () => ({
-  location: '', locationOther: '', type: '', typeOther: '', manufacturer: '', model: '', gc: '', ownership: 'Landlord', flue: '', serviced: '',
+  location: '', locationOther: '', type: '', typeOther: '', manufacturer: '', model: '', gc: '', serial: '', ownership: 'Landlord', flue: '', serviced: '',
   test: '', op: '', hi: '', safety: '', vent: '', terminal: '', flueOp: '',
   ratioMin: '', coMin: '', co2Min: '', ratioMax: '', coMax: '', co2Max: '', safe: ''
 });
@@ -354,6 +354,8 @@ function seqPos() {
 function goTo(rec, step) {
   ui.rec = rec; ui.step = step; ui.appTab = 0;
   if (isSvc(rec) && rec.jobId) { const g = mates(rec).find(x => typeOf(x) === 'gas'); if (g && SVC.prefill(rec, g)) persistRec(rec); }
+  if (isCom(rec) && rec.jobId && comFromQuote(rec)) { /* filled from the quote on the same visit */ }
+  if (oilWarnFromMates(rec)) persistRec(rec);
   render();
 }
 /* where a form was opened from, so Back / Done go back there (the appointment, the calendar, a customer ...) */
@@ -896,7 +898,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v198';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v199';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1366,15 +1368,21 @@ function custPicker(r) {
     ${r.customerId ? `<button type="button" class="btn ghost block" data-act="pickCustId" data-id="" style="margin-top:4px">Clear – enter a new customer instead</button>` : ''}</div>`;
 }
 /* ---------- repeat visit: copy the appliance details (make, model, GC number…) from the last visit to the same property ---------- */
-const PREV_GAS = ['location', 'locationOther', 'type', 'typeOther', 'manufacturer', 'model', 'gc', 'ownership', 'flue'];
+const PREV_GAS = ['location', 'locationOther', 'type', 'typeOther', 'manufacturer', 'model', 'gc', 'serial', 'ownership', 'flue'];
 const PREV_OIL = ['location', 'locationOther', 'make', 'makeOther', 'model', 'systemType', 'systemOther', 'serial', 'fuel', 'fuelOther', 'flue', 'flueOther'];
 const PREV_SVC = ['location', 'locationOther', 'make', 'makeOther', 'model', 'systemType', 'systemOther', 'serial', 'gc', 'flue'];
+const PREV_LEG = ['coldSupply', 'hotType', 'hotOther', 'cylHeat', 'showers', 'coldOutlet', 'hotOutlet'];
+const PREV_AC = ['make', 'makeOther', 'indoorModel', 'indoorSerial', 'indoorLoc', 'indoorLocOther', 'outdoorModel', 'outdoorSerial', 'outdoorLoc', 'outdoorLocOther', 'gasType', 'gasOther'];
+const PREV_TANK = ['position', 'positionOther', 'material', 'materialOther', 'bunded', 'capacity', 'tankMake', 'fuel', 'distBuilding', 'distBoundary', 'fireProt', 'nearWater'];
+const PREV = { gas: PREV_GAS, service: PREV_SVC, oil: PREV_OIL, legionella: PREV_LEG, aircon: PREV_AC, oiltank: PREV_TANK };
+/* does this record already hold the appliance / system details that would be copied? */
+const prevHas = (x, t) => t === 'gas' ? (x.appliances || []).some(a => a.model || a.manufacturer) : t === 'legionella' ? !!(x.coldSupply || x.hotType) : t === 'aircon' ? !!(x.make || x.indoorModel || x.outdoorModel) : t === 'oiltank' ? !!(x.capacity || x.position) : !!(x.model || x.make);
 const pickKeys = (o, keys) => Object.fromEntries(keys.map(k => [k, (o && o[k]) || '']));
 function prevVisit(r) {
-  const t = typeOf(r); if (t !== 'gas' && t !== 'service' && t !== 'oil') return null;
+  const t = typeOf(r); if (!PREV[t]) return null;
   const addr = String(r.jobAddress || '').trim().toLowerCase(), nm = String(r.customer.name || '').trim().toLowerCase();
   if (!addr || (!r.customerId && !nm)) return null;
-  const hasData = x => t === 'gas' ? (x.appliances || []).some(a => a.model || a.manufacturer) : !!(x.model || x.make);
+  const hasData = x => prevHas(x, t);
   return records.filter(x => x.id !== r.id && typeOf(x) === t && String(x.jobAddress || '').trim().toLowerCase() === addr
     && ((r.customerId && x.customerId === r.customerId) || String(x.customer.name || '').trim().toLowerCase() === nm) && hasData(x))
     .sort((a, b) => String(b.inspectionDate).localeCompare(String(a.inspectionDate)) || (b.updated || 0) - (a.updated || 0))[0] || null;
@@ -1388,11 +1396,44 @@ function prevCard(r) {
     <button class="btn gold block" data-act="copyPrev">Copy the appliance details from last time</button>
     <p class="small muted" style="margin-bottom:0">Fills in the make, model, Gas Council number, location and type. Test readings and signatures are left blank for you to do again.</p></div>`;
 }
-const prevBlank = r => { const t = typeOf(r); return t === 'gas' ? !(r.appliances || []).some(a => a.model || a.manufacturer) : (t === 'service' || t === 'oil') ? !(r.model || r.make) : false; };
+const prevBlank = r => { const t = typeOf(r); return !!PREV[t] && !prevHas(r, t); };
 /* when a repeat customer's address is chosen and the appliance details are still empty, copy them from the last visit (switch off in Settings) */
 function autoPrev(r) {
-  if (!r || settings.autoCopy === 'off' || !prevBlank(r) || !prevVisit(r)) return false;
+  if (!r || settings.autoCopy === 'off') return false;
+  if (isCom(r)) return comFromQuote(r);
+  if (!prevBlank(r) || !prevVisit(r)) return false;
   applyPrev(r, true); return true;
+}
+/* a new boiler commissioning checklist: take the make, model and system type from the quote for the same job, or for the same customer and address */
+function comFromQuote(r) {
+  if (!isCom(r) || r.make || r.model) return false;
+  const addr = String(r.jobAddress || '').trim().toLowerCase(), nm = String(r.customer.name || '').trim().toLowerCase();
+  const q = records.filter(x => x.id !== r.id && typeOf(x) === 'quote' && (x.make || x.model) && ((r.jobId && x.jobId === r.jobId)
+      || (addr && String(x.jobAddress || '').trim().toLowerCase() === addr && ((r.customerId && x.customerId === r.customerId) || (nm && String(x.customer.name || '').trim().toLowerCase() === nm)))))
+    .sort((a, b) => (b.qStatus === 'accepted' ? 1 : 0) - (a.qStatus === 'accepted' ? 1 : 0) || String(b.inspectionDate).localeCompare(String(a.inspectionDate)))[0];
+  if (!q) return false;
+  const mk = QUO.makeText(q) || '';
+  if (SVC.MAKE.includes(q.make)) { r.make = q.make; r.makeOther = ''; } else if (mk) { r.make = 'Other'; r.makeOther = mk; }
+  r.model = q.model || ''; r.kind = q.kind === 'Heat only' ? 'Regular' : (COM.KIND.includes(q.kind) ? q.kind : '');
+  persistRec(r); toast('Boiler details filled in from the quote – check them'); return true;
+}
+/* an oil warning notice: take the appliance and the defect from the oil boiler service or oil tank check on the same visit */
+const oilWarnSrc = x => (typeOf(x) === 'oil' || typeOf(x) === 'oiltank') && (x.defectClass === 'At risk' || x.defectClass === 'Immediately dangerous');
+function oilWarnPrefill(w, src) {
+  const f = w.f; if (!f || !src) return false;
+  if (typeOf(src) === 'oil') {
+    f.appType = 'Oil boiler'; f.location = src.location || ''; f.locationOther = src.locationOther || '';
+    f.make = OIL.makeText(src) || ''; f.model = src.model || ''; f.serial = src.serial || '';
+  } else {
+    f.appType = 'Oil storage tank'; f.location = 'Other'; f.locationOther = TANK.posText(src) || ''; f.make = src.tankMake || ''; f.model = ''; f.serial = '';
+  }
+  f.cls = src.defectClass || ''; f.defect = src.defects || '';
+  return true;
+}
+function oilWarnFromMates(w) {
+  if (typeOf(w) !== 'oilwarn' || !w.jobId || !w.f || w.f.make || w.f.defect) return false;
+  const src = mates(w).find(oilWarnSrc); if (!src) return false;
+  w.warnFor = src.id; oilWarnPrefill(w, src); return true;
 }
 function applyPrev(r, auto) {
   const p = prevVisit(r); if (!p) return;
@@ -1401,7 +1442,7 @@ function applyPrev(r, auto) {
     r.applianceCount = String(n);
     r.appliances = Array.from({ length: n }, (_, i) => ({ ...blankAppliance(), ...pickKeys(p.appliances[i], PREV_GAS) }));
     r.appliances.forEach(a => { if (!a.ownership) a.ownership = 'Landlord'; });
-  } else Object.assign(r, pickKeys(p, typeOf(r) === 'oil' ? PREV_OIL : PREV_SVC));
+  } else Object.assign(r, pickKeys(p, PREV[typeOf(r)]));
   persistRec(r); toast(auto ? 'Filled in from your visit on ' + ukDate(p.inspectionDate) + ' – check it is still right' : 'Appliance details copied – check they are still right');
 }
 /* ---------- finding a property: type to search the customer's addresses (or every customer's, if none is chosen yet) ---------- */
@@ -1477,6 +1518,7 @@ function stepAppliances() {
       ${makeField(P('manufacturer'), i, a.type)}
       ${txt(P('model'), 'Model', { req: 1 })}
       ${/^(cooker|hob|oven|range cooker)$/i.test(a.type || '') ? '' : txt(P('gc'), 'Gas Council number', { cap: 'characters', copy: 1 })}
+      ${txt(P('serial'), 'Serial number (optional)', { cap: 'characters', copy: 1 })}
       ${choice(P('ownership'), 'Who owns the appliance?', OPT.ownership, { req: 1, wrap: 1 })}
       ${choice(P('flue'), 'Flue type', OPT.flue, { req: 1, wrap: 1 })}
       ${choice(P('serviced'), 'Serviced at the same time?', OPT.yn, { req: 1 })}
@@ -1710,6 +1752,9 @@ function stepReview() {
     ${needWarn.map(x => `<div class="card" style="border-color:#5a2a26"><div class="t" style="color:#ff9b92;font-weight:700;margin-bottom:6px">Warning notice required</div>
       <p class="small muted" style="margin-top:0">This ${isSvc(x) ? 'boiler service' : 'gas safety check'} has ${esc(WARN.reasonsFor(x).join('; ') || 'a warning notice marked as issued')}. A Danger / Do Not Use Warning Notice must be completed${m.length > 1 ? '' : ' and given to the customer'}.</p>
       <button class="btn gold block" data-act="addWarn" data-id="${x.id}">Fill in the warning notice</button></div>`).join('')}
+    ${m.filter(x => oilWarnSrc(x) && !m.some(y => typeOf(y) === 'oilwarn' && y.warnFor === x.id)).map(x => `<div class="card" style="border-color:#5a2a26"><div class="t" style="color:#ff9b92;font-weight:700;margin-bottom:6px">Warning notice needed</div>
+      <p class="small muted" style="margin-top:0">This ${typeOf(x) === 'oil' ? 'oil boiler service' : 'oil tank check'} has a defect classed as ${esc(x.defectClass.toLowerCase())}. An oil warning and advice notice should be given to the customer.</p>
+      <button class="btn gold block" data-act="addOilWarn" data-id="${x.id}">Fill in the oil warning notice</button></div>`).join('')}
     ${issues.length ? `<div class="card" style="border-color:#5a2a26"><div class="t" style="color:#ff9b92;font-weight:700;margin-bottom:8px">${issues.length} item${issues.length > 1 ? 's' : ''} to complete</div>
       ${issues.map(x => `<button class="issue" data-act="goIssue" data-id="${x.rec.id}" data-step="${x.step}" data-app="${x.app ?? ''}">${multi ? esc(FORM_SHORT[typeOf(x.rec)]) + ': ' : ''}${esc(x.label)}</button>`).join('')}</div>` : ''}
     ${w.map(x => `<div class="notice">${esc(x)}</div>`).join('')}
@@ -2804,7 +2849,7 @@ function initSigs() {
 
 /* ---------- events ---------- */
 /* when the subscription has ended the app is read-only: look, download and export, but no new or changed records */
-const LOCKED_WRITES = new Set(['qSentToggle', 'invDiscMode', 'invPlPick', 'impGo', 'bookSave', 'bookStart', 'bookFromPick', 'custNoRem', 'newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'sameName', 'engSigTog', 'engSigUse', 'invNone', 'invNoneVisit', 'invUndoNone', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod', 'invPickCust', 'invPickProp', 'invPickSug']);
+const LOCKED_WRITES = new Set(['qSentToggle', 'invDiscMode', 'invPlPick', 'impGo', 'bookSave', 'bookStart', 'bookFromPick', 'custNoRem', 'newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'addOilWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'sameName', 'engSigTog', 'engSigUse', 'invNone', 'invNoneVisit', 'invUndoNone', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod', 'invPickCust', 'invPickProp', 'invPickSug']);
 const lockedMsg = () => toast('Your subscription has ended. Subscribe to create or change records.');
 document.addEventListener('click', async e => {
   /* tap the logo / name at the top to go back to the home screen – a form you are part way through is kept as a draft */
@@ -2916,6 +2961,16 @@ document.addEventListener('click', async e => {
       WARN.prefillFrom(w, svc, serialFor);
       persistRec(svc); persistRec(w);
       ui.job = mates(svc).map(x => x.id); ui.rec = w; ui.step = 1; ui.appTab = 0; ui.showErr = false; ui.pdfs = {}; ui.view = 'form'; render(); break;
+    }
+    case 'addOilWarn': {
+      const src = records.find(x => x.id === b.dataset.id); if (!src) break;
+      if (!src.jobId) src.jobId = uid();
+      const w = newOFRecord({ id: src.customerId, ...src.customer }, 'oilwarn');
+      w.jobId = src.jobId; w.warnFor = src.id; w.jobAddress = src.jobAddress; w.inspectionDate = src.inspectionDate; w.customerId = src.customerId; w.customer = { ...src.customer };
+      ['customerPresent', 'customerName', 'customerSig', 'engineerSig'].forEach(k => { w[k] = src[k]; });
+      oilWarnPrefill(w, src);
+      persistRec(src); persistRec(w);
+      ui.job = mates(src).map(x => x.id); ui.rec = w; ui.step = 1; ui.appTab = 0; ui.showErr = false; ui.pdfs = {}; ui.view = 'form'; render(); break;
     }
     case 'rmWarn': {
       if (!confirm('Remove this warning notice from the visit?')) break;

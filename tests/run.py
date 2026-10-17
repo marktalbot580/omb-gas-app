@@ -1059,6 +1059,34 @@ def run():
         check('no page errors in warning prefill', not errs, errs)
         ctx.close()
 
+        # ---------- 12l. v199 pull-throughs ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, 'SAMPLE.add()')
+        r = ev(pg, """(()=>{
+          const c={id:'cX',name:'Pat Smith',phone:'',email:'',billing:''};
+          const q=newRecord(c,'quote'); q.jobAddress='1 Test St'; q.customerId='cX'; q.make='Vaillant'; q.model='ecoTEC 832'; q.kind='Heat only'; q.qStatus='accepted'; q.inspectionDate='2026-09-01'; persistRec(q);
+          const cm=newRecord(c,'commission'); cm.jobAddress='1 Test St'; cm.customerId='cX'; persistRec(cm); const ok1=autoPrev(cm);
+          // oil service on a job -> oil warning notice
+          const o=newRecord(c,'oil'); o.jobId='J1'; o.jobAddress='1 Test St'; o.customerId='cX'; o.location='Kitchen'; o.make='Grant'; o.model='Vortex'; o.serial='SN9'; o.defectClass='At risk'; o.defects='Smoky flue'; persistRec(o);
+          const w=newRecord(c,'oilwarn'); w.jobId='J1'; persistRec(w); goTo(w,1);
+          // gas serial copies forward and legionella/aircon/tank copy from last visit
+          const g1=newRecord(c,'gas'); g1.jobAddress='2 Test St'; g1.customerId='cX'; g1.appliances[0]=Object.assign(blankAppliance(),{location:'Kitchen',type:'Boiler',manufacturer:'Baxi',model:'Duo',gc:'47',serial:'ABC1'}); g1.inspectionDate='2025-01-01'; persistRec(g1);
+          const g2=newRecord(c,'gas'); g2.jobAddress='2 Test St'; g2.customerId='cX'; persistRec(g2); autoPrev(g2);
+          const l1=newRecord(c,'legionella'); l1.jobAddress='2 Test St'; l1.customerId='cX'; l1.coldSupply='Mains'; l1.hotType='Combi'; l1.inspectionDate='2025-01-01'; persistRec(l1);
+          const l2=newRecord(c,'legionella'); l2.jobAddress='2 Test St'; l2.customerId='cX'; persistRec(l2); autoPrev(l2);
+          const a1=newRecord(c,'aircon'); a1.jobAddress='2 Test St'; a1.customerId='cX'; a1.make='Daikin'; a1.indoorModel='FTX'; a1.inspectionDate='2025-01-01'; persistRec(a1);
+          const a2=newRecord(c,'aircon'); a2.jobAddress='2 Test St'; a2.customerId='cX'; persistRec(a2); autoPrev(a2);
+          const t1=newRecord(c,'oiltank'); t1.jobAddress='2 Test St'; t1.customerId='cX'; t1.capacity='1200'; t1.position='Outside, on the ground'; t1.inspectionDate='2025-01-01'; persistRec(t1);
+          const t2=newRecord(c,'oiltank'); t2.jobAddress='2 Test St'; t2.customerId='cX'; persistRec(t2); autoPrev(t2);
+          return {ok1,com:[cm.make,cm.model,cm.kind],ow:[w.f.appType,w.f.location,w.f.make,w.f.model,w.f.serial,w.f.cls,w.f.defect],gs:g2.appliances[0].serial,leg:[l2.coldSupply,l2.hotType],ac:[a2.make,a2.indoorModel],tank:[t2.capacity,t2.position]};
+        })()""")
+        check('commissioning fills from the quote', r['ok1'] and r['com']==['Vaillant','ecoTEC 832','Regular'], r)
+        check('oil warning notice fills from the oil service', r['ow']==['Oil boiler','Kitchen','Grant','Vortex','SN9','At risk','Smoky flue'], r)
+        check('gas serial copies forward', r['gs']=='ABC1', r)
+        check('legionella, aircon and oil tank copy from last visit', r['leg']==['Mains','Combi'] and r['ac']==['Daikin','FTX'] and r['tank']==['1200','Outside, on the ground'], r)
+        check('no page errors in v199 pull-throughs', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()
