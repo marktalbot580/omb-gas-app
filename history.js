@@ -42,6 +42,22 @@ const HIST = (() => {
     return out.sort((p, q) => String(q.date).localeCompare(String(p.date)));
   }
 
+  /* serious defects on this appliance that are still open, and how many the customer has been informed about */
+  const SERIOUS = ['ID', 'AR', 'At risk', 'Immediately dangerous'];
+  function defectState(x, c) {
+    const open = [], informed = [];
+    visitsFor(x, c).forEach(v => {
+      if (v.status !== 'complete') return;
+      v.defects.forEach(d => {
+        if (!d.key || !SERIOUS.includes(d.cls)) return;
+        const st = FU.status(v.rec, d.key);
+        if (!st) open.push({ id: v.id, key: d.key, cls: d.cls, date: v.date });
+        else if (st.st === 'ack') informed.push({ id: v.id, key: d.key });
+      });
+    });
+    return { open, informed };
+  }
+
   /* checks that failed on the most recent visits in a row (2 or more) */
   function repeats(visits) {
     const labels = new Set(); visits.forEach(v => v.fails.forEach(f => labels.add(f.label)));
@@ -72,18 +88,22 @@ const HIST = (() => {
       ${vs.map(v => `<div class="card" style="margin:0 0 10px"><div class="row sp"><b>${esc(ukDate(v.date))}</b><span class="small muted">${esc(v.status === 'complete' ? '' : 'Draft')}${v.safe ? (v.status === 'complete' ? '' : ' · ') + 'Safe to use: ' + esc(v.safe) : ''}</span></div>
         ${v.readings.length ? `<div class="small" style="margin-top:6px">${v.readings.map(r => `<span class="muted">${esc(r[0])}</span> <b>${esc(r[1])}</b>`).join(' &nbsp;·&nbsp; ')}</div>` : ''}
         ${v.fails.length ? `<div class="small" style="margin-top:6px;color:var(--bad)"><b>Failed:</b> ${v.fails.map(f => esc(f.label) + (f.text ? ' (' + esc(f.text) + ')' : '')).join(', ')}</div>` : ''}
-        ${v.defects.map(d => `<div class="small" style="margin-top:6px"><b>${esc(clsName(d.cls))}:</b> ${esc(d.text)}${d.action ? '<br><span class="muted">Action: ' + esc(d.action) + '</span>' : ''}${resHtml(v, d)}</div>`).join('')}
+        ${v.defects.map(d => `<div class="small" id="hd-${v.id}-${d.key || ''}" style="margin-top:6px"><b>${esc(clsName(d.cls))}:</b> ${esc(d.text)}${d.action ? '<br><span class="muted">Action: ' + esc(d.action) + '</span>' : ''}${resHtml(v, d)}</div>`).join('')}
         ${!v.readings.length && !v.fails.length && !v.defects.length ? '<div class="small muted" style="margin-top:6px">No readings, failed checks or defects recorded.</div>' : ''}
         <button type="button" class="btn ghost" style="margin-top:8px;min-height:36px" data-act="histOpen" data-id="${v.id}">Open this record</button></div>`).join('') || '<div class="empty">No visits found for this appliance.</div>'}
       <button type="button" class="btn block" data-act="histClose" style="margin-top:6px">Close</button></div>`;
   }
-  function open(recId) {
+  function open(recId, focus) {
     const src = records.find(r => r.id === recId); if (!src) return;
     const c = customers.find(z => z.id === src.customerId) || (ui.cust && ui.cust.id ? customers.find(z => z.id === ui.cust.id) : null) || { id: '', name: (src.customer || {}).name };
     const x = registerItems(c).find(i => i.id === recId) || registerItems(c).find(i => addrKey(i.addr) === addrKey(src.jobAddress) && i.t === typeOf(src));
     if (!x) return;
     const old = document.getElementById('histSheet'); if (old) old.remove();
     const d = document.createElement('div'); d.id = 'histSheet'; d.className = 'sheetbg'; d.innerHTML = html(x, c); document.body.appendChild(d);
+    if (focus) {   // jump to the first open serious defect and mark it
+      const f = defectState(x, c).open[0], el = f && document.getElementById('hd-' + f.id + '-' + f.key);
+      if (el) { el.style.cssText += ';border:2px solid var(--bad);border-radius:10px;padding:8px'; setTimeout(() => el.scrollIntoView({ block: 'center' }), 30); }
+    }
   }
   const close = () => { const d = document.getElementById('histSheet'); if (d) d.remove(); };
   document.addEventListener('click', e => {
@@ -91,9 +111,9 @@ const HIST = (() => {
     if (bg) { close(); return; }
     if (!b) return;
     const a = b.dataset.act;
-    if (a === 'apHist') { e.stopImmediatePropagation(); open(b.dataset.id); }
+    if (a === 'apHist') { e.stopImmediatePropagation(); open(b.dataset.id, b.dataset.focus === '1'); }
     else if (a === 'histClose') { e.stopImmediatePropagation(); close(); }
     else if (a === 'histOpen') { e.stopImmediatePropagation(); const r = records.find(z => z.id === b.dataset.id); close(); if (r) { ui.rec = r; ui.job = null; ui.step = 0; ui.pdfs = {}; ui.view = 'form'; render(); window.scrollTo(0, 0); } }
   }, true);
-  return { visitsFor, repeats, html, open };
+  return { visitsFor, repeats, html, open, defectState };
 })();

@@ -1109,6 +1109,26 @@ def run():
         check('no page errors in acknowledged defects', not errs, errs)
         ctx.close()
 
+        # ---------- 12n. red alert on the appliance in the customer record ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, 'SAMPLE.add()')
+        r = ev(pg, """(()=>{
+          const c={id:'cZ',name:'Sam Hill',phone:'',email:'',billing:''}; customers.push(c);
+          const g=newRecord(c,'gas'); g.customerId='cZ'; g.jobAddress='3 Test Rd'; g.status='complete'; g.applianceCount='1';
+          g.appliances[0]=Object.assign(blankAppliance(),{location:'Kitchen',type:'Boiler',manufacturer:'Baxi',model:'Duo'});
+          g.defectCount='1'; g.defects=[{text:'Flue leaking',cls:'ID',action:'Capped',app:0}]; persistRec(g);
+          const h1=registerHtml(c);
+          g.dfRes={g0:{d:'2026-10-18',st:'ack',note:'x'}}; persistRec(g); const h2=registerHtml(c);
+          g.dfRes={g0:{d:'2026-10-18'}}; persistRec(g); const h3=registerHtml(c);
+          g.dfRes=undefined; persistRec(g); const h4=registerHtml(c);
+          ui.view='home'; HIST.open(g.id,true); const el=document.getElementById('hd-'+g.id+'-g0');
+          return {red:h1.includes('1 open safety defect')&&h1.includes('immediately dangerous'),amber:h2.includes('Customer informed of 1 defect')&&!h2.includes('open safety'),clear:!h3.includes('open safety')&&!h3.includes('Customer informed of'),back:h4.includes('1 open safety defect'),focus:!!el&&el.style.border!==''};
+        })()""")
+        check('appliance shows a red open-defect bar, amber when informed, nothing when fixed', r['red'] and r['amber'] and r['clear'] and r['back'], r)
+        check('tapping the bar opens the history at the fault', r['focus'], r)
+        check('no page errors in appliance alert', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()
