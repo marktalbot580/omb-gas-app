@@ -1087,6 +1087,28 @@ def run():
         check('no page errors in v199 pull-throughs', not errs, errs)
         ctx.close()
 
+        # ---------- 12m. defect acknowledged (not fixing) ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, 'SAMPLE.add()')
+        r = ev(pg, """(()=>{
+          const c={id:'cY',name:'Lee Jones',phone:'07000000000',email:'',billing:''};
+          const g=newRecord(c,'gas'); g.customerId='cY'; g.jobAddress='9 Test Rd'; g.status='complete'; g.applianceCount='1';
+          g.appliances[0]=Object.assign(blankAppliance(),{location:'Kitchen',type:'Boiler',manufacturer:'Baxi',model:'Duo'});
+          g.defectCount='1'; g.defects=[{text:'Flue leaking',cls:'AR',action:'Advised',app:0}]; persistRec(g);
+          const before=FU.items().filter(x=>x.r.id===g.id).length;
+          fuOpenTest=null;
+          document.querySelector('[data-act=fuOpen]') ? 0 : 0;
+          g.dfRes={g0:{d:'2026-10-18',st:'ack',note:'Customer declined'}}; persistRec(g);
+          const after=FU.items().filter(x=>x.r.id===g.id).length;
+          const st=FU.status(g,'g0');
+          const cu=customers.find(z=>z.id==='cY')||c; const x={t:'gas',addr:'9 Test Rd',make:'Baxi',model:'Duo',title:'Boiler',loc:'Kitchen'};
+          const h=HIST.html(x,c);
+          return {before,after,st,hasAck:h.includes('chose not to have it fixed')&&h.includes('Customer declined')&&h.includes('fuReopen')};
+        })()""".replace("fuOpenTest=null;","").replace("document.querySelector('[data-act=fuOpen]') ? 0 : 0;",""))
+        check('acknowledged defect leaves the follow-up list and shows in the appliance history', r['before']==1 and r['after']==0 and r['st']['st']=='ack' and r['hasAck'], r)
+        check('no page errors in acknowledged defects', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()

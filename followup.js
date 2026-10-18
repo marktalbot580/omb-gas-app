@@ -29,7 +29,7 @@ const FU = (() => {
   function html() {
     const it = items();
     return `<div class="sheet"><div class="grab"></div><h2>Safety defects to follow up</h2>
-      <p class="small muted" style="margin:0 0 10px">Immediately dangerous and at risk defects stay here until you mark them fixed.</p>
+      <p class="small muted" style="margin:0 0 10px">Immediately dangerous and at risk defects stay here until you mark them fixed, or record that the customer chose not to have them fixed.</p>
       ${it.map(x => `<div class="card" style="margin:0 0 10px"><div class="row sp"><b>${esc(x.r.customer.name || 'Customer')}</b><span class="tag ${x.cls === 'Immediately dangerous' ? 'bad' : 'warn'}"><i></i>${esc(x.cls)}</span></div>
         <div class="small muted">${esc(addrFirst(x.r.jobAddress) || '')} · found ${esc(ukDate(x.date))} (${days(x.date)} day${days(x.date) === 1 ? '' : 's'} ago)</div>
         <div style="margin:6px 0">${esc(x.text || 'No description')}</div>${x.action ? `<div class="small muted">Action taken: ${esc(x.action)}</div>` : ''}
@@ -38,21 +38,32 @@ const FU = (() => {
           <button type="button" class="btn grow" data-act="fuBook" data-id="${x.r.id}" data-k="${x.key}">Book return visit</button></div>
         <div class="row" style="gap:8px;margin-top:8px">
           <button type="button" class="btn grow gold" data-act="fuFixed" data-id="${x.r.id}" data-k="${x.key}">Mark fixed</button>
-          <button type="button" class="btn grow ghost" data-act="fuRec" data-id="${x.r.id}">Open record</button></div></div>`).join('') || '<div class="empty">Nothing outstanding. Defects you record as at risk or immediately dangerous will appear here.</div>'}
+          <button type="button" class="btn grow ghost" data-act="fuAck" data-id="${x.r.id}" data-k="${x.key}">Not fixing it</button></div>
+        ${ackOpen && ackOpen.id === x.r.id && ackOpen.k === x.key ? `<div style="margin-top:8px"><p class="small muted" style="margin:0 0 6px">The customer has been told and has chosen not to have it fixed. This takes it off the list and records it in the appliance history.</p>
+          <textarea id="fuNote" rows="2" placeholder="Note, for example: customer declined the repair, told the risk, will think about a new boiler" style="width:100%">${esc(ackNote)}</textarea>
+          <div class="row" style="gap:8px;margin-top:6px"><button type="button" class="btn grow gold" data-act="fuAckSave" data-id="${x.r.id}" data-k="${x.key}">Save acknowledged</button><button type="button" class="btn grow ghost" data-act="fuAckCancel">Cancel</button></div></div>` : ''}
+        <div class="row" style="margin-top:8px"><button type="button" class="btn grow ghost" data-act="fuRec" data-id="${x.r.id}">Open record</button></div></div>`).join('') || '<div class="empty">Nothing outstanding. Defects you record as at risk or immediately dangerous will appear here.</div>'}
       <button type="button" class="btn block" data-act="fuClose" style="margin-top:6px">Close</button></div>`;
   }
+  let ackOpen = null, ackNote = '';
   const repaint = () => { const d = document.getElementById('fuSheet'); if (d) d.innerHTML = html(); if (ui.view === 'home') { const y = window.scrollY; render(); window.scrollTo(0, y); } };
   const close = () => { const d = document.getElementById('fuSheet'); if (d) d.remove(); };
   const find = b => items().find(x => x.r.id === b.dataset.id && x.key === b.dataset.k);
+  document.addEventListener('input', e => { if (e.target.id === 'fuNote') ackNote = e.target.value; });
   document.addEventListener('click', e => {
     if (e.target.id === 'fuSheet') { close(); return; }
     const b = e.target.closest('[data-act]'); if (!b || !/^fu[A-Z]/.test(b.dataset.act)) return;
     e.stopImmediatePropagation();
-    if (CLOUD.locked() && (b.dataset.act === 'fuFixed' || b.dataset.act === 'fuBook')) { lockedMsg(); return; }
+    if (CLOUD.locked() && ['fuFixed', 'fuBook', 'fuAckSave', 'fuReopen'].includes(b.dataset.act)) { lockedMsg(); return; }
     switch (b.dataset.act) {
       case 'fuOpen': { close(); const d = document.createElement('div'); d.id = 'fuSheet'; d.className = 'sheetbg'; d.innerHTML = html(); document.body.appendChild(d); break; }
       case 'fuClose': close(); break;
       case 'fuFixed': { const x = find(b); if (!x) break; x.r.dfRes = { ...(x.r.dfRes || {}), [x.key]: { d: todayISO() } }; persistRec(x.r); syncAll(); toast('Marked fixed'); repaint(); break; }
+      case 'fuAck': ackOpen = { id: b.dataset.id, k: b.dataset.k }; ackNote = ''; repaint(); break;
+      case 'fuAckCancel': ackOpen = null; ackNote = ''; repaint(); break;
+      case 'fuAckSave': { const x = find(b); if (!x) break; const note = (document.getElementById('fuNote') || {}).value || ackNote;
+        x.r.dfRes = { ...(x.r.dfRes || {}), [x.key]: { d: todayISO(), st: 'ack', note: String(note || '').trim() } }; persistRec(x.r); syncAll(); ackOpen = null; ackNote = ''; toast('Recorded as acknowledged'); repaint(); break; }
+      case 'fuReopen': { const r = records.find(z => z.id === b.dataset.id); if (!r || !r.dfRes) break; const n = { ...r.dfRes }; delete n[b.dataset.k]; r.dfRes = n; persistRec(r); syncAll(); toast('Back on the follow-up list'); const hs = document.getElementById('histSheet'); if (hs) hs.remove(); render(); break; }
       case 'fuText': { const x = find(b); if (!x) break; const ph = String(x.r.customer.phone || '').replace(/[^\d+]/g, ''), body = wording(x);
         const a = document.createElement('a'); a.href = 'sms:' + ph + '?&body=' + encodeURIComponent(body); document.body.appendChild(a); a.click(); a.remove(); break; }
       case 'fuBook': { const x = find(b); if (!x) break; const c = customers.find(z => z.id === x.r.customerId) || null, cd = x.r.customer || {};
@@ -61,5 +72,5 @@ const FU = (() => {
       case 'fuRec': { const r = records.find(z => z.id === b.dataset.id); close(); if (r) { ui.rec = r; ui.job = null; ui.step = 0; ui.pdfs = {}; ui.view = 'form'; render(); window.scrollTo(0, 0); } break; }
     }
   }, true);
-  return { items, banner, html, wording };
+  return { items, banner, html, wording, status: (r, key) => { const x = (r.dfRes || {})[key]; return x ? { st: x.st === 'ack' ? 'ack' : 'fixed', d: x.d || '', note: x.note || '' } : null; } };
 })();
