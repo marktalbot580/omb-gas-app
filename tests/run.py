@@ -1103,7 +1103,7 @@ def run():
           const st=FU.status(g,'g0');
           const cu=customers.find(z=>z.id==='cY')||c; const x={t:'gas',addr:'9 Test Rd',make:'Baxi',model:'Duo',title:'Boiler',loc:'Kitchen'};
           const h=HIST.html(x,c);
-          return {before,after,st,hasAck:h.includes('chose not to have it fixed')&&h.includes('Customer declined')&&h.includes('fuReopen')};
+          return {before,after,st,hasAck:h.includes('chose not to have it repaired now')&&h.includes('Customer declined')&&h.includes('fuReopen')};
         })()""".replace("fuOpenTest=null;","").replace("document.querySelector('[data-act=fuOpen]') ? 0 : 0;",""))
         check('acknowledged defect leaves the follow-up list and shows in the appliance history', r['before']==1 and r['after']==0 and r['st']['st']=='ack' and r['hasAck'], r)
         check('no page errors in acknowledged defects', not errs, errs)

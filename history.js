@@ -58,7 +58,7 @@ const HIST = (() => {
   function resHtml(v, d) {
     const st = d.key && (d.cls === 'ID' || d.cls === 'AR' || d.cls === 'At risk' || d.cls === 'Immediately dangerous') ? FU.status(v.rec, d.key) : null;
     if (!st) return '';
-    const line = st.st === 'ack' ? `Customer acknowledged on ${esc(ukDate(st.d))} and chose not to have it fixed${st.note ? ': ' + esc(st.note) : ''}` : `Fixed on ${esc(ukDate(st.d))}`;
+    const line = st.st === 'ack' ? `Customer informed on ${esc(ukDate(st.d))} and chose not to have it repaired now${st.note ? ': ' + esc(st.note) : ''}` : `Fixed on ${esc(ukDate(st.d))}`;
     return `<br><span style="color:${st.st === 'ack' ? 'var(--bad)' : 'var(--ok, #2e7d32)'}"><b>${line}</b></span> <button type="button" class="btn ghost" style="min-height:28px;padding:0 8px" data-act="fuReopen" data-id="${v.id}" data-k="${d.key}">Reopen</button>`;
   }
   function html(x, c) {

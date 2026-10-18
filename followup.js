@@ -29,7 +29,7 @@ const FU = (() => {
   function html() {
     const it = items();
     return `<div class="sheet"><div class="grab"></div><h2>Safety defects to follow up</h2>
-      <p class="small muted" style="margin:0 0 10px">Immediately dangerous and at risk defects stay here until you mark them fixed, or record that the customer chose not to have them fixed.</p>
+      <p class="small muted" style="margin:0 0 10px">Immediately dangerous and at risk defects stay here until you mark them fixed, or record that the customer has been informed and chose not to repair now.</p>
       ${it.map(x => `<div class="card" style="margin:0 0 10px"><div class="row sp"><b>${esc(x.r.customer.name || 'Customer')}</b><span class="tag ${x.cls === 'Immediately dangerous' ? 'bad' : 'warn'}"><i></i>${esc(x.cls)}</span></div>
         <div class="small muted">${esc(addrFirst(x.r.jobAddress) || '')} · found ${esc(ukDate(x.date))} (${days(x.date)} day${days(x.date) === 1 ? '' : 's'} ago)</div>
         <div style="margin:6px 0">${esc(x.text || 'No description')}</div>${x.action ? `<div class="small muted">Action taken: ${esc(x.action)}</div>` : ''}
@@ -38,10 +38,10 @@ const FU = (() => {
           <button type="button" class="btn grow" data-act="fuBook" data-id="${x.r.id}" data-k="${x.key}">Book return visit</button></div>
         <div class="row" style="gap:8px;margin-top:8px">
           <button type="button" class="btn grow gold" data-act="fuFixed" data-id="${x.r.id}" data-k="${x.key}">Mark fixed</button>
-          <button type="button" class="btn grow ghost" data-act="fuAck" data-id="${x.r.id}" data-k="${x.key}">Not fixing it</button></div>
-        ${ackOpen && ackOpen.id === x.r.id && ackOpen.k === x.key ? `<div style="margin-top:8px"><p class="small muted" style="margin:0 0 6px">The customer has been told and has chosen not to have it fixed. This takes it off the list and records it in the appliance history.</p>
-          <textarea id="fuNote" rows="2" placeholder="Note, for example: customer declined the repair, told the risk, will think about a new boiler" style="width:100%">${esc(ackNote)}</textarea>
-          <div class="row" style="gap:8px;margin-top:6px"><button type="button" class="btn grow gold" data-act="fuAckSave" data-id="${x.r.id}" data-k="${x.key}">Save acknowledged</button><button type="button" class="btn grow ghost" data-act="fuAckCancel">Cancel</button></div></div>` : ''}
+          <button type="button" class="btn grow ghost" data-act="fuAck" data-id="${x.r.id}" data-k="${x.key}">Customer informed</button></div>
+        ${ackOpen && ackOpen.id === x.r.id && ackOpen.k === x.key ? `<div style="margin-top:8px"><p class="small muted" style="margin:0 0 6px">Record that the customer has been told about the defect and has chosen not to have it repaired now. This takes it off the list and records it in the appliance history.</p>
+          <textarea id="fuNote" rows="2" placeholder="Note, for example: told the risk, will arrange the repair later" style="width:100%">${esc(ackNote)}</textarea>
+          <div class="row" style="gap:8px;margin-top:6px"><button type="button" class="btn grow gold" data-act="fuAckSave" data-id="${x.r.id}" data-k="${x.key}">Save</button><button type="button" class="btn grow ghost" data-act="fuAckCancel">Cancel</button></div></div>` : ''}
         <div class="row" style="margin-top:8px"><button type="button" class="btn grow ghost" data-act="fuRec" data-id="${x.r.id}">Open record</button></div></div>`).join('') || '<div class="empty">Nothing outstanding. Defects you record as at risk or immediately dangerous will appear here.</div>'}
       <button type="button" class="btn block" data-act="fuClose" style="margin-top:6px">Close</button></div>`;
   }
@@ -62,7 +62,7 @@ const FU = (() => {
       case 'fuAck': ackOpen = { id: b.dataset.id, k: b.dataset.k }; ackNote = ''; repaint(); break;
       case 'fuAckCancel': ackOpen = null; ackNote = ''; repaint(); break;
       case 'fuAckSave': { const x = find(b); if (!x) break; const note = (document.getElementById('fuNote') || {}).value || ackNote;
-        x.r.dfRes = { ...(x.r.dfRes || {}), [x.key]: { d: todayISO(), st: 'ack', note: String(note || '').trim() } }; persistRec(x.r); syncAll(); ackOpen = null; ackNote = ''; toast('Recorded as acknowledged'); repaint(); break; }
+        x.r.dfRes = { ...(x.r.dfRes || {}), [x.key]: { d: todayISO(), st: 'ack', note: String(note || '').trim() } }; persistRec(x.r); syncAll(); ackOpen = null; ackNote = ''; toast('Recorded: customer informed'); repaint(); break; }
       case 'fuReopen': { const r = records.find(z => z.id === b.dataset.id); if (!r || !r.dfRes) break; const n = { ...r.dfRes }; delete n[b.dataset.k]; r.dfRes = n; persistRec(r); syncAll(); toast('Back on the follow-up list'); const hs = document.getElementById('histSheet'); if (hs) hs.remove(); render(); break; }
       case 'fuText': { const x = find(b); if (!x) break; const ph = String(x.r.customer.phone || '').replace(/[^\d+]/g, ''), body = wording(x);
         const a = document.createElement('a'); a.href = 'sms:' + ph + '?&body=' + encodeURIComponent(body); document.body.appendChild(a); a.click(); a.remove(); break; }
