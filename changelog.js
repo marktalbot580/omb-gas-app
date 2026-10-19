@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v208', items: ['Date paid: once an invoice is ticked as Paid, a Date paid box appears in the Dates section so you can put in the day the money actually arrived (the PAID stamp, the invoice and your statements then use that date). The overdue prompt and the chase sheet now have \u201cPaid earlier \u2013 choose the date\u201d, which marks it paid and takes you straight to the date box.'] },
   { v: 'v207', items: ['PDF fix: on the gas safety, boiler service, legionella, air conditioning and commissioning records, the date under the engineer\u2019s signature was sitting outside the box. The signature area is a little shorter so the name, Gas Safe ID and date all sit inside.'] },
   { v: 'v206', items: ['Extra security: the app now tells the browser exactly which sites it may talk to and which scripts it may run, so nothing unexpected can be injected into a page. You will not notice any difference.'] },
   { v: 'v205', items: ['On a new quote, the property heading now says \u201cWork address\u201d instead of \u201cProperty inspected\u201d.'] },

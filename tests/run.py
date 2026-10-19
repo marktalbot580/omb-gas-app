@@ -1165,6 +1165,18 @@ def run():
         check('app opens with no signal (service worker cache)', ok)
         ctx.close()
 
+        # ---------- 12p. date paid can be set on the invoice ----------
+        ctx, pg, errs = fresh(b)
+        ev(pg, "SAMPLE.add(); invoices.push(newInvoice([records[0]])); ui.view='home'; render()")
+        r = ev(pg, """(async()=>{ const i=invoices[0]; if(!i) return 'no invoice'; i.paid=true; i.paidDate=todayISO(); ui.inv=i; ui.view='invEdit'; render(); await new Promise(r=>setTimeout(r,200));
+          const el=document.querySelector('input.dth[data-n="paidDate"]'); if(!el) return 'no date paid box'; el.value='2026-10-17'; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true}));
+          await new Promise(r=>setTimeout(r,200)); return invoices[0].paidDate; })()""")
+        check('Date paid box on a paid invoice changes the date paid', r == '2026-10-17', r)
+        ev(pg, "invoices[0].paid=false; render()")
+        check('Date paid box is hidden when the invoice is not paid', ev(pg, "!document.querySelector('input.dth[data-n=\"paidDate\"]')"))
+        check('no page errors setting the date paid', not errs, errs)
+        ctx.close()
+
         # ---------- 13. page security policy: the app runs with it and nothing is blocked ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page(); csp = []

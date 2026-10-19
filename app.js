@@ -899,7 +899,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v207';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v208';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -2660,6 +2660,7 @@ function renderInvEdit(v) {
     <div class="card">
       ${inf('date', 'Invoice date', { type: 'date' })}
       ${inf('due', 'Payment due by', { type: 'date' })}
+      ${i.paid ? inf('paidDate', 'Date paid', { type: 'date', hint: 'Forgot to tick Paid on the day? Put in the day the money actually arrived.' }) : ''}
       ${inf('workDate', 'Date of work', { type: 'date' })}
     </div>
     <h2>${esc(String(settings.invHead || '').trim() || 'Work and materials')}</h2>
@@ -2735,7 +2736,8 @@ function invAskShow(id, step) {
   const head = `<div class="insthead"><div><b>Invoice ${esc(i.number)} is overdue</b><span>${esc(i.customer.name || 'Customer')} · ${money(invTotals(i).total)} · due ${ukDate(i.due)} (${days} day${days === 1 ? '' : 's'} ago)</span></div></div>`;
   d.innerHTML = step === 'paid'
     ? `<div class="instbox">${head}<p class="small">Has this invoice been paid?</p>
-      <button class="btn gold block" data-act="invAskPaid" data-id="${i.id}">Yes, it has been paid</button><div style="height:8px"></div>
+      <button class="btn gold block" data-act="invAskPaid" data-id="${i.id}">Yes, it was paid today</button><div style="height:8px"></div>
+      <button class="btn block" data-act="invAskPaidEarlier" data-id="${i.id}">Yes, paid earlier – choose the date</button><div style="height:8px"></div>
       <button class="btn block" data-act="invAskSnooze" data-id="${i.id}">Not yet – ask me again in 7 days</button>
       <div class="instrow"><button class="btn ghost" data-act="invAskClose">Close</button></div></div>`
     : `<div class="instbox">${head}<p class="small">Send ${esc(i.customer.name || 'the customer')} a payment reminder${i.remindedAt ? ' (last one sent ' + ukDate(i.remindedAt) + ')' : ''}?</p>
@@ -2943,6 +2945,7 @@ document.addEventListener('click', async e => {
   if (a === 'remSent') { const id = b.dataset.id; setTimeout(() => { const o = remGet(); o.s[id] = todayISO(); remSet(o); if (ui.view === 'due') { const y = window.scrollY; render(); window.scrollTo(0, y); } }, 600); return; }
   if (a === 'remDone') { const rr = records.find(x => x.id === b.dataset.id); if (rr) remSetState(rr, b.dataset.v); toast(b.dataset.v === 'booked' ? 'Marked as booked in' : 'Removed from the list'); render(); return; }
   if (a === 'remStop') { if (confirm('Stop reminders for this property? You can still do its next check as normal.')) { const o = remGet(); o.stop[b.dataset.key] = 1; remSet(o); const rr = records.find(x => x.id === b.dataset.id); if (rr) remSetState(rr, 'stop'); render(); } return; }
+  if (a === 'invAskPaidEarlier') { const i = invoices.find(x => x.id === b.dataset.id); const o = document.getElementById('askBox'); if (o) o.remove(); if (i) { i.paid = true; i.paidDate = todayISO(); persistInv(i); invGo(i, 'invoices'); toast('Marked as paid – set the date paid under Dates'); } return; }
   if (a === 'invAskClose') { const o = document.getElementById('askBox'); if (o) o.remove(); return; }
   if (a === 'invAsk') { const n = invOverdueAsk(); if (n.length) invAskShow(n[0].id, 'ask'); return; }
   if (a === 'invAskNo') { invAskShow(b.dataset.id, 'paid'); return; }

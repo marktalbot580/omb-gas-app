@@ -106,7 +106,8 @@ function showChase(id) {
     ${ph ? `<button type="button" class="btn gold block" data-act="chaseGo" data-how="sms" data-id="${i.id}">Text</button><div style="height:8px"></div><button type="button" class="btn block" data-act="chaseGo" data-how="wa" data-id="${i.id}">WhatsApp</button><div style="height:8px"></div>` : ''}
     ${em ? `<button type="button" class="btn ${ph ? '' : 'gold '}block" data-act="chaseGo" data-how="mail" data-id="${i.id}">Email, with the invoice attached</button><div style="height:8px"></div>` : ''}
     ${!ph && !em ? '<p class="small muted">No phone or email saved for this customer. Add one on their customer page.</p>' : ''}
-    <button type="button" class="btn block" data-act="chaseGo" data-how="paid" data-id="${i.id}">Mark as paid</button>
+    <button type="button" class="btn block" data-act="chaseGo" data-how="paid" data-id="${i.id}">Paid today</button><div style="height:8px"></div>
+    <button type="button" class="btn block" data-act="chaseGo" data-how="paidEarlier" data-id="${i.id}">Paid earlier – choose the date</button>
     <button type="button" class="btn block ghost" data-act="chaseClose" style="margin-top:6px">Close</button></div>`;
   document.body.appendChild(d);
 }
@@ -121,6 +122,7 @@ document.addEventListener('click', async e => {
   if (a !== 'chaseGo') return;
   const i = invoices.find(x => x.id === b.dataset.id); if (!i) return;
   const how = b.dataset.how, text = invRemText(i), ph = invPhone(i);
+  if (how === 'paidEarlier') { i.paid = true; i.paidDate = todayISO(); persistInv(i); if (bg) bg.remove(); if (typeof invGo === 'function') invGo(i, 'invoices'); toast('Marked as paid – set the date paid under Dates'); return; }
   if (how === 'paid') { i.paid = true; i.paidDate = todayISO(); persistInv(i); if (bg) bg.remove(); toast('Marked as paid'); if (ui.view === 'home' || ui.view === 'invoices') render(); return; }
   if (how === 'mail') { if (bg) bg.remove(); if (await invRemind(i)) { i.chases = (i.chases || 0) + 1; persistInv(i); if (ui.view === 'home' || ui.view === 'invoices') render(); } return; }
   const url = how === 'sms' ? 'sms:' + ph + '?&body=' + encodeURIComponent(text) : 'https://wa.me/' + ph.replace(/^\+/, '').replace(/^0/, '44') + '?text=' + encodeURIComponent(text);
