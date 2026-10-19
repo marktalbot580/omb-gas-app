@@ -1177,6 +1177,15 @@ def run():
         check('no page errors setting the date paid', not errs, errs)
         ctx.close()
 
+        # ---------- 12q. owner usage totals (counts only) ----------
+        ctx, pg, errs = fresh(b)
+        r = ev(pg, """(()=>{ ui.view='admin'; ui.admin={rows:[],err:'',usage:{records:12,records_finished:9,invoices:5,invoices_paid:3,customers:7,bookings:4,saved_7d:6,saved_30d:11,active_7d:2,active_30d:3,users_with_data:3,by_type:{gas:5,service:4},size_groups:{none_yet:1,one_to_5:1,six_to_20:1,over_20:0}}}; render(); return document.querySelector('#view').innerText; })()""")
+        check('Admin page shows anonymous usage totals', 'Documents finished' in r and 'Gas safety record' in r and 'Boiler service record' in r and '9' in r, r[:300])
+        ev(pg, "ui.admin={rows:[],err:'',usageErr:'Usage totals are not switched on yet. Run backend/v209-usage.sql once in Supabase.'}; render()")
+        check('Admin page says how to switch usage totals on when the SQL has not been run', 'v209-usage.sql' in ev(pg, "document.querySelector('#view').innerText"))
+        check('no page errors on the usage totals', not errs, errs)
+        ctx.close()
+
         # ---------- 13. page security policy: the app runs with it and nothing is blocked ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page(); csp = []

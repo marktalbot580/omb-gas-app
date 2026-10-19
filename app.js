@@ -899,7 +899,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v208';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v209';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1271,6 +1271,7 @@ function renderAdmin(v) {
       <dt>Sign-ups</dt><dd>${rows.length}</dd><dt>On free trial</dt><dd>${cnt('on trial')}</dd><dt>Paying</dt><dd>${cnt('paying')}</dd>
       <dt>Free passes</dt><dd>${cnt('free pass')}</dd><dt>Trial ended</dt><dd>${cnt('trial ended')}</dd><dt>Payment failed / cancelled</dt><dd>${cnt('payment failed') + cnt('cancelled')}</dd>
     </dl><button class="btn block" data-act="adminReload" style="margin-top:10px">Refresh</button></div>
+    ${adminUsageHtml(A)}
     <h2>Give someone a free pass</h2>
     <div class="card"><label class="f"><span>Their email address</span><input id="adminEmail" type="email" inputmode="email" autocapitalize="none" autocomplete="off" placeholder="kyle@example.com"><small>Works before or after they sign up. They get full access with no payment.</small></label>
       <button class="btn gold block" data-act="adminCompEmail">Give free pass</button></div>
@@ -1284,9 +1285,22 @@ function renderAdmin(v) {
       <div class="small muted">${esc(state(r))}${r.confirmed ? '' : ' · email not confirmed'} · joined ${ukDate((r.created_at || '').slice(0, 10))}${r.last_active ? ' · last active ' + ukDate(r.last_active.slice(0, 10)) : ''}${r.last_sign_in ? ' · last sign-in ' + ukDate(r.last_sign_in.slice(0, 10)) : ''}${r.status === 'trialing' && !r.comped ? ' · trial ends ' + ukDate((r.trial_end || '').slice(0, 10)) : ''}</div>
       <button class="btn block ${r.comped ? 'ghost' : ''}" style="margin-top:8px" data-act="adminComp" data-id="${r.user_id}" data-v="${r.comped ? '' : '1'}">${r.comped ? 'Remove free pass' : 'Give free pass'}</button>${r.comped || r.status === 'active' ? '' : `<button class="btn block" style="margin-top:8px" data-act="adminExtend" data-id="${r.user_id}">Extend trial by 14 days</button>`}</div>`).join('') || '<p class="muted">Nobody yet.</p>'}`}`;
 }
+function adminUsageHtml(A) {
+  if (A.usageErr) return `<h2>Usage</h2><div class="notice">${esc(A.usageErr)}</div>`;
+  const u = A.usage; if (!u) return '';
+  const bt = u.by_type || {}, sg = u.size_groups || {};
+  const types = Object.keys(bt).sort((a, b) => bt[b] - bt[a]).map(k => `<dt>${esc(FORM_NAME[k] || k)}</dt><dd>${bt[k]}</dd>`).join('');
+  return `<h2>Usage (counts only, no personal details)</h2><div class="card"><dl class="kv">
+    <dt>Documents finished</dt><dd>${u.records_finished}</dd><dt>Saved or changed, last 7 days</dt><dd>${u.saved_7d}</dd><dt>Saved or changed, last 30 days</dt><dd>${u.saved_30d}</dd>
+    <dt>Invoices (paid)</dt><dd>${u.invoices} (${u.invoices_paid})</dd><dt>Customers saved</dt><dd>${u.customers}</dd><dt>Calendar bookings</dt><dd>${u.bookings}</dd>
+    <dt>Active users, 7 days</dt><dd>${u.active_7d}</dd><dt>Active users, 30 days</dt><dd>${u.active_30d}</dd></dl></div>
+    <div class="card"><b>Finished documents by type</b><dl class="kv" style="margin-top:8px">${types || '<dt>None yet</dt><dd></dd>'}</dl></div>
+    <div class="card"><b>How much people use it</b><dl class="kv" style="margin-top:8px"><dt>No documents yet</dt><dd>${sg.none_yet ?? 0}</dd><dt>1 to 5</dt><dd>${sg.one_to_5 ?? 0}</dd><dt>6 to 20</dt><dd>${sg.six_to_20 ?? 0}</dd><dt>Over 20</dt><dd>${sg.over_20 ?? 0}</dd></dl></div>`;
+}
 async function adminLoad() {
   ui.admin = ui.admin || {}; ui.admin.err = '';
   try { ui.admin.fb = await CLOUD.rpc('admin_feedback'); } catch (e) { ui.admin.fb = ui.admin.fb || null; ui.admin.fbErr = /does not exist|schema cache|404/i.test(e.message) ? 'Feedback table not set up yet.' : ''; }
+  try { ui.admin.usage = await CLOUD.rpc('admin_usage'); ui.admin.usageErr = ''; } catch (e) { ui.admin.usageErr = /does not exist|schema cache|404/i.test(e.message) ? 'Usage totals are not switched on yet. Run backend/v209-usage.sql once in Supabase.' : ''; }
   try { ui.admin.rows = await CLOUD.rpc('admin_overview'); } catch (e) { ui.admin.err = /not allowed/i.test(e.message) ? 'This account is not an admin.' : 'Could not load: ' + e.message; ui.admin.rows = ui.admin.rows || []; }
   if (ui.view === 'admin') render();
 }
