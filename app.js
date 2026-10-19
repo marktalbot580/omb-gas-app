@@ -898,7 +898,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v201';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v202';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1127,6 +1127,7 @@ function renderSettings(v) {
       <label class="f"><span>Message wording</span><textarea data-s="remText" rows="4">${esc(settings.remText || REM_DEFAULT)}</textarea><small>Used for the Text, WhatsApp and Email buttons on the Annual checks due screen. {name}, {business}, {what}, {address} and {date} are filled in for you.</small></label>
       <label class="f"><span>Start listing checks</span><select data-s="remDays">${[['28', '4 weeks before they are due'], ['42', '6 weeks before they are due'], ['56', '8 weeks before they are due'], ['84', '12 weeks before they are due']].map(([k, l]) => `<option value="${k}" ${String(settings.remDays || '56') === k ? 'selected' : ''}>${l}</option>`).join('')}</select><small>A landlord gas safety check can be done up to 2 months early and keep the same yearly date.</small></label>
       <label class="f"><span>Send reminders automatically by email</span><select data-s="remAuto"><option value="off" ${settings.remAuto === 'on' ? '' : 'selected'}>Off</option><option value="on" ${settings.remAuto === 'on' ? 'selected' : ''}>On</option></select><small>When on, customers with an email address saved get an email about 8 weeks before their check is due, and again 2 weeks before. It comes from reminders@ombgas.com with your business name, and their replies come to <b>${esc(settings.email || 'your email in Settings')}</b>. Customers you mark Booked in, Not needed or Stop are skipped, and every email has an unsubscribe link. You need to be signed in so it can run.${settings.remAuto === 'on' && !settings.email ? ' <b style="color:var(--gold2)">Add your email address under Business first, or replies will have nowhere to go.</b>' : ''}</small></label>
+      <label class="f"><span>Send emails with</span><select data-s="mailApp"><option value="" ${!settings.mailApp ? 'selected' : ''}>Automatic (a Chromebook asks each time)</option><option value="gmail" ${settings.mailApp === 'gmail' ? 'selected' : ''}>Gmail on the web</option><option value="outlook" ${settings.mailApp === 'outlook' ? 'selected' : ''}>Outlook on the web</option><option value="default" ${settings.mailApp === 'default' ? 'selected' : ''}>My computer's mail program</option></select><small>For a laptop or Chromebook with no mail program set up. The customer's address, subject and message are filled in for you; attach the PDF from your Downloads folder. Phones use their normal share sheet.</small></label>
       <label class="f"><span>Fill in the appliance details from last time</span><select data-s="autoCopy"><option value="on" ${settings.autoCopy === 'off' ? '' : 'selected'}>Automatically, when I pick the customer and address</option><option value="off" ${settings.autoCopy === 'off' ? 'selected' : ''}>Only when I tap the button</option></select><small>For gas safety, boiler service and oil service records at a property you have visited before. It copies the make, model, location and flue. Test readings and signatures are left blank.</small></label>
       ${settings.remAuto === 'on' ? '<button class="btn block" data-act="remTest">Send me a sample reminder</button><div style="height:8px"></div>' : ''}
       <button class="btn block ghost" data-act="remReset">Put the original wording back</button>
@@ -1711,26 +1712,50 @@ function chaseText(q) {
 }
 /* Chrome on a Mac only offers AirDrop and Messages when sharing a PDF (no Mail), so there we skip the share menu and use the save-then-attach steps instead */
 const macChrome = /Mac/i.test(navigator.platform || '') && !(navigator.maxTouchPoints > 1) && /Chrome\//.test(navigator.userAgent);
-const canShareFiles = o => !macChrome && !!navigator.canShare && navigator.canShare(o);
-function openMail(url) {
+const isCros = /CrOS/.test(navigator.userAgent);
+const canShareFiles = o => !macChrome && !isCros && !!navigator.canShare && navigator.canShare(o);   // a Chromebook's share sheet rarely offers the person's mail, so it gets the email chooser instead
+/* email without a mail program: Gmail or Outlook on the web, opened with the address, subject and message already filled in */
+function mailParts(url) {
+  const m = String(url).match(/^mailto:([^?]*)(?:\?(.*))?$/) || [], q = new URLSearchParams(m[2] || '');
+  return { to: decodeURIComponent(m[1] || ''), subject: q.get('subject') || '', body: q.get('body') || '' };
+}
+function mailWebUrl(kind, url) {
+  const p = mailParts(url), e = encodeURIComponent;
+  return kind === 'gmail' ? `https://mail.google.com/mail/?view=cm&fs=1&to=${e(p.to)}&su=${e(p.subject)}&body=${e(p.body)}`
+    : `https://outlook.office.com/mail/deeplink/compose?to=${e(p.to)}&subject=${e(p.subject)}&body=${e(p.body)}`;
+}
+const mailPref = () => settings.mailApp || (isCros ? 'ask' : 'default');   // default | gmail | outlook | ask
+document.addEventListener('click', e => {
+  const a = e.target.closest && e.target.closest('a[href^="mailto:"]');
+  if (!a || a.dataset.native || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
+  const pref = mailPref(); if (pref === 'default') return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  if (pref === 'gmail' || pref === 'outlook') window.open(mailWebUrl(pref, a.getAttribute('href')), '_blank', 'noopener');
+  else openMail(a.getAttribute('href'), true);
+}, true);
+function openMail(url, plain) {
   /* this browser could not hand the PDFs to the share sheet, so say so clearly instead of jumping straight into an email with nothing attached */
   const old = document.getElementById('mailBox'); if (old) old.remove();
   const d = document.createElement('div'); d.id = 'mailBox';
   const phone = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent), mac = /Mac/i.test(navigator.platform || navigator.userAgent);
   const head = phone ? `<div class="instbox"><div class="insthead"><div><b>PDFs saved to your phone</b><span>This browser can’t attach them for you</span></div></div>
     <p class="small">They are in your <b>Downloads</b> folder. Open the email, then tap the paperclip and choose them. For one-tap sharing with the PDFs attached (WhatsApp, Outlook, Gmail…), open this app in <b>Chrome</b>.</p>
+`:plain ? `<div class="instbox"><div class="insthead"><div><b>Send the email with…</b><span>The address and message are filled in for you</span></div></div>
 `:`<div class="instbox"><div class="insthead"><div><b>PDF saved to your computer</b><span>Now attach it to the email</span></div></div>
     <ol class="small" style="margin:0 0 12px;padding-left:20px;line-height:1.6">
-      <li>Click <b>Open the email</b> below. Your email program opens with the customer’s address, subject and message already filled in.</li>
+      <li>Choose your email below. It opens with the customer’s address, subject and message already filled in.</li>
       <li>Attach the PDF: click the <b>paperclip</b> / <b>Attach</b> button and pick it from your <b>Downloads</b> folder (the newest file), or just drag it into the email${mac ? ' – you can drag it straight from the download arrow at the top right of Chrome' : ''}.</li>
       <li>Check it, then press Send.</li>
     </ol>
-    <p class="small muted" style="margin-top:0">${mac ? 'On a Mac, open Finder → Downloads. If Mail is not your usual email program, change it in Mail → Settings → Default email reader.' : 'If the wrong program opens, go to Windows Settings → Apps → Default apps → Email and pick the one you use.'}</p>
+    <p class="small muted" style="margin-top:0">${mac ? 'On a Mac, open Finder → Downloads. If Mail is not your usual email program, change it in Mail → Settings → Default email reader.' : isCros ? 'On a Chromebook the PDF is in the Files app under Downloads. You can pick your email once in Settings → Reminders so this step is skipped.' : 'If the wrong program opens, go to Windows Settings → Apps → Default apps → Email and pick the one you use.'}</p>
 `;
-  d.innerHTML = head + `    <a class="btn gold block" style="text-align:center;text-decoration:none" href="${url.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}" rel="noopener" ${phone ? '' : 'target="_blank"'} id="mailGo">Open the email</a>
+  const esc2 = u => u.replace(/&/g, '&amp;').replace(/"/g, '&quot;'), pref = settings.mailApp || '';
+  const btn = (k, label, href) => `<a class="btn ${pref === k || (!pref && k === 'gmail') ? 'gold' : 'ghost'} block" style="text-align:center;text-decoration:none;margin-bottom:8px" href="${esc2(href)}" rel="noopener" target="_blank" data-native="1" data-mk="${k}">${label}</a>`;
+  d.innerHTML = head + (phone ? `    <a class="btn gold block" style="text-align:center;text-decoration:none" href="${esc2(url)}" rel="noopener" data-native="1" id="mailGo">Open the email</a>`
+    : btn('gmail', 'Gmail (on the web)', mailWebUrl('gmail', url)) + btn('outlook', 'Outlook (on the web)', mailWebUrl('outlook', url)) + btn('default', 'My computer’s mail program', url).replace('target="_blank"', '')) + `
     <div class="instrow"><button class="btn ghost" id="mailX">Close</button></div></div>`;
   document.body.appendChild(d);
-  d.querySelector('#mailX').onclick = () => d.remove(); d.querySelector('#mailGo').onclick = () => setTimeout(() => d.remove(), 600);
+  d.querySelector('#mailX').onclick = () => d.remove(); d.querySelectorAll('a[data-native]').forEach(a => { a.onclick = () => setTimeout(() => d.remove(), 600); });
 }
 async function dlSel() {
   const m = jobRecs() || [ui.rec], inv = invForVisit(m);

@@ -1129,6 +1129,26 @@ def run():
         check('no page errors in appliance alert', not errs, errs)
         ctx.close()
 
+        # ---------- 12o. email without a mail program (Chromebook) ----------
+        ctx, pg, errs = fresh(b)
+        r = ev(pg, """(()=>{
+          const url='mailto:pat@example.com?subject='+encodeURIComponent('Gas safety & invoice')+'&body='+encodeURIComponent('Hi Pat,\\n\\nAttached.');
+          const g=mailWebUrl('gmail',url), o=mailWebUrl('outlook',url), p=mailParts(url);
+          openMail(url); const box=document.getElementById('mailBox');
+          const btns=[...box.querySelectorAll('a[data-mk]')].map(a=>a.dataset.mk);
+          box.remove();
+          const opened=[]; const wo=window.open; window.open=(u)=>{opened.push(u); return null;};
+          settings.mailApp='outlook'; const a=document.createElement('a'); a.href=url; document.body.appendChild(a); a.click(); a.remove();
+          settings.mailApp='gmail'; const a2=document.createElement('a'); a2.href=url; document.body.appendChild(a2); a2.click(); a2.remove();
+          window.open=wo; settings.mailApp='';
+          return {g,o,p,btns,opened};
+        })()""")
+        check('gmail and outlook web links carry address, subject and message', r['g'].startswith('https://mail.google.com/mail/?view=cm') and 'to=pat%40example.com' in r['g'] and 'su=Gas%20safety%20%26%20invoice' in r['g'] and r['o'].startswith('https://outlook.office.com/mail/deeplink/compose?to=pat%40example.com') and r['p']['subject']=='Gas safety & invoice', r)
+        check('email dialog offers Gmail, Outlook and the default program', r['btns']==['gmail','outlook','default'], r)
+        check('a chosen webmail opens straight away from a mailto link', len(r['opened'])==2 and r['opened'][0].startswith('https://outlook.office.com') and r['opened'][1].startswith('https://mail.google.com'), r)
+        check('no page errors in email chooser', not errs, errs)
+        ctx.close()
+
         # ---------- 13. offline (service worker) ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page()
