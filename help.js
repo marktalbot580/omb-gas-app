@@ -3,11 +3,11 @@
 const HELP = [
   { t: 'Getting started: set up your details first', k: 'setup first time business address gas safe number engineer signature logo settings tabs',
     h: `<p>Do this once, before your first certificate. Everything you enter here is printed on your PDFs.</p>
-<p>Settings is split into tabs across the top: <b>Business</b>, <b>Invoicing</b>, <b>Quotes</b>, <b>Reminders</b>, <b>Calendar</b>, <b>Tools</b> and <b>App</b>.</p>
+<p>Settings is split into tabs across the top: <b>Business</b>, <b>Money</b>, <b>Messages</b>, <b>Calendar</b> and <b>App &amp; account</b>.</p>
 <ol><li>Tap the <b>cog</b> at the top right, next to the <b>?</b> button.</li>
 <li>On the <b>Business</b> tab, fill in your business name, address, telephone, email and Gas Safe Register number.</li>
-<li>Still on <b>Business</b>, add your <b>bank details</b> (printed on invoices), your <b>company logo</b> under Your branding, your <b>Gas Safe logo</b> and your <b>Engineer</b> name and Gas Safe ID.</li>
-<li>On the <b>Invoicing</b> tab, set your invoice number, VAT and payment terms, and enter what you normally charge under <b>Prices</b> so invoices fill in for you.</li></ol>
+<li>Still on <b>Business</b>, add your <b>company logo</b> under Logo and record numbers, your <b>Gas Safe logo</b> and your <b>Engineer</b> name and Gas Safe ID.</li>
+<li>On the <b>Money</b> tab, set your invoice number, VAT and payment terms, add your <b>bank details</b> (printed on invoices), and enter what you normally charge under <b>Prices</b> so invoices fill in for you.</li></ol>
 <p>Until the business address, Gas Safe number and engineer details are filled in, the home screen shows a yellow reminder.</p>
 <p><b>Your logo:</b> pick a file and the app trims the edges and sizes it to fill the square. Under the logo, <b>Logo background</b> lets you choose a White, Black or Clear tile behind it.</p>` },
 
@@ -19,15 +19,15 @@ const HELP = [
 <ol><li>Open app.ombgas.com in Chrome.</li><li>Tap the three dots at the top right.</li><li>Tap <b>Install app</b> (or <b>Add to Home screen</b>).</li></ol>` },
 
   { t: 'Oil boilers and OFTEC work', k: 'oil oftec kerosene tank cd10 cd11 cd12 cd14 ti133d cd30 landlord warning notice condensing work type',
-    h: `<p>Oil heating engineers can switch the app to oil. Go to <b>Settings → App → Services to show</b> and set <b>What work do you do?</b> to <b>Oil</b> (or <b>Gas and oil</b> if you do both). Then add your OFTEC registration number in <b>Settings → Business</b>.</p>
+    h: `<p>Oil heating engineers can switch the app to oil. Go to <b>Settings → Business → Services you offer</b> and set <b>What work do you do?</b> to <b>Oil</b> (or <b>Gas and oil</b> if you do both). Then add your OFTEC registration number in <b>Settings → Business</b>.</p>
 <p>Oil leaves out the gas safety record, gas boiler service and gas tools, and adds these records:</p>
 <ul><li><b>Oil boiler service record</b>: service, commissioning or repair, with the checks, nozzle, pump pressure and flue gas readings</li><li><b>Oil tank check</b>: the tank, bund and oil supply pipework</li><li><b>Oil firing installation completion report</b></li><li><b>Landlord oil installation check record</b></li><li><b>Oil warning and advice notice</b></li><li><b>Oil tank spillage and fire risk assessment</b></li><li><b>Condensing oil boiler assessment</b></li></ul>
 <p>These follow the headings of the usual OFTEC forms, but they are this app's own records. They have no OFTEC logo or serial number and they do not replace anything issued through OFTEC, such as a completion certificate used to notify Building Control. Check what your scheme requires.</p>
-<p>Prices for the oil records go in <b>Settings → Invoicing → Prices</b>. The landlord check and boiler service show in <b>Annual checks due</b> once they are completed.</p>` },
+<p>Prices for the oil records go in <b>Settings → Money → Prices</b>. The landlord check and boiler service show in <b>Annual checks due</b> once they are completed.</p>` },
   { t: 'Starting a new record', k: 'new gas safety boiler service legionella air conditioning quote visit forms draft hide records',
     h: `<p>On the <b>Services</b> screen tap the type of job you are doing:</p>
 <ul><li><b>Gas safety record</b> (landlord gas safety check)</li><li><b>Boiler service record</b></li><li><b>Legionella risk assessment</b></li><li><b>Air conditioning commissioning</b></li><li><b>Boiler quote</b> (see <i>Boiler quotes</i>)</li></ul>
-<p>Not doing air conditioning yet? Hide any you do not use in <b>Settings → App → Services to show</b>. Turn them back on whenever you like.</p>
+<p>Not doing air conditioning yet? Hide any you do not use in <b>Settings → Business → Services you offer</b>. Turn them back on whenever you like.</p>
 <p>The next screen lets you tick <b>everything you are doing at that property today</b>. The customer and address are entered once and shared across the forms, and you get a separate PDF for each. Tap <b>Start</b> to begin, or <b>Schedule in</b> to book the job in the calendar for later.</p>
 <p>Work through the steps using <b>Next</b> and <b>Back</b>. Your work is saved as you go. If you leave part way through it is kept as a <b>draft</b> on the home screen, and you can open it again or delete it.</p>` },
 
@@ -53,7 +53,7 @@ const HELP = [
 <li>Tick <b>Same property</b> and results carry from one calculator to the next.</li>
 <li><b>Show workings out</b> explains each step of the sums.</li>
 <li>From a customer’s card, tap <b>Tools and calculation report</b> to make a PDF of the results with their details on top. Tick which results go in.</li>
-<li>Hide tools you do not use in <b>Settings → Tools</b>.</li></ul>` },
+<li>Hide tools you do not use in <b>Settings → App &amp; account → Tools</b>.</li></ul>` },
 
   { t: 'Flue gas analyser readings', k: 'combustion analyser flue gas co co2 ratio results see below',
     h: `<p>If you used a combustion analyser, tick that you did and enter the readings in the <b>Flue gas analysis</b> section. On the PDF, the flue gas line in the operating checks then says <b>See results below (Combustion Analyser Readings)</b> and the readings are printed underneath.</p>` },
@@ -75,10 +75,10 @@ const HELP = [
 <ul><li>Pick boilers and extras from your <b>Price list</b>. The manufacturer warranty fills in from the boiler you pick.</li>
 <li>Type an item and price that is not on the list and tick <b>Commit to price list</b> to save it for next time.</li>
 <li>Choose <b>Normal</b> or <b>Large</b> text at the bottom of the extras step for older customers.</li></ul>
-<p>A finished quote shows <b>Awaiting reply</b>. Tick <b>Accepted</b> or <b>Declined</b> when you hear. After 14 days with no answer it turns red as <b>Chase up</b>, the home screen tells you, and <b>Chase by email</b> and <b>Chase by text</b> open a ready-written message. Change that wording in <b>Settings → Quotes</b>.</p>` },
+<p>A finished quote shows <b>Awaiting reply</b>. Tick <b>Accepted</b> or <b>Declined</b> when you hear. After 14 days with no answer it turns red as <b>Chase up</b>, the home screen tells you, and <b>Chase by email</b> and <b>Chase by text</b> open a ready-written message. Change that wording in <b>Settings → Messages → Quote chasing</b>.</p>` },
 
   { t: 'Price list', k: 'price list cost mark-up markup boiler make model brand category tabs warranty add',
-    h: `<p>Find it in <b>Settings → Quotes → Price list</b>. Items are in categories (Boiler, Flue, Labour, Copper and pipe, Fittings, Controls and more). Tap a category to open it and see its items. Labour has no make or model: give each rate a name such as Hourly rate or Day rate and say what it is charged per, then on a quote enter how many hours or days. Open any item to fill in <b>Supplier details</b>: where the price came from and where to order it. Customers never see it. Tap <b>+ New category</b> to add your own, such as Baths, Toilets or Taps, then add items to it, shown as tabs in one row. Swipe along and tap one.</p>
+    h: `<p>Find it in <b>Settings → Money → Quotes → Price list</b>. Items are in categories (Boiler, Flue, Labour, Copper and pipe, Fittings, Controls and more). Tap a category to open it and see its items. Labour has no make or model: give each rate a name such as Hourly rate or Day rate and say what it is charged per, then on a quote enter how many hours or days. Open any item to fill in <b>Supplier details</b>: where the price came from and where to order it. Customers never see it. Tap <b>+ New category</b> to add your own, such as Baths, Toilets or Taps, then add items to it, shown as tabs in one row. Swipe along and tap one.</p>
 <ul><li>Give each item your <b>cost</b> and a <b>mark-up %</b>. Set one standard mark-up, one per category, or one per item, and the sale price works itself out. You can also type a fixed price.</li>
 <li>On the <b>Boiler</b> tab you see the makes first. Tap a make to see its models. Use <b>+ Add a boiler</b> or <b>+ Add a make</b> to add your own.</li>
 <li>Boilers can carry a warranty length, which fills in on the quote.</li></ul>` },
@@ -92,8 +92,8 @@ const HELP = [
 <li>Each customer shows when their check is due (or how many days overdue).</li>
 <li>Tap <b>Text</b>, <b>WhatsApp</b> or <b>Email</b>. Your phone opens a message that is already written, using their number or email. Check it, then press send. Nothing is ever sent without you.</li>
 <li>When they reply, tap <b>Booked in</b> or <b>Not needed</b> to take them off the list. Tap <b>Stop for this property</b> if they should never be reminded.</li></ol>
-<p><b>Automatic emails:</b> in <b>Settings → Reminders</b>, under <b>Annual check reminders</b>, set <b>Send reminders automatically by email</b> to On. Customers who have an email address saved are emailed about 8 weeks before the check is due, and again 2 weeks before, from reminders@ombgas.com with your business name on it. Their replies come to the email address in your Settings. Tap <b>Send me a sample reminder</b> to see exactly what they get. Customers marked <b>Booked in</b>, <b>Not needed</b> or <b>Stop</b> are skipped, and so is anyone you tick <b>Never send reminder emails</b> for on their customer page. Every email has an unsubscribe link. You need to be signed in for this to run.</p>
-<p>The list uses the “next check due” date on your completed gas safety, boiler service and Legionella records. In <b>Settings → Reminders</b> you can change the wording of the message and how many weeks early they show. Which ones you have reminded is kept on this phone.</p>` },
+<p><b>Automatic emails:</b> in <b>Settings → Messages</b>, under <b>Annual check reminders</b>, set <b>Send reminders automatically by email</b> to On. Customers who have an email address saved are emailed about 8 weeks before the check is due, and again 2 weeks before, from reminders@ombgas.com with your business name on it. Their replies come to the email address in your Settings. Tap <b>Send me a sample reminder</b> to see exactly what they get. Customers marked <b>Booked in</b>, <b>Not needed</b> or <b>Stop</b> are skipped, and so is anyone you tick <b>Never send reminder emails</b> for on their customer page. Every email has an unsubscribe link. You need to be signed in for this to run.</p>
+<p>The list uses the “next check due” date on your completed gas safety, boiler service and Legionella records. In <b>Settings → Messages</b> you can change the wording of the message and how many weeks early they show. Which ones you have reminded is kept on this phone.</p>` },
 
   { t: 'Customers', k: 'customer list search favourite heart previous jobs add edit delete navigate tabs map directions',
     h: `<p>Customer names get a capital letter on each word for you (jane smith becomes Jane Smith). The <b>Customers</b> tab lists everyone you have worked for.</p>
@@ -135,14 +135,14 @@ const HELP = [
     h: `<p>The day after an invoice passes its payment terms, the home screen asks if you want to send a payment reminder.</p>
 <ul><li><b>Yes:</b> your email opens with a reminder written and the invoice attached. Check it and press send. Nothing is sent without you.</li>
 <li><b>No:</b> it asks if the invoice has been paid, or to ask again in 7 days.</li></ul>
-<p>Any unpaid invoice also has a <b>Send payment reminder</b> button. On the <b>Invoices</b> tab, tap <b>Overdue</b> to see only the late ones (it appears once something is overdue). Change the wording, or turn the prompt off, in <b>Settings → Invoicing → Payment reminders</b>.</p>` },
+<p>Any unpaid invoice also has a <b>Send payment reminder</b> button. On the <b>Invoices</b> tab, tap <b>Overdue</b> to see only the late ones (it appears once something is overdue). Change the wording, or turn the prompt off, in <b>Settings → Messages → Overdue invoice reminders</b>.</p>` },
 
   { t: 'Invoices for accountants and statements', k: 'accountant statement vat quarter print bulk export period report',
     h: `<p>On the <b>Invoices</b> tab, tap <b>Print for accountant (VAT quarter / bulk)</b>. Choose the period (for example a VAT quarter), what to include and the layout, then tap <b>Create PDF</b>.</p>` },
 
   { t: 'Backing up your data', k: 'backup restore password export import monthly reminder lost phone cloud drive',
     h: `<p>Your records live on your phone and are also saved to your account, but keep a backup file too. The app reminds you once a month.</p>
-<ol><li>Go to <b>Settings → App</b> and find <b>Backup</b>.</li>
+<ol><li>Go to <b>Settings → App &amp; account</b> and find <b>Backup</b>.</li>
 <li>Tap <b>Back up everything</b>.</li>
 <li>Choose a password if you want the file protected. <b>Keep the password safe: it cannot be recovered.</b></li>
 <li>Save or share the file somewhere safe, such as your email, OneDrive or Google Drive.</li></ol>
@@ -151,7 +151,7 @@ const HELP = [
 
   { t: 'Updating the app', k: 'update version old new latest refresh not updating reload cache',
     h: `<p>The app updates itself when it can, but you can force it:</p>
-<ol><li>Go to <b>Settings → App</b>. The <b>App version</b> box is there.</li>
+<ol><li>Go to <b>Settings → App &amp; account</b>. The <b>App version</b> box is there.</li>
 <li>Tap <b>Update app now</b>.</li></ol>
 <p>It shows the version on your phone and the newest version online. Your records, customers and photos are not touched.</p>
 <p>If you were told a new version is out and the number has not changed, wait a few minutes and try again. Update every device you use so they all match.</p>` },
@@ -159,7 +159,7 @@ const HELP = [
   { t: 'Working without signal and syncing', k: 'offline signal sync cloud dot not synced account login devices desktop phone calendar',
     h: `<p>The app works with no signal. Everything is saved on your phone first.</p>
 <p>When you are signed in and online, changes are also saved to your account, and shared with every other device you are signed in on, such as a phone and a computer. That includes customers, records, invoices and calendar appointments. A record shows <b>not synced</b> until that has happened. The small dot at the top right shows the sync status.</p>
-<p>It syncs when you open the app and when you save. To sync straight away tap <b>Sync now</b> in <b>Settings → App</b> or on the calendar. Make sure every device is on the newest version.</p>
+<p>It syncs when you open the app and when you save. To sync straight away tap <b>Sync now</b> in <b>Settings → App &amp; account</b> or on the calendar. Make sure every device is on the newest version.</p>
 <p>Before changing phone, make a backup so nothing is lost.</p>` },
 
   { t: 'Your subscription', k: 'subscribe subscription trial free price pay card cancel billing manage stripe £15',

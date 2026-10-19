@@ -52,10 +52,10 @@ def run():
         for v in views:
             ok = ev(pg, f"(()=>{{ui.view='{v}';try{{render();return document.querySelector('#view').innerText.length>10}}catch(e){{return String(e)}}}})()")
             check(f'view renders: {v}', ok is True, ok)
-        for t in ['business', 'invoicing', 'quotes', 'reminders', 'calendar', 'tools', 'app']:
+        for t in ['business', 'money', 'messages', 'calendar', 'app']:
             ok = ev(pg, f"(()=>{{ui.view='settings';ui.sTab='{t}';render();const d=document.querySelector('[data-stab={t}]');return !!d&&!d.hidden&&d.innerText.length>10}})()")
             check(f'settings tab shows: {t}', ok)
-        only = ev(pg, "(()=>{ui.view='settings';ui.sTab='invoicing';render();return [...document.querySelectorAll('[data-stab]')].filter(d=>!d.hidden).length})()")
+        only = ev(pg, "(()=>{ui.view='settings';ui.sTab='money';render();return [...document.querySelectorAll('[data-stab]')].filter(d=>!d.hidden).length})()")
         check('settings shows exactly one tab at a time', only == 1, only)
         check('app version matches service worker cache',
               ev(pg, "fetch('sw.js').then(r=>r.text()).then(t=>t.includes(\"'omb-gas-\"+APP_VERSION+\"'\"))"))
@@ -599,7 +599,7 @@ def run():
         check('appointments that overlap are flagged as a clash', cl == [True, True, False], cl)
         ev(pg, "ui.view='settings'; ui.sTab='app'; render()")
         first = ev(pg, "document.querySelector('[data-stab=app] h2').innerText.toLowerCase()")
-        check('Settings > App starts with the App version box', 'app version' in first, first)
+        check('Settings > App & account starts with the Account box', 'account' in first, first)
         ev(pg, "ui.view='prices'; ui.pCat='Labour'; render()")
         sp = ev(pg, "(()=>{const it=settings.qList.find(x=>x.type==='Labour'); it.supplier='Plumbase\\n01522 000000'; const r=QUO.rowsFromItems([it]); const back=QUO.itemsFromRows(r)[0]; return [r[0][r[0].length-1], r[1][r[1].length-1], back.supplier]})()")
         check('supplier details go out to and come back from the spreadsheet', sp == ['Supplier', 'Plumbase\n01522 000000', 'Plumbase\n01522 000000'], sp)

@@ -898,7 +898,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v202';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v203';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1023,13 +1023,12 @@ function renderHelp(v) {
     <button class="btn block ghost" data-act="helpBack">Back</button>`;
 }
 function renderSettings(v) {
+  { const old = { invoicing: 'money', quotes: 'money', reminders: 'messages', tools: 'app' }; if (old[ui.sTab]) ui.sTab = old[ui.sTab]; }
   const f = (k, l, o = {}) => `<label class="f"><span>${l}</span>${o.area ? `<textarea data-s="${k}" rows="3">${esc(settings[k])}</textarea>` : `<input data-s="${k}" value="${esc(k === 'sortCode' ? fmtSort(settings[k]) : settings[k])}" ${o.type ? `type="${o.type}"` : ''} ${o.mode ? `inputmode="${o.mode}"` : ''} autocomplete="off" ${o.maxlen ? `maxlength="${o.maxlen}"` : ''} ${o.cap ? `autocapitalize="${o.cap}"` : ''}>`}${o.hint ? `<small>${o.hint}</small>` : ''}</label>`;
   v.innerHTML = `
     <h1>Settings</h1>
-    <button class="btn block" data-act="help" style="margin-bottom:10px">Help guide</button>
-    <button class="btn block" data-act="news" style="margin-bottom:10px">What’s new</button>
-    <button class="btn block" data-act="feedback" style="margin-bottom:12px">Send feedback</button>
-    <div class="stabs grid">${[['business', 'Business'], ['invoicing', 'Invoicing'], ['quotes', 'Quotes'], ['reminders', 'Reminders'], ['calendar', 'Calendar'], ['tools', 'Tools'], ['app', 'App']].map(([k, l]) => `<button type="button" class="${(ui.sTab || 'business') === k ? 'on' : ''}" data-act="sTab" data-t="${k}">${l}</button>`).join('')}</div>
+    <div class="sethelp"><button class="btn" data-act="help">Help guide</button><button class="btn" data-act="news">What’s new</button><button class="btn" data-act="feedback">Feedback</button></div>
+    <div class="stabs grid five">${[['business', 'Business'], ['money', 'Money'], ['messages', 'Messages'], ['calendar', 'Calendar'], ['app', 'App &amp; account']].map(([k, l]) => `<button type="button" class="${(ui.sTab || 'business') === k ? 'on' : ''}" data-act="sTab" data-t="${k}">${l}</button>`).join('')}</div>
     <div data-stab="business" ${(ui.sTab || 'business') === 'business' ? '' : 'hidden'}>
     <h2>Business (printed on every certificate)</h2>
     <div class="card">
@@ -1040,15 +1039,7 @@ function renderSettings(v) {
       ${f('gasSafeReg', 'Gas Safe Register number')}
       ${workType() === 'gas' ? '' : f('oftecReg', 'OFTEC registration number')}
     </div>
-    <h2>Bank details (printed on invoices)</h2>
-    <div class="card">
-      <p class="small muted" style="margin-top:0">Anything filled in here is printed on unpaid invoices so the customer can pay by bank transfer, using the invoice number as the payment reference. Leave blank to print nothing.</p>
-      ${f('bankName', 'Bank')}
-      ${f('accName', 'Account name')}
-      ${f('sortCode', 'Sort code', { mode: 'numeric', maxlen: 8, hint: 'Six digits, for example 20-01-09' })}
-      ${f('accNo', 'Account number', { mode: 'numeric' })}
-    </div>
-    <h2>Your branding</h2>
+    <h2>Logo and record numbers</h2>
     <div class="card">
       <div style="text-align:center;margin-bottom:12px"><img src="${settings.logo || placeholderLogo(settings.businessName)}" alt="Company logo" style="height:110px;width:110px;border-radius:10px;${settings.logo && settings.logoBg !== 'clear' ? (settings.logoBg === 'black' ? 'background:#000' : 'background:#fff') : ''}"></div>
       <label class="btn block" style="text-align:center">${settings.logo ? 'Change company logo' : 'Upload company logo'}<input id="coLogo" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,.pdf" hidden></label>
@@ -1068,11 +1059,15 @@ function renderSettings(v) {
       ${f('engineerName', 'Engineer name')}
       ${f('gasSafeId', 'Gas Safe ID card number')}
     </div>
-    <h2>Saved defect wording</h2>
-    <div class="card">${CF.settingsHtml()}</div>
+    <h2>Services you offer</h2>
+    <div class="card">
+      <label class="f"><span>What work do you do?</span><select data-s="workType"><option value="gas" ${workType() === 'gas' ? 'selected' : ''}>Gas</option><option value="oil" ${workType() === 'oil' ? 'selected' : ''}>Oil</option><option value="both" ${workType() === 'both' ? 'selected' : ''}>Gas and oil</option></select><small class="muted">Oil shows the oil boiler record and oil tank check, and hides the gas safety record, gas boiler service and gas tools. Gas and oil shows everything. Records you have already made stay in your list.</small></label>
+      ${[['recGas', 'Gas safety record'], ['recService', 'Boiler service record'], ['recOil', 'Oil boiler service record'], ['recOilTank', 'Oil tank check'], ['recOilComp', 'Oil installation completion report'], ['recOilLord', 'Landlord oil check'], ['recOilWarn', 'Oil warning notice'], ['recOilRisk', 'Oil tank risk assessment'], ['recOilCond', 'Condensing boiler assessment'], ['recLeg', 'Legionella risk assessment'], ['recAc', 'Air conditioning commissioning'], ['recQuote', 'Boiler quote'], ['recGQuote', 'Quote for any job']].map(([k, l]) => `<label class="f"><span>${l}</span><select data-s="${k}"><option value="on" ${settings[k] === 'off' ? '' : 'selected'}>Show</option><option value="off" ${settings[k] === 'off' ? 'selected' : ''}>Hide</option></select></label>`).join('')}
+      <small class="muted">Hidden types leave the home screen and the “Forms for this visit” list. Records you have already made stay in your list. Turn one back on any time.</small>
     </div>
-    <div data-stab="invoicing" ${(ui.sTab || 'business') === 'invoicing' ? '' : 'hidden'}>
-    <h2>Invoice details</h2>
+    </div>
+    <div data-stab="money" ${(ui.sTab || 'business') === 'money' ? '' : 'hidden'}>
+    <h2>Invoice numbering and terms</h2>
     <div class="card">
       ${f('invPrefix', 'Invoice number prefix', { cap: 'characters', hint: 'For example INV-. Leave blank for numbers only.' })}
       ${f('invNext', 'Next invoice number', { mode: 'numeric', hint: 'Start at 1 or any number you like. It goes up by one each time an invoice is created.' })}
@@ -1085,6 +1080,14 @@ function renderSettings(v) {
       <div class="row"><div class="grow">${f('yearDay', 'Tax year starts: day', { mode: 'numeric', maxlen: 2 })}</div><div class="grow"><label class="f"><span>Month</span><select data-s="yearMonth">${['January','February','March','April','May','June','July','August','September','October','November','December'].map((mn, k) => `<option value="${k + 1}" ${String(+settings.yearMonth || 4) === String(k + 1) ? 'selected' : ''}>${mn}</option>`).join('')}</select></label></div></div>
       <p class="small muted" style="margin-top:-6px">The first day of your company’s tax / accounting year (6 April for sole traders; a company can be different). Used for “This tax year” and “Last tax year” in Print for accountant.</p>
       ${f('invFooter', 'Message at the bottom of invoices', { area: true })}
+    </div>
+    <h2>Bank details (printed on invoices)</h2>
+    <div class="card">
+      <p class="small muted" style="margin-top:0">Anything filled in here is printed on unpaid invoices so the customer can pay by bank transfer, using the invoice number as the payment reference. Leave blank to print nothing.</p>
+      ${f('bankName', 'Bank')}
+      ${f('accName', 'Account name')}
+      ${f('sortCode', 'Sort code', { mode: 'numeric', maxlen: 8, hint: 'Six digits, for example 20-01-09' })}
+      ${f('accNo', 'Account number', { mode: 'numeric' })}
     </div>
     <h2>Prices (used on invoices)</h2>
     <div class="card">
@@ -1102,14 +1105,6 @@ function renderSettings(v) {
       ${f('discValue', settings.discType === '%' ? 'Discount (%)' : 'Discount (£)', { mode: 'decimal', hint: 'Taken off automatically when two or three services are done on the same visit. You can still change it on each invoice.' })}
       <p class="small muted" style="margin:0">${(() => { const a = numOf(settings.priceGas), b = numOf(settings.priceSvc), c = numOf(settings.priceLeg), all = a + b + c; if (!all) return 'Set the prices above to see an example.'; const d = x => Math.min(settings.discType === '%' ? r2(x * numOf(settings.discValue) / 100) : numOf(settings.discValue), x); return `Example – all three services: ${money(all)} − ${money(d(all))} = <b style="color:var(--txt)">${money(all - d(all))}</b>`; })()}</p>
     </div>
-    <h2>Payment reminders</h2>
-    <div class="card">
-      <label class="f"><span>Ask me about overdue invoices</span><select data-s="invAsk"><option value="on" ${settings.invAsk === 'off' ? '' : 'selected'}>On</option><option value="off" ${settings.invAsk === 'off' ? 'selected' : ''}>Off</option></select><small>The day after an invoice passes its payment terms, the home screen asks if you want to send a reminder. Nothing is sent until you say Yes. If you say No, it asks if the invoice has been paid, or to ask again in 7 days.</small></label>
-      <label class="f"><span>Reminder wording</span><textarea data-s="invRemText" rows="8">${esc(settings.invRemText || INVREM_DEFAULT)}</textarea><small>Used for the payment reminder email. {name}, {number}, {amount}, {due}, {address}, {business} and {signoff} are filled in for you. The invoice is attached.</small></label>
-      <button class="btn block ghost" data-act="invRemReset">Put the original wording back</button>
-    </div>
-    </div>
-    <div data-stab="quotes" ${(ui.sTab || 'business') === 'quotes' ? '' : 'hidden'}>
     <h2>Quotes</h2>
     <div class="card">
       <div class="f"><span>Price list</span>
@@ -1117,20 +1112,46 @@ function renderSettings(v) {
         <button type="button" class="btn block" data-act="pricesOpen">Open price list</button></div>
       ${f('quoteIncluded', 'What is included as standard (one item per line)', { area: 1 })}
       ${f('quoteTerms', 'Terms shown on the quote (one per line)', { area: 1 })}
-      <label class="f"><span>Chase message wording</span><textarea data-s="qChaseText" rows="7">${esc(settings.qChaseText || QCHASE_DEFAULT)}</textarea><small>Used for the Chase by email and Chase by text buttons on a quote nobody has replied to. {name}, {address}, {ref}, {business} and {signoff} are filled in for you.</small></label>
-      <button class="btn block ghost" data-act="qChaseReset">Put the original wording back</button>
     </div>
     </div>
-    <div data-stab="reminders" ${(ui.sTab || 'business') === 'reminders' ? '' : 'hidden'}>
+    <div data-stab="messages" ${(ui.sTab || 'business') === 'messages' ? '' : 'hidden'}>
     <h2>Annual check reminders</h2>
     <div class="card">
       <label class="f"><span>Message wording</span><textarea data-s="remText" rows="4">${esc(settings.remText || REM_DEFAULT)}</textarea><small>Used for the Text, WhatsApp and Email buttons on the Annual checks due screen. {name}, {business}, {what}, {address} and {date} are filled in for you.</small></label>
       <label class="f"><span>Start listing checks</span><select data-s="remDays">${[['28', '4 weeks before they are due'], ['42', '6 weeks before they are due'], ['56', '8 weeks before they are due'], ['84', '12 weeks before they are due']].map(([k, l]) => `<option value="${k}" ${String(settings.remDays || '56') === k ? 'selected' : ''}>${l}</option>`).join('')}</select><small>A landlord gas safety check can be done up to 2 months early and keep the same yearly date.</small></label>
       <label class="f"><span>Send reminders automatically by email</span><select data-s="remAuto"><option value="off" ${settings.remAuto === 'on' ? '' : 'selected'}>Off</option><option value="on" ${settings.remAuto === 'on' ? 'selected' : ''}>On</option></select><small>When on, customers with an email address saved get an email about 8 weeks before their check is due, and again 2 weeks before. It comes from reminders@ombgas.com with your business name, and their replies come to <b>${esc(settings.email || 'your email in Settings')}</b>. Customers you mark Booked in, Not needed or Stop are skipped, and every email has an unsubscribe link. You need to be signed in so it can run.${settings.remAuto === 'on' && !settings.email ? ' <b style="color:var(--gold2)">Add your email address under Business first, or replies will have nowhere to go.</b>' : ''}</small></label>
-      <label class="f"><span>Send emails with</span><select data-s="mailApp"><option value="" ${!settings.mailApp ? 'selected' : ''}>Automatic (a Chromebook asks each time)</option><option value="gmail" ${settings.mailApp === 'gmail' ? 'selected' : ''}>Gmail on the web</option><option value="outlook" ${settings.mailApp === 'outlook' ? 'selected' : ''}>Outlook on the web</option><option value="default" ${settings.mailApp === 'default' ? 'selected' : ''}>My computer's mail program</option></select><small>For a laptop or Chromebook with no mail program set up. The customer's address, subject and message are filled in for you; attach the PDF from your Downloads folder. Phones use their normal share sheet.</small></label>
-      <label class="f"><span>Fill in the appliance details from last time</span><select data-s="autoCopy"><option value="on" ${settings.autoCopy === 'off' ? '' : 'selected'}>Automatically, when I pick the customer and address</option><option value="off" ${settings.autoCopy === 'off' ? 'selected' : ''}>Only when I tap the button</option></select><small>For gas safety, boiler service and oil service records at a property you have visited before. It copies the make, model, location and flue. Test readings and signatures are left blank.</small></label>
       ${settings.remAuto === 'on' ? '<button class="btn block" data-act="remTest">Send me a sample reminder</button><div style="height:8px"></div>' : ''}
       <button class="btn block ghost" data-act="remReset">Put the original wording back</button>
+    </div>
+    <h2>Overdue invoice reminders</h2>
+    <div class="card">
+      <label class="f"><span>Ask me about overdue invoices</span><select data-s="invAsk"><option value="on" ${settings.invAsk === 'off' ? '' : 'selected'}>On</option><option value="off" ${settings.invAsk === 'off' ? 'selected' : ''}>Off</option></select><small>The day after an invoice passes its payment terms, the home screen asks if you want to send a reminder. Nothing is sent until you say Yes. If you say No, it asks if the invoice has been paid, or to ask again in 7 days.</small></label>
+      <label class="f"><span>Reminder wording</span><textarea data-s="invRemText" rows="8">${esc(settings.invRemText || INVREM_DEFAULT)}</textarea><small>Used for the payment reminder email. {name}, {number}, {amount}, {due}, {address}, {business} and {signoff} are filled in for you. The invoice is attached.</small></label>
+      <button class="btn block ghost" data-act="invRemReset">Put the original wording back</button>
+    </div>
+    <h2>Quote chasing</h2>
+    <div class="card">
+      <label class="f"><span>Chase message wording</span><textarea data-s="qChaseText" rows="7">${esc(settings.qChaseText || QCHASE_DEFAULT)}</textarea><small>Used for the Chase by email and Chase by text buttons on a quote nobody has replied to. {name}, {address}, {ref}, {business} and {signoff} are filled in for you.</small></label>
+      <button class="btn block ghost" data-act="qChaseReset">Put the original wording back</button>
+    </div>
+    <h2>On my way text</h2>
+    <div class="card">
+      <label class="f"><span>Show the “I’m on my way” button on appointments</span><select data-s="calOtwOn"><option value="on" ${settings.calOtwOn === 'off' ? '' : 'selected'}>Yes</option><option value="off" ${settings.calOtwOn === 'off' ? 'selected' : ''}>No</option></select></label>
+      <label class="f"><span>Add my travel time to the text</span><select data-s="calOtwEta"><option value="on" ${settings.calOtwEta === 'off' ? '' : 'selected'}>Yes</option><option value="off" ${settings.calOtwEta === 'off' ? 'selected' : ''}>No</option></select><small>Adds “I will be with you in about 15 minutes”, or says sorry if you are running behind. Uses your phone’s location for the next job.</small></label>
+      <label class="f"><span>Message wording</span><textarea data-s="calOtw" rows="4">${esc(settings.calOtw || OTW_DEFAULT)}</textarea><small>Opens a text to the customer, ready to send. {name} {time} {address} {business} {eta} are filled in for you.</small></label>
+      <button class="btn block ghost" data-act="calOtwReset">Put the original wording back</button>
+    </div>
+    <h2>Appointment reminders</h2>
+    <div class="card">
+      <label class="f"><span>Show tomorrow’s appointments to remind</span><select data-s="calRemOn"><option value="on" ${settings.calRemOn === 'off' ? '' : 'selected'}>Yes</option><option value="off" ${settings.calRemOn === 'off' ? 'selected' : ''}>No</option></select><small>Tomorrow’s appointments show with Text and Email buttons. You tap send yourself. Nothing goes automatically.</small></label>
+      <label class="f"><span>Message wording</span><textarea data-s="calRemText" rows="4">${esc(settings.calRemText || CALREM_DEFAULT)}</textarea><small>{name} {time} {job} {address} {business} are filled in for you.</small></label>
+      <button class="btn block ghost" data-act="calRemReset">Put the original wording back</button>
+    </div>
+    <h2>Saved defect wording</h2>
+    <div class="card">${CF.settingsHtml()}</div>
+    <h2>Sending emails</h2>
+    <div class="card">
+      <label class="f"><span>Send emails with</span><select data-s="mailApp"><option value="" ${!settings.mailApp ? 'selected' : ''}>Automatic</option><option value="gmail" ${settings.mailApp === 'gmail' ? 'selected' : ''}>Gmail</option><option value="outlook" ${settings.mailApp === 'outlook' ? 'selected' : ''}>Outlook</option><option value="default" ${settings.mailApp === 'default' ? 'selected' : ''}>Mail program on this device</option></select><small>Automatic uses your phone's share sheet, and a Chromebook or laptop asks each time. Gmail and Outlook open on the web with the customer's address, subject and message filled in; attach the PDF from your Downloads folder.</small></label>
     </div>
     </div>
     <div data-stab="calendar" ${(ui.sTab || 'business') === 'calendar' ? '' : 'hidden'}>
@@ -1147,19 +1168,6 @@ function renderSettings(v) {
       <label class="f"><span>Calendar opens on</span><select data-s="calView">${[['today', 'Today (daily)'], ['week', 'This week'], ['month', 'This month']].map(([k, l]) => `<option value="${k}" ${(settings.calView || 'today') === k ? 'selected' : ''}>${l}</option>`).join('')}</select><small>The view you see first when you tap Calendar. You can still switch between Today, Week and Month.</small></label>
       <label class="f"><span>Usual appointment length</span><select data-s="calMins">${[['30', '30 minutes'], ['60', '1 hour'], ['90', '1½ hours'], ['120', '2 hours'], ['180', '3 hours']].map(([m, l]) => `<option value="${m}" ${String(settings.calMins || '60') === m ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <button class="btn block" data-act="calOpen">Open the calendar</button>
-    </div>
-    <h2>On my way text</h2>
-    <div class="card">
-      <label class="f"><span>Show the “I’m on my way” button on appointments</span><select data-s="calOtwOn"><option value="on" ${settings.calOtwOn === 'off' ? '' : 'selected'}>Yes</option><option value="off" ${settings.calOtwOn === 'off' ? 'selected' : ''}>No</option></select></label>
-      <label class="f"><span>Add my travel time to the text</span><select data-s="calOtwEta"><option value="on" ${settings.calOtwEta === 'off' ? '' : 'selected'}>Yes</option><option value="off" ${settings.calOtwEta === 'off' ? 'selected' : ''}>No</option></select><small>Adds “I will be with you in about 15 minutes”, or says sorry if you are running behind. Uses your phone’s location for the next job.</small></label>
-      <label class="f"><span>Message wording</span><textarea data-s="calOtw" rows="4">${esc(settings.calOtw || OTW_DEFAULT)}</textarea><small>Opens a text to the customer, ready to send. {name} {time} {address} {business} {eta} are filled in for you.</small></label>
-      <button class="btn block ghost" data-act="calOtwReset">Put the original wording back</button>
-    </div>
-    <h2>Appointment reminders</h2>
-    <div class="card">
-      <label class="f"><span>Show tomorrow’s appointments to remind</span><select data-s="calRemOn"><option value="on" ${settings.calRemOn === 'off' ? '' : 'selected'}>Yes</option><option value="off" ${settings.calRemOn === 'off' ? 'selected' : ''}>No</option></select><small>Tomorrow’s appointments show with Text and Email buttons. You tap send yourself. Nothing goes automatically.</small></label>
-      <label class="f"><span>Message wording</span><textarea data-s="calRemText" rows="4">${esc(settings.calRemText || CALREM_DEFAULT)}</textarea><small>{name} {time} {job} {address} {business} are filled in for you.</small></label>
-      <button class="btn block ghost" data-act="calRemReset">Put the original wording back</button>
     </div>
     <h2>Other jobs</h2>
     <div class="card">
@@ -1182,14 +1190,9 @@ function renderSettings(v) {
       <button class="btn block" data-act="calExportCsv">Export as a spreadsheet</button>
     </div>` : ''}
     </div>
-    <div data-stab="tools" ${(ui.sTab || 'business') === 'tools' ? '' : 'hidden'}>
-    <h2>Tools</h2>
-    <div class="card">
-      ${[['toolGas', 'Gas rate calculator'], ['toolPipe', 'Gas pipe sizing'], ['toolIv', 'Tightness test volume'], ['toolHeat', 'Heat loss and radiator sizing'], ...(typeof OT_TOOLS !== 'undefined' && workType() !== 'gas' ? OT_TOOLS.map(([k, l]) => ['tool' + k[0].toUpperCase() + k.slice(1), l]) : [])].map(([k, l]) => `<label class="f"><span>${l}</span><select data-s="${k}"><option value="on" ${settings[k] === 'off' ? '' : 'selected'}>Show</option><option value="off" ${settings[k] === 'off' ? 'selected' : ''}>Hide</option></select></label>`).join('')}
-      <small class="muted">Hidden tools disappear from the Tools list. Hide all three and the Tools button leaves the home screen.</small>
-    </div>
-    </div>
     <div data-stab="app" ${(ui.sTab || 'business') === 'app' ? '' : 'hidden'}>
+    ${CLOUD.on ? accountCard() : ''}
+    ${installCard(true)}
     <h2>App version</h2>
     <div class="card">
       <p class="small muted" style="margin-top:0">This phone is running <b id="verHere" style="color:var(--txt)">${APP_VERSION}</b> · newest online: <b id="verNew" style="color:var(--txt)">checking…</b></p>
@@ -1201,11 +1204,14 @@ function renderSettings(v) {
     <div class="card">
       <label class="f"><span>Screen colours</span><select data-s="theme"><option value="auto" ${(settings.theme || 'auto') === 'auto' ? 'selected' : ''}>Match my phone</option><option value="dark" ${settings.theme === 'dark' ? 'selected' : ''}>Dark</option><option value="light" ${settings.theme === 'light' ? 'selected' : ''}>Light (easier in bright sun)</option></select></label>
     </div>
-    <h2>Services to show</h2>
+    <h2>Records</h2>
     <div class="card">
-      <label class="f"><span>What work do you do?</span><select data-s="workType"><option value="gas" ${workType() === 'gas' ? 'selected' : ''}>Gas</option><option value="oil" ${workType() === 'oil' ? 'selected' : ''}>Oil</option><option value="both" ${workType() === 'both' ? 'selected' : ''}>Gas and oil</option></select><small class="muted">Oil shows the oil boiler record and oil tank check, and hides the gas safety record, gas boiler service and gas tools. Gas and oil shows everything. Records you have already made stay in your list.</small></label>
-      ${[['recGas', 'Gas safety record'], ['recService', 'Boiler service record'], ['recOil', 'Oil boiler service record'], ['recOilTank', 'Oil tank check'], ['recOilComp', 'Oil installation completion report'], ['recOilLord', 'Landlord oil check'], ['recOilWarn', 'Oil warning notice'], ['recOilRisk', 'Oil tank risk assessment'], ['recOilCond', 'Condensing boiler assessment'], ['recLeg', 'Legionella risk assessment'], ['recAc', 'Air conditioning commissioning'], ['recQuote', 'Boiler quote'], ['recGQuote', 'Quote for any job']].map(([k, l]) => `<label class="f"><span>${l}</span><select data-s="${k}"><option value="on" ${settings[k] === 'off' ? '' : 'selected'}>Show</option><option value="off" ${settings[k] === 'off' ? 'selected' : ''}>Hide</option></select></label>`).join('')}
-      <small class="muted">Hidden types leave the home screen and the “Forms for this visit” list. Records you have already made stay in your list. Turn one back on any time.</small>
+      <label class="f"><span>Fill in the appliance details from last time</span><select data-s="autoCopy"><option value="on" ${settings.autoCopy === 'off' ? '' : 'selected'}>Automatically</option><option value="off" ${settings.autoCopy === 'off' ? 'selected' : ''}>Only when I tap</option></select><small>Automatically means when you pick the customer and address. Applies to gas safety, boiler service and oil service records at a property you have visited before. It copies the make, model, location and flue. Test readings and signatures are left blank.</small></label>
+    </div>
+    <h2>Tools</h2>
+    <div class="card">
+      ${[['toolGas', 'Gas rate calculator'], ['toolPipe', 'Gas pipe sizing'], ['toolIv', 'Tightness test volume'], ['toolHeat', 'Heat loss and radiator sizing'], ...(typeof OT_TOOLS !== 'undefined' && workType() !== 'gas' ? OT_TOOLS.map(([k, l]) => ['tool' + k[0].toUpperCase() + k.slice(1), l]) : [])].map(([k, l]) => `<label class="f"><span>${l}</span><select data-s="${k}"><option value="on" ${settings[k] === 'off' ? '' : 'selected'}>Show</option><option value="off" ${settings[k] === 'off' ? 'selected' : ''}>Hide</option></select></label>`).join('')}
+      <small class="muted">Hidden tools disappear from the Tools list. Hide all three and the Tools button leaves the home screen.</small>
     </div>
     <h2>Backup</h2>
     <div class="card">
@@ -1229,8 +1235,6 @@ function renderSettings(v) {
       <p class="small muted" style="margin-top:0">${SAMPLE.has() ? 'Sample customers and example forms are on this phone, marked “Sample”. Open them to see how the forms and PDFs look.' : 'Adds two made-up customers and an example of every form so you can see how they look.'}</p>
       ${SAMPLE.has() ? '<button class="btn block" data-act="sampleOff">Remove sample data</button>' : '<button class="btn block" data-act="sampleOn">Add sample data</button>'}
     </div>
-    ${installCard(true)}
-    ${CLOUD.on ? accountCard() : ''}
     </div>
 `;
 }
@@ -1697,14 +1701,14 @@ async function sendSel() {
 }
 /* open the email app without leaving the page (a plain location change leaves a blank screen in some browsers, e.g. Firefox with no mail app set) */
 const mailAddr = a => encodeURIComponent(String(a || '').trim()).replace(/%40/g, '@').replace(/%2C/g, ',');
-/* which record types show on the home screen and in the visit picker (Settings → Business → Services to show) */
+/* which record types show on the home screen and in the visit picker (Settings → Business → Services you offer) */
 const REC_KEYS = { gas: 'recGas', service: 'recService', legionella: 'recLeg', aircon: 'recAc', oil: 'recOil', oiltank: 'recOilTank', oilcomp: 'recOilComp', oillord: 'recOilLord', oilwarn: 'recOilWarn', oilrisk: 'recOilRisk', oilcond: 'recOilCond', quote: 'recQuote', gquote: 'recGQuote' };
 /* what work do you do: Gas (default), Oil, or Both. Oil leaves out the gas-only forms; Gas leaves out the oil forms. */
 const workType = () => (settings.workType === 'oil' || settings.workType === 'both' ? settings.workType : 'gas');
 const GAS_ONLY = ['gas', 'service', 'commission'], OIL_ONLY = ['oil', 'oiltank', ...OFORM.TYPES];
 const recOn = t => (workType() === 'oil' && GAS_ONLY.includes(t)) || (workType() === 'gas' && OIL_ONLY.includes(t)) ? false : settings[REC_KEYS[t]] !== 'off';
 const REC_HOME = [['gas', '+ New Gas Safety Record'], ['service', '+ New Boiler Service Record'], ['legionella', '+ New Legionella Risk Assessment'], ['aircon', '+ New Air Conditioning Commissioning'], ['oil', '+ New Oil Boiler Service Record'], ['oiltank', '+ New Oil Tank Check'], ['oilcomp', '+ New Oil Installation Completion'], ['oillord', '+ New Landlord Oil Check'], ['oilwarn', '+ New Oil Warning Notice'], ['oilrisk', '+ New Oil Tank Risk Assessment'], ['oilcond', '+ New Condensing Boiler Assessment'], ['quote', '+ New Boiler Quote'], ['gquote', '+ New Quote (any job)']];
-/* wording of the quote chase email / text (editable in Settings → Quotes). {name} {address} {ref} {business} {signoff} are filled in */
+/* wording of the quote chase email / text (editable in Settings → Messages → Quote chasing). {name} {address} {ref} {business} {signoff} are filled in */
 const QCHASE_DEFAULT = 'Hi {name},\n\nI just wanted to check that you received my quote for your new boiler at {address}. If you have any questions, or would like to go ahead, just let me know and I will arrange a date for the installation.\n\nKind regards,\n{signoff}';
 function chaseText(q) {
   const first = greetName(q.customer.name), map = { name: first, address: q.jobAddress ? String(q.jobAddress).replace(/\s*\n+\s*/g, ', ') : 'your property', ref: q.ref || '', business: settings.businessName || '', signoff: signOff() };
@@ -1747,7 +1751,7 @@ function openMail(url, plain) {
       <li>Attach the PDF: click the <b>paperclip</b> / <b>Attach</b> button and pick it from your <b>Downloads</b> folder (the newest file), or just drag it into the email${mac ? ' – you can drag it straight from the download arrow at the top right of Chrome' : ''}.</li>
       <li>Check it, then press Send.</li>
     </ol>
-    <p class="small muted" style="margin-top:0">${mac ? 'On a Mac, open Finder → Downloads. If Mail is not your usual email program, change it in Mail → Settings → Default email reader.' : isCros ? 'On a Chromebook the PDF is in the Files app under Downloads. You can pick your email once in Settings → Reminders so this step is skipped.' : 'If the wrong program opens, go to Windows Settings → Apps → Default apps → Email and pick the one you use.'}</p>
+    <p class="small muted" style="margin-top:0">${mac ? 'On a Mac, open Finder → Downloads. If Mail is not your usual email program, change it in Mail → Settings → Default email reader.' : isCros ? 'On a Chromebook the PDF is in the Files app under Downloads. You can pick your email once in Settings → Messages → Sending emails so this step is skipped.' : 'If the wrong program opens, go to Windows Settings → Apps → Default apps → Email and pick the one you use.'}</p>
 `;
   const esc2 = u => u.replace(/&/g, '&amp;').replace(/"/g, '&quot;'), pref = settings.mailApp || '';
   const btn = (k, label, href) => `<a class="btn ${pref === k || (!pref && k === 'gmail') ? 'gold' : 'ghost'} block" style="text-align:center;text-decoration:none;margin-bottom:8px" href="${esc2(href)}" rel="noopener" target="_blank" data-native="1" data-mk="${k}">${label}</a>`;

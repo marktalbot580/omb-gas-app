@@ -7,7 +7,7 @@ const BK_TYPES = [['gas', 'Gas safety check'], ['service', 'Boiler service'], ['
 const calOn = () => settings.calOn !== 'off';
 /* a UK mobile number (07… or +44 7…): only these get the on my way text */
 const isMobileNo = p => /^(?:\+?44|0)7\d{9}$/.test(String(p || '').replace(/\(0\)/, '').replace(/[^\d+]/g, ''));
-/* the "on my way" text: {name} {time} {address} {business} are filled in (wording editable in Settings → Calendar) */
+/* the "on my way" text: {name} {time} {address} {business} are filled in (wording editable in Settings → Messages → On my way text) */
 const OTW_DEFAULT = 'Hi {name}, just to let you know I am on my way for your {time} appointment at {address}. {eta}\n{business}';
 /* travel time sentence for the on my way text, from the phone-location drive time remembered for this booking */
 function otwEta(b) {
