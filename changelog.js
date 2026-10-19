@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v207', items: ['PDF fix: on the gas safety, boiler service, legionella, air conditioning and commissioning records, the date under the engineer\u2019s signature was sitting outside the box. The signature area is a little shorter so the name, Gas Safe ID and date all sit inside.'] },
   { v: 'v206', items: ['Extra security: the app now tells the browser exactly which sites it may talk to and which scripts it may run, so nothing unexpected can be injected into a page. You will not notice any difference.'] },
   { v: 'v205', items: ['On a new quote, the property heading now says \u201cWork address\u201d instead of \u201cProperty inspected\u201d.'] },
   { v: 'v204', items: ['Better on a laptop: on a wide screen the menu moves to a panel down the left side, the page is wider, buttons and rows highlight when you hover over them, and keyboard focus is clearer. Phones and tablets look exactly as before. Forms you fill in keep the narrower column so they stay easy to read.', 'Price list now sits at the top of Settings \u2192 Money, on its own, because quotes and invoices both use it (on an invoice tap \u201c+ Add from my price list\u201d).'] },

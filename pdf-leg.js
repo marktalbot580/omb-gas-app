@@ -199,7 +199,7 @@ async function drawLegPdf(rec, s, lv) {
 
   /* sign-off */
   const sh = Math.round(30 * Math.max(P, 0.8) * 10) / 10 + 2; ensure(sh + 1);
-  const sw = (CW - 2 * g3) / 3, sigH = sh - 17;
+  const sw = (CW - 2 * g3) / 3, sigH = sh - 21;
   const sigBox = (x, title, sigImg, lines, noOne) => {
     bar(title, x, sw, y); doc.setDrawColor(...LINE); doc.rect(x, y + BAR, sw, sh - BAR);
     if (sigImg) doc.addImage(sigImg, 'PNG', x + 3, y + BAR + 1.2, 50, sigH * 0.95, undefined, 'FAST');
