@@ -898,7 +898,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v204';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v205';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1494,7 +1494,7 @@ function stepCustomer() {
       ${txt('customer.email', 'Email (to send the PDF)', { type: 'email', mode: 'email', cap: 'none' })}
       ${addrBox('rec', 'customer.billing', 'Client / billing address')}
     </div>
-    <h2>Property inspected</h2>
+    <h2>${isQuo(r) ? 'Work address' : 'Property inspected'}</h2>
     ${cu && (cu.properties || []).length > 5 ? `<input class="search" id="propSearch" placeholder="Search this customer’s ${cu.properties.length} properties – street, town or postcode" autocomplete="off"><div id="propList"></div>`
       : cu && (cu.properties || []).length ? `<div class="chips">${cu.properties.map((p, i) => `<button class="chip" data-act="pickProp" data-i="${i}">${esc(addrFirst(p))}</button>`).join('')}</div>` : ''}
     <div class="card">
