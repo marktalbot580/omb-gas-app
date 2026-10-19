@@ -1,0 +1,1 @@
+(function(){try{var t=(JSON.parse(localStorage.getItem("omb_settings"))||{}).theme||"auto";if(t==="auto")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=t}catch(e){}})()

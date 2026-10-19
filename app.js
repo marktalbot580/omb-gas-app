@@ -898,7 +898,8 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
     <div style="height:10px"></div><button class="btn ghost block" data-nav="customers">Back</button>`;
 }
 
-const APP_VERSION = 'v205';   // keep the same as CACHE in sw.js
+document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
+const APP_VERSION = 'v206';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -947,7 +948,7 @@ function instPopHtml() {
   const how = _instEvt0() ? '<button class="btn gold block" data-act="installApp">Install app</button>'
     : ios ? '<p class="small">In <b>Safari</b> tap the <b>Share</b> button (square with an arrow), then <b>Add to Home Screen</b>.</p>'
     : '<p class="small">Tap your browser menu (the three dots), then <b>Install app</b> or <b>Add to Home screen</b>.</p>';
-  return `<div class="instbox"><div class="insthead"><img src="icon-192.png" alt="" onerror="this.style.display='none'"><div><b>Install this app</b><span>Opens like a normal app and works with no signal</span></div></div>${how}<div class="instrow"><button class="btn ghost" data-act="laterInstall">${_instEvt0() ? 'Not now' : 'Got it'}</button><button class="btn ghost" data-act="neverInstall">Don’t ask again</button></div></div>`;
+  return `<div class="instbox"><div class="insthead"><img src="icon-192.png" alt="" data-hideerr="1"><div><b>Install this app</b><span>Opens like a normal app and works with no signal</span></div></div>${how}<div class="instrow"><button class="btn ghost" data-act="laterInstall">${_instEvt0() ? 'Not now' : 'Got it'}</button><button class="btn ghost" data-act="neverInstall">Don’t ask again</button></div></div>`;
 }
 function _instEvt0() { return !!_installEvt; }
 function instPopShow() {

@@ -17,7 +17,7 @@ def check(name, ok, info=''):
 
 
 def fresh(browser, mobile=False):
-    ctx = browser.new_context(viewport={'width': 390, 'height': 800}, accept_downloads=True,
+    ctx = browser.new_context(viewport={'width': 390, 'height': 800}, accept_downloads=True, bypass_csp=True,
                               user_agent='Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile/15E148' if mobile else None)
     pg = ctx.new_page()
     errs = []
@@ -1163,6 +1163,17 @@ def run():
         except Exception as e:
             ok = False
         check('app opens with no signal (service worker cache)', ok)
+        ctx.close()
+
+        # ---------- 13. page security policy: the app runs with it and nothing is blocked ----------
+        ctx = b.new_context(viewport={'width': 390, 'height': 800})
+        pg = ctx.new_page(); csp = []
+        pg.on('console', lambda m: csp.append(m.text[:160]) if 'Content Security Policy' in m.text or 'Refused to' in m.text else None)
+        pg.goto(URL); pg.wait_for_timeout(2500)
+        check('page has a content security policy that limits scripts to this site', "script-src 'self'" in (pg.locator('meta[http-equiv="Content-Security-Policy"]').get_attribute('content') or ''))
+        check('app starts under the security policy (menu drawn)', pg.locator('#nav button').count() >= 5)
+        check('theme script (now a file) still sets the theme', pg.locator('html[data-theme]').count() == 1)
+        check('nothing blocked by the security policy on start-up', not csp, csp)
         ctx.close()
 
         b.close()
