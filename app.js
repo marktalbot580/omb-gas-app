@@ -1067,6 +1067,12 @@ function renderSettings(v) {
     </div>
     </div>
     <div data-stab="money" ${(ui.sTab || 'business') === 'money' ? '' : 'hidden'}>
+    <h2>Price list</h2>
+    <div class="card">
+      <div class="f"><span>Your prices</span>
+        <p class="small muted" style="margin:0 0 8px">${(settings.qList || []).length ? (settings.qList.length + ' items.') : 'Not set up yet.'} Boilers, flue kits, copper, fittings, thermostats and labour, each with your cost and mark-up. Quotes and invoices both pick from it. Your cost and profit are only ever shown to you.</p>
+        <button type="button" class="btn block" data-act="pricesOpen">Open price list</button></div>
+    </div>
     <h2>Invoice numbering and terms</h2>
     <div class="card">
       ${f('invPrefix', 'Invoice number prefix', { cap: 'characters', hint: 'For example INV-. Leave blank for numbers only.' })}
@@ -1107,9 +1113,6 @@ function renderSettings(v) {
     </div>
     <h2>Quotes</h2>
     <div class="card">
-      <div class="f"><span>Price list</span>
-        <p class="small muted" style="margin:0 0 8px">${(settings.qList || []).length ? (settings.qList.length + ' items.') : 'Not set up yet.'} Boilers, flue kits, copper, fittings, thermostats and labour, each with your cost and mark-up. Quotes pick from it and show your profit to you only.</p>
-        <button type="button" class="btn block" data-act="pricesOpen">Open price list</button></div>
       ${f('quoteIncluded', 'What is included as standard (one item per line)', { area: 1 })}
       ${f('quoteTerms', 'Terms shown on the quote (one per line)', { area: 1 })}
     </div>
@@ -1922,7 +1925,7 @@ function renderPrices(v) {
       <button type="button" class="btn ghost" data-act="pDel" data-id="${x.id}">Delete this item</button></div>` : ''}</div>`;
   };
   v.innerHTML = `<h1>Price list</h1>
-    <p class="small muted" style="margin-top:0">Add your cost and mark-up and the app works out the price you quote. Tap an item to change it.</p>
+    <p class="small muted" style="margin-top:0">Add your cost and mark-up and the app works out the price you quote or invoice. Tap an item to change it.</p>
     <div class="card" style="margin-bottom:14px"><label class="f" style="margin-bottom:0"><span>Standard mark-up on everything (%)</span><input data-s="qMarkupDef" inputmode="decimal" value="${esc(settings.qMarkupDef)}"></label></div>
     ${cats.map(c => {
       const open = c === cat, n = list.filter(x => x.type === c).length;
@@ -1975,7 +1978,7 @@ async function qExport() {
     if (!(settings.qList && settings.qList.length)) QUO.parseItems(settings.qItemsText).forEach(x => items.push({ type: 'Other', make: '', name: x.name, kind: '', kw: '', warranty: '', cost: '', price: x.price }));
     const ws = X.utils.aoa_to_sheet(QUO.rowsFromItems(items));
     ws['!cols'] = [{ wch: 22 }, { wch: 16 }, { wch: 46 }, { wch: 13 }, { wch: 6 }, { wch: 10 }, { wch: 8 }, { wch: 12 }, { wch: 10 }, { wch: 14 }];
-    const help = X.utils.aoa_to_sheet([['How to use this price list'], ['1. On the Price list sheet, fill in My cost (what you pay) and Mark-up %. The app works out the sale price (before VAT). Only type a Sale price if you want a fixed price instead.'], ['2. Category: Boiler, Flue, Labour, Copper & pipe, Fittings, Controls & thermostats and so on, or make up your own. Boiler type: Combination, System or Heat only.'], ['3. Add your own rows at the bottom. Delete any you do not use.'], ['4. Save the file, then in the app go to Settings, Quotes, Import price list.'], ['Your cost prices are only ever shown to you. They never appear on a customer quote.']]);
+    const help = X.utils.aoa_to_sheet([['How to use this price list'], ['1. On the Price list sheet, fill in My cost (what you pay) and Mark-up %. The app works out the sale price (before VAT). Only type a Sale price if you want a fixed price instead.'], ['2. Category: Boiler, Flue, Labour, Copper & pipe, Fittings, Controls & thermostats and so on, or make up your own. Boiler type: Combination, System or Heat only.'], ['3. Add your own rows at the bottom. Delete any you do not use.'], ['4. Save the file, then in the app go to Settings, Money, Price list, Import price list.'], ['Your cost prices are only ever shown to you. They never appear on a customer quote.']]);
     help['!cols'] = [{ wch: 110 }];
     const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Price list'); X.utils.book_append_sheet(wb, help, 'How to use');
     const out = X.write(wb, { bookType: 'xlsx', type: 'array' });
