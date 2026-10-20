@@ -1195,6 +1195,19 @@ def run():
         check('auto jobs sharing a placeholder time are not flagged; auto vs fixed, fixed vs fixed and differently timed auto jobs still clash', r == [False, True, True, True], r)
         ctx.close()
 
+        # ---------- 12s. choice of maps app ----------
+        ctx, pg, errs = fresh(b)
+        r = ev(pg, """(()=>{ const a='1 Test Road\\nLincoln\\nLN1 1AA'; const out=[]; settings.mapApp=''; out.push(mapsUrl(a)); settings.mapApp='apple'; out.push(mapsUrl(a)); settings.mapApp='waze'; out.push(mapsUrl(a));
+          out.push(routeUrl([{address:a},{address:'2 Other St, Lincoln'}])); settings.mapApp='google'; out.push(routeUrl([{address:a},{address:'2 Other St, Lincoln'}])); return out; })()""")
+        check('Navigate uses Google Maps by default', r[0].startswith('https://www.google.com/maps/dir/') and 'LN1%201AA' in r[0], r[0])
+        check('Navigate can use Apple Maps', r[1].startswith('https://maps.apple.com/?dirflg=d&daddr=') and 'LN1%201AA' in r[1], r[1])
+        check('Navigate can use Waze', r[2].startswith('https://waze.com/ul?navigate=yes&q=') and 'LN1%201AA' in r[2], r[2])
+        check('Start route opens the first job in Waze but plans the whole day in Google Maps', r[3].startswith('https://waze.com/ul') and 'waypoints=' in r[4], r[3:])
+        ev(pg, "ui.view='settings'; ui.sTab='app'; render()")
+        check('Settings > App & account has a maps app choice', ev(pg, "!!document.querySelector('select[data-s=mapApp]')"))
+        check('no page errors in maps choice', not errs, errs)
+        ctx.close()
+
         # ---------- 13. page security policy: the app runs with it and nothing is blocked ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page(); csp = []

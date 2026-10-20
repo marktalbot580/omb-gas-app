@@ -899,7 +899,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v211';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v212';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1208,6 +1208,10 @@ function renderSettings(v) {
     <div class="card">
       <label class="f"><span>Screen colours</span><select data-s="theme"><option value="auto" ${(settings.theme || 'auto') === 'auto' ? 'selected' : ''}>Match my phone</option><option value="dark" ${settings.theme === 'dark' ? 'selected' : ''}>Dark</option><option value="light" ${settings.theme === 'light' ? 'selected' : ''}>Light (easier in bright sun)</option></select></label>
     </div>
+    <h2>Navigation</h2>
+    <div class="card">
+      <label class="f"><span>Maps app for directions</span><select data-s="mapApp"><option value="" ${!settings.mapApp || settings.mapApp === 'google' ? 'selected' : ''}>Google Maps</option><option value="apple" ${settings.mapApp === 'apple' ? 'selected' : ''}>Apple Maps</option><option value="waze" ${settings.mapApp === 'waze' ? 'selected' : ''}>Waze</option></select><small>Used by every Navigate button. Apple Maps and Waze take one address at a time, so Start route on the Route sheet opens the first job; Google Maps plans the whole day.</small></label>
+    </div>
     <h2>Records</h2>
     <div class="card">
       <label class="f"><span>Fill in the appliance details from last time</span><select data-s="autoCopy"><option value="on" ${settings.autoCopy === 'off' ? '' : 'selected'}>Automatically</option><option value="off" ${settings.autoCopy === 'off' ? 'selected' : ''}>Only when I tap</option></select><small>Automatically means when you pick the customer and address. Applies to gas safety, boiler service and oil service records at a property you have visited before. It copies the make, model, location and flue. Test readings and signatures are left blank.</small></label>
@@ -1494,8 +1498,14 @@ function nameSugHtml(r, q, act = 'pickCustId') {
   if (!hits.length) return '';
   return `<div class="small muted" style="margin:6px 0 4px">Existing customers – tap one to fill in their details:</div>` + hits.slice(0, 6).map(c => `<button type="button" class="item cpick" data-act="${act}" data-id="${c.id}"><div class="t">${c.fav ? '<span style="color:var(--bad)">♥</span> ' : ''}${esc(c.name)}</div><div class="s">${esc([c.phone, ((c.properties || [])[0] || c.billing || '').split('\n')[0]].filter(Boolean).join(' · ') || 'No details saved')}</div></button>`).join('') + (hits.length > 6 ? `<p class="small muted" style="margin:4px 0">${hits.length - 6} more – keep typing to narrow it down.</p>` : '');
 }
-/* "Navigate": opens Google Maps (the Maps app on a phone) with driving directions to the address */
-const mapsUrl = a => 'https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=' + encodeURIComponent(String(a || '').replace(/\s*\n\s*/g, ', ').trim());
+/* "Navigate": opens the maps app chosen in Settings (Google Maps by default; the app itself on a phone) with driving directions to the address */
+const mapAddr = a => String(a || '').replace(/\s*\n\s*/g, ', ').trim();
+const mapsUrl = a => {   // the maps app is chosen in Settings > App & account > Navigation
+  const t = encodeURIComponent(mapAddr(a)), app = settings.mapApp;
+  if (app === 'apple') return 'https://maps.apple.com/?dirflg=d&daddr=' + t;
+  if (app === 'waze') return 'https://waze.com/ul?navigate=yes&q=' + t;
+  return 'https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=' + t;
+};
 const navBtnHtml = a => String(a || '').trim().length >= 4 ? `<a class="btn block" style="text-align:center;text-decoration:none;margin-top:10px" href="${esc(mapsUrl(a))}" target="_blank" rel="noopener">&#128205; Navigate to this property</a>` : '';
 function stepCustomer() {
   const r = ui.rec, cu = customers.find(c => c.id === r.customerId);

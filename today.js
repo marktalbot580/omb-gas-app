@@ -153,6 +153,7 @@ document.addEventListener('click', e => {
 const routeDay = off => { const d = off ? addDays(localISO(), off) : localISO(); return off ? bkOn(d).filter(b => b.status !== 'done') : nextBookings(); };
 const routeStops = off => routeDay(off).filter(b => String(b.address || '').trim().length >= 4);
 function routeUrl(list) {
+  if (settings.mapApp === 'apple' || settings.mapApp === 'waze') return mapsUrl(list[0].address);   // these apps take one stop at a time
   const a = list.map(b => String(b.address).replace(/\s*\n\s*/g, ', ').trim()), last = a[a.length - 1], via = a.slice(0, -1).slice(0, 9);
   return 'https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=' + encodeURIComponent(last) + (via.length ? '&waypoints=' + encodeURIComponent(via.join('|')) : '');
 }
@@ -176,7 +177,7 @@ function showRoute(off) {
     ${list.length >= 2 && all.some(b => hasPostcode(b.address)) ? `<button type="button" class="btn gold block" data-act="planDay" data-day="${off}" style="margin-top:10px">Plan my day</button><p class="small muted" style="margin:6px 0 0">Puts the jobs nearest to your start first and the furthest last, gives each its time slot and adds the drive between jobs. You check it before anything changes.</p>` : ''}
     ${all.filter(b => isMobileNo(b.phone) && !b.etaAt).length > 1 ? '<button type="button" class="btn block" data-act="etaNext" style="margin-top:10px">Text the next customer (' + all.filter(b => isMobileNo(b.phone) && !b.etaAt).length + ' left)</button>' : ''}
     ${list.length >= 2 ? `<button type="button" class="btn block" data-act="routeTimes" data-day="${off}" style="margin-top:10px">Show drive times</button><div id="routeTot" class="small muted" style="margin-top:6px"></div>` : ''}
-    ${list.length >= 2 ? `<a class="btn gold block" style="text-align:center;text-decoration:none;margin-top:10px" href="${esc(routeUrl(list))}" target="_blank" rel="noopener">Start route</a>` : ''}
+    ${list.length >= 2 ? `<a class="btn gold block" style="text-align:center;text-decoration:none;margin-top:10px" href="${esc(routeUrl(list))}" target="_blank" rel="noopener">${settings.mapApp === 'apple' || settings.mapApp === 'waze' ? 'Navigate to the first job' : 'Start route'}</a>` : ''}
     <button type="button" class="btn block" data-act="routeClose" style="margin-top:8px">Close</button></div>`;
   document.body.appendChild(d);
   if (list.length >= 2) routeTimes(off, null);

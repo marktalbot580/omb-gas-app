@@ -102,7 +102,7 @@ const HELP = [
 <li>Tap <b>+ Customer</b> to add one.</li></ul>
 <p>Tap a customer to open their card. It has three tabs:</p>
 <ul><li><b>Customer:</b> their name, phone (with a Call button), email, billing address and property addresses. Start forms or tools for them from here.</li>
-<li><b>Navigate:</b> one tap on a property opens it in maps for directions.</li>
+<li><b>Navigate:</b> one tap on a property opens it in your maps app for directions. Choose Google Maps, Apple Maps or Waze in Settings → App &amp; account → Navigation.</li>
 <li><b>Previous jobs:</b> their upcoming appointments, saved reports, and every job you have done for them.</li></ul>
 <p>Deleting a customer does not delete their past records.</p>` },
 
