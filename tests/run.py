@@ -1231,6 +1231,21 @@ def run():
         check('auto schedule does not ask "book anyway"', r['ok'] is True and r['asked'] is False, r)
         ctx.close()
 
+        # ---------- 12u. saving a booking with Auto schedule arranges that day by distance ----------
+        ctx, pg, errs = fresh(b)
+        r = ev(pg, """(async()=>{ settings.address='1 Test Road\\nLincoln\\nLN1 2BN'; settings.routeStart=''; settings.dayStart='09:00'; settings.planOrder='near'; saveSettings();
+          const D=addDays(localISO(),3); bookings.length=0; const pcAddr=pc=>'1 St\\nLincoln\\n'+pc;
+          bookings.push({id:'fx',date:D,time:'09:00',mins:60,name:'Fixed',address:pcAddr('LN5 5AC'),types:['service'],status:'booked',auto:false});
+          CLOUD.signedIn=()=>true; const M={'LN9 9AA':30,'LN1 1AB':10};
+          CLOUD.post=async(n,b)=>{ const [f,t]=b.stops.map(s=>s.split(',')[0]); return {legs:[{mins:f==='LN1 2BN'?(M[t]||10):5,miles:3}]}; };
+          const add=async(id,pc)=>{ ui.book={id,date:D,time:'09:00',mins:60,name:id,address:pcAddr(pc),types:['service'],status:'booked',auto:true,phone:'',email:''}; bkSave(); await new Promise(r=>setTimeout(r,600)); };
+          await add('far','LN9 9AA'); await add('near','LN1 1AB');
+          const tm=id=>bookings.find(b=>b.id===id).time; return {fx:tm('fx'),near:tm('near'),far:tm('far')}; })()""")
+        check('Auto schedule arranges the day by distance when a booking is saved', r['near'] < r['far'] and r['near'] >= '10:00', r)
+        check('Auto schedule leaves a fixed-time job where it was', r['fx'] == '09:00', r)
+        check('no page errors in Auto schedule', not errs, errs)
+        ctx.close()
+
         # ---------- 13. page security policy: the app runs with it and nothing is blocked ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page(); csp = []

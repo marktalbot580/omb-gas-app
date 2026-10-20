@@ -185,7 +185,9 @@ function bkSave() {
   { const cu = customers.find(x => x.id === B.customerId), ad = String(B.address || '').trim(); if (cu && ad && !(cu.properties || []).includes(ad)) { (cu.properties = (cu.properties || []).filter(Boolean)).push(ad); cu.updated = Date.now(); cu._dirty = true; saveCustomers(); } }
   B.updated = Date.now(); const i = bookings.findIndex(x => x.id === B.id);
   if (i >= 0) bookings[i] = { ...B }; else bookings.push({ ...B });
-  saveBookings(); syncAll(); return true;
+  saveBookings(); syncAll();
+  if (B.auto && B.status !== 'done') setTimeout(() => { if (typeof planDay === 'function') planDay(B.date, { silent: true }); }, 0);   // Auto schedule: arrange that day by distance straight away
+  return true;
 }
 function icsDT(date, min) { const [y, m, d] = date.split('-').map(Number), dt = new Date(y, m - 1, d, Math.floor(min / 60), min % 60), p = n => String(n).padStart(2, '0'); return dt.getFullYear() + p(dt.getMonth() + 1) + p(dt.getDate()) + 'T' + p(dt.getHours()) + p(dt.getMinutes()) + '00'; }
 function icsFor(list) {

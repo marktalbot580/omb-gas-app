@@ -150,7 +150,7 @@ document.addEventListener('click', e => {
 }, true);
 
 /* ---------- route for the day: today's jobs in appointment order, a Go link for each and one tap to start the whole run in your maps app ---------- */
-const routeDay = off => { const d = off ? addDays(localISO(), off) : localISO(); return off ? bkOn(d).filter(b => b.status !== 'done') : nextBookings(); };
+const routeDay = off => { if (typeof off === 'string') return off === localISO() ? nextBookings() : bkOn(off).filter(b => b.status !== 'done'); const d = off ? addDays(localISO(), off) : localISO(); return off ? bkOn(d).filter(b => b.status !== 'done') : nextBookings(); };
 const routeStops = off => routeDay(off).filter(b => String(b.address || '').trim().length >= 4);
 function routeUrl(list) {
   if (settings.mapApp === 'apple' || settings.mapApp === 'waze') return mapsUrl(list[0].address);   // these apps take one stop at a time
@@ -435,14 +435,17 @@ async function planChain(pcs) {
   if (chain.slice(0, -1).every((p, i) => pairGet(p, chain[i + 1]))) return;
   try { const r = await CLOUD.post('route-times', { stops: chain.map(p => p + ', UK') }); ((r && r.legs) || []).forEach((l, i) => pairSet(chain[i], chain[i + 1], l)); } catch (e) { }
 }
-async function planDay(off) {
-  off = off ? 1 : 0;
+/* off: 0 today, 1 tomorrow, or a date (YYYY-MM-DD). opts.silent: used by Auto schedule, only moves the jobs ticked Auto schedule and puts the times straight into the calendar */
+async function planDay(off, opts) {
+  const silent = !!(opts && opts.silent), future = typeof off === 'string' ? off !== localISO() : !!off, say = m => { if (!silent) toast(m); };
+  if (typeof off !== 'string') off = off ? 1 : 0;
   const all = routeDay(off), withPc = all.filter(b => hasPostcode(b.address)), base = routeBasePc();
-  if (!CLOUD.signedIn()) { toast('Sign in to plan the day'); return; }
-  if (!base) { toast('Add a start postcode in Settings, under Calendar, first'); return; }
+  if (!CLOUD.signedIn()) { say('Sign in to plan the day'); return; }
+  if (!base) { say('Add a start postcode in Settings, under Calendar, first'); return; }
   const ticked = withPc.filter(b => b.auto), allFlex = !ticked.length, jobs = allFlex ? withPc : ticked;
+  if (silent && allFlex) return;   // never move jobs that were not ticked Auto schedule
   const fixed = all.filter(b => !jobs.includes(b)), lacking = all.filter(b => !hasPostcode(b.address) && !fixed.includes(b));
-  if (jobs.length < 1 || (allFlex && jobs.length < 2)) { toast('Add a postcode to at least two jobs first'); return; }
+  if (jobs.length < 1 || (allFlex && jobs.length < 2)) { say('Add a postcode to at least two jobs first'); return; }
   const rs = document.getElementById('routeSheet'); const btn = rs && rs.querySelector('[data-act=planDay]'); const t0 = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Working out the best order...'; }
   try {
@@ -450,7 +453,7 @@ async function planDay(off) {
     const order = jobs.map((b, i) => ({ b, d: from[i].mins })).sort((x, y) => (settings.planOrder === 'far' ? y.d - x.d : x.d - y.d) || toMin(x.b.time) - toMin(y.b.time)).map(x => x.b);
     await planChain(order.map(b => pcOf(b.address)));
     const dayStart = toMin(settings.dayStart || '09:00'), now = new Date(), nowM = now.getHours() * 60 + now.getMinutes();
-    let cur = off ? dayStart : Math.max(dayStart, ceil5(nowM)), prevPc = null; const rows = [];
+    let cur = future ? dayStart : Math.max(dayStart, ceil5(nowM)), prevPc = null; const rows = [];
     for (let i = 0; i < order.length; i++) {
       const job = order[i], len = +job.mins || 60, pc = pcOf(job.address); let leg = null, start = cur;
       for (let guard = 0; guard <= fixed.length; guard++) {
@@ -460,6 +463,11 @@ async function planDay(off) {
         cur = toMin(clash.time) + (+clash.mins || 60); if (hasPostcode(clash.address)) prevPc = pcOf(clash.address);
       }
       rows.push({ b: job, start, end: start + len, drive: leg ? leg.mins : from[jobs.indexOf(job)].mins, first: !leg }); cur = start + len; prevPc = pc;
+    }
+    if (silent) {
+      let n = 0; rows.forEach(r => { const x = bookings.find(z => z.id === r.b.id); if (x) { if (x.time !== hhmm(r.start)) n++; x.time = hhmm(r.start); x.etaAt = 0; x.remindedAt = 0; x.updated = Date.now(); } });
+      saveBookings(); if (typeof syncAll === 'function') syncAll(); if (typeof render === 'function' && ['cal', 'home', 'due'].includes(ui.view)) render();
+      toast(rows.length > 1 ? 'Day arranged by distance: ' + rows.length + ' jobs' : 'Added to the day'); return;
     }
     const shown = rows.map(r => ({ ...r })).concat(fixed.map(F => ({ b: F, start: toMin(F.time), end: toMin(F.time) + (+F.mins || 60), fixed: true }))).sort((x, y) => x.start - y.start);
     window.__plan = { off, rows };
@@ -472,7 +480,7 @@ async function planDay(off) {
       <button type="button" class="btn gold block" data-act="planApply">Put these times in my calendar</button>
       <button type="button" class="btn block" data-act="planClose" style="margin-top:8px">Cancel</button></div>`;
     document.body.appendChild(d);
-  } catch (e) { toast(e.status === 429 ? String(e.message) : 'Could not plan the day just now'); }
+  } catch (e) { if (silent) { if (e.status === 429) toast(String(e.message)); } else toast(e.status === 429 ? String(e.message) : 'Could not plan the day just now'); }
   if (btn) { btn.disabled = false; btn.textContent = t0; }
 }
 document.addEventListener('click', e => {
