@@ -320,26 +320,37 @@ function paintDrive(el, b, hit, text) {
   const so = el.id === 'nextDrive' ? document.getElementById('nextSetOff') : null;
   if (so) { const slack = -a.lateBy; so.textContent = a.lateBy > 0 ? '' : slack < 1 ? 'Set off now to arrive on time' : 'Set off in ' + mn(slack) + ' to arrive on time'; so.style.color = a.color; }
 }
+/* why a drive time could not be shown (so it is no longer a silent blank) */
+function driveWhy(e) {
+  const m = String((e && e.message) || ''), st = e && e.status;
+  if (st === 402 || /subscription/i.test(m)) return 'your subscription or trial has ended';
+  if (st === 429 || /limit|busy/i.test(m)) return m || 'daily limit reached';
+  if (st === 502 || /google/i.test(m)) return 'Google could not work out that route (check the postcode)';
+  if (st === 401 || /not signed in/i.test(m)) return 'you need to sign in again';
+  if (!navigator.onLine || /failed to fetch|network/i.test(m)) return 'no signal';
+  return m || 'unknown problem';
+}
 async function nextDrive() {
   const el = document.getElementById('nextDrive'); if (!el) return;
   const td = nextBookings(), nx = todayNext(td); if (!nx || !hasPostcode(nx.address)) return;
   const toPc = pcOf(nx.address), show = (hit, who) => { const e2 = document.getElementById('nextDrive'); if (!e2 || !hit) return; const txt = 'About ' + mn(hit.mins) + ' drive (' + hit.miles + ' miles) from ' + who; if (who === 'here') { driveNow[nx.id] = { mins: hit.mins, t: Date.now() }; paintDrive(e2, nx, hit, txt); } else e2.textContent = txt; };
-  const me = CLOUD.signedIn() ? await whereAmI() : null;
+  let whyNot = ''; const me = CLOUD.signedIn() ? await whereAmI() : null;
   if (me) {
     const k = [me.lat.toFixed(3), me.lng.toFixed(3), toPc, Math.floor(Date.now() / 600000)].join('_');
     let hit = driveMem[k];
-    if (!hit) { try { const r = await CLOUD.post('route-times', { from: me, stops: [toPc + ', UK'] }); hit = r && r.legs && r.legs[0]; if (hit) driveMem[k] = hit; } catch (e) { hit = null; } }
+    if (!hit) { try { const r = await CLOUD.post('route-times', { from: me, stops: [toPc + ', UK'] }); hit = r && r.legs && r.legs[0]; if (hit) driveMem[k] = hit; } catch (e) { hit = null; whyNot = driveWhy(e); } }
     if (hit) return show(hit, 'here');
   }
   const i = td.indexOf(nx), prev = td.slice(0, i).reverse().find(b => hasPostcode(b.address));
-  const fromPc = prev ? pcOf(prev.address) : routeBasePc(); if (!fromPc) return;
+  const fromPc = prev ? pcOf(prev.address) : routeBasePc(); if (!fromPc) { const e4 = document.getElementById('nextDrive'); if (e4) e4.textContent = whyNot ? 'Drive time not available: ' + whyNot + '.' : 'Drive time not available: allow this app to use your location, or set a start postcode in Settings \u2192 Calendar.'; return; }
   if (fromPc === toPc) { el.textContent = 'Same postcode as ' + (prev ? 'the last job' : 'your base'); return; }
   const key = 'omb_drv_' + localISO() + '_' + fromPc + '_' + toPc, who = prev ? 'the last job' : 'your base';
   let hit = LS.get(key, null) || pairGet(fromPc, toPc);
   if (!hit) {
     if (!CLOUD.signedIn()) return;
-    try { const r = await CLOUD.post('route-times', { stops: [fromPc + ', UK', toPc + ', UK'] }); hit = r && r.legs && r.legs[0]; if (hit) { LS.set(key, hit); pairSet(fromPc, toPc, hit); } } catch (e) { return; }
+    try { const r = await CLOUD.post('route-times', { stops: [fromPc + ', UK', toPc + ', UK'] }); hit = r && r.legs && r.legs[0]; if (hit) { LS.set(key, hit); pairSet(fromPc, toPc, hit); } } catch (e) { whyNot = whyNot || driveWhy(e); }
   }
+  if (!hit) { const e3 = document.getElementById('nextDrive'); if (e3 && whyNot) { e3.textContent = 'Drive time not available: ' + whyNot + '.'; e3.style.color = ''; } return; }
   show(hit, who);
 }
 

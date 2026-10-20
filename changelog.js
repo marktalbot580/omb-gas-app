@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v213', items: ['Today: when the drive time to your next appointment cannot be worked out, it now says why (for example location not allowed, no start postcode, daily limit reached or Google could not find the route) instead of showing nothing.'] },
   { v: 'v212', items: ['Choose your maps app: Settings \u2192 App & account \u2192 Navigation lets you pick Google Maps, Apple Maps or Waze for every Navigate button. Apple Maps and Waze take one address at a time, so Start route on the Route sheet opens the first job; Google Maps still plans the whole day.'] },
   { v: 'v211', items: ['Booking an appointment: \u201c+ Add a new address\u201d is now at the top of the customer\u2019s address list instead of the bottom, so you do not have to scroll past hundreds of addresses.'] },
   { v: 'v210', items: ['Calendar: jobs ticked Auto schedule that are waiting for Plan my day no longer show as clashing with each other. They show \u201cPlan my day will set the time the day before\u201d instead. Real clashes (for example a fixed-time job overlapping another) still show.'] },
