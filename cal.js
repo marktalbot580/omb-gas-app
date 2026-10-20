@@ -58,11 +58,11 @@ const mondayOf = iso => addDays(iso, -((new Date(iso + 'T12:00:00').getDay() + 6
 const calState = () => (ui.cal = ui.cal || { m: localISO().slice(0, 7), d: localISO() });
 const bkOn = date => bookings.filter(b => b.date === date).sort((a, b) => toMin(a.time) - toMin(b.time) || String(a.id).localeCompare(String(b.id)));   // by start time, as a number so 9:00 comes before 10:00
 /* another appointment that overlaps this one (two devices can book the same slot while offline or at the same moment) */
-const bkClash = b => b.status !== 'done' ? bookings.find(x => x.id !== b.id && x.status !== 'done' && x.date === b.date && toMin(x.time) < toMin(b.time) + (+b.mins || 60) && toMin(b.time) < toMin(x.time) + (+x.mins || 60)) : null;
+const bkClash = b => b.status !== 'done' ? bookings.find(x => x.id !== b.id && x.status !== 'done' && !(b.auto && x.auto && x.time === b.time) && x.date === b.date && toMin(x.time) < toMin(b.time) + (+b.mins || 60) && toMin(b.time) < toMin(x.time) + (+x.mins || 60)) : null;
 function bkItem(b, withDate) {
   const cl = bkClash(b);
   return `<button type="button" class="item" data-act="bookOpen" data-id="${b.id}"><div class="row sp"><span class="t">${withDate ? esc(dayShort(b.date)) + ' · ' : ''}${esc(b.time)}–${esc(bkEnd(b))} · ${esc(b.name || 'No name')}</span>${b.status === 'done' ? '<span class="badge complete">done</span>' : cl ? '<span class="badge overdue">clash</span>' : ''}</div>
-    <div class="s">${esc(bkLabel(b))}</div>${cl ? `<div class="s" style="color:var(--bad);font-weight:700">Clashes with ${esc(cl.name || 'another appointment')} at ${esc(cl.time)}</div>` : ''}${b.address ? `<div class="s">${esc(addrFirst(b.address))}</div>` : ''}</button>`;
+    <div class="s">${esc(bkLabel(b))}</div>${!cl && b.auto && b.status !== 'done' && bookings.some(x => x.id !== b.id && x.auto && x.status !== 'done' && x.date === b.date && x.time === b.time) ? '<div class="s" style="color:var(--mut)">Auto schedule: Plan my day will set the time the day before.</div>' : ''}${cl ? `<div class="s" style="color:var(--bad);font-weight:700">Clashes with ${esc(cl.name || 'another appointment')} at ${esc(cl.time)}</div>` : ''}${b.address ? `<div class="s">${esc(addrFirst(b.address))}</div>` : ''}</button>`;
 }
 function calGrid(sel, month) {
   const [y, m] = month.split('-').map(Number), lead = (new Date(y, m - 1, 1).getDay() + 6) % 7, dim = new Date(y, m, 0).getDate(), t = localISO();

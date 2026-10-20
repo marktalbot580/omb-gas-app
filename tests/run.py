@@ -1186,6 +1186,14 @@ def run():
         check('no page errors on the usage totals', not errs, errs)
         ctx.close()
 
+        # ---------- 12r. auto-scheduled jobs waiting for Plan my day do not show as clashes ----------
+        ctx, pg, errs = fresh(b)
+        r = ev(pg, """(()=>{ const d=todayISO(); const mk=(id,auto,time)=>({id,date:d,time,mins:60,name:'J'+id,types:['gas'],status:'booked',auto,address:''});
+          const run=(...bs)=>{ bookings.length=0; bs.forEach(x=>bookings.push(x)); return !!bkClash(bookings[0]); };
+          return [run(mk('a1',true,'09:00'),mk('a2',true,'09:00')), run(mk('a1',true,'09:00'),mk('f1',false,'09:30')), run(mk('f1',false,'09:00'),mk('f2',false,'09:00')), run(mk('a1',true,'09:00'),mk('a2',true,'09:30'))]; })()""")
+        check('auto jobs sharing a placeholder time are not flagged; auto vs fixed, fixed vs fixed and differently timed auto jobs still clash', r == [False, True, True, True], r)
+        ctx.close()
+
         # ---------- 13. page security policy: the app runs with it and nothing is blocked ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page(); csp = []
