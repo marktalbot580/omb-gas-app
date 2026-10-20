@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v216', items: ['Booking with Auto schedule ticked no longer asks \u201cYou already have\u2026 book anyway?\u201d. The job is put into the first blank slot of the day (from your day start time) and Plan my day then arranges the jobs nearest first or furthest first, as chosen in Settings.'] },
   { v: 'v215', items: ['Today: the drive time line stays blank, instead of showing a trial message, when the server refuses the request. A fix on the server for free-pass accounts follows.'] },
   { v: 'v214', items: ['Today: if Google sends back nothing for the drive time, the line now says so instead of staying blank.'] },
   { v: 'v213', items: ['Today: when the drive time to your next appointment cannot be worked out, it now says why (for example location not allowed, no start postcode, daily limit reached or Google could not find the route) instead of showing nothing.'] },

@@ -162,11 +162,19 @@ function renderBook(v) {
 }
 function bkBack() { ui.book = null; if (ui.bookFrom === 'quotes') { ui.view = 'invoices'; ui.invTab = 'quotes'; } else if (ui.bookFrom === 'form' && ui.rec) ui.view = 'form'; else if (ui.bookFrom === 'due') ui.view = 'due'; else if (ui.bookFrom === 'pick' && ui.pick) ui.view = 'pick'; else ui.view = ui.bookFrom === 'home' ? 'home' : 'cal'; render(); }
 function bkFill(B, c) { if (!c) return; B.addrNew = false; B.customerId = c.id; B.name = c.name || ''; B.phone = c.phone || ''; B.email = c.email || ''; const ps = (c.properties || []).filter(Boolean); B.address = ps.length === 1 ? ps[0] : (ps.includes(B.address) ? B.address : ''); }
+/* first blank slot on the booking's day (from the day start, in 15 minute steps) that does not overlap another appointment */
+function bkFreeSlot(B) {
+  const len = +B.mins || 60, start = toMin(settings.dayStart || '09:00'), day = bookings.filter(x => x.id !== B.id && x.date === B.date && x.status !== 'done');
+  const fmt = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+  for (let t = start; t + len <= 22 * 60; t += 15) if (!day.some(x => toMin(x.time) < t + len && t < toMin(x.time) + (+x.mins || 60))) return fmt(t);
+  return '';
+}
 function bkValid(B) {
   if (!B.types.length) { toast('Choose what the job is'); return false; }
   if (B.types.includes('other') && !String(B.other || '').trim()) { toast('Type what the other job is'); return false; }
   if (!B.date || !B.time) { toast('Set the date and time'); return false; }
   if (!String(B.name || '').trim()) { toast('Add the customer’s name'); return false; }
+  if (B.auto) { const t = bkFreeSlot(B); if (t) B.time = t; return true; }   // auto schedule: take the first blank slot, Plan my day arranges the day later
   const s = toMin(B.time), e = s + (+B.mins || 60);
   const ov = bookings.find(x => x.id !== B.id && x.date === B.date && toMin(x.time) < e && s < toMin(x.time) + (+x.mins || 60));
   if (ov && !confirm('You already have ' + (ov.name || 'an appointment') + ' at ' + ov.time + '. Book this one anyway?')) return false;

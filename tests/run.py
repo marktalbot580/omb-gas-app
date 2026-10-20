@@ -1219,6 +1219,18 @@ def run():
         check('no page errors in maps choice', not errs, errs)
         ctx.close()
 
+        # ---------- 12t. auto schedule books into a blank slot without asking ----------
+        ctx, pg, errs = fresh(b)
+        r = ev(pg, """(()=>{ const d=todayISO(); settings.dayStart='09:00'; bookings.length=0; const mk=(id,time,auto)=>({id,date:d,time,mins:60,name:'J'+id,types:['gas'],status:'booked',auto:!!auto,address:''});
+          bookings.push(mk('f1','09:00',false), mk('f2','10:00',false));
+          const B=mk('n1','09:00',true); const t1=bkFreeSlot(B); bookings.push(Object.assign(B,{time:t1}));
+          const C=mk('n2','09:00',true); const t2=bkFreeSlot(C);
+          let asked=false; window.confirm=()=>{asked=true;return false}; const ok=bkValid(Object.assign(mk('n3','09:00',true),{}));
+          return {t1,t2,asked,ok}; })()""")
+        check('auto schedule picks the first blank slot, one after another', r['t1'] == '11:00' and r['t2'] == '12:00', r)
+        check('auto schedule does not ask "book anyway"', r['ok'] is True and r['asked'] is False, r)
+        ctx.close()
+
         # ---------- 13. page security policy: the app runs with it and nothing is blocked ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page(); csp = []
