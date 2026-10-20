@@ -350,7 +350,7 @@ async function nextDrive() {
     if (!CLOUD.signedIn()) return;
     try { const r = await CLOUD.post('route-times', { stops: [fromPc + ', UK', toPc + ', UK'] }); hit = r && r.legs && r.legs[0]; if (hit) { LS.set(key, hit); pairSet(fromPc, toPc, hit); } } catch (e) { whyNot = whyNot || driveWhy(e); }
   }
-  if (!hit) { const e3 = document.getElementById('nextDrive'); if (e3 && whyNot) { e3.textContent = 'Drive time not available: ' + whyNot + '.'; e3.style.color = ''; } return; }
+  if (!hit) { const e3 = document.getElementById('nextDrive'); if (e3) { e3.textContent = 'Drive time not available: ' + (whyNot || 'no route came back for this address') + '.'; e3.style.color = ''; } return; }
   show(hit, who);
 }
 
