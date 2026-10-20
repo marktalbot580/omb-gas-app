@@ -12,8 +12,8 @@ Deno.serve(async (req) => {
     const token = (req.headers.get('Authorization') || '').replace('Bearer ', '');
     const { data: u } = await sb.auth.getUser(token);
     if (!u?.user) return json({ error: 'Not signed in' }, 401);
-    const { data: sub } = await sb.from('subscriptions').select('status,trial_end,period_end').eq('user_id', u.user.id).maybeSingle();
-    const now = Date.now(), ok = sub && ((sub.status === 'trialing' && Date.parse(sub.trial_end) > now) || (['active', 'past_due'].includes(sub.status) && (!sub.period_end || Date.parse(sub.period_end) > now - 3 * 864e5)));
+    const { data: sub } = await sb.from('subscriptions').select('status,trial_end,period_end,comped').eq('user_id', u.user.id).maybeSingle();
+    const now = Date.now(), ok = sub && (sub.comped || (sub.status === 'trialing' && Date.parse(sub.trial_end) > now) || (['active', 'past_due'].includes(sub.status) && (!sub.period_end || Date.parse(sub.period_end) > now - 3 * 864e5)));
     if (!ok) return json({ error: 'Subscription needed' }, 402);
     const { stops, from } = await req.json();
     const fl = from && Number(from.lat), fg = from && Number(from.lng);
