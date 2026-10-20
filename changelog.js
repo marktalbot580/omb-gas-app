@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v211', items: ['Booking an appointment: \u201c+ Add a new address\u201d is now at the top of the customer\u2019s address list instead of the bottom, so you do not have to scroll past hundreds of addresses.'] },
   { v: 'v210', items: ['Calendar: jobs ticked Auto schedule that are waiting for Plan my day no longer show as clashing with each other. They show \u201cPlan my day will set the time the day before\u201d instead. Real clashes (for example a fixed-time job overlapping another) still show.'] },
   { v: 'v209', items: ['Administrator functions updated.'] },
   { v: 'v208', items: ['Date paid: once an invoice is ticked as Paid, a Date paid box appears in the Dates section so you can put in the day the money actually arrived (the PAID stamp, the invoice and your statements then use that date). The overdue prompt and the chase sheet now have \u201cPaid earlier \u2013 choose the date\u201d, which marks it paid and takes you straight to the date box.'] },

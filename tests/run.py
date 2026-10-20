@@ -172,6 +172,7 @@ def run():
         pg.click('#bkNameSug .cpick')
         check('picking a customer fills the details', ev(pg, "ui.book.customerId==='c1' && ui.book.phone==='07700 900123'"))
         check('address list offered with an add-new option', ev(pg, "[...document.querySelectorAll('select[data-bk=propPick] option')].some(o=>o.value==='__new')"))
+        check('add-new address is at the top of the address list', ev(pg, "[...document.querySelectorAll('select[data-bk=propPick] option')].filter(o=>o.value!=='').map(o=>o.value)[0]==='__new'"))
         pg.select_option('[data-bk=propPick]', '1')
         check('choosing a saved address sets it', ev(pg, "ui.book.address.startsWith('2 Low Rd')"))
         pg.select_option('[data-bk=propPick]', '__new')
