@@ -1246,6 +1246,15 @@ def run():
         check('no page errors in Auto schedule', not errs, errs)
         ctx.close()
 
+        # ---------- 12v. same as job address ----------
+        ctx, pg, errs = fresh(b)
+        r = ev(pg, """(async()=>{ customers.length=0; records.length=0; const cu={id:'c9',name:'Ann',phone:'',email:'',billing:'',properties:['1 High St\\nLincoln\\nLN1 1AA'],updated:1}; customers.push(cu);
+          ui.pick={types:{service:true},customer:cu}; startJob(); ui.rec.jobAddress='1 High St\\nLincoln\\nLN1 1AA'; render();
+          document.querySelector('[data-act="sameBill"]').click(); await new Promise(r=>setTimeout(r,300)); return {b:ui.rec.customer.billing, c:customers[0].billing}; })()""")
+        check('Same as job address fills the client address', r['b'] == '1 High St\nLincoln\nLN1 1AA' and r['c'] == r['b'], r)
+        check('no page errors in same-as-job', not errs, errs)
+        ctx.close()
+
         # ---------- 13. page security policy: the app runs with it and nothing is blocked ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page(); csp = []

@@ -899,7 +899,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v217';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v218';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1518,6 +1518,7 @@ function stepCustomer() {
       ${txt('customer.phone', 'Telephone', { type: 'tel', mode: 'tel' })}
       ${txt('customer.email', 'Email (to send the PDF)', { type: 'email', mode: 'email', cap: 'none' })}
       ${addrBox('rec', 'customer.billing', 'Client / billing address')}
+      <button class="btn block" data-act="sameBill">Same as job address</button>
     </div>
     <h2>${isQuo(r) ? 'Work address' : 'Property inspected'}</h2>
     ${cu && (cu.properties || []).length > 5 ? `<input class="search" id="propSearch" placeholder="Search this customer’s ${cu.properties.length} properties – street, town or postcode" autocomplete="off"><div id="propList"></div>`
@@ -2908,7 +2909,7 @@ function initSigs() {
 
 /* ---------- events ---------- */
 /* when the subscription has ended the app is read-only: look, download and export, but no new or changed records */
-const LOCKED_WRITES = new Set(['qSentToggle', 'invDiscMode', 'invPlPick', 'impGo', 'bookSave', 'bookStart', 'bookFromPick', 'custNoRem', 'newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'addOilWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'sameName', 'engSigTog', 'engSigUse', 'invNone', 'invNoneVisit', 'invUndoNone', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod', 'invPickCust', 'invPickProp', 'invPickSug']);
+const LOCKED_WRITES = new Set(['qSentToggle', 'invDiscMode', 'invPlPick', 'impGo', 'bookSave', 'bookStart', 'bookFromPick', 'custNoRem', 'newRec', 'pickGo', 'newCust', 'editCust', 'saveCust', 'recForCust', 'delCust', 'delRec', 'delDraft', 'addWarn', 'addOilWarn', 'rmWarn', 'newInvBlank', 'invFromVisit', 'invAddLine', 'invRmLine', 'invPaid', 'invPaidVisit', 'invSentVisit', 'invMakePdf', 'invPrep', 'invDel', 'sameName', 'engSigTog', 'engSigUse', 'invNone', 'invNoneVisit', 'invUndoNone', 'discType', 'vatReg', 'sigClear', 'photoRm', 'legAddDef', 'legRmDef', 'legAuto', 'ageUnknown', 'mfrOther', 'tightTimer', 'calcToggle', 'calcSet', 'calcTimer', 'calcUse', 'sameAddr', 'sameBill', 'copyPrev', 'pickProp', 'pickSug', 'pickCustId', 'goIssue', 'favCust', 'rmCoLogo', 'rmLogo', 'invMethod', 'invPickCust', 'invPickProp', 'invPickSug']);
 const lockedMsg = () => toast('Your subscription has ended. Subscribe to create or change records.');
 document.addEventListener('click', async e => {
   /* tap the logo / name at the top to go back to the home screen – a form you are part way through is kept as a draft */
@@ -3119,6 +3120,7 @@ document.addEventListener('click', async e => {
       break;
     }
     case 'sameAddr': r.jobAddress = r.customer.billing; persistRec(r); autoPrev(r); render(); break;
+    case 'sameBill': r.customer.billing = r.jobAddress; persistRec(r); commitCustomer(r); render(); break;
     case 'pickSug': {
       const c = customers.find(x => x.id === b.dataset.c); if (!c) break;
       if (r.customerId !== c.id) { r.customerId = c.id; r.customer = { name: c.name, phone: c.phone, email: c.email, billing: c.billing }; }
