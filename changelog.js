@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v219', items: ['Pop-up pages (Route, Plan my day, New and others) now close when you swipe them down, so you no longer have to scroll to the bottom to go back.'] },
   { v: 'v218', items: ['New \u201cSame as job address\u201d button under the client address on forms, for customers who live at the property. One tap fills the client address from the job address.'] },
   { v: 'v217', items: ['Auto schedule now arranges the day for you. Every time you save a booking with Auto schedule ticked, the app works out the drive from your start postcode and puts all that day\u2019s Auto schedule jobs in order (nearest first or furthest first, as chosen in Settings), with the drive added between them. Jobs not ticked Auto schedule keep their time. It needs a postcode on the job and a start postcode in Settings \u2192 Calendar; without them the job just goes in the first blank slot.'] },
   { v: 'v216', items: ['Booking with Auto schedule ticked no longer asks \u201cYou already have\u2026 book anyway?\u201d. The job is put into the first blank slot of the day (from your day start time) and Plan my day then arranges the jobs nearest first or furthest first, as chosen in Settings.'] },

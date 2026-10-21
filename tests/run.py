@@ -1255,6 +1255,19 @@ def run():
         check('no page errors in same-as-job', not errs, errs)
         ctx.close()
 
+        # ---------- 12w. swipe a sheet down to close ----------
+        ctx, pg, errs = fresh(b)
+        r = ev(pg, """(async()=>{ showNewSheet(); const s=document.querySelector('#newSheet .sheet'), g=s.querySelector('.grab');
+          const T=(type,y)=>{ const t=new Touch({identifier:1,target:g,clientX:50,clientY:y}); g.dispatchEvent(new TouchEvent(type,{bubbles:true,cancelable:true,touches:type==='touchend'?[]:[t],changedTouches:[t]})); };
+          T('touchstart',300); T('touchmove',330); T('touchmove',340); T('touchend',340); await new Promise(r=>setTimeout(r,300)); const small=!!document.getElementById('newSheet');
+          const s2=document.querySelector('#newSheet .sheet'), g2=s2.querySelector('.grab'); const T2=(type,y)=>{ const t=new Touch({identifier:1,target:g2,clientX:50,clientY:y}); g2.dispatchEvent(new TouchEvent(type,{bubbles:true,cancelable:true,touches:type==='touchend'?[]:[t],changedTouches:[t]})); };
+          T2('touchstart',300); T2('touchmove',350); T2('touchmove',480); T2('touchend',480); await new Promise(r=>setTimeout(r,400));
+          return {stayed:small, closed:!document.getElementById('newSheet')}; })()""")
+        check('a short drag leaves the sheet open', r['stayed'], r)
+        check('swiping a sheet down closes it', r['closed'], r)
+        check('no page errors in swipe close', not errs, errs)
+        ctx.close()
+
         # ---------- 13. page security policy: the app runs with it and nothing is blocked ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page(); csp = []

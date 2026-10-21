@@ -496,3 +496,28 @@ document.addEventListener('click', e => {
   }
   if (bg) bg.remove();
 }, true);
+
+/* ---------- swipe a pop-up sheet down to close it (Route, Plan my day, New, Chase, Reschedule) ---------- */
+(function () {
+  let sh = null, bg = null, y0 = 0, dy = 0, live = false;
+  const reset = () => { if (sh) { sh.style.transition = ''; sh.style.transform = ''; } sh = bg = null; dy = 0; live = false; };
+  document.addEventListener('touchstart', e => {
+    const s = e.target.closest && e.target.closest('.sheetbg .sheet'); if (!s || e.touches.length !== 1) return;
+    // start from the grey bar / heading, or from anywhere once the sheet is scrolled to the top
+    if (!(e.target.closest('.grab, h2') || s.scrollTop <= 0)) return;
+    sh = s; bg = s.parentNode; y0 = e.touches[0].clientY; dy = 0; live = false;
+  }, { passive: true });
+  document.addEventListener('touchmove', e => {
+    if (!sh) return; dy = e.touches[0].clientY - y0;
+    if (dy <= 8 && !live) return;                // not a downward drag yet (lets normal scrolling work)
+    if (dy < 0) dy = 0;
+    live = true; sh.style.transition = 'none'; sh.style.transform = 'translateY(' + dy + 'px)';
+  }, { passive: true });
+  document.addEventListener('touchend', () => {
+    if (!sh) return;
+    if (live && dy > 100) { const b = bg, s = sh; s.style.transition = 'transform .15s'; s.style.transform = 'translateY(100%)'; sh = null; setTimeout(() => { if (b && b.parentNode) b.remove(); }, 150); return; }
+    if (live) { sh.style.transition = 'transform .15s'; sh.style.transform = ''; }
+    sh = bg = null; dy = 0; live = false;
+  }, { passive: true });
+  document.addEventListener('touchcancel', reset, { passive: true });
+})();
