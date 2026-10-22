@@ -126,6 +126,7 @@ async function drawAcPdf(rec, s, lv) {
   if (s.email) biz.push({ t: s.email });
   const site = [{ t: rec.customer.name, b: 1, fs: 8.6 }, { t: addrLine(rec.jobAddress || '') }];
   if (rec.customer.phone) site.push({ t: 'Tel: ' + rec.customer.phone });
+  { const pc = typeof propContact === 'function' ? propContact((typeof customers !== 'undefined' ? customers : []).find(c => c.id === rec.customerId), rec.jobAddress) : null; if (pc && (pc.n || pc.p)) site.push({ t: 'Site contact: ' + [pc.n, pc.p].filter(Boolean).join('  Tel: ') }); }
   const cli = [{ t: rec.customer.name, b: 1, fs: 8.6 }, { t: addrLine(rec.customer.billing || rec.jobAddress || '') }];
   if (rec.customer.phone) cli.push({ t: 'Tel: ' + rec.customer.phone });
   if (rec.customer.email) cli.push({ t: rec.customer.email });
