@@ -187,6 +187,7 @@ async function drawPdf(rec, s, lv) {
   biz.push({ t: 'Gas Safe Register No: ' + (s.gasSafeReg || blank), b: 1 });
   const site = [{ t: rec.customer.name, b: 1, fs: 8.6 }, { t: addrLine(rec.jobAddress || '') }];
   if (rec.customer.phone) site.push({ t: 'Tel: ' + rec.customer.phone });
+  { const pc = typeof propContact === 'function' ? propContact((typeof customers !== 'undefined' ? customers : []).find(c => c.id === rec.customerId), rec.jobAddress) : null; if (pc && (pc.n || pc.p)) site.push({ t: 'Site contact: ' + [pc.n, pc.p].filter(Boolean).join('  Tel: ') }); }
   const cli = [{ t: rec.customer.name, b: 1, fs: 8.6 }, { t: addrLine(rec.customer.billing || rec.jobAddress || '') }];
   if (rec.customer.email) cli.push({ t: rec.customer.email });
   const T = ['REGISTERED BUSINESS DETAILS', 'INSTALLATION DETAILS (PROPERTY INSPECTED)', 'CLIENT DETAILS'], D = [biz, site, cli];
@@ -204,7 +205,7 @@ async function drawPdf(rec, s, lv) {
     { h: 'Flue op.', w: 12, a: 'c' }, { h: 'Safety devices', w: 16, a: 'c' }, { h: 'Safe to use', w: 14, a: 'c' }
   ];
   table('APPLIANCE DETAILS AND INSPECTION', cols, apps.map((a, i) => [{ t: String(i + 1), b: 1 }, loc(a), typeText(a), a.manufacturer, a.model + (a.gc ? '\nGC: ' + a.gc : '') + (a.serial ? '\nS/N: ' + a.serial : ''), a.ownership, a.flue, a.serviced,
-    ...(a.visualOnly === 'Yes' ? [{ t: 'VISUAL INSPECTION ONLY – no physical checks were undertaken. The safe to use result is based on obvious physical defects.', b: 1, span: showFan ? 7 : 6 }]
+    ...(a.visualOnly === 'Yes' ? [{ t: 'VISUAL INSPECTION ONLY', b: 1, span: showFan ? 7 : 6 }]
       : [a.op, a.hi, ...(showFan ? [fanOf(a)] : []), res(a.vent), res(a.terminal), res(a.flueOp), res(a.safety)]), safe(a.safe)]));
   /* key to the abbreviations used in the table above */
   {
