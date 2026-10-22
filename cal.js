@@ -150,6 +150,7 @@ function renderBook(v) {
       ${f('name', 'Customer name')}<div id="bkNameSug"></div>${c ? '<p class="small muted" style="margin:-4px 0 12px">Saved customer. Change the name to book someone new.</p>' : '<p class="small muted" style="margin:-4px 0 12px">Start typing to find a saved customer, or fill in the details for a new one.</p>'}${f('phone', 'Phone', { type: 'tel' })}${f('email', 'Email', { type: 'email' })}
       ${props.length ? `<label class="f"><span>Address of the job</span><select data-bk="propPick">${B.addrNew || inList ? '' : '<option value="">Choose an address</option>'}<option value="__new" ${B.addrNew ? 'selected' : ''}>+ Add a new address</option>${props.map((p, i) => `<option value="${i}" ${!B.addrNew && p === B.address ? 'selected' : ''}>${esc(addrFirst(p) + (p.split('\n')[1] ? ', ' + p.split('\n')[1] : ''))}</option>`).join('')}</select></label>` : ''}
       ${!props.length || B.addrNew || (B.address && !inList) ? (() => { const sp = splitAddr(B.address || ''); return `<div class="f addrw"><span>${props.length ? 'New address' : 'Address of the job'}</span><textarea data-bk="address" rows="3" autocapitalize="words">${esc(sp.addr)}</textarea><input class="pc" data-bk="addrpc" type="text" placeholder="Postcode" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Postcode" value="${esc(sp.pc)}"></div>`; })() : ''}
+      ${propContactHtml(c, B.address)}
     </div>
     <h2>Notes</h2><div class="card">${f('notes', 'Anything to remember', { area: 1 })}</div>
     <button class="btn gold block" data-act="bookSave">${isNew ? 'Add to calendar' : 'Save changes'}</button>
@@ -203,6 +204,17 @@ function bkCsv() {
   const q = v => '"' + String(v ?? '').replace(/"/g, '""').replace(/\r?\n/g, ', ') + '"';
   const rows = [['Date', 'Start', 'End', 'Customer', 'Phone', 'Email', 'Address', 'Job', 'Status', 'Notes']].concat([...bookings].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)).map(b => [ukDate(b.date), b.time, bkEnd(b), b.name, b.phone, b.email, b.address, bkLabel(b), b.status === 'done' ? 'Done' : 'Booked', b.notes]));
   return '\ufeff' + rows.map(r => r.map(q).join(',')).join('\r\n');
+}
+/* ---------- property contact: a name, phone and access note for each of a customer's addresses (e.g. the tenant at a letting agent's house) ---------- */
+function propContact(cu, addr) {
+  if (!cu || !addr) return null;
+  const i = (cu.properties || []).findIndex(p => String(p || '').trim() === String(addr).trim()); if (i < 0) return null;
+  const x = (cu.pinfo || [])[i]; return x && (x.n || x.p || x.a) ? x : null;
+}
+function propContactHtml(cu, addr) {
+  const x = propContact(cu, addr); if (!x) return '';
+  const tel = String(x.p || '').replace(/[^\d+]/g, '');
+  return `<div class="card" style="margin:8px 0 0"><div class="t">Property contact${x.n ? ': ' + esc(x.n) : ''}</div>${x.a ? `<div class="s" style="white-space:pre-wrap">${esc(x.a)}</div>` : ''}${tel ? `<a class="btn block" style="text-align:center;text-decoration:none;margin-top:8px" href="tel:${esc(tel)}">Call ${esc(x.n || x.p)}</a>` : ''}</div>`;
 }
 function bkStart() {
   const B = ui.book, types = B.types.filter(t => t !== 'other');

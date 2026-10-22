@@ -605,6 +605,10 @@ function addrInput(w, t) {
   else if (src === 'cust') ui.cust[path] = v;
   else if (src === 'cprop') { (ui.cust.properties = ui.cust.properties || [])[+path] = v; }
 }
+document.addEventListener('input', e => {      // property contact boxes on the customer screen
+  const t = e.target, k = t && t.dataset && t.dataset.pi; if (!k || !ui.cust) return;
+  const [i, f] = k.split('|'); const pi = (ui.cust.pinfo = (ui.cust.pinfo || []).slice()); pi[+i] = Object.assign({}, pi[+i], { [f]: t.value });
+});
 document.addEventListener('focusout', e => {      // tidy the postcode when you leave the box: ln12ab becomes LN1 2AB
   const t = e.target; if (!(t.classList && t.classList.contains('pc'))) return;
   const w = t.closest('.addrw'); if (!w) return;
@@ -875,7 +879,7 @@ function renderCustEdit(v) {
       ${addrBox('cust', 'billing', 'Billing address')}
     </div>
     <h2>Property addresses</h2>
-    ${(c.properties && c.properties.length ? c.properties : (c.properties = [''])).map((p, i) => `<div class="card">${addrBox('cprop', String(i), 'Property ' + (c.properties.length > 1 ? i + 1 : 'address'), { ph: 'House number and street, town' })}${c.properties.length > 1 || p ? `<button type="button" class="btn ghost" data-act="rmCustProp" data-i="${i}" style="margin-top:6px">Remove this property</button>` : ''}</div>`).join('')}
+    ${(c.properties && c.properties.length ? c.properties : (c.properties = [''])).map((p, i) => `<div class="card">${addrBox('cprop', String(i), 'Property ' + (c.properties.length > 1 ? i + 1 : 'address'), { ph: 'House number and street, town' })}${(() => { const x = (c.pinfo || [])[i] || {}; return `<div class="small muted" style="margin:10px 0 4px">Property contact (optional) – for example the tenant</div><label class="f"><span>Contact name</span><input data-pi="${i}|n" value="${esc(x.n || '')}" autocomplete="off"></label><label class="f"><span>Contact phone</span><input data-pi="${i}|p" type="tel" value="${esc(x.p || '')}" autocomplete="off"></label><label class="f"><span>Access note</span><textarea data-pi="${i}|a" rows="2" placeholder="For example: key with agent, ring first">${esc(x.a || '')}</textarea></label>`; })()}${c.properties.length > 1 || p ? `<button type="button" class="btn ghost" data-act="rmCustProp" data-i="${i}" style="margin-top:6px">Remove this property</button>` : ''}</div>`).join('')}
     <button type="button" class="btn block" data-act="addCustProp">+ Add another property address</button><div style="height:10px"></div>
     <button class="btn gold block" data-act="saveCust">Save customer</button>
     ${c._new ? '' : `<div style="height:10px"></div><button class="btn block" data-act="recForCust">Start forms for this customer</button>
@@ -899,7 +903,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v219';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v221';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1527,6 +1531,7 @@ function stepCustomer() {
       ${addrBox('rec', 'jobAddress', 'Job address', { req: 1 })}
       <div id="addrSug"></div>
       <button class="btn block" data-act="sameAddr">Same as billing address</button>
+      <div id="pcBox">${propContactHtml(cu, r.jobAddress)}</div>
       <div id="navBtn">${navBtnHtml(r.jobAddress)}</div>
     </div>
     ${prevCard(r)}
@@ -3169,7 +3174,7 @@ document.addEventListener('click', async e => {
     case 'newCust': ui.cust = { _new: true, id: uid(), name: '', phone: '', email: '', billing: '', properties: [] }; ui.view = 'custEdit'; render(); break;
     case 'editCust': ui.cTab = 'cust'; ui.cust = JSON.parse(JSON.stringify(customers.find(c => c.id === b.dataset.id))); ui.view = 'custEdit'; render(); break;
     case 'addCustProp': ui.cust.properties = (ui.cust.properties || []).concat(['']); render(); break;
-    case 'rmCustProp': { const ps = (ui.cust.properties || []).slice(); ps.splice(+b.dataset.i, 1); ui.cust.properties = ps; render(); break; }
+    case 'rmCustProp': { const ps = (ui.cust.properties || []).slice(); ps.splice(+b.dataset.i, 1); ui.cust.properties = ps; const pi = (ui.cust.pinfo || []).slice(); pi.splice(+b.dataset.i, 1); ui.cust.pinfo = pi; render(); break; }
     case 'saveCust': saveCust(); break;
     case 'custTools': { saveCust(true); const cu = customers.find(c => c.id === ui.cust.id); if (cu) toolsForCustomer(cu); break; }
     case 'recForCust': { saveCust(true); const cu = customers.find(c => c.id === ui.cust.id); ui.pick = { types: {}, customer: cu }; ui.pickFromCust = true; ui.view = 'pick'; render(); break; }
@@ -3523,8 +3528,10 @@ function goNext() {
 function saveCust(silent) {
   const c = ui.cust;
   if (!c.name.trim()) { toast('Enter a name'); return; }
-  const props = (c.properties || []).map(x => String(x || '').trim()).filter(Boolean);
+  const props = [], pinfo = [];
+  (c.properties || []).forEach((x, i) => { const v = String(x || '').trim(); if (!v) return; props.push(v); const q = (c.pinfo || [])[i] || {}; pinfo.push({ n: String(q.n || '').trim(), p: String(q.p || '').trim(), a: String(q.a || '').trim() }); });
   const out = { id: c.id, name: c.name.trim(), phone: c.phone, email: c.email, billing: c.billing, properties: props, updated: Date.now(), _dirty: true };
+  if (pinfo.some(q => q.n || q.p || q.a)) out.pinfo = pinfo;
   if (c.noRemind) out.noRemind = true;
   if (c.fav) out.fav = true;
   if (c.remSt && Object.keys(c.remSt).length) out.remSt = c.remSt;

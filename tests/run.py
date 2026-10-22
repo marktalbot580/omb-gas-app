@@ -1268,6 +1268,23 @@ def run():
         check('no page errors in swipe close', not errs, errs)
         ctx.close()
 
+        # ---------- 12x. property contact ----------
+        ctx, pg, errs = fresh(b)
+        r = ev(pg, """(async()=>{ customers.length=0; records.length=0; bookings.length=0;
+          const A1='1 High St\\nLincoln\\nLN1 1AA', A2='2 Low Rd\\nLincoln\\nLN2 2BB';
+          customers.push({id:'ag',name:'Agent Ltd',phone:'01522 000000',email:'',billing:'',properties:[A1,A2],updated:1});
+          ui.cust={...customers[0]}; ui.view='custEdit'; render();
+          const inp=(i,f,v)=>{ const e=document.querySelector('[data-pi="'+i+'|'+f+'"]'); e.value=v; e.dispatchEvent(new Event('input',{bubbles:true})); };
+          inp(1,'n','Tina Tenant'); inp(1,'p','07700 900123'); inp(1,'a','Ring first');
+          saveCust(true);
+          const saved=customers[0]; const hit=propContact(saved,A2), miss=propContact(saved,A1);
+          const html=propContactHtml(saved,A2);
+          return {hit, miss, call:/tel:07700900123/.test(html), note:/Ring first/.test(html)}; })()""")
+        check('property contact is saved against the right address', r['hit'] and r['hit']['n'] == 'Tina Tenant' and not r['miss'], r)
+        check('property contact shows a call button and the access note', r['call'] and r['note'], r)
+        check('no page errors in property contact', not errs, errs)
+        ctx.close()
+
         # ---------- 13. page security policy: the app runs with it and nothing is blocked ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page(); csp = []
