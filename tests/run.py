@@ -1311,6 +1311,16 @@ def run():
         check('no page errors in removing an appliance', not errs, errs)
         ctx.close()
 
+        # ---------- 12aa. bonding NA ----------
+        ctx, pg, errs = fresh(b)
+        r = ev(pg, """(()=>{ const rec=newRecord({id:'c1',name:'A B'},'gas'); records.push(rec); ui.rec=rec; ui.step=2; render();
+          const labels=[...document.querySelectorAll('.f, .card')].map(e=>e.innerText).join('|');
+          rec.bonding='NA'; const na=WARN.neededFor(rec); rec.bonding='Fail'; const fail=WARN.neededFor(rec);
+          return {na,fail,opts:OPT.pfn.join(',')}; })()""")
+        check('bonding NA does not need a warning notice, Fail does', (not r['na']) and r['fail'], r)
+        check('no page errors for bonding NA', not errs, errs)
+        ctx.close()
+
         # ---------- 13. page security policy: the app runs with it and nothing is blocked ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page(); csp = []

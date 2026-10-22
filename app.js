@@ -905,7 +905,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v223';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v224';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1605,7 +1605,7 @@ function stepInstall() {
     ${choice('installPipe', 'Visual inspection of gas installation pipework', OPT.pfn, { req: 1 })}
     ${choice('supplyPipe', 'Visual inspection of gas supply pipework', OPT.pfn, { req: 1 })}
     ${choice('ecv', 'Is ECV access satisfactory?', OPT.pf, { req: 1 })}
-    ${choice('bonding', 'Is the protective equipotential bonding satisfactory?', OPT.pf, { req: 1 })}
+    ${choice('bonding', 'Is the protective equipotential bonding satisfactory?', OPT.pfn, { req: 1 })}
   </div>
   <h2>Gas tightness test</h2>
   <div class="card">
