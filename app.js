@@ -98,7 +98,7 @@ const makesFor = t => (isBoilerType(t) || !t ? SVC.MAKE.filter(x => x !== 'Other
 const blankAppliance = () => ({
   location: '', locationOther: '', type: '', typeOther: '', manufacturer: '', model: '', gc: '', serial: '', ownership: 'Landlord', flue: '', serviced: '',
   test: '', op: '', hi: '', safety: '', vent: '', terminal: '', flueOp: '',
-  ratioMin: '', coMin: '', co2Min: '', ratioMax: '', coMax: '', co2Max: '', safe: ''
+  ratioMin: '', coMin: '', co2Min: '', ratioMax: '', coMax: '', co2Max: '', safe: '', visualOnly: ''
 });
 const blankDefect = () => ({ text: '', cls: '', action: '' });
 
@@ -419,11 +419,13 @@ function validate(rec) {
     if (a.location === 'Other') need(1, P('locationOther'), n + 'location (other)', A);
     need(1, P('type'), n + 'type', A); if (a.type === 'Other') need(1, P('typeOther'), n + 'type (other)', A); need(1, P('manufacturer'), n + 'manufacturer', A); need(1, P('model'), n + 'model', A);
     need(1, P('ownership'), n + 'ownership', A); need(1, P('flue'), n + 'flue type', A); need(1, P('serviced'), n + 'serviced', A);
+    if (a.visualOnly !== 'Yes') {
     need(1, P('test'), n + 'which tests can be performed', A);
     if (a.test && a.test !== 'Gas Rate') need(1, P('op'), n + 'operating pressure', A);
     if (a.test && a.test !== 'Operating Pressure') need(1, P('hi'), n + 'gas rate (kW)', A);
     need(1, P('vent'), n + 'ventilation', A); need(1, P('terminal'), n + 'flue visual', A); need(1, P('flueOp'), n + 'flue operation', A);
-    need(1, P('safety'), n + 'safety devices', A); need(1, P('safe'), n + 'safe to use', A);
+    need(1, P('safety'), n + 'safety devices', A); }
+    need(1, P('safe'), n + 'safe to use', A);
   });
   need(2, 'installPipe', 'Installation pipework visual'); need(2, 'supplyPipe', 'Supply pipework visual');
   need(2, 'ecv', 'ECV access'); need(2, 'bonding', 'Equipotential bonding'); need(2, 'tightness', 'Tightness test');
@@ -903,7 +905,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v221';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v222';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1563,7 +1565,8 @@ function stepAppliances() {
       ${choice(P('serviced'), 'Serviced at the same time?', OPT.yn, { req: 1 })}
     </div>
     <h2>Inspection</h2>
-    <div class="card">
+    <div class="card">${choice(P('visualOnly'), 'Visual inspection only?', OPT.yn, { hint: 'Choose Yes if no physical checks could be done. “Visual inspection only” is then printed on the certificate for this appliance.' })}</div>
+    ${a.visualOnly === 'Yes' ? '<div class="notice">Visual inspection only. The tests, flue checks and combustion readings are skipped for this appliance. Just say whether it is safe to use, and add any defects below.</div>' : `    <div class="card">
       ${choice(P('test'), 'Which tests can be performed?', OPT.test, { req: 1, wrap: 1 })}
       ${a.test && a.test !== 'Gas Rate' ? txt(P('op'), 'Operating pressure (mbar)', { req: 1, mode: 'decimal', hint: 'Working pressure at the burner or appliance inlet' }) : ''}
       ${isWorcester(a.manufacturer) ? txt(P('fanPress'), 'Fan pressure (mbar)', { mode: 'decimal', hint: 'Worcester Bosch – optional. Enter it as 4.62 and it is recorded as -4.62 mbar' }) : ''}
@@ -1579,6 +1582,7 @@ function stepAppliances() {
       <div class="row"><div class="grow">${txt(P('co2Min'), 'CO2 % – min', { mode: 'decimal' })}</div><div class="grow">${txt(P('co2Max'), 'CO2 % – max', { mode: 'decimal' })}</div></div>
       <div class="row"><div class="grow">${txt(P('ratioMin'), 'Ratio – min', { mode: 'decimal' })}</div><div class="grow">${txt(P('ratioMax'), 'Ratio – max', { mode: 'decimal' })}</div></div>
     </div>
+`}
     <h2>Result</h2>
     <div class="card">${choice(P('safe'), 'Is this appliance safe to use?', OPT.yn, { req: 1 })}</div>
     ${applianceDefects(i)}`;

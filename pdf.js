@@ -158,15 +158,17 @@ async function drawPdf(rec, s, lv) {
     }
     ensure(BAR + headH + 8); bar(title, M, CW, y); y += BAR; head();
     rows.forEach(r => {
-      const cells = r.map((v, i) => { const o = typeof v === 'object' && v !== null ? v : { t: v }; return { ...o, lines: wrap(o.t === '' || o.t == null ? '–' : o.t, cols[i].w - 2 * padX, fsB, o.b ? 'bold' : 'normal') }; });
+      let ci = 0;   // a cell can span several columns ({ span: n }), used for "visual inspection only"
+      const cells = r.map(v => { const o = typeof v === 'object' && v !== null ? v : { t: v }, sp = o.span || 1, w = cols.slice(ci, ci + sp).reduce((a, c) => a + c.w, 0), at = ci; ci += sp; return { ...o, at, sp, w, lines: wrap(o.t === '' || o.t == null ? '–' : o.t, w - 2 * padX, fsB, o.b ? 'bold' : 'normal') }; });
       const rh = Math.max(...cells.map(c => c.lines.length)) * lh(fsB) * 1.1 + 2 * padY + 0.9;
       if (y + rh > H - FOOT) { doc.addPage(); band(false); bar(title + ' (continued)', M, CW, y); y += BAR; head(); }
       let x = M;
-      cells.forEach((c, i) => {
-        doc.setDrawColor(...LINE); doc.rect(x, y, cols[i].w, rh);
+      cells.forEach(c => {
+        const al = c.sp > 1 ? 'c' : cols[c.at].a;
+        doc.setDrawColor(...LINE); doc.rect(x, y, c.w, rh);
         doc.setFont('helvetica', c.b ? 'bold' : 'normal'); doc.setFontSize(fsB); doc.setTextColor(...(c.c || INK));
-        c.lines.forEach((t, j) => doc.text(t, cols[i].a === 'c' ? x + cols[i].w / 2 : x + padX, y + padY + 2.5 + j * lh(fsB) * 1.1, { align: cols[i].a === 'c' ? 'center' : 'left' }));
-        x += cols[i].w;
+        c.lines.forEach((t, j) => doc.text(t, al === 'c' ? x + c.w / 2 : x + padX, y + padY + 2.5 + j * lh(fsB) * 1.1, { align: al === 'c' ? 'center' : 'left' }));
+        x += c.w;
       });
       y += rh;
     });
@@ -202,7 +204,8 @@ async function drawPdf(rec, s, lv) {
     { h: 'Flue op.', w: 12, a: 'c' }, { h: 'Safety devices', w: 16, a: 'c' }, { h: 'Safe to use', w: 14, a: 'c' }
   ];
   table('APPLIANCE DETAILS AND INSPECTION', cols, apps.map((a, i) => [{ t: String(i + 1), b: 1 }, loc(a), typeText(a), a.manufacturer, a.model + (a.gc ? '\nGC: ' + a.gc : '') + (a.serial ? '\nS/N: ' + a.serial : ''), a.ownership, a.flue, a.serviced,
-    a.op, a.hi, ...(showFan ? [fanOf(a)] : []), res(a.vent), res(a.terminal), res(a.flueOp), res(a.safety), safe(a.safe)]));
+    ...(a.visualOnly === 'Yes' ? [{ t: 'VISUAL INSPECTION ONLY – no physical checks were undertaken. The safe to use result is based on obvious physical defects.', b: 1, span: showFan ? 7 : 6 }]
+      : [a.op, a.hi, ...(showFan ? [fanOf(a)] : []), res(a.vent), res(a.terminal), res(a.flueOp), res(a.safety)]), safe(a.safe)]));
   /* key to the abbreviations used in the table above */
   {
     const keyTxt = 'KEY:  OP = operating pressure at the appliance (mbar)   ·   HI = heat input / gas rate (kW)' + (showFan ? '   ·   Fan pressure = Worcester Bosch fan pressure reading (mbar)' : '') + '   ·   Vent. = ventilation   ·   Flue op. = flue operation checks   ·   NA = not applicable';

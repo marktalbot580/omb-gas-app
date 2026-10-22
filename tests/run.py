@@ -1285,6 +1285,20 @@ def run():
         check('no page errors in property contact', not errs, errs)
         ctx.close()
 
+        # ---------- 12y. visual inspection only ----------
+        ctx, pg, errs = fresh(b)
+        r = ev(pg, """(async()=>{ const rec=newRecord({id:'c1',name:'A B'},'gas'); records.push(rec); const a=rec.appliances[0];
+          const before=validate(rec).length; a.visualOnly='Yes'; ['test','op','hi','vent','terminal','flueOp','safety'].forEach(k=>a[k]='');
+          const bad=validate(rec).filter(x=>/appliance 1|^1\\b/i.test(String(x.label))&&/ventilation|flue visual|flue operation|safety devices|operating pressure|gas rate|which tests/i.test(String(x.label))).length;
+          let pdf='ok'; try{ const bl=await buildPdf(rec,settings); if(bl.size<3000) pdf='tiny'; }catch(e){ pdf=String(e); }
+          ui.rec=rec; ui.view='form'; ui.step=1; ui.appTab=0; render(); const txt=document.body.innerText;
+          return {bad,pdf,note:/Visual inspection only\\./.test(txt),hasTest:/Which tests can be performed/.test(txt)}; })()""")
+        check('visual inspection only skips the physical checks in validation', r['bad'] == 0, r)
+        check('visual inspection only still makes a PDF', r['pdf'] == 'ok', r)
+        check('visual inspection only hides the test boxes on the form', r['note'] and not r['hasTest'], r)
+        check('no page errors in visual inspection only', not errs, errs)
+        ctx.close()
+
         # ---------- 13. page security policy: the app runs with it and nothing is blocked ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page(); csp = []
