@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v223', items: ['Gas safety check: if you reduce the number of appliances, any defects noted against the appliance you took off are removed too, so the Review page no longer asks you to complete them.'] },
   { v: 'v222', items: ['Gas safety check: new \u201cVisual inspection only?\u201d choice for each appliance. Choose Yes when no physical checks could be done and the tests are skipped. The certificate then says \u201cVisual inspection only\u201d against that appliance.'] },
   { v: 'v221', items: ['Each property on a customer can now have its own contact: a name, phone number and access note (for example the tenant at a letting agent\u2019s house). It shows on the appointment with a Call button, on the form under the job address, and as \u201cSite contact\u201d in the site details of all the certificates and warning notices (the access note is never printed).', 'On an appointment, \u201cStart the forms for this job\u201d is now at the top, just under the Navigate button.'] },
   { v: 'v219', items: ['Pop-up pages (Route, Plan my day, New and others) now close when you swipe them down, so you no longer have to scroll to the bottom to go back.'] },

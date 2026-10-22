@@ -1299,6 +1299,18 @@ def run():
         check('no page errors in visual inspection only', not errs, errs)
         ctx.close()
 
+        # ---------- 12z. fewer appliances removes the removed appliance's defects ----------
+        ctx, pg, errs = fresh(b)
+        r = ev(pg, """(()=>{ const rec=newRecord({id:'c1',name:'A B'},'gas'); records.push(rec); ui.rec=rec; rec.applianceCount='4'; while(rec.appliances.length<4) rec.appliances.push(blankAppliance());
+          rec.defects=[Object.assign(blankDefect(),{app:0,text:'keep',cls:'AR',action:'x'}),Object.assign(blankDefect(),{app:3})]; rec.defectCount='2';
+          const before=validate(rec).filter(x=>/Appliance 4 defect/.test(x.label)).length;
+          onChoice('applianceCount','3');
+          const after=validate(rec).filter(x=>/Appliance 4 defect/.test(x.label)).length;
+          return {before,after,left:rec.defects.length,count:rec.defectCount,kept:rec.defects[0].text}; })()""")
+        check('removing an appliance drops the defects noted against it', r['before'] > 0 and r['after'] == 0 and r['left'] == 1 and r['count'] == '1' and r['kept'] == 'keep', r)
+        check('no page errors in removing an appliance', not errs, errs)
+        ctx.close()
+
         # ---------- 13. page security policy: the app runs with it and nothing is blocked ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page(); csp = []

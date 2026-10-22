@@ -905,7 +905,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v222';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v223';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -3513,7 +3513,12 @@ function onChoice(path, val) {
     if (val !== 'Other') ap.typeOther = '';
     if (/^(cooker|hob|oven)$/i.test(val)) ap.gc = '';
   }
-  if (path === 'applianceCount') { const n = +val; while (r.appliances.length < n) r.appliances.push(blankAppliance()); if (ui.appTab >= n) ui.appTab = n - 1; }
+  if (path === 'applianceCount') {
+    const n = +val; while (r.appliances.length < n) r.appliances.push(blankAppliance()); if (ui.appTab >= n) ui.appTab = n - 1;
+    /* fewer appliances: defects noted against the appliances that were taken off go too, or they would still ask to be completed */
+    const cnt = +r.defectCount || 0, gone = r.defects.filter((d, k) => k < cnt && d.app !== undefined && d.app >= n);
+    if (gone.length) { gone.forEach(d => PH.dropAll(d.photos || [])); r.defects = r.defects.filter((d, k) => !(k < cnt && d.app !== undefined && d.app >= n)); r.defectCount = String(Math.max(0, cnt - gone.length)); toast(gone.length + (gone.length === 1 ? ' defect' : ' defects') + ' noted against the removed appliance ' + (gone.length === 1 ? 'was' : 'were') + ' taken off too'); }
+  }
   if (path === 'defectCount') { const n = +val; while (r.defects.length < n) r.defects.push(blankDefect()); }
   persistRec(r);
   const y = window.scrollY; render(); window.scrollTo(0, y);
