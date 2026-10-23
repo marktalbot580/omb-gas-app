@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v228', items: ['Today: tap an overdue invoice to open it. The Chase button is still there.'] },
   { v: 'v227', items: ['Faster start-up. The app now opens straight from the copy kept on your phone, so it no longer waits on a weak signal. A new version downloads quietly in the background and starts the next time you open the app.'] },
   { v: 'v226', items: [
     'Forms: after you answer a Pass / Fail or Yes / No question for the first time, the form scrolls to the next blank one. You can switch this off in Settings.',

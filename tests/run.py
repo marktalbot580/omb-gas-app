@@ -124,6 +124,8 @@ def run():
         check('invoice total includes VAT', '144' in ev(pg, "document.querySelector('#invTotals').innerText"), ev(pg, "document.querySelector('#invTotals').innerText"))
         ev(pg, "invoices[0].due='2000-01-01';invoices[0].paid=false;saveInvoices()")
         check('overdue invoice is detected', ev(pg, "invOverdueAsk().length===1"))
+        ev(pg, "ui.view='home';render()")
+        check('today overdue row opens the invoice', ev(pg, "(()=>{const r=document.querySelector('.line .main[data-act=openInv]'); if(!r) return false; r.click(); return ui.view==='invEdit' || ui.view==='invoices' || ui.inv&&ui.inv.id===invoices[0].id})()"))
         ev(pg, "invoices[0].paid=true;saveInvoices()")
         check('paid invoice is not overdue', ev(pg, "invOverdueAsk().length===0"))
         ev(pg, "ui.view='home';render()")
