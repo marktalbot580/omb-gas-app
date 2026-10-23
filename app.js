@@ -923,7 +923,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v226';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v227';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -3747,7 +3747,12 @@ const deleteRemote = (kind, id) => CLOUD.del(kind, id);
 })();
 
 /* ---------- start ---------- */
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => { });
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  const hadSW = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => { });
+  /* a new release finished downloading in the background: it is used the next time the app is opened */
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadSW) { try { toast('A new version is ready. It starts next time you open the app.'); } catch (e) { } } });
+}
 window.addEventListener('online', () => syncAll());
 window.__app = { invoices: () => invoices, newInvoice, invTotals, buildInvPdf, ui, get settings() { return settings; }, get records() { return records; }, get customers() { return customers; }, render, validate, buildPdf, newRecord, blankAppliance, blankDefect, mates, jobRecs, jobSeq, startJob, goTo, SVC, LEG };
 applyBrand();
