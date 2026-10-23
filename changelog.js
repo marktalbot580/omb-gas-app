@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v225', items: ['Tapping a finished quote in the list now takes you straight to the screen where you can open it, send it, edit it, accept it or decline it. The review page in between is gone for quotes.'] },
   { v: 'v224', items: ['Gas safety check: equipotential bonding now has an NA choice (for example a plastic incoming supply), the same as the pipework checks. NA does not trigger a warning notice. Fail still does.'] },
   { v: 'v223', items: ['Gas safety check: if you reduce the number of appliances, any defects noted against the appliance you took off are removed too, so the Review page no longer asks you to complete them.'] },
   { v: 'v222', items: ['Gas safety check: new \u201cVisual inspection only?\u201d choice for each appliance. Choose Yes when no physical checks could be done and the tests are skipped. The certificate then says \u201cVisual inspection only\u201d against that appliance.'] },

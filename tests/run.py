@@ -1321,6 +1321,16 @@ def run():
         check('no page errors for bonding NA', not errs, errs)
         ctx.close()
 
+        # ---------- 12ab. opening a finished quote skips the review page ----------
+        ctx, pg, errs = fresh(b)
+        r = ev(pg, """(async()=>{ const c={id:'qc1',name:'Dan Cole',phone:'07700900222',email:'d@x.com',billing:'2 High St',properties:['6 Elm Rd\\nLincoln\\nLN6 7QD']};customers.push(c);saveCustomers();const q=newRecord(c,'quote');q.customerId='qc1';q.jobAddress='6 Elm Rd\\nLincoln\\nLN6 7QD';q.make='Worcester';q.model='30i';q.kind='Heat only';q.boilerPrice='2240';q.fluePrice='220';q.labourPrice='180';q.labourQty='1';q.lines=[{name:'Magnetic filter',qty:'1',price:'180'}];q.status='complete';q.qStatus='';q.qDate=localISO();records.push(q);saveRecords();
+          ui.view='invoices'; ui.invTab='quotes'; render(); const btn=document.querySelector('[data-act=openRec][data-id="'+q.id+'"]'); if(!btn) return {nobtn:true};
+          btn.click(); await new Promise(r=>setTimeout(r,1500));
+          const t=document.body.innerText; return {review:/items? to complete|Open documents/.test(t), made:!!ui.pdfs[q.id]}; })()""")
+        check('opening a finished quote goes straight to the open / edit screen', r.get('made') and not r.get('review'), r)
+        check('no page errors opening a quote', not errs, errs)
+        ctx.close()
+
         # ---------- 13. page security policy: the app runs with it and nothing is blocked ----------
         ctx = b.new_context(viewport={'width': 390, 'height': 800})
         pg = ctx.new_page(); csp = []

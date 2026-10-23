@@ -905,7 +905,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v224';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v225';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -3018,7 +3018,10 @@ document.addEventListener('click', async e => {
       ui.formFrom = { view: ui.view, book: ui.view === 'book' ? ui.book : null };
       const m = mates(records.find(x => x.id === b.dataset.id)), done = m.every(x => x.status === 'complete');
       ui.job = m.length > 1 ? m.map(x => x.id) : null;
-      ui.rec = done ? m[m.length - 1] : m[0]; ui.step = done ? stepsOf(ui.rec).length - 1 : 0; ui.appTab = 0; ui.showErr = false; ui.pdfs = {}; ui.view = 'form'; render(); break;
+      ui.rec = done ? m[m.length - 1] : m[0]; ui.step = done ? stepsOf(ui.rec).length - 1 : 0; ui.appTab = 0; ui.showErr = false; ui.pdfs = {}; ui.view = 'form'; render();
+      /* a finished quote goes straight to its open / edit / accept / decline screen, with no review page in between */
+      if (done && ['quote', 'gquote'].includes(typeOf(ui.rec)) && !reviewIssues(m).length) makePdf(true);
+      break;
     }
     case 'addWarn': {
       const svc = records.find(x => x.id === b.dataset.id); if (!svc) break;
@@ -3554,7 +3557,7 @@ function saveCust(silent) {
 
 /* ---------- PDF ---------- */
 const pdfName = r => `${r.general ? 'Quotation' : FORM_DOC[typeOf(r)][0]} - ${(r.customer.name || 'Customer').replace(/[^\w ]+/g, '')} - ${r.inspectionDate}.pdf`;
-async function makePdf() {
+async function makePdf(quiet) {
   const m = jobRecs() || [ui.rec];
   commitCustomer(m[0]);
   try {
@@ -3567,7 +3570,7 @@ async function makePdf() {
     const bm = billable(m);
     if (bm.length && !noInv(m) && !invForVisit(m) && bm.every(r => numOf(settings[SVC_PRICE[typeOf(r)]]) > 0)) persistInv(newInvoice(m));
     await ensureInvPdf(m);
-    render(); toast(m.length > 1 ? `${m.length} PDFs created` : 'PDF created'); syncAll();
+    render(); if (!quiet) toast(m.length > 1 ? `${m.length} PDFs created` : 'PDF created'); syncAll();
   } catch (err) { console.error(err); toast('Could not create the PDF: ' + err.message); }
 }
 async function sharePdf(r) {
