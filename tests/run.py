@@ -770,7 +770,7 @@ def run():
         ev(pg, "ui.view='invoices';ui.invTab='quotes';render()")
         check('quote shows booked once an appointment exists', 'Booked in for' in ev(pg, "document.querySelector('#view').innerText") and not ev(pg, "!!document.querySelector('[data-act=quoBook]')"))
         ev(pg, "ui.book={...bookings[0]};ui.bookFrom='cal';ui.view='book';render()")
-        pg.click('[data-act=bookDel]')
+        pg.evaluate("document.querySelectorAll('details.more').forEach(d=>d.open=true)"); pg.click('[data-act=bookDel]')
         ev(pg, "ui.view='invoices';ui.invTab='quotes';render()")
         check('deleting the appointment frees the quote to be booked again', ev(pg, "!!document.querySelector('[data-act=quoBook]')") and not ev(pg, "records.find(r=>r.type==='quote').qBooked"))
         ev(pg, "ui.view='invoices';ui.invTab='quotes';render()")
@@ -1329,6 +1329,53 @@ def run():
           const t=document.body.innerText; return {review:/items? to complete|Open documents/.test(t), made:!!ui.pdfs[q.id]}; })()""")
         check('opening a finished quote goes straight to the open / edit screen', r.get('made') and not r.get('review'), r)
         check('no page errors opening a quote', not errs, errs)
+        ctx.close()
+
+        # ---------- 12ac. v226 interface changes ----------
+        ctx, pg, errs = fresh(b)
+        r = ev(pg, """(async()=>{ const out={};
+          customers.length=0; records.length=0; bookings.length=0; invoices.length=0;
+          const cu={id:'k1',name:'Kim Search',phone:'07700900555',email:'k@x.com',billing:'3 Bill St\\nLincoln\\nLN3 3AA',properties:['5 Prop Rd\\nLincoln\\nLN5 5PR'],updated:1}; customers.push(cu);
+          // customer quick row
+          ui.cust=JSON.parse(JSON.stringify(cu)); ui.view='custEdit'; render();
+          out.qk=document.querySelectorAll('.qkrow .qk').length; out.qkLinks=document.querySelectorAll('.qkrow a.qk').length;
+          // search
+          const s1=omnSearch('kim'), s2=omnSearch('LN55PR'), s3=omnSearch('0770 090 0555'), s4=omnSearch('zzzz');
+          out.s=[s1.customers.length,s2.customers.length,s3.customers.length,s4.customers.length];
+          document.getElementById('searchBtn').click(); const inp=document.getElementById('srchIn'); inp.value='kim'; inp.dispatchEvent(new Event('input',{bubbles:true}));
+          out.srchRow=!!document.querySelector('#srchOut [data-act=editCust]'); document.getElementById('srchX').click(); await new Promise(r=>setTimeout(r,50));
+          out.srchClosed=!document.getElementById('searchSheet');
+          // today: next job has Start the forms
+          const D=localISO(); bookings.push({id:'t1',date:D,time:'23:00',mins:60,name:'Kim Search',customerId:'k1',address:'5 Prop Rd\\nLincoln\\nLN5 5PR',types:['service'],status:'booked',phone:'07700900555',email:'',auto:false});
+          bookings.push({id:'t2',date:D,time:'23:30',mins:30,name:'Second Job',address:'1 Other St\\nLincoln\\nLN1 1AB',types:['gas'],status:'booked',phone:'',email:'',auto:false});
+          ui.view='home'; render(); out.startBtn=!!document.querySelector('[data-act=todayStart]'); out.tl=!!document.querySelector('.tl .tlrow');
+          // appointment page More menu
+          ui.book={...bookings[0]}; ui.view='book'; render(); out.more=!!document.querySelector('details.more'); out.moreClosed=!document.querySelector('details.more').open;
+          // auto-advance
+          const rec=newRecord(cu,'gas'); records.push(rec); ui.rec=rec; ui.step=2; ui.view='form'; render();
+          const fs=[...document.querySelectorAll('.f[data-f]')].filter(e=>e.querySelector('.seg')); out.fcount=fs.length;
+          let scrolled=0; Element.prototype.scrollIntoView=function(){ scrolled++; };
+          const b1=document.querySelector('.f[data-f=installPipe] button[data-v=Pass]'); b1.click(); await new Promise(r=>setTimeout(r,200)); out.adv1=scrolled;
+          const b2=document.querySelector('.f[data-f=installPipe] button[data-v=Fail]'); b2.click(); await new Promise(r=>setTimeout(r,200)); out.adv2=scrolled;
+          return out; })()""")
+        check('customer has four quick buttons', r['qk'] == 4 and r['qkLinks'] >= 1, r)
+        check('search finds customers by name, postcode and phone, and nothing for rubbish', r['s'] == [1, 1, 1, 0], r)
+        check('search sheet shows a tappable result and closes', r['srchRow'] and r['srchClosed'], r)
+        check('Today next job has Start the forms and a timeline', r['startBtn'] and r['tl'], r)
+        check('appointment page has a closed More menu', r['more'] and r['moreClosed'], r)
+        check('first answer scrolls to the next question, a changed answer does not', r['adv1'] == 1 and r['adv2'] == 1, r)
+        check('no page errors in interface changes', not errs, errs)
+        ctx.close()
+
+        # first-time tour shows for an empty account
+        ctx, pg, errs = fresh(b)
+        ev(pg, "(()=>{ const b=document.createElement('button'); b.dataset.act='tour'; document.body.appendChild(b); b.click(); b.remove(); })()")
+        pg.wait_for_selector('#tourBox', timeout=9000)
+        n = ev(pg, "(()=>{ document.querySelector('[data-tour=next]').click(); return document.querySelector('#tourBox h2').textContent; })()")
+        check('the tour moves on a step', n == 'Start a job', n)
+        ev(pg, "document.querySelector('[data-tour=skip]').click()")
+        check('skipping the tour closes it and remembers', ev(pg, "!document.getElementById('tourBox') && settings.tourDone==='1'"))
+        check('no page errors in the tour', not errs, errs)
         ctx.close()
 
         # ---------- 13. page security policy: the app runs with it and nothing is blocked ----------

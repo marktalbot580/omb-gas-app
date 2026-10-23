@@ -155,9 +155,10 @@ function renderBook(v) {
     <h2>Notes</h2><div class="card">${f('notes', 'Anything to remember', { area: 1 })}</div>
     <button class="btn gold block" data-act="bookSave">${isNew ? 'Add to calendar' : 'Save changes'}</button>
     ${!isNew && bkForms(B).length ? `<h2>Forms for this job</h2>${bkForms(B).map(r => `<button type="button" class="item" data-act="bookForm" data-id="${r.id}"><div class="row sp"><span class="t">${esc(formName(r))}</span><span class="badge ${r.status}">${r.status}</span></div><div class="s">${esc(r.ref)} · ${ukDate(r.inspectionDate)}</div></button>`).join('')}` : ''}
-    ${isNew ? '' : `<div style="height:10px"></div><button class="btn block" data-act="bookDone">${B.status === 'done' ? 'Mark as not done' : 'Mark as done'}</button>
+    ${isNew ? '' : `<details class="more" style="margin-top:10px"><summary>More</summary>
+      <button class="btn block" data-act="bookDone" style="margin-top:10px">${B.status === 'done' ? 'Mark as not done' : 'Mark as done'}</button>
       <div style="height:10px"></div><button class="btn block" data-act="bookIcs">Add to my phone’s calendar</button>
-      <div style="height:10px"></div><button class="btn block ghost" data-act="bookDel">Delete appointment</button>`}
+      <div style="height:10px"></div><button class="btn block ghost" data-act="bookDel">Delete appointment</button></details>`}
     <div style="height:10px"></div><button class="btn ghost block" data-act="bookBack">${isNew ? 'Cancel' : 'Back'}</button>`;
 }
 function bkBack() { ui.book = null; if (ui.bookFrom === 'quotes') { ui.view = 'invoices'; ui.invTab = 'quotes'; } else if (ui.bookFrom === 'form' && ui.rec) ui.view = 'form'; else if (ui.bookFrom === 'due') ui.view = 'due'; else if (ui.bookFrom === 'pick' && ui.pick) ui.view = 'pick'; else ui.view = ui.bookFrom === 'home' ? 'home' : 'cal'; render(); }

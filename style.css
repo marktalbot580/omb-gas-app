@@ -369,3 +369,28 @@ html[data-theme=light] .pill.on{background:#f6ebcf}
   .card[data-act]:hover,.row[data-act]:hover,.li[data-act]:hover{border-color:var(--gold);cursor:pointer}
 }
 :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* v226: "More" menu on the appointment page */
+details.more>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:14px;border:1px solid var(--line);background:transparent;color:var(--txt);font-weight:600}
+details.more>summary::-webkit-details-marker{display:none}
+details.more>summary::after{content:'\25BE';margin-left:8px;transition:transform .15s}
+details.more[open]>summary::after{transform:rotate(180deg)}
+details.more>summary:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
+
+/* v226: quick action row on a customer */
+.qkrow{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 0 12px}
+.qk{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:64px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--txt);font:inherit;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer}
+.qk span{font-size:20px;line-height:1}
+.qk.off{opacity:.4;cursor:default}
+.qk:not(.off):hover{border-color:var(--gold)}
+.qk:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
+
+/* v226: Today timeline */
+.tl{position:relative;margin-left:2px}
+.tl::before{content:'';position:absolute;left:25px;top:8px;bottom:8px;width:2px;background:var(--line)}
+.tlrow{position:relative}
+.tltime{width:52px;flex:none;font-variant-numeric:tabular-nums}
+.tlgap{margin:-2px 0 6px 42px;font-size:13px;color:var(--mut);position:relative}
+
+/* v226: friendlier empty screens */
+.empty{border:1.5px dashed var(--line);border-radius:16px;margin:10px 0;line-height:1.5}

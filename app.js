@@ -625,6 +625,14 @@ function txt(path, label, o = {}) {
   const box = o.copy ? `<span style="display:flex;gap:8px;align-items:stretch">${el.replace('<input ', '<input style="flex:1;min-width:0" ')}<button type="button" class="btn ghost" data-act="copyVal" style="width:auto;padding:0 14px;margin:0" aria-label="Copy ${esc(label)}">Copy</button></span>` : el;
   return `<label class="f ${bad(o, v) ? 'bad' : ''}" data-f="${path}"><span>${label}${o.req ? ' <b>*</b>' : ''}</span>${box}${o.hint ? `<small>${o.hint}</small>` : ''}</label>`;
 }
+/* after the FIRST answer to a Pass / Fail / Yes / No question, glide down to the next question that has not been answered yet */
+function autoAdvance(path) {
+  setTimeout(() => {
+    const all = [...document.querySelectorAll('.f[data-f]')], i = all.findIndex(e => e.dataset.f === path); if (i < 0) return;
+    const next = all.slice(i + 1).find(e => { const s = e.querySelector('.seg'); return s ? !s.querySelector('.on') : !((e.querySelector('input,textarea') || {}).value); });
+    if (next) next.scrollIntoView({ block: 'center', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }, 80);
+}
 function choice(path, label, opts, o = {}) {
   const v = getP(ui.rec, path) ?? '';
   const tone = x => (o.yn && /^yes$/i.test(x) ? 'pass' : o.yn && /^no$/i.test(x) ? 'fail' : /^pass$/i.test(x) ? 'pass' : /^fail$/i.test(x) ? 'fail' : /^na$/i.test(x) ? 'na' : '');
@@ -848,7 +856,7 @@ function paintCustList() {
       </button>
       ${String(c.phone || '').replace(/\D/g, '').length >= 5 ? `<a class="callb" href="${telHref(c.phone)}" aria-label="Call ${esc(c.name)}">&#128222;</a>` : ''}
       <button type="button" class="heart ${c.fav ? 'on' : ''}" data-act="favCust" data-id="${c.id}" aria-label="${c.fav ? 'Remove from favourites' : 'Add to favourites'}">${c.fav ? '♥' : '♡'}</button>
-    </div>`).join('') : `<div class="empty">${!customers.length ? 'No customers yet. Add one here, or they are saved automatically when you complete a form.' : mode === 'fav' && !q ? 'No favourites yet. Tap the ♡ beside a customer to add one.' : 'No matches.'}</div>`;
+    </div>`).join('') : `<div class="empty">${!customers.length ? 'No customers yet. Add one here, or they are saved automatically when you complete a form.' : mode === 'fav' && !q ? 'No favourites yet. Tap the ♡ beside a customer to add one.' : 'No matches. Try part of the name, the phone number or the postcode.'}</div>`;
 }
 
 /* every job done for a customer, newest first – shown when you open the customer */
@@ -866,10 +874,20 @@ function custAppts(c) {
   const t = localISO(), l = bookings.filter(b => b.customerId === c.id && b.date >= t && b.status !== 'done').sort((x, y) => (x.date + x.time).localeCompare(y.date + y.time));
   return l.length ? '<h2 style="margin-top:0">Booked in</h2>' + l.map(b => bkItem(b, true)).join('') : '';
 }
+/* four big buttons at the top of a saved customer: call, text, navigate, new job */
+function custQuick(c) {
+  const ph = String(c.phone || ''), digits = ph.replace(/\D/g, ''), props = (c.properties || []).filter(Boolean);
+  const call = digits.length >= 5 ? `<a class="qk" href="${telHref(ph)}"><span>&#128222;</span>Call</a>` : '<span class="qk off"><span>&#128222;</span>Call</span>';
+  const text = isMobileNo(ph) ? `<a class="qk" href="sms:${esc(ph.replace(/[^\d+]/g, ''))}"><span>&#128172;</span>Text</a>` : '<span class="qk off"><span>&#128172;</span>Text</span>';
+  const nav = props.length === 1 ? `<a class="qk" href="${esc(mapsUrl(props[0]))}" target="_blank" rel="noopener"><span>&#128205;</span>Navigate</a>`
+    : props.length > 1 ? '<button type="button" class="qk" data-act="cTab" data-t="nav"><span>&#128205;</span>Navigate</button>' : '<span class="qk off"><span>&#128205;</span>Navigate</span>';
+  return `<div class="qkrow">${call}${text}${nav}<button type="button" class="qk" data-act="recForCust"><span>&#10133;</span>New job</button></div>`;
+}
 function renderCustEdit(v) {
   const c = ui.cust, cTab = c._new ? 'cust' : (ui.cTab || 'cust');
   v.innerHTML = `
     <h1>${c._new ? 'New customer' : 'Edit customer'}</h1>
+    ${c._new ? '' : custQuick(c)}
     ${c._new ? '' : `<div class="stabs grid">${[['cust', 'Customer'], ['nav', 'Navigate'], ['appl', 'Appliances'], ['jobs', 'Previous jobs']].map(([k, l]) => `<button type="button" class="${cTab === k ? 'on' : ''}" data-act="cTab" data-t="${k}">${l}</button>`).join('')}</div>`}
     <div data-ctab="cust" ${cTab === 'cust' ? '' : 'hidden'}>
     <div class="card">
@@ -905,7 +923,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v225';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v226';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1034,7 +1052,7 @@ function renderSettings(v) {
   const f = (k, l, o = {}) => `<label class="f"><span>${l}</span>${o.area ? `<textarea data-s="${k}" rows="3">${esc(settings[k])}</textarea>` : `<input data-s="${k}" value="${esc(k === 'sortCode' ? fmtSort(settings[k]) : settings[k])}" ${o.type ? `type="${o.type}"` : ''} ${o.mode ? `inputmode="${o.mode}"` : ''} autocomplete="off" ${o.maxlen ? `maxlength="${o.maxlen}"` : ''} ${o.cap ? `autocapitalize="${o.cap}"` : ''}>`}${o.hint ? `<small>${o.hint}</small>` : ''}</label>`;
   v.innerHTML = `
     <h1>Settings</h1>
-    <div class="sethelp"><button class="btn" data-act="help">Help guide</button><button class="btn" data-act="news">What’s new</button><button class="btn" data-act="feedback">Feedback</button></div>
+    <div class="sethelp"><button class="btn" data-act="help">Help guide</button><button class="btn" data-act="news">What’s new</button><button class="btn" data-act="tour">Show the tour</button><button class="btn" data-act="feedback">Feedback</button></div>
     <div class="stabs grid five">${[['business', 'Business'], ['money', 'Money'], ['messages', 'Messages'], ['calendar', 'Calendar'], ['app', 'App &amp; account']].map(([k, l]) => `<button type="button" class="${(ui.sTab || 'business') === k ? 'on' : ''}" data-act="sTab" data-t="${k}">${l}</button>`).join('')}</div>
     <div data-stab="business" ${(ui.sTab || 'business') === 'business' ? '' : 'hidden'}>
     <h2>Business (printed on every certificate)</h2>
@@ -1221,6 +1239,7 @@ function renderSettings(v) {
     <h2>Records</h2>
     <div class="card">
       <label class="f"><span>Fill in the appliance details from last time</span><select data-s="autoCopy"><option value="on" ${settings.autoCopy === 'off' ? '' : 'selected'}>Automatically</option><option value="off" ${settings.autoCopy === 'off' ? 'selected' : ''}>Only when I tap</option></select><small>Automatically means when you pick the customer and address. Applies to gas safety, boiler service and oil service records at a property you have visited before. It copies the make, model, location and flue. Test readings and signatures are left blank.</small></label>
+      <label class="f"><span>Move to the next question</span><select data-s="autoAdv"><option value="on" ${settings.autoAdv === 'off' ? '' : 'selected'}>Automatically</option><option value="off" ${settings.autoAdv === 'off' ? 'selected' : ''}>Only when I scroll</option></select><small>Automatically means that after you answer a Pass / Fail or Yes / No question for the first time, the form scrolls to the next one that is still blank.</small></label>
     </div>
     <h2>Tools</h2>
     <div class="card">
@@ -2935,7 +2954,13 @@ document.addEventListener('click', async e => {
   const nav = e.target.closest('[data-nav]');
   if (nav) { e.preventDefault(); ui.view = nav.dataset.nav; ui.search = ''; render(); return; }
   const kv = e.target.closest('button[data-k][data-v]');
-  if (kv) { if (CLOUD.locked()) { lockedMsg(); return; } onChoice(kv.dataset.k, kv.dataset.v); return; }
+  if (kv) {
+    if (CLOUD.locked()) { lockedMsg(); return; }
+    const grp = kv.closest('.f[data-f]'), seg = kv.closest('.seg'), first = !!(grp && seg && !seg.querySelector('.on'));
+    onChoice(kv.dataset.k, kv.dataset.v);
+    if (first && seg && !seg.classList.contains('wrap') && seg.children.length <= 4 && settings.autoAdv !== 'off') autoAdvance(kv.dataset.k);
+    return;
+  }
   const dtb = e.target.closest('.dtb');
   if (dtb) { const n = dtb.querySelector('.dth'); try { n.showPicker(); } catch (err) { /* the tap itself opens it on phones */ } return; }
   const b = e.target.closest('[data-act]'); if (!b) return;

@@ -1,5 +1,12 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v226', items: [
+    'Forms: after you answer a Pass / Fail or Yes / No question for the first time, the form scrolls to the next blank one. You can switch this off in Settings.',
+    'Appointments: Mark as done, Add to calendar and Delete now sit under a More button, so the page is shorter.',
+    'Customers: Call, Text, Navigate and New job buttons across the top of every saved customer.',
+    'Today: the next job has a Start the forms button, and the rest of the day is a timeline showing the drive between jobs.',
+    'Search: a magnifying glass at the top finds any customer, address, certificate, quote or invoice.',
+    'Friendlier empty screens, and a short first-time tour for new accounts (Settings has Show the tour).'] },
   { v: 'v225', items: ['Tapping a finished job (a certificate, service, quote or notice) in a list or under a customer\u2019s previous jobs now takes you straight to the screen where you can open it, send it, edit it, and accept or decline it if it is a quote. The review page in between is gone.'] },
   { v: 'v224', items: ['Gas safety check: equipotential bonding now has an NA choice (for example a plastic incoming supply), the same as the pipework checks. NA does not trigger a warning notice. Fail still does.'] },
   { v: 'v223', items: ['Gas safety check: if you reduce the number of appliances, any defects noted against the appliance you took off are removed too, so the Review page no longer asks you to complete them.'] },
