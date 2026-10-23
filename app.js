@@ -3019,8 +3019,8 @@ document.addEventListener('click', async e => {
       const m = mates(records.find(x => x.id === b.dataset.id)), done = m.every(x => x.status === 'complete');
       ui.job = m.length > 1 ? m.map(x => x.id) : null;
       ui.rec = done ? m[m.length - 1] : m[0]; ui.step = done ? stepsOf(ui.rec).length - 1 : 0; ui.appTab = 0; ui.showErr = false; ui.pdfs = {}; ui.view = 'form'; render();
-      /* a finished quote goes straight to its open / edit / accept / decline screen, with no review page in between */
-      if (done && ['quote', 'gquote'].includes(typeOf(ui.rec)) && !reviewIssues(m).length) makePdf(true);
+      /* a finished certificate, quote or notice goes straight to its open / send / edit screen, with no review page in between */
+      if (done && !reviewIssues(m).length) makePdf(true);
       break;
     }
     case 'addWarn': {
