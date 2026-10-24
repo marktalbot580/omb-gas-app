@@ -1372,6 +1372,8 @@ def run():
         check('Baxi, Vaillant and Vokera boilers: GC lookup and CO2 ranges', g9 == ['600 Combi 30kW', True, False, False, 'Evolve 28C', True, False, 'ecoFIT sustain 25kW', True, False, True, False, 'ecoTEC plus System 20kW', ''], g9)
         g10 = ev(pg, "(()=>{const a=BT.find('','x','47-532-69'), b=BT.find('','x','47-267-59'), c=BT.find('','x','41-019-21'); return [a.name, BT.judge('co2Max','9.4',a), BT.judge('co2Max','10.3',a), b.name, BT.judge('co2Max','9.3',b), BT.judge('co2Min','8.0',b), c.name, BT.judge('ratio','0.0030',c), BT.BUILTIN.filter(x=>['Alpha','Ferroli','Glow-worm','Viessmann'].includes(x.make)).length]})()")
         check('Alpha, Ferroli and Glow-worm boilers: GC lookup and CO2 ranges', g10 == ['E-Tec 28kW', False, False, 'T-One 25C', False, False, 'Energy r 12kW', True, 75], g10)
+        g11 = ev(pg, "(()=>{const a=BT.find('Ideal','i mini 24kw',''); return [a&&a.t_gc, BT.BUILTIN.some(x=>/i-mini2/i.test(x.name))]})()")
+        check('I-Mini 24kW finds its GC number from the typed model', g11 == ['47-387-15', False], g11)
         gq = ev(pg, """(async()=>{ const out={}; const cu={id:'gq1',name:'Gc Search',phone:'1',address:'1 A St'}; customers.push(cu); const rec=newRecord(cu,'service'); rec.make='Baxi'; ui.rec=rec; ui.view='form'; ui.step=1; render(); await new Promise(r=>setTimeout(r,250));
           const inp=document.querySelector('.f[data-f=model] input'); inp.value='41-406-47'; inp.dispatchEvent(new Event('input',{bubbles:true})); await new Promise(r=>setTimeout(r,200));
           const b=document.querySelector('#btSug [data-bts]'); out.n=document.querySelectorAll('#btSug [data-bts]').length; b.click(); await new Promise(r=>setTimeout(r,300));

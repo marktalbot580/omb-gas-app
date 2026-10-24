@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v254', items: ['Fixed: the Ideal I-Mini 24, 30 and 35kW now show their GC number and figures.'] },
   { v: 'v253', items: ['Added Glow-worm (Energy, Home, Sustain, Ultimate 3, Easicom 3), Alpha (E-Tec, E-Tec Plus, Evoke, InTec), Ferroli (T-One, Optimax HE Plus, Bluehelix) and Viessmann Vitodens 050-W boilers with their manufacturer figures.'] },
   { v: 'v252', items: ['Added Vaillant (ecoFIT, ecoTEC sustain, Home, ecoTEC plus), Baxi (200, 400, 600, 800 combi and system) and Vokera (Evolve, Unica Max, Vibe Max, Easi-Heat) boilers with their manufacturer figures.'] },
   { v: 'v251', items: ['Added Ideal boilers with their manufacturer figures: Logic Max Combi and Combi2, i-mini2, Vogue Max (combi and system), Logic Max System and System2, Logic Max Heat and Heat2. Search by model or GC number.'] },

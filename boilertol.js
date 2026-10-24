@@ -96,9 +96,9 @@ const BT = (() => {
     ['Logic Max Combi2','Combination','24','47-387-03','24.3','4.9','9.2','8.5','Logic Max Combi2'],
     ['Logic Max Combi2','Combination','30','47-387-04','30.4','6.1','9.3','8.5','Logic Max Combi2'],
     ['Logic Max Combi2','Combination','35','47-387-05','35.4','7.1','9.7','8.8','Logic Max Combi2'],
-    ['i-Mini2','Combination','24','47-387-15','24.3','4.9','9.2','8.5','i-mini2 C'],
-    ['i-Mini2','Combination','30','47-387-16','30.4','6.1','9.3','8.5','i-mini2 C'],
-    ['i-Mini2','Combination','35','47-387-17','35.4','7.1','9.7','8.8','i-mini2 C'],
+    ['I-Mini','Combination','24','47-387-15','24.3','4.9','9.2','8.5','i-mini2 C'],
+    ['I-Mini','Combination','30','47-387-16','30.4','6.1','9.3','8.5','i-mini2 C'],
+    ['I-Mini','Combination','35','47-387-17','35.4','7.1','9.7','8.8','i-mini2 C'],
     ['Vogue Max','Combination','26','47-349-59','18.1','3.7','9.4','8.0','Vogue Max Combi'],
     ['Vogue Max','Combination','32','47-349-60','26.1','4.6','9.8','8.5','Vogue Max Combi'],
     ['Vogue Max','Combination','40','47-349-61','32.1','5.7','9.6','8.1','Vogue Max Combi'],
@@ -493,6 +493,13 @@ const BT = (() => {
     if (!settings.btWarr) { settings.btWarr = 1; ch = true; BUILTIN.forEach(b => settings.qList.forEach(x => { if (x.type === 'Boiler' && keyOf(x) === keyOf(b) && !x.warranty && b.warranty) x.warranty = b.warranty; })); }
     /* once: the Ri is a regular (heat only) boiler, so a copy saved earlier as Combination is corrected */
     if (!settings.btKind) { settings.btKind = 1; ch = true; settings.qList.forEach(x => { if (x.type === 'Boiler' && x.kind === 'Combination' && BUILTIN.some(b => keyOf(b) === keyOf(x))) x.kind = 'Heat only'; }); }
+    /* once: copies named "i-Mini2" are renamed I-Mini, to match the starter Price list (an existing I-Mini without figures takes the figures and the duplicate goes) */
+    if (!settings.btMini) { settings.btMini = 1; ch = true;
+      settings.qList.filter(x => x.type === 'Boiler' && norm(x.make) === 'ideal' && /^i-?mini2 /i.test(x.name || '')).forEach(x => {
+        const nn = String(x.name).replace(/^i-?mini2 /i, 'I-Mini '), ex = settings.qList.find(y => y !== x && y.type === 'Boiler' && norm(y.make) === 'ideal' && norm(y.name) === norm(nn));
+        if (!ex) { x.name = nn; return; }
+        if (!hasFigures(ex)) FIELDS.forEach(([k]) => { ex['t_' + k] = x['t_' + k] || ''; });
+        settings.qList.splice(settings.qList.indexOf(x), 1); }); }
     /* each built-in boiler is added to the engineer's Price list once (so it is there for quotes too). One they already have, or delete later, is left alone. */
     const added = settings.btAdded = settings.btAdded || [];
     BUILTIN.forEach(b => {
