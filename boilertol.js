@@ -87,6 +87,45 @@ const BT = (() => {
     ['Max', 'Min', 'Tol', 'MaxF', 'MaxT', 'MinF', 'MinT'].forEach(k => { if (c[k]) o['t_co2' + k] = c[k]; });
     if (m.fan) { o.t_fan = m.fan; o.t_fanPF = m.fan; o.t_fanPT = m.fanTo; o.t_fanFF = '0'; o.t_fanFT = m.ft; }
     return o; }));
+  BUILTIN.push(...[
+    /* Ideal boilers, from Ideal installation and servicing manuals supplied by Mark. Each row: name, type, size, GC number, heat input (central heating, net), lowest heat input, CO2 at maximum, CO2 at minimum, manual.
+       CO2 is the printed figure with 0.7 either side. CO under 350 ppm and CO/CO2 ratio under 0.004 (Ideal combustion check); gas pressure at the boiler must be over 18 mbar. Ideal manuals have no fan pressure test, so none is set. */
+    ['Logic Max Combi','Combination','24','47-349-56','24.3','4.9','9.5','8.8','Logic Max Combi'],
+    ['Logic Max Combi','Combination','30','47-349-57','30.4','6.1','9.3','8.8','Logic Max Combi'],
+    ['Logic Max Combi','Combination','35','47-349-58','35.4','7.1','9.5','8.9','Logic Max Combi'],
+    ['Logic Max Combi2','Combination','24','47-387-03','24.3','4.9','9.2','8.5','Logic Max Combi2'],
+    ['Logic Max Combi2','Combination','30','47-387-04','30.4','6.1','9.3','8.5','Logic Max Combi2'],
+    ['Logic Max Combi2','Combination','35','47-387-05','35.4','7.1','9.7','8.8','Logic Max Combi2'],
+    ['i-Mini2','Combination','24','47-387-15','24.3','4.9','9.2','8.5','i-mini2 C'],
+    ['i-Mini2','Combination','30','47-387-16','30.4','6.1','9.3','8.5','i-mini2 C'],
+    ['i-Mini2','Combination','35','47-387-17','35.4','7.1','9.7','8.8','i-mini2 C'],
+    ['Vogue Max','Combination','26','47-349-59','18.1','3.7','9.4','8.0','Vogue Max Combi'],
+    ['Vogue Max','Combination','32','47-349-60','26.1','4.6','9.8','8.5','Vogue Max Combi'],
+    ['Vogue Max','Combination','40','47-349-61','32.1','5.7','9.6','8.1','Vogue Max Combi'],
+    ['Logic Max System','System','15','41-796-13','15.1','4.9','9.3','8.8','Logic Max System'],
+    ['Logic Max System','System','18','41-796-14','18.1','4.9','9.5','8.9','Logic Max System'],
+    ['Logic Max System','System','24','41-796-15','24.3','4.9','9.5','8.8','Logic Max System'],
+    ['Logic Max System','System','30','41-796-16','30.4','6.1','9.3','8.8','Logic Max System'],
+    ['Logic Max System2','System','15','41-796-97','15.1','4.9','9.5','8.9','Logic Max System2'],
+    ['Logic Max System2','System','18','41-796-98','18.1','4.9','9.3','8.3','Logic Max System2'],
+    ['Logic Max System2','System','24','41-796-99','24.3','4.9','9.2','8.5','Logic Max System2'],
+    ['Logic Max System2','System','30','41-860-01','30.4','6.1','9.6','8.7','Logic Max System2'],
+    ['Vogue Max System','System','15','41-796-22','15.1','3.0','9.4','8.3','Vogue Max System'],
+    ['Vogue Max System','System','18','41-796-23','18.1','3.6','9.5','8.5','Vogue Max System'],
+    ['Vogue Max System','System','26','41-796-24','26.1','5.2','9.5','8.4','Vogue Max System'],
+    ['Vogue Max System','System','32','41-796-25','32.1','6.4','9.5','8.2','Vogue Max System'],
+    ['Logic Max Heat','Heat only','12','41-796-17','12.1','4.9','9.1','8.5','Logic Max Heat'],
+    ['Logic Max Heat','Heat only','15','41-796-18','15.1','4.9','9.3','8.8','Logic Max Heat'],
+    ['Logic Max Heat','Heat only','18','41-796-19','18.1','4.9','9.5','8.9','Logic Max Heat'],
+    ['Logic Max Heat','Heat only','24','41-796-20','24.3','4.9','9.5','8.8','Logic Max Heat'],
+    ['Logic Max Heat','Heat only','30','41-796-21','30.4','6.1','9.3','8.8','Logic Max Heat'],
+    ['Logic Max Heat2','Heat only','12','41-860-25','12.1','4.9','9.1','8.5','Logic Max Heat2'],
+    ['Logic Max Heat2','Heat only','15','41-860-26','15.1','4.9','9.4','8.8','Logic Max Heat2'],
+    ['Logic Max Heat2','Heat only','18','41-860-27','18.1','4.9','9.3','8.7','Logic Max Heat2'],
+    ['Logic Max Heat2','Heat only','24','41-860-28','24.3','4.9','9.3','8.4','Logic Max Heat2'],
+    ['Logic Max Heat2','Heat only','30','41-860-29','30.4','6.1','9.7','8.8','Logic Max Heat2']
+  ].map(([n, kind, kw, gc, hi, lo, c2a, c2b, man]) => ({ id: 'bt:ideal-' + n.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + kw, type: 'Boiler', make: 'Ideal', name: n + ' ' + kw + 'kW', kind, kw, warranty: '', src: 'Ideal ' + man + ' installation and servicing manual',
+    t_gc: gc, t_flue: 'Room Sealed', t_hiMin: lo, t_hi: hi, t_co2Max: c2a, t_co2Min: c2b, t_co2Tol: '0.7', t_ratio: '0.0040', t_co: '350', t_inlet: '18' })));
   const keyOf = x => norm(x.make) + '|' + norm(x.name);
   /* the engineer's own boilers plus the built-in ones they do not already have figures for */
   function boilers() {
