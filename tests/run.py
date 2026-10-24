@@ -1359,6 +1359,8 @@ def run():
           const inp=document.querySelector('.f[data-f=fpValue] input'); inp.value='3.6'; inp.dispatchEvent(new Event('input',{bubbles:true})); inp.dispatchEvent(new Event('change',{bubbles:true})); await new Promise(r=>setTimeout(r,300));
           return [inp.value, ui.rec.fpValue]})()""")
         check('fan pressure: a plain number gets its minus added', fr2 == ['-3.6', '-3.6'], fr2)
+        fr3 = ev(pg, "(()=>{const x=Object.assign({},BT.BUILTIN[0],{t_fanPF:'4',t_fanPT:'8',t_fanFF:'0',t_fanFT:'3'}); return ['-5','-3.5','-9','-2','5'].map(v=>BT.judge('fan',v,x))})()")
+        check('fan pressure: pass and fail ranges on the boiler are used', fr3 == [True, False, False, False, True], fr3)
         check('fan pressure: -3.1 to -10 passes, -3 to 0 fails (minus assumed)', fr == [True, True, True, False, False, False, False, True], fr)
         check('info buttons appear beside the readings', r['i'] >= 8, r['i'])
         check('CO over the limit is red, CO2 inside is green, CO2 outside is red', 'tolbad' in r['co'] and 'tolok' in r['co2'] and 'tolbad' in r['co2min'] and 'tolok' in r['ratio'], r)

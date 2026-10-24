@@ -16,7 +16,11 @@ const BT = (() => {
     ['ratio', 'Maximum Ratio', 'decimal'],
     ['co', 'Maximum CO (ppm)', 'decimal'],
     ['fan', 'Fan Pressure (mb), as printed (e.g. 3.1)', 'decimal'],
-    ['inlet', 'Min Gas Inlet Working Pressure (mb)', 'decimal']
+    ['inlet', 'Min Gas Inlet Working Pressure (mb)', 'decimal'],
+    ['fanPF', 'Fan pressure PASS from (mb, no minus needed)', 'decimal'],
+    ['fanPT', 'Fan pressure PASS to (mb)', 'decimal'],
+    ['fanFF', 'Fan pressure FAIL from (mb)', 'decimal'],
+    ['fanFT', 'Fan pressure FAIL to (mb)', 'decimal']
   ];
   const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   const digits = s => String(s || '').replace(/\D/g, '');
@@ -29,7 +33,7 @@ const BT = (() => {
      An engineer's own Price list entry for the same make and model (with figures) takes priority, so their edits are never overwritten. */
   const BUILTIN = [
     { id: 'bt:wb-greenstar-24ri', type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar 24Ri', kind: 'Combination', kw: '24', src: 'Worcester Bosch data sheet (supplied by M. Talbot)',
-      t_gc: '41-311-65', t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: '24.62', t_co2Max: '9.8', t_co2Min: '9.2', t_co2Tol: '0.5', t_ratio: '0.0020', t_co: '200', t_fan: '3.1', t_inlet: '16.5' }
+      t_gc: '41-311-65', t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: '24.62', t_co2Max: '9.8', t_co2Min: '9.2', t_co2Tol: '0.5', t_ratio: '0.0020', t_co: '200', t_fan: '3.1', t_inlet: '16.5', t_fanPF: '3.1', t_fanPT: '10', t_fanFF: '3', t_fanFT: '0' }
   ];
   const keyOf = x => norm(x.make) + '|' + norm(x.name);
   /* the engineer's own boilers plus the built-in ones they do not already have figures for */
@@ -75,7 +79,13 @@ const BT = (() => {
     if (key === 'co' || key === 'ratio') { const l = lim(key); return l === null ? null : n <= l; }
     if (key === 'inlet') { const l = lim('inlet'); return l === null ? null : n >= l; }
     if (key === 'co2Max' || key === 'co2Min') { const l = lim(key), tol = lim('co2Tol'); return l === null || tol === null ? null : n >= l - tol - 1e-9 && n <= l + tol + 1e-9; }
-    if (key === 'fan') { const l = lim('fan'), m = -Math.abs(n); return l === null ? null : m <= -Math.abs(l) + 1e-9 && m >= -10 - 1e-9; }   // the minus is assumed: 3.5 and -3.5 are the same reading   // confirmed by Mark: -3.1 or stronger, down to -10, passes; -3 to 0 fails
+    if (key === 'fan') {   // the minus is assumed (3.5 and -3.5 are the same reading); ranges are the pass / fail figures saved on the boiler
+      const m = Math.abs(n), R = (a, b) => { const x = lim(a), y = lim(b); return x === null || y === null ? null : [Math.min(Math.abs(x), Math.abs(y)), Math.max(Math.abs(x), Math.abs(y))]; };
+      const pass = R('fanPF', 'fanPT'), fail = R('fanFF', 'fanFT'), inR = r => m >= r[0] - 1e-9 && m <= r[1] + 1e-9;
+      if (pass) return inR(pass);
+      if (fail) return inR(fail) ? false : null;
+      const l = lim('fan'); return l === null ? null : m >= Math.abs(l) - 1e-9 && m <= 10 + 1e-9;
+    }
     return null;   // heat input is shown only
   }
   const LABEL = { model: 'this boiler', fan: 'Fan pressure', inlet: 'Gas inlet working pressure', hi: 'Gas rate / heat input', co: 'CO', co2Min: 'CO2', co2Max: 'CO2', ratio: 'CO/CO2 ratio' };
@@ -137,7 +147,7 @@ const BT = (() => {
     const f = k => val(x, k);
     if (key === 'co') return 'CO reading ' + n + ' ppm is over the manufacturer\'s maximum of ' + f('co') + ' ppm.';
     if (key === 'ratio') return 'CO/CO2 ratio ' + n + ' is over the manufacturer\'s maximum of ' + f('ratio') + '.';
-    if (key === 'fan') return 'Fan pressure ' + n + ' mb is outside the pass range: it should read between -' + String(f('fan')).replace(/^[-−]\s*/, '') + ' and -10 mb.';
+    if (key === 'fan') { const pf = f('fanPF') || f('fan'), pt = f('fanPT') || '10', d = v => '-' + String(v).replace(/^[-−]\s*/, ''); return 'Fan pressure ' + n + ' mb is outside the pass range of ' + d(pf) + ' to ' + d(pt) + ' mb.'; }
     if (key === 'inlet') return 'Gas inlet working pressure ' + n + ' mbar is below the manufacturer\'s minimum of ' + f('inlet') + ' mbar.';
     const lim = key === 'co2Max' ? f('co2Max') : f('co2Min'), tol = f('co2Tol');
     return 'CO2 reading ' + n + ' % is outside the manufacturer\'s ' + lim + ' % (plus or minus ' + tol + ').';
