@@ -91,7 +91,7 @@ const BT = (() => {
     if (f('co2Min')) out.push(['Min CO2 %', f('co2Min') + tol, 'co2']);
     if (f('ratio')) out.push(['Maximum Ratio', f('ratio'), 'ratio']);
     if (f('co')) out.push(['Maximum CO (ppm)', f('co'), 'co']);
-    if (f('fan')) out.push(['Fan Pressure (Pressure will read negative and be greater than) (mb)', '- ' + String(f('fan')).replace(/^[-−]\s*/, '') + ' (pass: -' + String(f('fan')).replace(/^[-−]\s*/, '') + ' to -10). The minus is added for you.', 'fan']);
+    if (f('fan')) out.push(['Fan Pressure (Pressure will read negative and be greater than) (mb)', '- ' + String(f('fan')).replace(/^[-−]\s*/, ''), 'fan']);
     if (f('inlet')) out.push(['Min Gas Inlet Working Pressure (mb)', f('inlet'), 'inlet']);
     return out;
   }
