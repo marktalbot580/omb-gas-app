@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v236', items: ['The GC number now follows the model: change the model and the GC number changes with it. A GC number you type yourself is never overwritten.'] },
   { v: 'v235', items: ['Appliance model is now a search box: start typing and boilers from your Price list appear. Tap one to fill in the model and its GC number. The (i) panel now shows the boiler\'s data sheet in the manufacturer\'s own wording.'] },
   { v: 'v234', items: ['Fan pressure: the (i) button now explains the test in plain words and links to a fuller page. It shows on Worcester boilers even if you have not saved their figures.'] },
   { v: 'v233', items: ['When you type a boiler model that is saved in your Price list with its GC number, the GC number on the service or gas check fills in for you.'] },

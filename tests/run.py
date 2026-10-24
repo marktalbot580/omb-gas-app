@@ -1400,6 +1400,13 @@ def run():
           ui.rec.gc='99-999-99'; put('model','Greenstar 24Ri '); await new Promise(r=>setTimeout(r,250)); out.kept=ui.rec.gc; return out})()""")
         check('GC number fills in when the model matches a saved boiler', r['gc'] == '41-311-65' and r['box'] == '41-311-65', r)
         check('a GC number already entered is never overwritten', r['kept'] == '99-999-99', r)
+        r = ev(pg, """(async()=>{ const out={}; const put=(p,v)=>{const i=document.querySelector('.f[data-f="'+p+'"] input'); i.value=v; i.dispatchEvent(new Event('input',{bubbles:true})); i.dispatchEvent(new Event('change',{bubbles:true}))};
+          const x=settings.qList.find(y=>y.name==='Greenstar 24Ri'); const y=Object.assign({},x,{id:'zz1',name:'Greenstar 30Ri',t_gc:'41-311-88'}); settings.qList.push(y);
+          ui.rec.gc=''; ui.rec.gcAuto=''; ui.rec.model=''; render(); await new Promise(r=>setTimeout(r,100));
+          put('model','Greenstar 24Ri'); await new Promise(r=>setTimeout(r,250)); out.a=ui.rec.gc;
+          put('model','Greenstar 30Ri'); await new Promise(r=>setTimeout(r,250)); out.b=ui.rec.gc;
+          put('gc','11-111-11'); await new Promise(r=>setTimeout(r,100)); put('model','Greenstar 24Ri'); await new Promise(r=>setTimeout(r,250)); out.c=ui.rec.gc; return out})()""")
+        check('GC number follows the model, but a number typed by hand is kept', r['a'] == '41-311-65' and r['b'] == '41-311-88' and r['c'] == '11-111-11', r)
         check('no page errors filling the GC number', not errs, errs)
         ctx.close()
 

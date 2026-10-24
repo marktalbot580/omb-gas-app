@@ -140,16 +140,21 @@ const BT = (() => {
 
 
   /* when the model typed on the form matches a saved boiler and the GC number is still empty, fill the GC number in */
+  /* the GC number follows the model. It is replaced only while it is empty or still the number filled in automatically, so a number typed by hand is never overwritten */
   function fillGc(path) {
     if (typeof ui === 'undefined' || !ui.rec || ui.view !== 'form') return;
-    const r = ui.rec, t = typeOf(r); let make, model, gcPath;
-    if (t === 'service' && path === 'model') { make = r.make === 'Other' ? r.makeOther : r.make; model = r.model; gcPath = 'gc'; if (r.gc) return; }
-    else if (t === 'gas' && /^appliances\.\d+\.model$/.test(path)) { const i = path.split('.')[1], a = (r.appliances || [])[i]; if (!a || a.gc) return; make = a.manufacturer; model = a.model; gcPath = 'appliances.' + i + '.gc'; }
+    const r = ui.rec, t = typeOf(r); let make, model, gcPath, holder, cur;
+    if (t === 'service' && path === 'model') { make = r.make === 'Other' ? r.makeOther : r.make; model = r.model; gcPath = 'gc'; holder = r; }
+    else if (t === 'gas' && /^appliances\.\d+\.model$/.test(path)) { const a = (r.appliances || [])[path.split('.')[1]]; if (!a) return; make = a.manufacturer; model = a.model; gcPath = 'appliances.' + path.split('.')[1] + '.gc'; holder = a; }
     else return;
-    const x = find(make, model, ''), g = x && val(x, 'gc'); if (!g) return;
-    setP(r, gcPath, g); ui.pdf = null; persistRecSoon();
+    cur = String(holder.gc || '');
+    if (cur && cur !== holder.gcAuto) return;   // typed by hand
+    const x = find(make, model, ''), g = x ? val(x, 'gc') : '';
+    if (g === cur) return;
+    if (!g && !cur) return;
+    holder.gc = g; holder.gcAuto = g; ui.pdf = null; persistRecSoon();
     const inp = document.querySelector('.f[data-f="' + gcPath + '"] input'); if (inp) inp.value = g;
-    if (typeof toast === 'function') toast('GC number filled in');
+    if (g && typeof toast === 'function') toast('GC number filled in');
     later();
   }
 
