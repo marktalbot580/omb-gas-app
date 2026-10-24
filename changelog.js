@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v244', items: ['Boilers built into the app now also appear in everyone\'s Price list, so they can be used on quotes. Delete one and it stays deleted.'] },
   { v: 'v243', items: ['The Greenstar 24Ri now shows its 5-year manufacturer warranty.'] },
   { v: 'v242', items: ['Price list: the boiler type box is wide enough to read again, and the kW box is small.'] },
   { v: 'v241', items: ['The boiler card shows only the manufacturer\'s own figures again; the fan pressure line no longer has extra wording. Each boiler in the Price list now has fan pressure PASS from/to and FAIL from/to boxes you can edit; the fan reading turns green or red from them.'] },

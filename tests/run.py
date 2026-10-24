@@ -1354,6 +1354,8 @@ def run():
           ui.step=1; render(); await new Promise(r=>setTimeout(r,200)); document.querySelector('.f[data-f=model] .tolI').click(); out.sheet=(document.getElementById('btSheet')||{}).innerText||'';
           return out})()""")
         wr = ev(pg, "(()=>{settings.qList=[{id:'w1',type:'Boiler',make:'Worcester Bosch',name:'Greenstar 24Ri',kind:'Combination',kw:'24',warranty:'',unit:'',cost:'',markup:'',price:''}]; delete settings.btWarr; BT.seed(); return settings.qList[0].warranty})()")
+        ad = ev(pg, "(()=>{settings.qList=[]; delete settings.btAdded; qSeed(); const n=settings.qList.filter(x=>x.name==='Greenstar 24Ri').length; const g=settings.qList.find(x=>x.name==='Greenstar 24Ri'); settings.qList=settings.qList.filter(x=>x!==g); qSeed(); return [n, settings.qList.filter(x=>x.name==='Greenstar 24Ri').length, g.warranty, g.t_co]})()")
+        check('built-in boilers are added to the Price list once, and stay deleted', ad == [1, 0, '5 years', '200'], ad)
         check('Greenstar 24Ri gets its 5-year warranty', wr == '5 years', wr)
         check('figures built in for the Greenstar 24Ri', r['seeded'], r)
         fr = ev(pg, "(()=>{const x=BT.BUILTIN[0]; return ['-3.1','-3.7','-10','-3','-2','0','-11','3.5'].map(v=>BT.judge('fan',v,x))})()")
@@ -1494,7 +1496,7 @@ def run():
 
         # ---------- 12ao. a second boiler works the same way (template) ----------
         ctx, pg, errs = fresh(b, mobile=True)
-        r = ev(pg, """(async()=>{ const out={}; const g=BT.BUILTIN[0];
+        r = ev(pg, """(async()=>{ const out={}; qSeed(); const g=settings.qList.find(x=>x.name==='Greenstar 24Ri');
           const n={id:'nb1',type:'Boiler',make:'Worcester Bosch',name:'Greenstar 30Ri',kind:'Combination',kw:'30',warranty:'',unit:'',cost:'',markup:'',price:''}; settings.qList.push(n); saveSettings();
           ui.view='prices'; ui.pCat='Boiler'; ui.pMake='Worcester Bosch'; ui.pEdit='nb1'; render(); await new Promise(r=>setTimeout(r,150));
           const sel=document.querySelector('[data-btcopy=nb1]'); out.hasCopy=!!sel; sel.value=g.id; sel.dispatchEvent(new Event('change',{bubbles:true})); await new Promise(r=>setTimeout(r,150));

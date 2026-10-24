@@ -215,11 +215,19 @@ const BT = (() => {
 
   /* kept so older code that calls it still works: boilers are now built in, so nothing is copied into the Price list */
   function seed() {
-    if (typeof settings === 'undefined') return;
+    if (typeof settings === 'undefined' || !settings.qList) return;
     let ch = false;
     if (!settings.btSeed) { settings.btSeed = 1; ch = true; }
     /* once: a copy already in the Price list gets the built-in warranty if it has none */
-    if (!settings.btWarr && settings.qList) { settings.btWarr = 1; ch = true; BUILTIN.forEach(b => settings.qList.forEach(x => { if (x.type === 'Boiler' && keyOf(x) === keyOf(b) && !x.warranty && b.warranty) x.warranty = b.warranty; })); }
+    if (!settings.btWarr) { settings.btWarr = 1; ch = true; BUILTIN.forEach(b => settings.qList.forEach(x => { if (x.type === 'Boiler' && keyOf(x) === keyOf(b) && !x.warranty && b.warranty) x.warranty = b.warranty; })); }
+    /* each built-in boiler is added to the engineer's Price list once (so it is there for quotes too). One they already have, or delete later, is left alone. */
+    const added = settings.btAdded = settings.btAdded || [];
+    BUILTIN.forEach(b => {
+      if (added.includes(b.id)) return;
+      added.push(b.id); ch = true;
+      if (settings.qList.some(x => x.type === 'Boiler' && keyOf(x) === keyOf(b))) return;
+      const c = Object.assign({}, b, { id: QUO.newId() }); delete c.src; settings.qList.push(c);
+    });
     if (ch) saveSettings();
   }
 
