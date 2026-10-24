@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v231', items: ['Warning notices: when a check or service has a failure, the review step now asks "Create a warning notice?" with Yes and No buttons, instead of forcing one. You can still create one later.'] },
   { v: 'v230', items: ['Manufacturer figures for boilers. Save a boiler\'s data-sheet limits in the Price list (Boiler), and when you pick that boiler on a service or gas check, an (i) button beside each reading shows the figures. CO, CO2, ratio and gas inlet pressure turn green or red against them. It is a guide only and never changes a result.'] },
   { v: 'v229', items: ['Sample data now includes a boiler service due in 3 weeks and a gas check that is 5 days overdue, so you can try out the Annual reminders screen.'] },
   { v: 'v228', items: ['Today: tap an overdue invoice to open it. The Chase button is still there.'] },

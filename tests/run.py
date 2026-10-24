@@ -1363,6 +1363,20 @@ def run():
         check('no page errors with manufacturer figures', not errs, errs)
         ctx.close()
 
+        # ---------- 12af. warning notice is a question, not forced ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(async()=>{ const out={}; SAMPLE.add(); const g=records.find(x=>typeOf(x)==='gas'); g.status='draft'; g.appliances[0].safe='No'; persistRec(g);
+          ui.rec=g; ui.job=null; ui.view='form'; ui.step=stepsOf(g).length-1; render();
+          const sel=s=>document.querySelector(s);
+          out.ask=!!sel('[data-act=warnNo]') && !!sel('[data-act=addWarn]'); out.disabled=!!(sel('[data-act=makePdf]')||{}).disabled;
+          sel('[data-act=warnNo]').click(); await new Promise(r=>setTimeout(r,200));
+          out.after=!!sel('[data-act=warnNo]'); out.again=!!sel('[data-act=addWarn]'); out.enabled=!(sel('[data-act=makePdf]')||{disabled:true}).disabled; out.flag=g.warnNo===true;
+          return out})()""")
+        check('review asks whether to create a warning notice, and Create documents waits for the answer', r['ask'] and r['disabled'], r)
+        check('answering No lets you carry on and still offers Create one after all', not r['after'] and r['again'] and r['enabled'] and r['flag'], r)
+        check('no page errors answering the warning notice question', not errs, errs)
+        ctx.close()
+
         # ---------- 12ac. v226 interface changes ----------
         ctx, pg, errs = fresh(b)
         r = ev(pg, """(async()=>{ const out={};

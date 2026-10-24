@@ -923,7 +923,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v230';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v231';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1656,7 +1656,7 @@ function stepDefects() {
   ${n ? `<p class="small muted"><b>ID</b> Immediately Dangerous · <b>AR</b> At Risk · <b>NCS</b> Not to Current Standards</p>` : ''}`;
 }
 function stepNext() {
-  return `${WARN.neededFor(ui.rec) ? '<div class="notice err">Something on this check has failed, so the record will be stamped FAIL – DO NOT USE and a Danger / Do Not Use Warning Notice will be needed. You will be asked to fill it in at the review step.</div>' : ''}<div class="card">
+  return `${WARN.neededFor(ui.rec) ? '<div class="notice err">Something on this check has failed, so the record will be stamped FAIL – DO NOT USE. At the review step you will be asked whether to create a Danger / Do Not Use Warning Notice.</div>' : ''}<div class="card">
     ${txt('renewal', 'Next safety check due by', { type: 'date', req: 1, hint: 'Pre-filled as 12 months from today.' })}
     ${txt('notes', 'Engineer notes / other work carried out', { area: 1, rows: 5 })}
   </div>`;
@@ -1833,11 +1833,12 @@ function stepReview() {
   const w = [...new Set(m.flatMap(x => warnings(x)))];
   const made = m.every(x => ui.pdfs[x.id]);
   if (made) setTimeout(() => ensureInvPdf(m), 0); // get the invoice PDF ready in the background so sharing is instant
-  const needWarn = m.filter(x => WARN.neededFor(x) && !m.some(y => isWarn(y) && y.warnFor === x.id));
+  const warnAll = m.filter(x => WARN.neededFor(x) && !m.some(y => isWarn(y) && y.warnFor === x.id)), needWarn = warnAll.filter(x => !x.warnNo), noWarn = warnAll.filter(x => x.warnNo);
   return `
-    ${needWarn.map(x => `<div class="card" style="border-color:#5a2a26"><div class="t" style="color:#ff9b92;font-weight:700;margin-bottom:6px">Warning notice required</div>
-      <p class="small muted" style="margin-top:0">This ${isSvc(x) ? 'boiler service' : 'gas safety check'} has ${esc(WARN.reasonsFor(x).join('; ') || 'a warning notice marked as issued')}. A Danger / Do Not Use Warning Notice must be completed${m.length > 1 ? '' : ' and given to the customer'}.</p>
-      <button class="btn gold block" data-act="addWarn" data-id="${x.id}">Fill in the warning notice</button></div>`).join('')}
+    ${needWarn.map(x => `<div class="card" style="border-color:#5a2a26"><div class="t" style="color:#ff9b92;font-weight:700;margin-bottom:6px">Create a warning notice?</div>
+      <p class="small muted" style="margin-top:0">This ${isSvc(x) ? 'boiler service' : 'gas safety check'} has ${esc(WARN.reasonsFor(x).join('; ') || 'a warning notice marked as issued')}. Would you like to create a Danger / Do Not Use Warning Notice${m.length > 1 ? '' : ' to give to the customer'}?</p>
+      <div class="row"><button class="btn gold grow" data-act="addWarn" data-id="${x.id}">Yes, create one</button><button class="btn grow" data-act="warnNo" data-id="${x.id}">No, not needed</button></div></div>`).join('')}
+    ${noWarn.map(x => `<div class="card"><p class="small muted" style="margin:0 0 8px">No warning notice is being created for this ${isSvc(x) ? 'boiler service' : 'gas safety check'}.</p><button class="btn block" data-act="addWarn" data-id="${x.id}">Create one after all</button></div>`).join('')}
     ${m.filter(x => oilWarnSrc(x) && !m.some(y => typeOf(y) === 'oilwarn' && y.warnFor === x.id)).map(x => `<div class="card" style="border-color:#5a2a26"><div class="t" style="color:#ff9b92;font-weight:700;margin-bottom:6px">Warning notice needed</div>
       <p class="small muted" style="margin-top:0">This ${typeOf(x) === 'oil' ? 'oil boiler service' : 'oil tank check'} has a defect classed as ${esc(x.defectClass.toLowerCase())}. An oil warning and advice notice should be given to the customer.</p>
       <button class="btn gold block" data-act="addOilWarn" data-id="${x.id}">Fill in the oil warning notice</button></div>`).join('')}
@@ -2512,7 +2513,7 @@ function svcOperating() {
 }
 function svcFinish() {
   const r = ui.rec;
-  return `${svcTightness()}${WARN.needed(r) ? '<div class="notice err">Something on this service has failed, so a Danger / Do Not Use Warning Notice will be needed' + (ui.rec.safe === 'NO' ? ' and the record will be stamped FAIL – DO NOT USE' : '') + '. You will be asked to fill it in at the review step.</div>' : ''}<div class="card">
+  return `${svcTightness()}${WARN.needed(r) ? '<div class="notice err">Something on this service has failed, so the review step will ask whether to create a Danger / Do Not Use Warning Notice' + (ui.rec.safe === 'NO' ? ', and the record will be stamped FAIL – DO NOT USE' : '') + '.</div>' : ''}<div class="card">
     ${choice('manufacturer', 'Does the installation meet the manufacturer’s instructions?', SVC.YN, { req: 1, yn: 1 })}
     ${choice('safe', 'Is the appliance / installation safe to use?', SVC.YN, { req: 1, yn: 1 })}
     ${choice('warning', 'Has a warning notice been issued?', SVC.YN, { req: 1 })}
@@ -3050,8 +3051,9 @@ document.addEventListener('click', async e => {
       if (done && !reviewIssues(m).length) makePdf(true);
       break;
     }
+    case 'warnNo': { const x = records.find(y => y.id === b.dataset.id); if (x) { x.warnNo = true; persistRec(x); } render(); break; }
     case 'addWarn': {
-      const svc = records.find(x => x.id === b.dataset.id); if (!svc) break;
+      const svc = records.find(x => x.id === b.dataset.id); if (!svc) break; svc.warnNo = false;
       if (!svc.jobId) svc.jobId = uid();
       const w = newWarnRecord({ id: svc.customerId, ...svc.customer });
       w.jobId = svc.jobId; w.warnFor = svc.id; w.jobAddress = svc.jobAddress; w.inspectionDate = svc.inspectionDate; w.customerId = svc.customerId; w.customer = { ...svc.customer };
