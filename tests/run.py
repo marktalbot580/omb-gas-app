@@ -1445,6 +1445,37 @@ def run():
         check('no page errors in the first-time model search', not errs, errs)
         ctx.close()
 
+        # ---------- 12al. a half-typed model does not match a boiler ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(async()=>{ qSeed(); const cu={id:'c3',name:'Half Typed',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
+          const rec=newRecord(cu,'service'); rec.make='Worcester Bosch'; ui.rec=rec; ui.view='form'; ui.step=1; render(); await new Promise(r=>setTimeout(r,150));
+          const i=document.querySelector('.f[data-f=model] input'); i.value='gree'; i.dispatchEvent(new Event('input',{bubbles:true})); i.dispatchEvent(new Event('change',{bubbles:true})); await new Promise(r=>setTimeout(r,250));
+          return {gc:ui.rec.gc, info:document.querySelectorAll('.tolI').length, full:!!BT.find('Worcester Bosch','Greenstar 24Ri',''), long:!!BT.find('Worcester','Worcester Greenstar 24 Ri','')} })()""")
+        check('a half-typed model fills no GC number', r['gc'] == '', r)
+        check('the full model name still matches', r['full'] and r['long'], r)
+        check('no page errors with a half-typed model', not errs, errs)
+        ctx.close()
+
+        # ---------- 12am. the (i) always responds, even before the boiler is picked ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(async()=>{ const out={}; qSeed(); const cu={id:'c2',name:'No Boiler Yet',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
+          const rec=newRecord(cu,'service'); rec.make='Worcester Bosch'; rec.bpTaken='YES'; ui.rec=rec; ui.view='form'; ui.step=4; render(); await new Promise(r=>setTimeout(r,200));
+          const b=document.querySelector('.f[data-f=bpValue] .tolI'); out.btn=!!b; if(b) b.click(); const s=document.getElementById('btSheet'); out.ask=s?s.innerText:'';
+          const it=document.querySelector('#btSheet [data-btp]'); if(it) it.click(); await new Promise(r=>setTimeout(r,500));
+          const s2=document.getElementById('btSheet'); out.sheet=s2?s2.innerText:''; out.model=ui.rec.model; out.gc=ui.rec.gc; return out})()""")
+        check('(i) beside operating pressure opens and asks which boiler when none is picked', r['btn'] and 'Which boiler is this?' in r['ask'] and 'Greenstar 24Ri' in r['ask'], r)
+        check('choosing the boiler fills model and GC and shows its figures', r['model'] == 'Greenstar 24Ri' and r['gc'] == '41-311-65' and 'Min Gas Inlet Working Pressure' in r['sheet'], r)
+        check('no page errors using the (i) before picking a boiler', not errs, errs)
+        ctx.close()
+
+        # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(async()=>{ qSeed(); const cu={id:'c1',name:'Hold Still',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
+          const rec=newRecord(cu,'service'); rec.make='Worcester Bosch'; rec.model='Greenstar 24Ri'; rec.bpTaken='YES'; ui.rec=rec; ui.view='form'; ui.step=4; render(); await new Promise(r=>setTimeout(r,400));
+          return await new Promise(res=>{ let c=0; const o=new MutationObserver(()=>c++); o.observe(document.getElementById('view'),{childList:true,subtree:true}); setTimeout(()=>res(c),1200) }) })()""")
+        check('the info buttons are not rebuilt while nothing changes', r == 0, r)
+        ctx.close()
+
         # ---------- 12ac. v226 interface changes ----------
         ctx, pg, errs = fresh(b)
         r = ev(pg, """(async()=>{ const out={};

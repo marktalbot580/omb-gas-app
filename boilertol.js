@@ -34,7 +34,7 @@ const BT = (() => {
     const m = norm(make), n = norm(model); if (n.length < 3) return null;
     return list.find(x => {
       const xn = norm(x.name), xm = norm(x.make);
-      return xn.length >= 3 && (!xm || !m || m.includes(xm) || xm.includes(m)) && (n.includes(xn) || xn.includes(n));
+      return xn.length >= 3 && (!xm || !m || m.includes(xm) || xm.includes(m)) && n.includes(xn);
     }) || null;
   }
 
@@ -44,12 +44,12 @@ const BT = (() => {
     const r = ui.rec, t = typeOf(r);
     if (t === 'service') {
       const make = r.make === 'Other' ? r.makeOther : r.make;
-      return { worc: /worcester/i.test(make || ''), res: { fpValue: 'fpResult', bpValue: 'bpResult', fgCoMin: 'fgResult', fgCoMax: 'fgResult', fgCo2Min: 'fgResult', fgCo2Max: 'fgResult', fgRatioMin: 'fgResult', fgRatioMax: 'fgResult' }, boiler: find(make, r.model, r.gc), p: { model: ['model'], fan: ['fpValue'], inlet: ['bpValue'], hi: ['grValue'], co: ['fgCoMin', 'fgCoMax'], co2Min: ['fgCo2Min'], co2Max: ['fgCo2Max'], ratio: ['fgRatioMin', 'fgRatioMax'] } };
+      return { mp: 'model', make, worc: /worcester/i.test(make || ''), res: { fpValue: 'fpResult', bpValue: 'bpResult', fgCoMin: 'fgResult', fgCoMax: 'fgResult', fgCo2Min: 'fgResult', fgCo2Max: 'fgResult', fgRatioMin: 'fgResult', fgRatioMax: 'fgResult' }, boiler: find(make, r.model, r.gc), p: { model: ['model'], fan: ['fpValue'], inlet: ['bpValue'], hi: ['grValue'], co: ['fgCoMin', 'fgCoMax'], co2Min: ['fgCo2Min'], co2Max: ['fgCo2Max'], ratio: ['fgRatioMin', 'fgRatioMax'] } };
     }
     if (t === 'gas') {
       const i = Math.min(ui.appTab || 0, (+r.applianceCount || 1) - 1), a = (r.appliances || [])[i]; if (!a) return null;
       const P = k => 'appliances.' + i + '.' + k;
-      return { worc: /worcester/i.test(a.manufacturer || ''), boiler: find(a.manufacturer, a.model, a.gc), p: { model: [P('model')], fan: [P('fanPress')], inlet: [P('op')], hi: [P('hi')], co: [P('coMin'), P('coMax')], co2Min: [P('co2Min')], co2Max: [P('co2Max')], ratio: [P('ratioMin'), P('ratioMax')] } };
+      return { mp: P('model'), make: a.manufacturer, worc: /worcester/i.test(a.manufacturer || ''), boiler: find(a.manufacturer, a.model, a.gc), p: { model: [P('model')], fan: [P('fanPress')], inlet: [P('op')], hi: [P('hi')], co: [P('coMin'), P('coMax')], co2Min: [P('co2Min')], co2Max: [P('co2Max')], ratio: [P('ratioMin'), P('ratioMax')] } };
     }
     return null;
   }
@@ -81,21 +81,45 @@ const BT = (() => {
   }
 
   /* put the (i) buttons beside the readings and colour them. Safe to run any number of times. */
-  function paint() {
+  function paint() { if (watcher) watcher.disconnect(); try { paint1(); } finally { watch(); } }
+  function paint1() {
     const c = context();
     document.querySelectorAll('.tolI').forEach(b => b.remove());
     document.querySelectorAll('.f.tolok,.f.tolbad').forEach(e => e.classList.remove('tolok', 'tolbad'));
-    if (!c || !c.boiler) return;
+    if (!c) return;
+    if (typeof qSeed === 'function' && typeof settings !== 'undefined' && !settings.btSeed) qSeed();
+    if (!c.boiler && !((settings.qList || []).some(x => x.type === 'Boiler' && hasFigures(x)))) return;
     Object.keys(c.p).forEach(key => c.p[key].forEach(path => {
       const lab = document.querySelector('.f[data-f="' + path + '"]'); if (!lab) return;
       const sp = lab.querySelector('span'); if (sp) { const b = document.createElement('button'); b.type = 'button'; b.className = 'tolI'; b.setAttribute('aria-label', 'Manufacturer figures for ' + (LABEL[key] || 'this reading')); b.dataset.btk = infoKey(key); b.textContent = 'i'; sp.appendChild(b); }
-      const inp = lab.querySelector('input'), j = inp ? judge(key, inp.value, c.boiler) : null;
+      const inp = lab.querySelector('input'), j = inp && c.boiler ? judge(key, inp.value, c.boiler) : null;
       if (j === true) lab.classList.add('tolok'); else if (j === false) lab.classList.add('tolbad');
     }));
   }
 
+
+  /* no boiler matched yet: list the saved boilers so the right one can be chosen, and its figures then show */
+  function pick(c) {
+    const all = (settings.qList || []).filter(x => x.type === 'Boiler' && x.name && hasFigures(x)), mk = norm(c.make);
+    const mine = all.filter(x => mk && norm(x.make) && (norm(x.make).includes(mk) || mk.includes(norm(x.make))));
+    const list = mine.length ? mine : all;
+    const d = document.createElement('div'); d.id = 'btSheet'; d.className = 'sheetbg';
+    d.innerHTML = `<div class="sheet" role="dialog" aria-label="Choose the boiler"><div class="grab"></div><h2>Which boiler is this?</h2>
+      <p class="small muted" style="margin-top:0">${list.length ? 'Choose it to see its manufacturer figures. The model and GC number are filled in for you.' : 'No boiler figures are saved yet. Add them in the Price list, under Boiler, then Manufacturer figures.'}</p>
+      ${list.map(x => `<button type="button" class="item cpick" data-btp="${esc2(x.id)}"><div class="t">${esc2(x.name)}</div><div class="s">${esc2([x.make, val(x, 'gc') ? 'GC ' + val(x, 'gc') : ''].filter(Boolean).join(' · '))}</div></button>`).join('')}
+      <button type="button" class="btn block" id="btX" style="margin-top:10px">Close</button></div>`;
+    document.body.appendChild(d);
+    d.addEventListener('click', ev => {
+      const b = ev.target.closest('[data-btp]');
+      if (b) { const x = (settings.qList || []).find(y => y.id === b.dataset.btp); if (x && c.mp) { setP(ui.rec, c.mp, x.name); ui.pdf = null; persistRecSoon(); fillGc(c.mp); d.remove(); render(); later(); setTimeout(() => openInfo('model'), 120); } return; }
+      if (ev.target === d || ev.target.id === 'btX') d.remove();
+    });
+  }
+
   function openInfo(focus) {
-    const c = context(); if (!c || !c.boiler) return;
+    const c = context(); if (!c) return;
+    const old0 = document.getElementById('btSheet'); if (old0) old0.remove();
+    if (!c.boiler) { pick(c); return; }
     const x = c.boiler, old = document.getElementById('btSheet'); if (old) old.remove();
     const rows = lines(x).map(([k, v]) => `<tr><th scope="row">${esc2(k)}</th><td>${esc2(v)}</td></tr>`).join('');
     const biz = (typeof settings !== 'undefined' && settings.businessName) || '';
@@ -201,10 +225,18 @@ const BT = (() => {
   document.addEventListener('input', e => { const t = e.target; if (t && t.tagName === 'INPUT' && t.dataset && t.dataset.k && modelPath(t.dataset.k)) suggest(t); });
 
   let timer = 0; const later = () => { clearTimeout(timer); timer = setTimeout(paint, 30); };
-  const start = () => { const v = document.getElementById('view'); if (v) new MutationObserver(later).observe(v, { childList: true, subtree: true }); later(); };
+  /* watch the screen for redraws; stop watching while painting, or painting itself would trigger another paint, forever, and the buttons would be rebuilt under a finger */
+  let watcher = null;
+  const watch = () => { const v = document.getElementById('view'); if (v && watcher) watcher.observe(v, { childList: true, subtree: true }); };
+  const start = () => { watcher = new MutationObserver(later); watch(); later(); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
   document.addEventListener('change', e => { const t = e.target; if (t && t.dataset && t.dataset.k && t.tagName === 'INPUT') setTimeout(() => { fillGc(t.dataset.k); checkOut(t.dataset.k, t.value); }, 60); });
   document.addEventListener('input', e => { if (e.target && e.target.dataset && e.target.dataset.k) later(); });
-  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('.tolI'); if (b) { e.preventDefault(); e.stopPropagation(); openInfo(b.dataset.btk); } }, true);
+  /* the (i) sits inside a box's label, so a tap would also focus the box and open the keyboard, which can swallow the tap: stop that, and open on touch-end as well as click */
+  let lastTap = 0;
+  const tapInfo = e => { const b = e.target.closest && e.target.closest('.tolI'); if (!b) return; e.preventDefault(); e.stopPropagation(); if (Date.now() - lastTap < 300) return; lastTap = Date.now(); openInfo(b.dataset.btk); };
+  document.addEventListener('pointerdown', e => { if (e.target.closest && e.target.closest('.tolI')) e.preventDefault(); }, true);
+  document.addEventListener('touchend', tapInfo, true);
+  document.addEventListener('click', tapInfo, true);
   return { find, judge, paint, editHtml, seed, FIELDS };
 })();
