@@ -1434,6 +1434,17 @@ def run():
         check('no page errors in the model search', not errs, errs)
         ctx.close()
 
+        # ---------- 12ak. model search works before the Price list was ever opened ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(async()=>{ const out={}; settings.qList=[{id:'q1',type:'Boiler',make:'Worcester Bosch',name:'Greenstar 4000',kind:'Combination',kw:'25',warranty:'',unit:'',cost:'',markup:'',price:''}]; settings.qStarterV=2; delete settings.btSeed; saveSettings();
+          const cu={id:'c4',name:'Fresh Phone',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
+          const rec=newRecord(cu,'service'); rec.make='Worcester Bosch'; ui.rec=rec; ui.view='form'; ui.step=1; render(); await new Promise(r=>setTimeout(r,150));
+          const i=document.querySelector('.f[data-f=model] input'); i.value='green ri'; i.dispatchEvent(new Event('input',{bubbles:true})); await new Promise(r=>setTimeout(r,150));
+          out.hits=[...document.querySelectorAll('#btSug [data-bts]')].map(x=>x.innerText); return out})()""")
+        check('typing green ri finds the Greenstar 24Ri even if the Price list was never opened', any('24Ri' in h for h in r['hits']), r)
+        check('no page errors in the first-time model search', not errs, errs)
+        ctx.close()
+
         # ---------- 12ac. v226 interface changes ----------
         ctx, pg, errs = fresh(b)
         r = ev(pg, """(async()=>{ const out={};

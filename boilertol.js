@@ -26,6 +26,7 @@ const BT = (() => {
 
   /* the saved boiler that matches: GC number first, then make + model */
   function find(make, model, gc) {
+    if (typeof qSeed === 'function' && typeof settings !== 'undefined' && !settings.btSeed) qSeed();
     const list = ((typeof settings !== 'undefined' && settings.qList) || []).filter(x => x.type === 'Boiler' && hasFigures(x));
     if (!list.length) return null;
     const g = digits(gc);
@@ -180,6 +181,7 @@ const BT = (() => {
   const modelPath = path => { const r = ui.rec; if (!r || ui.view !== 'form') return false; const t = typeOf(r); return (t === 'service' && path === 'model') || (t === 'gas' && /^appliances\.\d+\.model$/.test(path)); };
   function suggest(inp) {
     const path = inp.dataset.k, lab = inp.closest('.f'); if (!lab) return;
+    if (typeof qSeed === 'function') qSeed();   // makes sure the starter boilers (and the Greenstar 24Ri figures) are in the Price list
     let box = document.getElementById('btSug'); if (box) box.remove();
     const toks = norm(inp.value) ? String(inp.value).toLowerCase().split(/\s+/).map(norm).filter(Boolean) : [];
     if (!toks.length) return;
