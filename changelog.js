@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v257', items: ['Added Biasi boilers with their manufacturer figures: Advance Plus and Inovia (system and combi, including ERP), Advance OV, Riva Plus HE and Riva Advance. Search by GC number or model.'] },
   { v: 'v256', items: ['Added more Worcester Bosch boilers with their manufacturer figures: Greenstar 8000 Life and Style (system and regular), Greenstar 8000+ (regular, system and combi), CDi Classic, FS CDi, CDi Compact, Si Compact and 25i/30i ErP. Fan pressure is set where the manual gives a usable figure.'] },
   { v: 'v255', items: ['Tidied the built-in boiler list: Glow Worm is now written the same way everywhere, and boiler types (combi, system, regular) stay as the data sheet gives them.'] },
   { v: 'v254', items: ['Fixed: the Ideal I-Mini 24, 30 and 35kW now show their GC number and figures.'] },

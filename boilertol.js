@@ -138,6 +138,47 @@ const BT = (() => {
     ['Max', 'Min', 'Tol', 'MaxF', 'MaxT', 'MinF', 'MinT'].forEach(k => { if (f['co2' + k]) o['t_co2' + k] = f['co2' + k]; });
     if (fan) { o.t_fan = fan; o.t_fanPF = fan; o.t_fanPT = to; o.t_fanFF = '0'; o.t_fanFT = (parseFloat(fan) - 0.1).toFixed(1); }
     return o; }));
+  /* Biasi boilers, from the Biasi manuals in Mark's folder (natural gas only). Row: name, size, type, GC number, heat input (central heating, nominal net), CO2 at maximum from / to, CO2 at minimum from / to, manual.
+     The Biasi manuals print CO2 as a range, so it is shown as a from / to range. They print only a typical CO figure (not a limit) and no CO/CO2 ratio, so those are left blank. Gas pressure at the boiler: 17 mbar minimum.
+     Riva Plus HE ERP and M296 print a single CO2 figure (7.9) with no range, so CO2 is left blank rather than judged. */
+  BUILTIN.push(...[
+    ['Advance Plus 16S', '16', 'System', '41-583-22', '16.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Advance Plus 16S/25S/30S manual'],
+    ['Advance Plus 25S', '25', 'System', '41-583-23', '25.0', '9.0', '9.8', '8.7', '9.5', 'Biasi Advance Plus 16S/25S/30S manual'],
+    ['Advance Plus 30S', '30', 'System', '41-583-24', '30.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Advance Plus 16S/25S/30S manual'],
+    ['Advance Plus 16S ERP', '16', 'System', '41-583-27', '16.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Advance Plus 16S ERP manual'],
+    ['Advance Plus 25S ERP', '25', 'System', '41-583-28', '25.0', '9.3', '9.9', '8.5', '9.1', 'Biasi Advance Plus 25S/30S ERP manual'],
+    ['Advance Plus 30S ERP', '30', 'System', '41-583-29', '30.0', '9.2', '9.8', '8.3', '8.9', 'Biasi Advance Plus 25S/30S ERP manual'],
+    ['Inovia 16S', '16', 'System', '41-583-25', '16.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Inovia 16S/25S manual'],
+    ['Inovia 25S', '25', 'System', '41-583-26', '25.0', '9.0', '9.8', '8.7', '9.5', 'Biasi Inovia 16S/25S manual'],
+    ['Inovia 25S ERP', '25', 'System', '41-583-30', '25.0', '9.0', '9.8', '8.7', '9.5', 'Biasi Inovia 25S ERP manual'],
+    ['Advance Plus 25C', '25', 'Combination', '47-583-29', '20.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Advance Plus 25C/30C/35C manual'],
+    ['Advance Plus 30C', '30', 'Combination', '47-583-30', '25.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Advance Plus 25C/30C/35C manual'],
+    ['Advance Plus 35C', '35', 'Combination', '47-583-31', '30.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Advance Plus 25C/30C/35C manual'],
+    ['Inovia 25C', '25', 'Combination', '47-583-32', '20.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Inovia combi manual'],
+    ['Inovia 30C', '30', 'Combination', '47-583-33', '25.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Inovia combi manual'],
+    ['Inovia 35C', '35', 'Combination', '47-583-34', '30.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Inovia combi manual'],
+    ['Advance Plus 25C ERP', '25', 'Combination', '47-583-35', '20.0', '9.2', '9.8', '8.5', '9.1', 'Biasi Advance Plus ERP combi manual (2019)'],
+    ['Advance Plus 30C ERP', '30', 'Combination', '47-583-36', '25.0', '9.1', '9.7', '8.3', '8.9', 'Biasi Advance Plus ERP combi manual (2019)'],
+    ['Advance Plus 35C ERP', '35', 'Combination', '47-583-37', '30.0', '9.2', '9.8', '8.3', '8.9', 'Biasi Advance Plus ERP combi manual (2019)'],
+    ['Inovia 25C ERP', '25', 'Combination', '47-583-38', '20.0', '9.2', '9.8', '8.5', '9.1', 'Biasi Inovia ERP combi manual (2020)'],
+    ['Inovia 30C ERP', '30', 'Combination', '47-583-39', '25.0', '9.1', '9.7', '8.3', '8.9', 'Biasi Inovia ERP combi manual (2020)'],
+    ['Inovia 35C ERP', '35', 'Combination', '47-583-40', '30.0', '9.2', '9.8', '8.3', '8.9', 'Biasi Inovia ERP combi manual (2020)'],
+    ['Advance 15OV', '15', 'Heat only', '41-583-35', '17.0', '9.0', '9.6', '8.2', '8.8', 'Biasi Advance OV manual'],
+    ['Advance 18OV', '18', 'Heat only', '41-583-36', '21.0', '9.1', '9.7', '8.2', '8.8', 'Biasi Advance OV manual'],
+    ['Advance 24OV', '24', 'Heat only', '41-583-37', '25.0', '9.0', '9.6', '8.2', '8.8', 'Biasi Advance OV manual'],
+    ['Riva Plus HE 24S ERP', '24', 'System', '41-583-31', '25.0', '', '', '', '', 'Biasi Riva Plus HE ERP system manual'],
+    ['Riva Plus HE 28S ERP', '28', 'System', '41-583-32', '29.0', '', '', '', '', 'Biasi Riva Plus HE ERP system manual'],
+    ['Riva Plus HE 24C ERP', '24', 'Combination', '47-583-41', '25.0', '', '', '', '', 'Biasi Riva Plus HE ERP combi manual'],
+    ['Riva Plus HE 28C ERP', '28', 'Combination', '47-583-42', '29.0', '', '', '', '', 'Biasi Riva Plus HE ERP combi manual'],
+    ['Riva Plus HE M296 24C', '24', 'Combination', '47-583-24', '25.0', '', '', '', '', 'Biasi Riva Plus HE M296 manual'],
+    ['Riva Plus HE M296 28C', '28', 'Combination', '47-583-25', '29.0', '', '', '', '', 'Biasi Riva Plus HE M296 manual'],
+    ['Riva Advance M110B 24C', '24', 'Combination', '47-583-11', '', '9.0', '9.8', '9.0', '9.8', 'Biasi Riva Advance M110B manual'],
+    ['Riva Advance M110B 32C', '32', 'Combination', '47-583-12', '', '9.0', '9.8', '9.0', '9.8', 'Biasi Riva Advance M110B manual']
+  ].map(([n, kw, kind, gc, hi, a, b, c, d, src]) => {
+    const o = { id: 'bt:biasi-' + n.toLowerCase().replace(/[^a-z0-9]+/g, '-'), type: 'Boiler', make: 'Biasi', name: n, kind, kw, warranty: '', src,
+      t_gc: gc, t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: hi, t_ratio: '', t_co: '', t_inlet: '17' };
+    if (a) { o.t_co2MaxF = a; o.t_co2MaxT = b; o.t_co2MinF = c; o.t_co2MinT = d; }
+    return o; }));
   BUILTIN.push(...[
     /* Ideal boilers, from Ideal installation and servicing manuals supplied by Mark. Each row: name, type, size, GC number, heat input (central heating, net), lowest heat input, CO2 at maximum, CO2 at minimum, manual.
        CO2 is the printed figure with 0.7 either side. CO under 350 ppm and CO/CO2 ratio under 0.004 (Ideal combustion check); gas pressure at the boiler must be over 18 mbar. Ideal manuals have no fan pressure test, so none is set. */
