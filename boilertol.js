@@ -43,7 +43,7 @@ const BT = (() => {
     const r = ui.rec, t = typeOf(r);
     if (t === 'service') {
       const make = r.make === 'Other' ? r.makeOther : r.make;
-      return { boiler: find(make, r.model, r.gc), p: { fan: ['fpValue'], inlet: ['bpValue'], hi: ['grValue'], co: ['fgCoMin', 'fgCoMax'], co2Min: ['fgCo2Min'], co2Max: ['fgCo2Max'], ratio: ['fgRatioMin', 'fgRatioMax'] } };
+      return { res: { fpValue: 'fpResult', bpValue: 'bpResult', fgCoMin: 'fgResult', fgCoMax: 'fgResult', fgCo2Min: 'fgResult', fgCo2Max: 'fgResult', fgRatioMin: 'fgResult', fgRatioMax: 'fgResult' }, boiler: find(make, r.model, r.gc), p: { fan: ['fpValue'], inlet: ['bpValue'], hi: ['grValue'], co: ['fgCoMin', 'fgCoMax'], co2Min: ['fgCo2Min'], co2Max: ['fgCo2Max'], ratio: ['fgRatioMin', 'fgRatioMax'] } };
     }
     if (t === 'gas') {
       const i = Math.min(ui.appTab || 0, (+r.applianceCount || 1) - 1), a = (r.appliances || [])[i]; if (!a) return null;
@@ -105,6 +105,37 @@ const BT = (() => {
     d.addEventListener('click', ev => { if (ev.target === d || ev.target.id === 'btX') d.remove(); });
   }
 
+
+  /* a reading outside the manufacturer's figure asks what the engineer wants to record (service form: Pass or Fail for that check) */
+  const said = {};
+  function outText(key, n, x) {
+    const f = k => val(x, k);
+    if (key === 'co') return 'CO reading ' + n + ' ppm is over the manufacturer\'s maximum of ' + f('co') + ' ppm.';
+    if (key === 'ratio') return 'CO/CO2 ratio ' + n + ' is over the manufacturer\'s maximum of ' + f('ratio') + '.';
+    if (key === 'inlet') return 'Gas inlet working pressure ' + n + ' mbar is below the manufacturer\'s minimum of ' + f('inlet') + ' mbar.';
+    const lim = key === 'co2Max' ? f('co2Max') : f('co2Min'), tol = f('co2Tol');
+    return 'CO2 reading ' + n + ' % is outside the manufacturer\'s ' + lim + ' % (plus or minus ' + tol + ').';
+  }
+  function checkOut(path, value) {
+    const c = context(); if (!c || !c.boiler) return;
+    const key = Object.keys(c.p).find(k => c.p[k].includes(path)); if (!key) return;
+    if (judge(key, value, c.boiler) !== false) { delete said[path]; return; }
+    if (said[path] === value) return; said[path] = value;
+    const res = c.res && c.res[path], old = document.getElementById('btOut'); if (old) old.remove();
+    const d = document.createElement('div'); d.id = 'btOut'; d.className = 'sheetbg';
+    d.innerHTML = `<div class="sheet" role="dialog" aria-label="Out of range"><div class="grab"></div><h2 style="color:var(--bad)">Out of range</h2>
+      <p>${esc2(outText(key, num(value), c.boiler))}</p>
+      ${res ? '<p class="small muted">Choose the result for this check. You can change it later.</p><div class="row"><button type="button" class="btn danger grow" data-bt="FAIL">Fail</button><button type="button" class="btn grow" data-bt="PASS">Pass</button></div><button type="button" class="btn ghost block" data-bt="" style="margin-top:10px">Decide later</button>'
+          : '<p class="small muted">This is a guide from the manufacturer\'s figures. Check the reading again and the data sheet.</p><button type="button" class="btn block" data-bt="">OK</button>'}</div>`;
+    document.body.appendChild(d);
+    d.addEventListener('click', ev => {
+      const b = ev.target.closest('[data-bt]');
+      if (!b && ev.target !== d) return;
+      if (b && b.dataset.bt && res) { setP(ui.rec, res, b.dataset.bt); ui.pdf = null; persistRecSoon(); render(); }
+      d.remove();
+    });
+  }
+
   /* the boxes shown on a boiler in the Price list */
   function editHtml(x) {
     const i = ([k, l, m]) => `<label class="f"><span>${l}</span><input data-pi="t_${k}" data-id="${x.id}" value="${esc2(x['t_' + k] || '')}" ${m ? `inputmode="${m}"` : ''} autocomplete="off"></label>`;
@@ -125,6 +156,7 @@ const BT = (() => {
   let timer = 0; const later = () => { clearTimeout(timer); timer = setTimeout(paint, 30); };
   const start = () => { const v = document.getElementById('view'); if (v) new MutationObserver(later).observe(v, { childList: true, subtree: true }); later(); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+  document.addEventListener('change', e => { const t = e.target; if (t && t.dataset && t.dataset.k && t.tagName === 'INPUT') setTimeout(() => checkOut(t.dataset.k, t.value), 60); });
   document.addEventListener('input', e => { if (e.target && e.target.dataset && e.target.dataset.k) later(); });
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('.tolI'); if (b) { e.preventDefault(); e.stopPropagation(); openInfo(b.dataset.btk); } }, true);
   return { find, judge, paint, editHtml, seed, FIELDS };

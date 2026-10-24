@@ -1377,6 +1377,20 @@ def run():
         check('no page errors answering the warning notice question', not errs, errs)
         ctx.close()
 
+        # ---------- 12ag. out of range pop-up ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(async()=>{ const out={}; qSeed(); const cu={id:'c8',name:'Out Range',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
+          const rec=newRecord(cu,'service'); rec.make='Worcester Bosch'; rec.model='Greenstar 24Ri'; rec.fgDone='YES'; ui.rec=rec; ui.view='form'; ui.step=4; render(); await new Promise(r=>setTimeout(r,150));
+          const put=(p,v)=>{const i=document.querySelector('.f[data-f="'+p+'"] input'); i.value=v; i.dispatchEvent(new Event('input',{bubbles:true})); i.dispatchEvent(new Event('change',{bubbles:true}))};
+          put('fgCoMax','150'); await new Promise(r=>setTimeout(r,200)); out.quiet=!document.getElementById('btOut');
+          put('fgCoMax','250'); await new Promise(r=>setTimeout(r,250)); out.pop=!!document.getElementById('btOut'); out.text=(document.getElementById('btOut')||{}).innerText||'';
+          document.querySelector('#btOut [data-bt=FAIL]').click(); await new Promise(r=>setTimeout(r,150));
+          out.fail=ui.rec.fgResult; out.gone=!document.getElementById('btOut'); return out})()""")
+        check('no pop-up while the reading is inside the figure', r['quiet'], r)
+        check('out of range reading shows a pop-up with Pass / Fail that sets the result', r['pop'] and 'Out of range' in r['text'] and r['fail'] == 'FAIL' and r['gone'], r)
+        check('no page errors with the out of range pop-up', not errs, errs)
+        ctx.close()
+
         # ---------- 12ac. v226 interface changes ----------
         ctx, pg, errs = fresh(b)
         r = ev(pg, """(async()=>{ const out={};
