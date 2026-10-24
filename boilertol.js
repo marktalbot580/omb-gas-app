@@ -75,7 +75,7 @@ const BT = (() => {
     if (key === 'co' || key === 'ratio') { const l = lim(key); return l === null ? null : n <= l; }
     if (key === 'inlet') { const l = lim('inlet'); return l === null ? null : n >= l; }
     if (key === 'co2Max' || key === 'co2Min') { const l = lim(key), tol = lim('co2Tol'); return l === null || tol === null ? null : n >= l - tol - 1e-9 && n <= l + tol + 1e-9; }
-    if (key === 'fan') { const l = lim('fan'); return l === null ? null : n <= -Math.abs(l) + 1e-9 && n >= -10 - 1e-9; }   // confirmed by Mark: -3.1 or stronger, down to -10, passes; -3 to 0 fails
+    if (key === 'fan') { const l = lim('fan'), m = -Math.abs(n); return l === null ? null : m <= -Math.abs(l) + 1e-9 && m >= -10 - 1e-9; }   // the minus is assumed: 3.5 and -3.5 are the same reading   // confirmed by Mark: -3.1 or stronger, down to -10, passes; -3 to 0 fails
     return null;   // heat input is shown only
   }
   const LABEL = { model: 'this boiler', fan: 'Fan pressure', inlet: 'Gas inlet working pressure', hi: 'Gas rate / heat input', co: 'CO', co2Min: 'CO2', co2Max: 'CO2', ratio: 'CO/CO2 ratio' };
@@ -91,7 +91,7 @@ const BT = (() => {
     if (f('co2Min')) out.push(['Min CO2 %', f('co2Min') + tol, 'co2']);
     if (f('ratio')) out.push(['Maximum Ratio', f('ratio'), 'ratio']);
     if (f('co')) out.push(['Maximum CO (ppm)', f('co'), 'co']);
-    if (f('fan')) out.push(['Fan Pressure (Pressure will read negative and be greater than) (mb)', '- ' + String(f('fan')).replace(/^[-−]\s*/, '') + ' (pass: -' + String(f('fan')).replace(/^[-−]\s*/, '') + ' to -10)', 'fan']);
+    if (f('fan')) out.push(['Fan Pressure (Pressure will read negative and be greater than) (mb)', '- ' + String(f('fan')).replace(/^[-−]\s*/, '') + ' (pass: -' + String(f('fan')).replace(/^[-−]\s*/, '') + ' to -10). The minus is added for you.', 'fan']);
     if (f('inlet')) out.push(['Min Gas Inlet Working Pressure (mb)', f('inlet'), 'inlet']);
     return out;
   }
@@ -141,6 +141,12 @@ const BT = (() => {
     if (key === 'inlet') return 'Gas inlet working pressure ' + n + ' mbar is below the manufacturer\'s minimum of ' + f('inlet') + ' mbar.';
     const lim = key === 'co2Max' ? f('co2Max') : f('co2Min'), tol = f('co2Tol');
     return 'CO2 reading ' + n + ' % is outside the manufacturer\'s ' + lim + ' % (plus or minus ' + tol + ').';
+  }
+  /* fan pressure always reads negative, so a plain number typed in the fan box gets its minus put in front automatically */
+  function fixFan(path, inp) {
+    const c = context(); if (!c || !c.boiler || !c.p.fan.includes(path) || !inp) return;
+    const v = String(inp.value).trim(); if (!/^\+?\d*[.,]?\d+$/.test(v) || num(v) === 0) return;
+    const nv = '-' + v.replace(/^\+/, ''); inp.value = nv; setP(ui.rec, path, nv); ui.pdf = null; persistRecSoon();
   }
   function checkOut(path, value) {
     const c = context(); if (!c || !c.boiler) return;
@@ -229,7 +235,7 @@ const BT = (() => {
   const watch = () => { const v = document.getElementById('view'); if (v && watcher) watcher.observe(v, { childList: true, subtree: true }); };
   const start = () => { watcher = new MutationObserver(later); watch(); later(); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
-  document.addEventListener('change', e => { const t = e.target; if (t && t.dataset && t.dataset.k && t.tagName === 'INPUT') setTimeout(() => { fillGc(t.dataset.k); checkOut(t.dataset.k, t.value); }, 60); });
+  document.addEventListener('change', e => { const t = e.target; if (t && t.dataset && t.dataset.k && t.tagName === 'INPUT') setTimeout(() => { fillGc(t.dataset.k); fixFan(t.dataset.k, t); checkOut(t.dataset.k, t.value); }, 60); });
   document.addEventListener('input', e => { if (e.target && e.target.dataset && e.target.dataset.k) later(); });
   /* the (i) sits inside a box's label, so a tap would also focus the box and open the keyboard, which can swallow the tap: stop that, and open on touch-end as well as click */
   let touched = 0;

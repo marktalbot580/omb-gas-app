@@ -1355,7 +1355,11 @@ def run():
           return out})()""")
         check('figures built in for the Greenstar 24Ri', r['seeded'], r)
         fr = ev(pg, "(()=>{const x=BT.BUILTIN[0]; return ['-3.1','-3.7','-10','-3','-2','0','-11','3.5'].map(v=>BT.judge('fan',v,x))})()")
-        check('fan pressure: -3.1 to -10 passes, -3 to 0 fails', fr == [True, True, True, False, False, False, False, False], fr)
+        fr2 = ev(pg, """(async()=>{ const cu={id:'fx1',name:'Fan Fix',phone:'1',address:'1 A St'}; customers.push(cu); const rec=newRecord(cu,'service'); rec.make='Worcester Bosch'; rec.model='Greenstar 24Ri'; rec.fpTaken='YES'; ui.rec=rec; ui.view='form'; ui.step=4; render(); await new Promise(r=>setTimeout(r,300));
+          const inp=document.querySelector('.f[data-f=fpValue] input'); inp.value='3.6'; inp.dispatchEvent(new Event('input',{bubbles:true})); inp.dispatchEvent(new Event('change',{bubbles:true})); await new Promise(r=>setTimeout(r,300));
+          return [inp.value, ui.rec.fpValue]})()""")
+        check('fan pressure: a plain number gets its minus added', fr2 == ['-3.6', '-3.6'], fr2)
+        check('fan pressure: -3.1 to -10 passes, -3 to 0 fails (minus assumed)', fr == [True, True, True, False, False, False, False, True], fr)
         check('info buttons appear beside the readings', r['i'] >= 8, r['i'])
         check('CO over the limit is red, CO2 inside is green, CO2 outside is red', 'tolbad' in r['co'] and 'tolok' in r['co2'] and 'tolbad' in r['co2min'] and 'tolok' in r['ratio'], r)
         check('low gas inlet pressure is red and fan pressure -3.5 is green', 'tolbad' in r['inlet'] and 'tolok' in r['fan'], r)
