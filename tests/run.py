@@ -1403,17 +1403,28 @@ def run():
         check('no page errors filling the GC number', not errs, errs)
         ctx.close()
 
-        # ---------- 12ai. fan pressure explainer ----------
+        # ---------- 12ai. info panel shows the data sheet only ----------
         ctx, pg, errs = fresh(b, mobile=True)
-        r = ev(pg, """(async()=>{ const out={}; const cu={id:'c6',name:'Fan Info',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
-          const rec=newRecord(cu,'service'); rec.make='Worcester Bosch'; rec.model='Unknown Model 1'; rec.fpTaken='YES'; rec.fgDone='YES'; ui.rec=rec; ui.view='form'; ui.step=4; render(); await new Promise(r=>setTimeout(r,200));
-          out.n=document.querySelectorAll('.tolI').length; const b=document.querySelector('.f[data-f=fpValue] .tolI'); out.fanBtn=!!b;
-          if(b) b.click(); const s=document.getElementById('btSheet'); out.text=s?s.innerText:''; out.link=!!(s&&s.querySelector('a[href*=certificates4uk]')); return out})()""")
-        check('Worcester fan pressure box has an info button even with no saved figures', r['n'] == 1 and r['fanBtn'], r)
-        check('fan pressure info explains the test and links to the full page', 'negative' in r['text'] and r['link'], r)
-        r = ev(pg, """(async()=>{ document.getElementById('btSheet').remove(); ui.step=1; render(); await new Promise(r=>setTimeout(r,200)); const b=document.querySelector('.f[data-f=model] .tolI'); if(!b) return 'none'; b.click(); return document.getElementById('btSheet').innerText })()""")
-        check('model box has an info button that opens the same panel', r != 'none' and 'negative' in r, r)
-        check('no page errors with the fan pressure info', not errs, errs)
+        r = ev(pg, """(async()=>{ const out={}; qSeed(); const cu={id:'c6',name:'Fan Info',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
+          const rec=newRecord(cu,'service'); rec.make='Worcester Bosch'; rec.model='Greenstar 24Ri'; ui.rec=rec; ui.view='form'; ui.step=1; render(); await new Promise(r=>setTimeout(r,200));
+          const b=document.querySelector('.f[data-f=model] .tolI'); out.btn=!!b; if(b) b.click(); const s=document.getElementById('btSheet'); out.text=s?s.innerText:''; out.link=!!(s&&s.querySelector('a')); return out})()""")
+        check('model box has an info button that opens the data sheet panel', r['btn'] and all(t in r['text'] for t in ['Flue Type', 'CH Max Heat Input (Kw Net)', 'CH Min Heat Input (Kw Net)', 'Max CO2 %', 'Min CO2 %', 'Maximum Ratio', 'Maximum CO (ppm)', 'Fan Pressure', 'Min Gas Inlet Working Pressure (mb)']), r)
+        check('the panel has no web link or extra explanation', not r['link'] and 'About the fan pressure test' not in r['text'], r)
+        check('no page errors with the info panel', not errs, errs)
+        ctx.close()
+
+        # ---------- 12aj. model search box ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(async()=>{ const out={}; qSeed(); const cu={id:'c5',name:'Model Search',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
+          const rec=newRecord(cu,'service'); rec.make='Worcester Bosch'; ui.rec=rec; ui.view='form'; ui.step=1; render(); await new Promise(r=>setTimeout(r,150));
+          const i=document.querySelector('.f[data-f=model] input'); i.value='green 24'; i.dispatchEvent(new Event('input',{bubbles:true})); await new Promise(r=>setTimeout(r,100));
+          const b=document.querySelector('#btSug [data-bts]'); out.n=document.querySelectorAll('#btSug [data-bts]').length; out.first=b?b.innerText:'';
+          const g=[...document.querySelectorAll('#btSug [data-bts]')].find(x=>/24Ri/.test(x.innerText)); if(g) g.click(); await new Promise(r=>setTimeout(r,200));
+          out.model=ui.rec.model; out.gc=ui.rec.gc; out.gone=!document.getElementById('btSug');
+          i.value='zzzz'; i.dispatchEvent(new Event('input',{bubbles:true})); out.none=!document.getElementById('btSug'); return out})()""")
+        check('typing in the model box suggests boilers and tapping one fills model and GC', r['n'] >= 1 and r['model'] == 'Greenstar 24Ri' and r['gc'] == '41-311-65' and r['gone'], r)
+        check('no suggestions for rubbish', r['none'], r)
+        check('no page errors in the model search', not errs, errs)
         ctx.close()
 
         # ---------- 12ac. v226 interface changes ----------

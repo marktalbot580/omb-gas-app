@@ -66,16 +66,16 @@ const BT = (() => {
   const infoKey = k => (k === 'co2Min' || k === 'co2Max') ? 'co2' : k;
 
   function lines(x) {
-    const f = k => val(x, k), out = [];
-    if (f('flue')) out.push(['Flue type', f('flue')]);
-    if (f('hi')) out.push(['CH max heat input', f('hi') + ' kW net']);
-    out.push(['CH min heat input', f('hiMin') || 'N/A']);
-    if (f('co2Max')) out.push(['CO2 at maximum rate', f('co2Max') + ' %' + (f('co2Tol') ? ' (±' + f('co2Tol') + ')' : '')]);
-    if (f('co2Min')) out.push(['CO2 at minimum rate', f('co2Min') + ' %' + (f('co2Tol') ? ' (±' + f('co2Tol') + ')' : '')]);
-    if (f('ratio')) out.push(['Max CO/CO2 ratio', f('ratio')]);
-    if (f('co')) out.push(['Max CO', f('co') + ' ppm']);
-    if (f('fan')) out.push(['Fan pressure (pressure will read negative and be greater than)', '-' + String(f('fan')).replace(/^[-−]/, '') + ' mbar']);
-    if (f('inlet')) out.push(['Min gas inlet working pressure', f('inlet') + ' mbar']);
+    const f = k => val(x, k), out = [], tol = f('co2Tol') ? ' ( +/- ' + f('co2Tol') + ' )' : '';
+    if (f('flue')) out.push(['Flue Type', f('flue')]);
+    if (f('hi')) out.push(['CH Max Heat Input (Kw Net)', f('hi')]);
+    out.push(['CH Min Heat Input (Kw Net)', f('hiMin') || 'N/A']);
+    if (f('co2Max')) out.push(['Max CO2 %', f('co2Max') + tol]);
+    if (f('co2Min')) out.push(['Min CO2 %', f('co2Min') + tol]);
+    if (f('ratio')) out.push(['Maximum Ratio', f('ratio')]);
+    if (f('co')) out.push(['Maximum CO (ppm)', f('co')]);
+    if (f('fan')) out.push(['Fan Pressure (Pressure will read negative and be greater than) (mb)', '- ' + String(f('fan')).replace(/^[-−]\s*/, '')]);
+    if (f('inlet')) out.push(['Min Gas Inlet Working Pressure (mb)', f('inlet')]);
     return out;
   }
 
@@ -84,28 +84,22 @@ const BT = (() => {
     const c = context();
     document.querySelectorAll('.tolI').forEach(b => b.remove());
     document.querySelectorAll('.f.tolok,.f.tolbad').forEach(e => e.classList.remove('tolok', 'tolbad'));
-    if (!c || (!c.boiler && !c.worc)) return;
+    if (!c || !c.boiler) return;
     Object.keys(c.p).forEach(key => c.p[key].forEach(path => {
-      if (!c.boiler && key !== 'fan' && key !== 'model') return;
       const lab = document.querySelector('.f[data-f="' + path + '"]'); if (!lab) return;
       const sp = lab.querySelector('span'); if (sp) { const b = document.createElement('button'); b.type = 'button'; b.className = 'tolI'; b.setAttribute('aria-label', 'Manufacturer figures for ' + (LABEL[key] || 'this reading')); b.dataset.btk = infoKey(key); b.textContent = 'i'; sp.appendChild(b); }
-      const inp = lab.querySelector('input'), j = inp && c.boiler ? judge(key, inp.value, c.boiler) : null;
+      const inp = lab.querySelector('input'), j = inp ? judge(key, inp.value, c.boiler) : null;
       if (j === true) lab.classList.add('tolok'); else if (j === false) lab.classList.add('tolbad');
     }));
   }
 
-  const FAN_URL = 'https://certificates4uk.co.uk/worcester-greenstar-fan-pressure-test-jr-si-ri-ng/';
   function openInfo(focus) {
-    const c = context(); if (!c || (!c.boiler && !c.worc)) return;
+    const c = context(); if (!c || !c.boiler) return;
     const x = c.boiler, old = document.getElementById('btSheet'); if (old) old.remove();
     const rows = x ? lines(x).map(([k, v]) => `<div class="line"><span class="main"><b>${esc2(k)}</b><span>${esc2(v)}</span></span></div>`).join('') : '';
-    const fan = (focus === 'fan' || focus === 'model') ? `<div class="card" style="margin:12px 0"><b>About the fan pressure test</b>
-      <p class="small" style="margin:6px 0">It measures how hard the boiler's fan is sucking, with a gauge on the fan test point while the boiler runs at full output. It always reads as a negative number. The test is used to spot a partly blocked heat exchanger.</p>
-      <p class="small muted" style="margin:0 0 8px">Check your reading against the Worcester figure for this boiler, and the manufacturer's instructions, before deciding the result.</p>
-      <a class="btn block" style="text-align:center;text-decoration:none" href="${FAN_URL}" target="_blank" rel="noopener">Read more about the test</a></div>` : '';
     const d = document.createElement('div'); d.id = 'btSheet'; d.className = 'sheetbg';
-    d.innerHTML = `<div class="sheet" role="dialog" aria-label="Manufacturer figures"><div class="grab"></div><h2>${x ? esc2(((x.make || '') + ' ' + (x.name || '')).trim()) : 'Fan pressure'}</h2>
-      ${x ? `<p class="small muted" style="margin-top:0">Manufacturer figures${val(x, 'gc') ? ' · GC ' + esc2(val(x, 'gc')) : ''}. Green or red on a reading is only a guide, so always check against the data sheet.</p>` : '<p class="small muted" style="margin-top:0">No figures are saved for this boiler yet. You can add them in the Price list under Boiler.</p>'}${fan}${rows}
+    d.innerHTML = `<div class="sheet" role="dialog" aria-label="Manufacturer figures"><div class="grab"></div><h2>${esc2(((x.make || '') + ' ' + (x.name || '')).trim())}</h2>
+      <p class="small muted" style="margin-top:0">Manufacturer figures${val(x, 'gc') ? ' · GC ' + esc2(val(x, 'gc')) : ''}. Green or red on a reading is only a guide, so always check against the data sheet.</p>${rows}
       <button type="button" class="btn block" id="btX" style="margin-top:10px">Close</button></div>`;
     document.body.appendChild(d);
     d.addEventListener('click', ev => { if (ev.target === d || ev.target.id === 'btX') d.remove(); });
@@ -172,6 +166,29 @@ const BT = (() => {
       t_gc: '41-311-65', t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: '24.62', t_co2Max: '9.8', t_co2Min: '9.2', t_co2Tol: '0.5', t_ratio: '0.0020', t_co: '200', t_fan: '3.1', t_inlet: '16.5' });
     saveSettings();
   }
+
+
+  /* typing in the model box suggests boilers from the Price list; tapping one fills the model (and the GC number if it is empty) */
+  const modelPath = path => { const r = ui.rec; if (!r || ui.view !== 'form') return false; const t = typeOf(r); return (t === 'service' && path === 'model') || (t === 'gas' && /^appliances\.\d+\.model$/.test(path)); };
+  function suggest(inp) {
+    const path = inp.dataset.k, lab = inp.closest('.f'); if (!lab) return;
+    let box = document.getElementById('btSug'); if (box) box.remove();
+    const toks = norm(inp.value) ? String(inp.value).toLowerCase().split(/\s+/).map(norm).filter(Boolean) : [];
+    if (!toks.length) return;
+    const r = ui.rec, mk = norm(typeOf(r) === 'service' ? (r.make === 'Other' ? r.makeOther : r.make) : ((r.appliances || [])[+path.split('.')[1]] || {}).manufacturer);
+    const hits = (settings.qList || []).filter(x => x.type === 'Boiler' && x.name && (!mk || !norm(x.make) || norm(x.make).includes(mk) || mk.includes(norm(x.make))) && toks.every(t => norm((x.make || '') + ' ' + x.name).includes(t))).slice(0, 6);
+    if (!hits.length || (hits.length === 1 && norm(hits[0].name) === norm(inp.value))) return;
+    box = document.createElement('div'); box.id = 'btSug'; box.style.margin = '-4px 0 12px';
+    box.innerHTML = hits.map(x => `<button type="button" class="item cpick" data-bts="${esc2(x.id)}"><div class="t">${esc2(x.name)}</div><div class="s">${esc2([x.make, x.kind, x.t_gc ? 'GC ' + x.t_gc : ''].filter(Boolean).join(' · '))}</div></button>`).join('');
+    lab.after(box);
+    box.addEventListener('click', ev => {
+      const b = ev.target.closest('[data-bts]'); if (!b) return;
+      const x = (settings.qList || []).find(y => y.id === b.dataset.bts); if (!x) return;
+      setP(ui.rec, path, x.name); inp.value = x.name; ui.pdf = null; persistRecSoon(); box.remove();
+      fillGc(path); later();
+    });
+  }
+  document.addEventListener('input', e => { const t = e.target; if (t && t.tagName === 'INPUT' && t.dataset && t.dataset.k && modelPath(t.dataset.k)) suggest(t); });
 
   let timer = 0; const later = () => { clearTimeout(timer); timer = setTimeout(paint, 30); };
   const start = () => { const v = document.getElementById('view'); if (v) new MutationObserver(later).observe(v, { childList: true, subtree: true }); later(); };
