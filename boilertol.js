@@ -62,6 +62,11 @@ const BT = (() => {
     ['29', '41-311-60', '27.7', '9.2', '8.8'], ['40', '41-311-61', '40', '9.2', '9.2']
   ].map(([kw, gc, hi, c2a, c2b]) => ({ id: 'bt:wb-greenstar-r' + kw + 'he', type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar R' + kw + ' HE', kind: 'Heat only', kw, warranty: '', src: 'Worcester Bosch R29 & R40 HE conventional manual 6 720 611 445 GB (05.04)',
     t_gc: gc, t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: hi, t_co2Max: c2a, t_co2Min: c2b, t_co2Tol: '', t_ratio: '', t_co: '', t_fan: '', t_inlet: '18' })));
+  BUILTIN.push(...[
+    /* Greenstar 30CDi / 40CDi Conventional: manual 6 720 614 556a (2007/07). Fan: "will read negative and be greater than" 3.9 / 4.4 mbar; the -10 upper end is the same rule as the 24Ri. */
+    ['30', '41-311-71', '30.9', '9.6', '9.0', '3.9', '3.8'], ['40', '41-311-72', '42.0', '9.7', '9.1', '4.4', '4.3']
+  ].map(([kw, gc, hi, c2a, c2b, fan, ft]) => ({ id: 'bt:wb-greenstar-' + kw + 'cdi', type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar ' + kw + 'CDi', kind: 'Heat only', kw, warranty: '', src: 'Worcester Bosch Greenstar CDi Conventional manual 6 720 614 556a (2007/07)',
+    t_gc: gc, t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: hi, t_co2Max: c2a, t_co2Min: c2b, t_co2Tol: '0.2', t_ratio: '', t_co: '200', t_fan: fan, t_inlet: '18', t_fanPF: fan, t_fanPT: '10', t_fanFF: '0', t_fanFT: ft })));
   const keyOf = x => norm(x.make) + '|' + norm(x.name);
   /* the engineer's own boilers plus the built-in ones they do not already have figures for */
   function boilers() {
