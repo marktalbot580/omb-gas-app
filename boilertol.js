@@ -87,6 +87,57 @@ const BT = (() => {
     ['Max', 'Min', 'Tol', 'MaxF', 'MaxT', 'MinF', 'MinT'].forEach(k => { if (c[k]) o['t_co2' + k] = c[k]; });
     if (m.fan) { o.t_fan = m.fan; o.t_fanPF = m.fan; o.t_fanPT = m.fanTo; o.t_fanFF = '0'; o.t_fanFT = m.ft; }
     return o; }));
+  /* More Worcester Bosch, from the manuals in Mark's folder (natural gas only). Row: name, size, type, GC number, heat input (central heating, net), fan pressure pass line (blank where the manual's line cannot be used), top of the pass range, manual, then the CO2 / CO settings.
+     Fan pressure: the pass line is the printed figure; where a manual prints -10.0 for the smallest size the whole range is "clean", so it is left blank. CO2 where printed as "between x and y" is shown as a from / to range. */
+  const WB8 = { co2Max: '9.5', co2Min: '8.6', co2Tol: '0.4', co: '250', coLow: '75' };
+  BUILTIN.push(...[
+    ['Greenstar 8000 Life System', '30', 'System', '41-406-91', '30.2', '', '10', 'Worcester Bosch Greenstar 8000 Life System manual 6720883858 (2019/02)', WB8],
+    ['Greenstar 8000 Life System', '35', 'System', '41-406-90', '34.4', '3.5', '10', 'Worcester Bosch Greenstar 8000 Life System manual 6720883858 (2019/02)', WB8],
+    ['Greenstar 8000 Style System', '30', 'System', '41-406-87', '30.2', '', '10', 'Worcester Bosch Greenstar 8000 Style System manual 6720883855 (2019/01)', WB8],
+    ['Greenstar 8000 Style System', '35', 'System', '41-406-86', '34.4', '3.5', '10', 'Worcester Bosch Greenstar 8000 Style System manual 6720883855 (2019/01)', WB8],
+    ['Greenstar 8000 Style System SB', '30', 'System', '41-406-83', '30.2', '', '10', 'Worcester Bosch Greenstar 8000 Style System manual 6720883855 (2019/01)', WB8],
+    ['Greenstar 8000 Style System SB', '35', 'System', '41-406-82', '34.4', '3.5', '10', 'Worcester Bosch Greenstar 8000 Style System manual 6720883855 (2019/01)', WB8],
+    ['Greenstar 8000 Life Regular', '30', 'Heat only', '41-406-98', '30.2', '', '10', 'Worcester Bosch Greenstar 8000 Life Regular manual (2019)', WB8],
+    ['Greenstar 8000 Life Regular', '35', 'Heat only', '41-406-97', '34.4', '3.5', '10', 'Worcester Bosch Greenstar 8000 Life Regular manual (2019)', WB8],
+    ['Greenstar 8000 Life Regular', '40', 'Heat only', '41-406-96', '40.8', '5.0', '10', 'Worcester Bosch Greenstar 8000 Life Regular manual (2019)', WB8],
+    ['Greenstar 8000 Life Regular', '45', 'Heat only', '41-406-95', '43.5', '4.8', '10', 'Worcester Bosch Greenstar 8000 Life Regular manual (2019)', WB8],
+    ['Greenstar 8000 Life Regular', '50', 'Heat only', '41-406-94', '48.9', '6.0', '10', 'Worcester Bosch Greenstar 8000 Life Regular manual (2019)', WB8],
+    ['Greenstar 8000+ Regular', '30', 'Heat only', '41-800-29', '30.2', '', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW R manual', WB8],
+    ['Greenstar 8000+ Regular', '35', 'Heat only', '41-800-30', '34.4', '3.5', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW R manual', WB8],
+    ['Greenstar 8000+ Regular', '40', 'Heat only', '41-800-31', '34.4', '5.0', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW R manual', WB8],
+    ['Greenstar 8000+ Regular', '45', 'Heat only', '41-800-32', '34.4', '4.8', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW R manual', WB8],
+    ['Greenstar 8000+ Regular', '50', 'Heat only', '41-800-33', '34.4', '6.0', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW R manual', WB8],
+    ['Greenstar 8000+ System', '30', 'System', '41-800-27', '30.2', '', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW S manual', WB8],
+    ['Greenstar 8000+ System', '35', 'System', '41-800-28', '34.4', '3.5', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW S manual', WB8],
+    ['Greenstar 8000+ Combi V2', '32', 'Combination', '47-800-44', '30.2', '8.0', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW C manual 6721108973 (2025/06)', WB8],
+    ['Greenstar 8000+ Combi', '36', 'Combination', '47-800-45', '34.4', '4.0', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW C manual 6721108973 (2025/06)', WB8],
+    ['Greenstar 8000+ Combi', '40', 'Combination', '47-800-46', '34.4', '5.0', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW C manual 6721108973 (2025/06)', WB8],
+    ['Greenstar 8000+ Combi', '45', 'Combination', '47-800-47', '34.4', '4.8', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW C manual 6721108973 (2025/06)', WB8],
+    ['Greenstar 8000+ Combi', '50', 'Combination', '47-800-48', '34.4', '6.0', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW C manual 6721108973 (2025/06)', WB8],
+    ['Greenstar 8000+ Style Combi V2', '32', 'Combination', '47-800-49', '30.2', '8.0', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW C manual 6721108973 (2025/06)', WB8],
+    /* older ErP Greenstar boilers: CO 200 ppm / ratio 0.002 as printed in the settings table (the flow chart also quotes 350 / 0.004, the stricter figure is used) */
+    ['Greenstar 30CDi Classic Regular ErP', '30', 'Heat only', '41-406-33', '30.9', '4.1', '10', 'Worcester Bosch Greenstar CDi Classic Regular ErP manual 6720815723', { co2Max: '9.6', co2Min: '9.0', co2Tol: '0.4', co: '200', ratio: '0.0020' }],
+    ['Greenstar 40CDi Classic Regular ErP', '40', 'Heat only', '41-406-35', '42.0', '5.2', '10', 'Worcester Bosch Greenstar CDi Classic Regular ErP manual 6720815723', { co2Max: '9.7', co2Min: '9.1', co2Tol: '0.4', co: '200', ratio: '0.0020' }],
+    ['Greenstar FS 30CDi ErP Regular', '30', 'Heat only', '41-406-62', '30.9', '4.1', '10', 'Worcester Bosch Greenstar FS CDi ErP Regular manual 6720818079', { co2Max: '9.4', co2Min: '8.6', co2Tol: '0.2' }],
+    ['Greenstar FS 42CDi ErP Regular', '42', 'Heat only', '41-406-64', '42.0', '5.2', '10', 'Worcester Bosch Greenstar FS CDi ErP Regular manual 6720818079', { co2Max: '9.4', co2Min: '9.0', co2Tol: '0.2' }],
+    ['Greenstar 29CDi Classic ErP', '29', 'Combination', '47-406-65', '30.9', '3.9', '10', 'Worcester Bosch Greenstar CDi Classic ErP manual', { co2Max: '9.6', co2Min: '9.0', co2Tol: '0.4', co: '200', ratio: '0.0020' }],
+    ['Greenstar 34CDi Classic ErP', '34', 'Combination', '47-406-67', '30.9', '5.3', '10', 'Worcester Bosch Greenstar CDi Classic ErP manual', { co2Max: '9.6', co2Min: '9.0', co2Tol: '0.4', co: '200', ratio: '0.0020' }],
+    ['Greenstar 38CDi Classic ErP', '38', 'Combination', '47-406-69', '30.9', '4.4', '10', 'Worcester Bosch Greenstar CDi Classic ErP manual', { co2Max: '9.7', co2Min: '9.1', co2Tol: '0.4', co: '200', ratio: '0.0020' }],
+    ['Greenstar 42CDi Classic ErP', '42', 'Combination', '47-406-71', '30.9', '4.8', '10', 'Worcester Bosch Greenstar CDi Classic ErP manual', { co2Max: '9.7', co2Min: '9.1', co2Tol: '0.4', co: '200', ratio: '0.0020' }],
+    /* Compact ErP combis: the manual gives CO2 at maximum as "between 8.5 and 10.1" (CO under 200 ppm); the minimum is only "0.2 lower than the maximum reading", so it is left blank */
+    ['Greenstar 28CDi Compact ErP', '28', 'Combination', '47-406-77', '24.34', '3.5', '10', 'Worcester Bosch Greenstar CDi Compact ErP manual', { co2MaxF: '8.5', co2MaxT: '10.1', co: '200' }],
+    ['Greenstar 32CDi Compact ErP', '32', 'Combination', '47-406-79', '24.34', '4.4', '10', 'Worcester Bosch Greenstar CDi Compact ErP manual', { co2MaxF: '8.5', co2MaxT: '10.1', co: '200' }],
+    ['Greenstar 36CDi Compact ErP', '36', 'Combination', '47-406-81', '24.34', '5.4', '10', 'Worcester Bosch Greenstar CDi Compact ErP manual', { co2MaxF: '8.5', co2MaxT: '10.1', co: '200' }],
+    ['Greenstar 25Si Compact ErP', '25', 'Combination', '47-406-73', '24.34', '2.7', '10', 'Worcester Bosch Greenstar Si Compact ErP manual', { co2MaxF: '8.5', co2MaxT: '10.1', co: '200' }],
+    ['Greenstar 30Si Compact ErP', '30', 'Combination', '47-406-75', '24.34', '3.8', '10', 'Worcester Bosch Greenstar Si Compact ErP manual', { co2MaxF: '8.5', co2MaxT: '10.1', co: '200' }],
+    ['Greenstar 25i ErP', '25', 'Combination', '47-406-60', '24.64', '4.5', '10', 'Worcester Bosch Greenstar i ErP combi manual', { co2MaxF: '9.0', co2MaxT: '10.8', co2MinF: '8.0', co2MinT: '10.6', co: '200' }],
+    ['Greenstar 30i ErP', '30', 'Combination', '47-406-62', '24.64', '6.2', '10', 'Worcester Bosch Greenstar i ErP combi manual', { co2MaxF: '9.0', co2MaxT: '10.8', co2MinF: '8.0', co2MinT: '10.6', co: '200' }]
+  ].map(([n, kw, kind, gc, hi, fan, to, src, f]) => {
+    const o = { id: 'bt:wb-' + n.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + kw, type: 'Boiler', make: 'Worcester Bosch', name: /ErP$|ErP Regular$/.test(n) ? n : n.replace(' V2', '') + ' ' + kw + 'kW' + (/ V2$/.test(n) ? ' V2' : ''), kind, kw, warranty: '', src,
+      t_gc: gc, t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: hi, t_ratio: f.ratio || '', t_co: f.co || '', t_coLow: f.coLow || '', t_inlet: /8000/.test(n) ? '16.5' : '' };
+    ['Max', 'Min', 'Tol', 'MaxF', 'MaxT', 'MinF', 'MinT'].forEach(k => { if (f['co2' + k]) o['t_co2' + k] = f['co2' + k]; });
+    if (fan) { o.t_fan = fan; o.t_fanPF = fan; o.t_fanPT = to; o.t_fanFF = '0'; o.t_fanFT = (parseFloat(fan) - 0.1).toFixed(1); }
+    return o; }));
   BUILTIN.push(...[
     /* Ideal boilers, from Ideal installation and servicing manuals supplied by Mark. Each row: name, type, size, GC number, heat input (central heating, net), lowest heat input, CO2 at maximum, CO2 at minimum, manual.
        CO2 is the printed figure with 0.7 either side. CO under 350 ppm and CO/CO2 ratio under 0.004 (Ideal combustion check); gas pressure at the boiler must be over 18 mbar. Ideal manuals have no fan pressure test, so none is set. */
