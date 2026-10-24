@@ -267,7 +267,7 @@ def run():
         ctx, pg, errs = fresh(b, mobile=True)
         ev(pg, 'SAMPLE.add()')
         r = ev(pg, """(()=>{
-          const rec=records.find(x=>typeOf(x)==='service'); rec.status='complete'; rec.inspectionDate=localISO(); rec.renewal=addDays(localISO(),10); rec.customerId=''; persistRec(rec);
+          records.filter(x=>typeOf(x)==='gas').forEach(g=>{g.renewal=addDays(localISO(),300)}); const rec=records.find(x=>typeOf(x)==='service'); rec.status='complete'; rec.inspectionDate=localISO(); rec.renewal=addDays(localISO(),10); rec.customerId=''; persistRec(rec);
           ui.view='due'; render();
           const btn=document.querySelector('[data-act=remBook]'); if(!btn) return 'no button';
           btn.click(); return null})()""")
@@ -414,7 +414,7 @@ def run():
 
         # ---------- 12i. calendar tab and annual checks inside the calendar ----------
         ctx, pg, errs = fresh(b)
-        ev(pg, "SAMPLE.add(); const r=records.find(x=>typeOf(x)==='service'); r.status='complete'; r.inspectionDate=localISO(); r.renewal=addDays(localISO(),10); persistRec(r); ui.view='home'; render()")
+        ev(pg, "SAMPLE.add(); records.filter(x=>typeOf(x)==='gas').forEach(g=>{g.renewal=addDays(localISO(),300)}); const r=records.find(x=>typeOf(x)==='service'); r.status='complete'; r.inspectionDate=localISO(); r.renewal=addDays(localISO(),10); persistRec(r); ui.view='home'; render()")
         check('bottom bar has a Calendar tab', 'Calendar' in ev(pg, "[...document.querySelectorAll('.tabs button')].map(b=>b.innerText).join(',')"))
         check('Annual checks due is a single row inside the calendar block on home, not a separate button', ev(pg, "document.querySelectorAll('#view [data-act=remOpen]').length") == 1)
         pg.click('.tabs [data-act=calOpen]'); pg.click('.cals [data-act=remOpen]')
@@ -1331,6 +1331,13 @@ def run():
           const t=document.body.innerText; return {review:/items? to complete|Open documents/.test(t), made:!!ui.pdfs[q.id]}; })()""")
         check('opening a finished quote goes straight to the open / edit screen', r.get('made') and not r.get('review'), r)
         check('no page errors opening a quote', not errs, errs)
+        ctx.close()
+
+        # ---------- 12ad. sample data feeds the reminder screen ----------
+        ctx, pg, errs = fresh(b)
+        r = ev(pg, "(()=>{customers.length=0;records.length=0;SAMPLE.add();const it=remItems().filter(x=>x.r.sample);return it.map(x=>x.t+':'+x.days)})()")
+        check('sample data gives a service due soon and an overdue gas check', sorted(r) == sorted(['gas:-5', 'service:21']), str(r))
+        check('no page errors with sample reminders', not errs, errs)
         ctx.close()
 
         # ---------- 12ac. v226 interface changes ----------

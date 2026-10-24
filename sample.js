@@ -65,7 +65,10 @@ const SAMPLE = (() => {
       const c = made[ci], r = newRecord(c, type);
       r.jobAddress = c.properties[0]; r.sample = true;
       if (!r.engineerSig) r.engineerSig = '';
-      fill(r); persistRec(r); n++;
+      fill(r);
+      /* so the Annual reminders screen has something to show: the boiler service falls due in 3 weeks, the gas check is 5 days overdue */
+      if (ci === 0 && (type === 'service' || type === 'gas')) { const off = type === 'service' ? 21 : -5, d = new Date(); d.setDate(d.getDate() + off); r.renewal = d.toISOString().slice(0, 10); d.setFullYear(d.getFullYear() - 1); r.inspectionDate = d.toISOString().slice(0, 10); r.status = 'complete'; r.completedAt = Date.now(); }
+      persistRec(r); n++;
     });
     syncAll();
     return n;
