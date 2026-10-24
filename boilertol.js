@@ -66,17 +66,18 @@ const BT = (() => {
   const LABEL = { model: 'this boiler', fan: 'Fan pressure', inlet: 'Gas inlet working pressure', hi: 'Gas rate / heat input', co: 'CO', co2Min: 'CO2', co2Max: 'CO2', ratio: 'CO/CO2 ratio' };
   const infoKey = k => (k === 'co2Min' || k === 'co2Max') ? 'co2' : k;
 
+  /* each line of the data sheet is tagged with the reading it belongs to, so a reading's (i) can show just what that test needs */
   function lines(x) {
     const f = k => val(x, k), out = [], tol = f('co2Tol') ? ' ( +/- ' + f('co2Tol') + ' )' : '';
-    if (f('flue')) out.push(['Flue Type', f('flue')]);
-    if (f('hi')) out.push(['CH Max Heat Input (Kw Net)', f('hi')]);
-    out.push(['CH Min Heat Input (Kw Net)', f('hiMin') || 'N/A']);
-    if (f('co2Max')) out.push(['Max CO2 %', f('co2Max') + tol]);
-    if (f('co2Min')) out.push(['Min CO2 %', f('co2Min') + tol]);
-    if (f('ratio')) out.push(['Maximum Ratio', f('ratio')]);
-    if (f('co')) out.push(['Maximum CO (ppm)', f('co')]);
-    if (f('fan')) out.push(['Fan Pressure (Pressure will read negative and be greater than) (mb)', '- ' + String(f('fan')).replace(/^[-−]\s*/, '')]);
-    if (f('inlet')) out.push(['Min Gas Inlet Working Pressure (mb)', f('inlet')]);
+    if (f('flue')) out.push(['Flue Type', f('flue'), 'model']);
+    if (f('hi')) out.push(['CH Max Heat Input (Kw Net)', f('hi'), 'hi']);
+    out.push(['CH Min Heat Input (Kw Net)', f('hiMin') || 'N/A', 'hi']);
+    if (f('co2Max')) out.push(['Max CO2 %', f('co2Max') + tol, 'co2']);
+    if (f('co2Min')) out.push(['Min CO2 %', f('co2Min') + tol, 'co2']);
+    if (f('ratio')) out.push(['Maximum Ratio', f('ratio'), 'ratio']);
+    if (f('co')) out.push(['Maximum CO (ppm)', f('co'), 'co']);
+    if (f('fan')) out.push(['Fan Pressure (Pressure will read negative and be greater than) (mb)', '- ' + String(f('fan')).replace(/^[-−]\s*/, ''), 'fan']);
+    if (f('inlet')) out.push(['Min Gas Inlet Working Pressure (mb)', f('inlet'), 'inlet']);
     return out;
   }
 
@@ -88,7 +89,7 @@ const BT = (() => {
     document.querySelectorAll('.f.tolok,.f.tolbad').forEach(e => e.classList.remove('tolok', 'tolbad'));
     if (!c) return;
     if (typeof qSeed === 'function' && typeof settings !== 'undefined' && !settings.btSeed) qSeed();
-    if (!c.boiler && !((settings.qList || []).some(x => x.type === 'Boiler' && hasFigures(x)))) return;
+    if (!c.boiler) return;
     Object.keys(c.p).forEach(key => c.p[key].forEach(path => {
       const lab = document.querySelector('.f[data-f="' + path + '"]'); if (!lab) return;
       const sp = lab.querySelector('span'); if (sp) { const b = document.createElement('button'); b.type = 'button'; b.className = 'tolI'; b.setAttribute('aria-label', 'Manufacturer figures for ' + (LABEL[key] || 'this reading')); b.dataset.btk = infoKey(key); b.textContent = 'i'; sp.appendChild(b); }
@@ -98,34 +99,17 @@ const BT = (() => {
   }
 
 
-  /* no boiler matched yet: list the saved boilers so the right one can be chosen, and its figures then show */
-  function pick(c) {
-    const all = (settings.qList || []).filter(x => x.type === 'Boiler' && x.name && hasFigures(x)), mk = norm(c.make);
-    const mine = all.filter(x => mk && norm(x.make) && (norm(x.make).includes(mk) || mk.includes(norm(x.make))));
-    const list = mine.length ? mine : all;
-    const d = document.createElement('div'); d.id = 'btSheet'; d.className = 'sheetbg';
-    d.innerHTML = `<div class="sheet" role="dialog" aria-label="Choose the boiler"><div class="grab"></div><h2>Which boiler is this?</h2>
-      <p class="small muted" style="margin-top:0">${list.length ? 'Choose it to see its manufacturer figures. The model and GC number are filled in for you.' : 'No boiler figures are saved yet. Add them in the Price list, under Boiler, then Manufacturer figures.'}</p>
-      ${list.map(x => `<button type="button" class="item cpick" data-btp="${esc2(x.id)}"><div class="t">${esc2(x.name)}</div><div class="s">${esc2([x.make, val(x, 'gc') ? 'GC ' + val(x, 'gc') : ''].filter(Boolean).join(' · '))}</div></button>`).join('')}
-      <button type="button" class="btn block" id="btX" style="margin-top:10px">Close</button></div>`;
-    document.body.appendChild(d);
-    d.addEventListener('click', ev => {
-      const b = ev.target.closest('[data-btp]');
-      if (b) { const x = (settings.qList || []).find(y => y.id === b.dataset.btp); if (x && c.mp) { setP(ui.rec, c.mp, x.name); ui.pdf = null; persistRecSoon(); fillGc(c.mp); d.remove(); render(); later(); setTimeout(() => openInfo('model'), 120); } return; }
-      if (ev.target === d || ev.target.id === 'btX') d.remove();
-    });
-  }
-
   function openInfo(focus) {
     const c = context(); if (!c) return;
     const old0 = document.getElementById('btSheet'); if (old0) old0.remove();
-    if (!c.boiler) { pick(c); return; }
+    if (!c.boiler) return;
     const x = c.boiler, old = document.getElementById('btSheet'); if (old) old.remove();
-    const rows = lines(x).map(([k, v]) => `<tr><th scope="row">${esc2(k)}</th><td>${esc2(v)}</td></tr>`).join('');
+    const all = lines(x), part = focus && focus !== 'model' ? all.filter(r => r[2] === focus) : all;
+    const rows = part.map(([k, v]) => `<tr><th scope="row">${esc2(k)}</th><td>${esc2(v)}</td></tr>`).join('');
     const biz = (typeof settings !== 'undefined' && settings.businessName) || '';
     const d = document.createElement('div'); d.id = 'btSheet'; d.className = 'sheetbg';
     d.innerHTML = `<div class="sheet" role="dialog" aria-label="Manufacturer data sheet"><div class="grab"></div>
-      <div class="dsheet"><div class="dshead"><span class="dskick">Manufacturer data sheet · check this is the right boiler</span><div class="dsmake">${esc2(x.make || '')}</div><h2>${esc2(x.name || '')}</h2>${val(x, 'gc') ? `<span class="dsgc">GC ${esc2(val(x, 'gc'))}</span>` : ''}</div>
+      <div class="dsheet"><div class="dshead"><span class="dskick">${focus && focus !== 'model' ? 'Manufacturer figure for this check' : 'Manufacturer data sheet · check this is the right boiler'}</span><div class="dsmake">${esc2(x.make || '')}</div><h2>${esc2(x.name || '')}</h2>${val(x, 'gc') ? `<span class="dsgc">GC ${esc2(val(x, 'gc'))}</span>` : ''}</div>
         <table class="dstable"><tbody>${rows}</tbody></table>
         <p class="dsfoot">${biz ? esc2(biz) + ' · ' : ''}Figures saved in your Price list. Green or red on a reading is only a guide, so always check against the manufacturer's data sheet.</p></div>
       <button type="button" class="btn block" id="btX" style="margin-top:12px">Close</button></div>`;
@@ -233,8 +217,11 @@ const BT = (() => {
   document.addEventListener('change', e => { const t = e.target; if (t && t.dataset && t.dataset.k && t.tagName === 'INPUT') setTimeout(() => { fillGc(t.dataset.k); checkOut(t.dataset.k, t.value); }, 60); });
   document.addEventListener('input', e => { if (e.target && e.target.dataset && e.target.dataset.k) later(); });
   /* the (i) sits inside a box's label, so a tap would also focus the box and open the keyboard, which can swallow the tap: stop that, and open on touch-end as well as click */
-  let lastTap = 0;
-  const tapInfo = e => { const b = e.target.closest && e.target.closest('.tolI'); if (!b) return; e.preventDefault(); e.stopPropagation(); if (Date.now() - lastTap < 300) return; lastTap = Date.now(); openInfo(b.dataset.btk); };
+  let touched = 0;
+  const tapInfo = e => { const b = e.target.closest && e.target.closest('.tolI'); if (!b) return; e.preventDefault(); e.stopPropagation();
+    if (e.type === 'click' && Date.now() - touched < 600) return;   // the click that follows a touch we already handled
+    if (e.type === 'touchend') touched = Date.now();
+    openInfo(b.dataset.btk); };
   document.addEventListener('pointerdown', e => { if (e.target.closest && e.target.closest('.tolI')) e.preventDefault(); }, true);
   document.addEventListener('touchend', tapInfo, true);
   document.addEventListener('click', tapInfo, true);

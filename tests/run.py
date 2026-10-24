@@ -1351,7 +1351,7 @@ def run():
           const cls=p=>{const e=document.querySelector('.f[data-f="'+p+'"]'); return e?e.className:'missing'};
           out.i=document.querySelectorAll('.tolI').length;
           out.co=cls('fgCoMax'); out.co2=cls('fgCo2Max'); out.co2min=cls('fgCo2Min'); out.ratio=cls('fgRatioMax'); out.inlet=cls('bpValue'); out.fan=cls('fpValue');
-          document.querySelector('.tolI').click(); out.sheet=(document.getElementById('btSheet')||{}).innerText||'';
+          ui.step=1; render(); await new Promise(r=>setTimeout(r,200)); document.querySelector('.f[data-f=model] .tolI').click(); out.sheet=(document.getElementById('btSheet')||{}).innerText||'';
           return out})()""")
         check('figures saved for the Greenstar 24Ri', r['seeded'], r)
         check('info buttons appear beside the readings', r['i'] >= 8, r['i'])
@@ -1456,16 +1456,22 @@ def run():
         check('no page errors with a half-typed model', not errs, errs)
         ctx.close()
 
-        # ---------- 12am. the (i) always responds, even before the boiler is picked ----------
+        # ---------- 12am. the (i) shows only where there is a card, and a reading shows only its own figures ----------
         ctx, pg, errs = fresh(b, mobile=True)
-        r = ev(pg, """(async()=>{ const out={}; qSeed(); const cu={id:'c2',name:'No Boiler Yet',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
-          const rec=newRecord(cu,'service'); rec.make='Worcester Bosch'; rec.bpTaken='YES'; ui.rec=rec; ui.view='form'; ui.step=4; render(); await new Promise(r=>setTimeout(r,200));
-          const b=document.querySelector('.f[data-f=bpValue] .tolI'); out.btn=!!b; if(b) b.click(); const s=document.getElementById('btSheet'); out.ask=s?s.innerText:'';
-          const it=document.querySelector('#btSheet [data-btp]'); if(it) it.click(); await new Promise(r=>setTimeout(r,500));
-          const s2=document.getElementById('btSheet'); out.sheet=s2?s2.innerText:''; out.model=ui.rec.model; out.gc=ui.rec.gc; return out})()""")
-        check('(i) beside operating pressure opens and asks which boiler when none is picked', r['btn'] and 'Which boiler is this?' in r['ask'] and 'Greenstar 24Ri' in r['ask'], r)
-        check('choosing the boiler fills model and GC and shows its figures', r['model'] == 'Greenstar 24Ri' and r['gc'] == '41-311-65' and 'Min Gas Inlet Working Pressure' in r['sheet'], r)
-        check('no page errors using the (i) before picking a boiler', not errs, errs)
+        r = ev(pg, """(async()=>{ const out={}; qSeed(); const cu={id:'c2',name:'Card Test',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
+          const rec=newRecord(cu,'service'); rec.make='Worcester Bosch'; rec.model='Some Other Boiler'; rec.bpTaken='YES'; ui.rec=rec; ui.view='form'; ui.step=1; render(); await new Promise(r=>setTimeout(r,200));
+          out.noneNoCard=document.querySelectorAll('.tolI').length;
+          rec.model='Greenstar 24Ri'; rec.grTaken='YES'; rec.fpTaken='YES'; rec.fgDone='YES'; render(); await new Promise(r=>setTimeout(r,200));
+          document.querySelector('.f[data-f=model] .tolI').click(); out.full=document.getElementById('btSheet').innerText; document.getElementById('btSheet').remove();
+          ui.step=4; render(); await new Promise(r=>setTimeout(r,200));
+          const part=p=>{ document.querySelector('.f[data-f="'+p+'"] .tolI').click(); const t=document.getElementById('btSheet').innerText; document.getElementById('btSheet').remove(); return t };
+          out.bp=part('bpValue'); out.gr=part('grValue'); out.fan=part('fpValue'); out.co=part('fgCoMax'); out.co2=part('fgCo2Min'); out.ratio=part('fgRatioMax'); return out})()""")
+        check('no info buttons when the model has no card', r['noneNoCard'] == 0, r)
+        check('the model (i) shows the full card', all(t in r['full'] for t in ['Flue Type', 'CH Max Heat Input', 'Max CO2 %', 'Maximum Ratio', 'Maximum CO (ppm)', 'Fan Pressure', 'Min Gas Inlet']), r['full'])
+        check('operating pressure shows only the minimum inlet pressure', 'Min Gas Inlet Working Pressure' in r['bp'] and '16.5' in r['bp'] and 'Max CO2' not in r['bp'] and 'Fan Pressure' not in r['bp'], r['bp'])
+        check('gas rate shows only the heat input figures', 'CH Max Heat Input' in r['gr'] and '24.62' in r['gr'] and 'CH Min Heat Input' in r['gr'] and 'Min Gas Inlet' not in r['gr'], r['gr'])
+        check('fan, CO, CO2 and ratio each show only their own figure', 'Fan Pressure' in r['fan'] and 'Maximum CO (ppm)' not in r['fan'] and 'Maximum CO (ppm)' in r['co'] and 'Max CO2' not in r['co'] and 'Max CO2 %' in r['co2'] and 'Min CO2 %' in r['co2'] and 'Maximum Ratio' in r['ratio'] and 'Maximum CO (ppm)' not in r['ratio'], r)
+        check('no page errors with the card tests', not errs, errs)
         ctx.close()
 
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
