@@ -15,8 +15,13 @@ const BT = (() => {
     ['co2Tol', 'CO2 tolerance, plus or minus (e.g. 0.5)', 'decimal'],
     ['ratio', 'Maximum Ratio', 'decimal'],
     ['co', 'Maximum CO (ppm)', 'decimal'],
+    ['coLow', 'Maximum CO (ppm) at minimum rate, if different', 'decimal'],
     ['fan', 'Fan Pressure (mb), as printed (e.g. 3.1)', 'decimal'],
     ['inlet', 'Min Gas Inlet Working Pressure (mb)', 'decimal'],
+    ['co2MaxF', 'Max CO2 % range FROM (only if the manual gives a range)', 'decimal'],
+    ['co2MaxT', 'Max CO2 % range TO', 'decimal'],
+    ['co2MinF', 'Min CO2 % range FROM (only if the manual gives a range)', 'decimal'],
+    ['co2MinT', 'Min CO2 % range TO (leave empty if open ended)', 'decimal'],
     ['fanPF', 'Fan pressure PASS from (mb, no minus needed)', 'decimal'],
     ['fanPT', 'Fan pressure PASS to (mb)', 'decimal'],
     ['fanFF', 'Fan pressure FAIL from (mb)', 'decimal'],
@@ -67,6 +72,21 @@ const BT = (() => {
     ['30', '41-311-71', '30.9', '9.6', '9.0', '3.9', '3.8'], ['40', '41-311-72', '42.0', '9.7', '9.1', '4.4', '4.3']
   ].map(([kw, gc, hi, c2a, c2b, fan, ft]) => ({ id: 'bt:wb-greenstar-' + kw + 'cdi', type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar ' + kw + 'CDi', kind: 'Heat only', kw, warranty: '', src: 'Worcester Bosch Greenstar CDi Conventional manual 6 720 614 556a (2007/07)',
     t_gc: gc, t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: hi, t_co2Max: c2a, t_co2Min: c2b, t_co2Tol: '0.2', t_ratio: '', t_co: '200', t_fan: fan, t_inlet: '18', t_fanPF: fan, t_fanPT: '10', t_fanFF: '0', t_fanFT: ft })));
+  BUILTIN.push(...[
+    /* Greenstar 2000 combi (GR2300iW 25 C / 30 C): manual with CO2 as a range. Heat input is the central heating figure. */
+    { n: 'Greenstar 2000', kw: '25', gc: '47-800-26', hi: '20.4', fan: '3.3', ft: '3.2', fanTo: '12', src: 'Worcester Bosch Greenstar 2000 GR2300iW C 25/30 manual', co2: { MaxF: '9.0', MaxT: '10.8', MinF: '8.2' }, co: '250' },
+    { n: 'Greenstar 2000', kw: '30', gc: '47-800-28', hi: '20.4', fan: '4.8', ft: '4.7', fanTo: '12', src: 'Worcester Bosch Greenstar 2000 GR2300iW C 25/30 manual', co2: { MaxF: '9.0', MaxT: '10.8', MinF: '8.2' }, co: '250' },
+    /* Greenstar 8000 Life combi (GR8300iW C) and Style combi (GR8700iW C), manuals 6720883865 / 6720883864 (2019/02). The 30kW fan figure is printed as -10.0 in both, which cannot be right as a pass line, so it is left blank. */
+    { n: 'Greenstar 8000 Life', kw: '30', gc: '47-800-18', hi: '30.2', src: 'Worcester Bosch Greenstar 8000 Life manual 6720883865 (2019/02)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' },
+    { n: 'Greenstar 8000 Life', kw: '35', gc: '47-800-17', hi: '34.4', fan: '3.5', ft: '3.4', fanTo: '10', src: 'Worcester Bosch Greenstar 8000 Life manual 6720883865 (2019/02)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' },
+    { n: 'Greenstar 8000 Style', kw: '30', gc: '47-800-03', hi: '30.2', src: 'Worcester Bosch Greenstar 8000 Style manual 6720883864 (2019/02)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' },
+    { n: 'Greenstar 8000 Style', kw: '35', gc: '47-800-02', hi: '34.4', fan: '3.5', ft: '3.4', fanTo: '10', src: 'Worcester Bosch Greenstar 8000 Style manual 6720883864 (2019/02)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' },
+    { n: 'Greenstar 8000 Style', kw: '40', gc: '47-800-01', hi: '34.4', fan: '5.0', ft: '4.9', fanTo: '10', src: 'Worcester Bosch Greenstar 8000 Style manual 6720883864 (2019/02)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' }
+  ].map(m => { const c = m.co2, o = { id: 'bt:wb-' + m.n.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + m.kw, type: 'Boiler', make: 'Worcester Bosch', name: m.n + ' ' + m.kw + 'kW', kind: 'Combination', kw: m.kw, warranty: '', src: m.src,
+    t_gc: m.gc, t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: m.hi, t_co: m.co, t_coLow: m.coLow || '', t_ratio: '', t_inlet: '16.5' };
+    ['Max', 'Min', 'Tol', 'MaxF', 'MaxT', 'MinF', 'MinT'].forEach(k => { if (c[k]) o['t_co2' + k] = c[k]; });
+    if (m.fan) { o.t_fan = m.fan; o.t_fanPF = m.fan; o.t_fanPT = m.fanTo; o.t_fanFF = '0'; o.t_fanFT = m.ft; }
+    return o; }));
   const keyOf = x => norm(x.make) + '|' + norm(x.name);
   /* the engineer's own boilers plus the built-in ones they do not already have figures for */
   function boilers() {
@@ -94,12 +114,12 @@ const BT = (() => {
     const r = ui.rec, t = typeOf(r);
     if (t === 'service') {
       const make = r.make === 'Other' ? r.makeOther : r.make;
-      return { mp: 'model', make, worc: /worcester/i.test(make || ''), res: { fpValue: 'fpResult', bpValue: 'bpResult', fgCoMin: 'fgResult', fgCoMax: 'fgResult', fgCo2Min: 'fgResult', fgCo2Max: 'fgResult', fgRatioMin: 'fgResult', fgRatioMax: 'fgResult' }, boiler: find(make, r.model, r.gc), p: { model: ['model'], fan: ['fpValue'], inlet: ['bpValue'], hi: ['grValue'], co: ['fgCoMin', 'fgCoMax'], co2Min: ['fgCo2Min'], co2Max: ['fgCo2Max'], ratio: ['fgRatioMin', 'fgRatioMax'] } };
+      return { mp: 'model', make, worc: /worcester/i.test(make || ''), res: { fpValue: 'fpResult', bpValue: 'bpResult', fgCoMin: 'fgResult', fgCoMax: 'fgResult', fgCo2Min: 'fgResult', fgCo2Max: 'fgResult', fgRatioMin: 'fgResult', fgRatioMax: 'fgResult' }, boiler: find(make, r.model, r.gc), p: { model: ['model'], fan: ['fpValue'], inlet: ['bpValue'], hi: ['grValue'], co: ['fgCoMax'], coLow: ['fgCoMin'], co2Min: ['fgCo2Min'], co2Max: ['fgCo2Max'], ratio: ['fgRatioMin', 'fgRatioMax'] } };
     }
     if (t === 'gas') {
       const i = Math.min(ui.appTab || 0, (+r.applianceCount || 1) - 1), a = (r.appliances || [])[i]; if (!a) return null;
       const P = k => 'appliances.' + i + '.' + k;
-      return { mp: P('model'), make: a.manufacturer, worc: /worcester/i.test(a.manufacturer || ''), boiler: find(a.manufacturer, a.model, a.gc), p: { model: [P('model')], fan: [P('fanPress')], inlet: [P('op')], hi: [P('hi')], co: [P('coMin'), P('coMax')], co2Min: [P('co2Min')], co2Max: [P('co2Max')], ratio: [P('ratioMin'), P('ratioMax')] } };
+      return { mp: P('model'), make: a.manufacturer, worc: /worcester/i.test(a.manufacturer || ''), boiler: find(a.manufacturer, a.model, a.gc), p: { model: [P('model')], fan: [P('fanPress')], inlet: [P('op')], hi: [P('hi')], co: [P('coMax')], coLow: [P('coMin')], co2Min: [P('co2Min')], co2Max: [P('co2Max')], ratio: [P('ratioMin'), P('ratioMax')] } };
     }
     return null;
   }
@@ -108,9 +128,12 @@ const BT = (() => {
   function judge(key, v, x) {
     const n = num(v); if (n === null) return null;
     const lim = k => num(val(x, k));
-    if (key === 'co' || key === 'ratio') { const l = lim(key); return l === null ? null : n <= l; }
+    if (key === 'co' || key === 'coLow' || key === 'ratio') { const l = key === 'coLow' ? (lim('coLow') !== null ? lim('coLow') : lim('co')) : lim(key); return l === null ? null : n <= l; }
     if (key === 'inlet') { const l = lim('inlet'); return l === null ? null : n >= l; }
-    if (key === 'co2Max' || key === 'co2Min') { const l = lim(key), tol = lim('co2Tol'); return l === null || tol === null ? null : n >= l - tol - 1e-9 && n <= l + tol + 1e-9; }
+    if (key === 'co2Max' || key === 'co2Min') {   // a range printed in the manual wins over a figure plus or minus
+      const rf = lim(key + 'F'), rt = lim(key + 'T');
+      if (rf !== null || rt !== null) return (rf === null || n >= rf - 1e-9) && (rt === null || n <= rt + 1e-9);
+      const l = lim(key), tol = lim('co2Tol'); return l === null || tol === null ? null : n >= l - tol - 1e-9 && n <= l + tol + 1e-9; }
     if (key === 'fan') {   // the minus is assumed (3.5 and -3.5 are the same reading); ranges are the pass / fail figures saved on the boiler
       const m = Math.abs(n), R = (a, b) => { const x = lim(a), y = lim(b); return x === null || y === null ? null : [Math.min(Math.abs(x), Math.abs(y)), Math.max(Math.abs(x), Math.abs(y))]; };
       const pass = R('fanPF', 'fanPT'), fail = R('fanFF', 'fanFT'), inR = r => m >= r[0] - 1e-9 && m <= r[1] + 1e-9;
@@ -120,8 +143,8 @@ const BT = (() => {
     }
     return null;   // heat input is shown only
   }
-  const LABEL = { model: 'this boiler', fan: 'Fan pressure', inlet: 'Gas inlet working pressure', hi: 'Gas rate / heat input', co: 'CO', co2Min: 'CO2', co2Max: 'CO2', ratio: 'CO/CO2 ratio' };
-  const infoKey = k => (k === 'co2Min' || k === 'co2Max') ? 'co2' : k;
+  const LABEL = { model: 'this boiler', fan: 'Fan pressure', inlet: 'Gas inlet working pressure', hi: 'Gas rate / heat input', co: 'CO', coLow: 'CO', co2Min: 'CO2', co2Max: 'CO2', ratio: 'CO/CO2 ratio' };
+  const infoKey = k => (k === 'co2Min' || k === 'co2Max') ? 'co2' : k === 'coLow' ? 'co' : k;
 
   /* each line of the data sheet is tagged with the reading it belongs to, so a reading's (i) can show just what that test needs */
   function lines(x) {
@@ -129,10 +152,12 @@ const BT = (() => {
     if (f('flue')) out.push(['Flue Type', f('flue'), 'model']);
     if (f('hi')) out.push(['CH Max Heat Input (Kw Net)', f('hi'), 'hi']);
     out.push(['CH Min Heat Input (Kw Net)', f('hiMin') || 'N/A', 'hi']);
-    if (f('co2Max')) out.push(['Max CO2 %', f('co2Max') + tol, 'co2']);
-    if (f('co2Min')) out.push(['Min CO2 %', f('co2Min') + tol, 'co2']);
+    const rng = k => f(k + 'F') && f(k + 'T') ? 'Between ' + f(k + 'F') + ' and ' + f(k + 'T') : f(k + 'F') ? 'Above ' + f(k + 'F') : f(k + 'T') ? 'Up to ' + f(k + 'T') : '';
+    if (rng('co2Max')) out.push(['Max CO2 %', rng('co2Max'), 'co2']); else if (f('co2Max')) out.push(['Max CO2 %', f('co2Max') + tol, 'co2']);
+    if (rng('co2Min')) out.push(['Min CO2 %', rng('co2Min'), 'co2']); else if (f('co2Min')) out.push(['Min CO2 %', f('co2Min') + tol, 'co2']);
     if (f('ratio')) out.push(['Maximum Ratio', f('ratio'), 'ratio']);
-    if (f('co')) out.push(['Maximum CO (ppm)', f('co'), 'co']);
+    if (f('co')) out.push(['Maximum CO (ppm)' + (f('coLow') ? ' at maximum rate' : ''), f('co'), 'co']);
+    if (f('coLow')) out.push(['Maximum CO (ppm) at minimum rate', f('coLow'), 'co']);
     if (f('fan')) out.push(['Fan Pressure (Pressure will read negative and be greater than) (mb)', '- ' + String(f('fan')).replace(/^[-−]\s*/, ''), 'fan']);
     if (f('inlet')) out.push(['Min Gas Inlet Working Pressure (mb)', f('inlet'), 'inlet']);
     return out;
@@ -177,11 +202,14 @@ const BT = (() => {
   const said = {};
   function outText(key, n, x) {
     const f = k => val(x, k);
+    if (key === 'coLow') return 'CO reading ' + n + ' ppm is over the manufacturer\'s maximum of ' + (f('coLow') || f('co')) + ' ppm at minimum rate.';
     if (key === 'co') return 'CO reading ' + n + ' ppm is over the manufacturer\'s maximum of ' + f('co') + ' ppm.';
     if (key === 'ratio') return 'CO/CO2 ratio ' + n + ' is over the manufacturer\'s maximum of ' + f('ratio') + '.';
     if (key === 'fan') { const pf = f('fanPF') || f('fan'), pt = f('fanPT') || '10', d = v => '-' + String(v).replace(/^[-−]\s*/, ''); return 'Fan pressure ' + n + ' mb is outside the pass range of ' + d(pf) + ' to ' + d(pt) + ' mb.'; }
     if (key === 'inlet') return 'Gas inlet working pressure ' + n + ' mbar is below the manufacturer\'s minimum of ' + f('inlet') + ' mbar.';
-    const lim = key === 'co2Max' ? f('co2Max') : f('co2Min'), tol = f('co2Tol');
+    const k2 = key === 'co2Max' ? 'co2Max' : 'co2Min';
+    if (f(k2 + 'F') || f(k2 + 'T')) return 'CO2 reading ' + n + ' % is outside the manufacturer\'s range (' + (f(k2 + 'F') && f(k2 + 'T') ? 'between ' + f(k2 + 'F') + ' and ' + f(k2 + 'T') : f(k2 + 'F') ? 'above ' + f(k2 + 'F') : 'up to ' + f(k2 + 'T')) + ' %).';
+    const lim = f(k2), tol = f('co2Tol');
     return 'CO2 reading ' + n + ' % is outside the manufacturer\'s ' + lim + ' % (plus or minus ' + tol + ').';
   }
   /* fan pressure always reads negative, so a plain number typed in the fan box gets its minus put in front automatically */

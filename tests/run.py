@@ -1364,6 +1364,8 @@ def run():
         check('Ri ErP, 4000 combi and R29/R40 HE are found, longest name first', g5 == ['Greenstar 12Ri ErP', 'Greenstar 12Ri', 'Greenstar 24Ri ErP', 'Greenstar 4000 30kW', 'Greenstar R40 HE', False, True], g5)
         g6 = ev(pg, "(()=>{const x=BT.find('Worcester Bosch','Greenstar 40CDi Conventional',''); return [x&&x.t_gc, BT.find('','','41-311-71').t_co2Max, BT.judge('co2Max','10.0',x), BT.judge('co2Max','9.5',x)]})()")
         check('Greenstar CDi found by model and GC, CO2 tolerance 0.2', g6 == ['41-311-72', '9.6', False, True], g6)
+        g7 = ev(pg, "(()=>{const a=BT.find('','x','47-800-26'), b=BT.find('','x','47-800-17'); return [a.t_gc, BT.judge('co2Max','10.5',a), BT.judge('co2Max','11.0',a), BT.judge('co2Min','8.0',a), BT.judge('co2Min','8.5',a), BT.judge('coLow','80',b), BT.judge('coLow','70',b), BT.judge('co','200',b), BT.judge('fan','-3.6',b), BT.find('','x','47-800-18').t_fan||'']})()")
+        check('2000 and 8000 combi: CO2 range, separate CO at minimum, fan', g7 == ['47-800-26', True, False, False, True, False, True, True, True, ''], g7)
         check('Greenstar 24Ri gets its 5-year warranty', wr == '5 years', wr)
         check('figures built in for the Greenstar 24Ri', r['seeded'], r)
         fr = ev(pg, "(()=>{const x=BT.BUILTIN[0]; return ['-3.1','-3.7','-10','-3','-2','0','-11','3.5'].map(v=>BT.judge('fan',v,x))})()")
