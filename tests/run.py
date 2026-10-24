@@ -1356,6 +1356,8 @@ def run():
         wr = ev(pg, "(()=>{settings.qList=[{id:'w1',type:'Boiler',make:'Worcester Bosch',name:'Greenstar 24Ri',kind:'Combination',kw:'24',warranty:'',unit:'',cost:'',markup:'',price:''}]; delete settings.btWarr; BT.seed(); return settings.qList[0].warranty})()")
         ad = ev(pg, "(()=>{settings.qList=[]; delete settings.btAdded; qSeed(); const n=settings.qList.filter(x=>x.name==='Greenstar 24Ri').length; const g=settings.qList.find(x=>x.name==='Greenstar 24Ri'); settings.qList=settings.qList.filter(x=>x!==g); qSeed(); return [n, settings.qList.filter(x=>x.name==='Greenstar 24Ri').length, g.warranty, g.t_co]})()")
         check('built-in boilers are added to the Price list once, and stay deleted', ad == [1, 0, '5 years', '200'], ad)
+        gcs = ev(pg, "(()=>[['12','41-311-63'],['15','41-311-75'],['18','41-311-77'],['24','41-311-65']].map(([m,g])=>{const x=BT.find('','x',g); return x&&x.name==='Greenstar '+m+'Ri'&&x.kind==='Heat only'&&!!x.t_co2Max}))()")
+        check('Greenstar 12, 15, 18 and 24 Ri are found by GC number', gcs == [True, True, True, True], gcs)
         check('Greenstar 24Ri gets its 5-year warranty', wr == '5 years', wr)
         check('figures built in for the Greenstar 24Ri', r['seeded'], r)
         fr = ev(pg, "(()=>{const x=BT.BUILTIN[0]; return ['-3.1','-3.7','-10','-3','-2','0','-11','3.5'].map(v=>BT.judge('fan',v,x))})()")

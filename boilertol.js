@@ -32,8 +32,15 @@ const BT = (() => {
   /* Boilers built into the app for every engineer. Add each new data sheet here. 'src' notes which sheet the figures came from.
      An engineer's own Price list entry for the same make and model (with figures) takes priority, so their edits are never overwritten. */
   const BUILTIN = [
-    { id: 'bt:wb-greenstar-24ri', type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar 24Ri', kind: 'Combination', kw: '24', warranty: '5 years', src: 'Worcester Bosch data sheet (supplied by M. Talbot)',
-      t_gc: '41-311-65', t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: '24.62', t_co2Max: '9.8', t_co2Min: '9.2', t_co2Tol: '0.5', t_ratio: '0.0020', t_co: '200', t_fan: '3.1', t_inlet: '16.5', t_fanPF: '3.1', t_fanPT: '10', t_fanFF: '3', t_fanFT: '0' }
+    { id: 'bt:wb-greenstar-24ri', type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar 24Ri', kind: 'Heat only', kw: '24', warranty: '5 years', src: 'Worcester Bosch data sheet (supplied by M. Talbot)',
+      t_gc: '41-311-65', t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: '24.62', t_co2Max: '9.8', t_co2Min: '9.2', t_co2Tol: '0.5', t_ratio: '0.0020', t_co: '200', t_fan: '3.1', t_inlet: '16.5', t_fanPF: '3.1', t_fanPT: '10', t_fanFF: '3', t_fanFT: '0' },
+    /* the Ri 12, 15 and 18 figures are from Worcester Bosch's Greenstar Ri installation manual (heat input, CO2, CO, gas pressure) and a published fan-suction table; pass / fail ranges for fan pressure are left for the engineer to set */
+    { id: 'bt:wb-greenstar-12ri', type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar 12Ri', kind: 'Heat only', kw: '12', warranty: '', src: 'Worcester Bosch Greenstar Ri installation manual',
+      t_gc: '41-311-63', t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: '12.32', t_co2Max: '9.65', t_co2Min: '8.65', t_co2Tol: '0.5', t_ratio: '0.0020', t_co: '200', t_fan: '3.6', t_inlet: '16.5' },
+    { id: 'bt:wb-greenstar-15ri', type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar 15Ri', kind: 'Heat only', kw: '15', warranty: '', src: 'Worcester Bosch Greenstar Ri installation manual',
+      t_gc: '41-311-75', t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: '15.40', t_co2Max: '9.8', t_co2Min: '9.2', t_co2Tol: '0.5', t_ratio: '0.0020', t_co: '200', t_fan: '5.5', t_inlet: '16.5' },
+    { id: 'bt:wb-greenstar-18ri', type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar 18Ri', kind: 'Heat only', kw: '18', warranty: '', src: 'Worcester Bosch Greenstar Ri installation manual',
+      t_gc: '41-311-77', t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: '18.48', t_co2Max: '9.8', t_co2Min: '9.2', t_co2Tol: '0.5', t_ratio: '0.0020', t_co: '200', t_fan: '7.4', t_inlet: '16.5' }
   ];
   const keyOf = x => norm(x.make) + '|' + norm(x.name);
   /* the engineer's own boilers plus the built-in ones they do not already have figures for */
@@ -220,6 +227,8 @@ const BT = (() => {
     if (!settings.btSeed) { settings.btSeed = 1; ch = true; }
     /* once: a copy already in the Price list gets the built-in warranty if it has none */
     if (!settings.btWarr) { settings.btWarr = 1; ch = true; BUILTIN.forEach(b => settings.qList.forEach(x => { if (x.type === 'Boiler' && keyOf(x) === keyOf(b) && !x.warranty && b.warranty) x.warranty = b.warranty; })); }
+    /* once: the Ri is a regular (heat only) boiler, so a copy saved earlier as Combination is corrected */
+    if (!settings.btKind) { settings.btKind = 1; ch = true; settings.qList.forEach(x => { if (x.type === 'Boiler' && x.kind === 'Combination' && BUILTIN.some(b => keyOf(b) === keyOf(x))) x.kind = 'Heat only'; }); }
     /* each built-in boiler is added to the engineer's Price list once (so it is there for quotes too). One they already have, or delete later, is left alone. */
     const added = settings.btAdded = settings.btAdded || [];
     BUILTIN.forEach(b => {
