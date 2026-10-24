@@ -96,11 +96,14 @@ const BT = (() => {
   function openInfo(focus) {
     const c = context(); if (!c || !c.boiler) return;
     const x = c.boiler, old = document.getElementById('btSheet'); if (old) old.remove();
-    const rows = x ? lines(x).map(([k, v]) => `<div class="line"><span class="main"><b>${esc2(k)}</b><span>${esc2(v)}</span></span></div>`).join('') : '';
+    const rows = lines(x).map(([k, v]) => `<tr><th scope="row">${esc2(k)}</th><td>${esc2(v)}</td></tr>`).join('');
+    const biz = (typeof settings !== 'undefined' && settings.businessName) || '';
     const d = document.createElement('div'); d.id = 'btSheet'; d.className = 'sheetbg';
-    d.innerHTML = `<div class="sheet" role="dialog" aria-label="Manufacturer figures"><div class="grab"></div><h2>${esc2(((x.make || '') + ' ' + (x.name || '')).trim())}</h2>
-      <p class="small muted" style="margin-top:0">Manufacturer figures${val(x, 'gc') ? ' · GC ' + esc2(val(x, 'gc')) : ''}. Green or red on a reading is only a guide, so always check against the data sheet.</p>${rows}
-      <button type="button" class="btn block" id="btX" style="margin-top:10px">Close</button></div>`;
+    d.innerHTML = `<div class="sheet" role="dialog" aria-label="Manufacturer data sheet"><div class="grab"></div>
+      <div class="dsheet"><div class="dshead"><span class="dskick">Manufacturer data sheet · check this is the right boiler</span><div class="dsmake">${esc2(x.make || '')}</div><h2>${esc2(x.name || '')}</h2>${val(x, 'gc') ? `<span class="dsgc">GC ${esc2(val(x, 'gc'))}</span>` : ''}</div>
+        <table class="dstable"><tbody>${rows}</tbody></table>
+        <p class="dsfoot">${biz ? esc2(biz) + ' · ' : ''}Figures saved in your Price list. Green or red on a reading is only a guide, so always check against the manufacturer's data sheet.</p></div>
+      <button type="button" class="btn block" id="btX" style="margin-top:12px">Close</button></div>`;
     document.body.appendChild(d);
     d.addEventListener('click', ev => { if (ev.target === d || ev.target.id === 'btX') d.remove(); });
   }
