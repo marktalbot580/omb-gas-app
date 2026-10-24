@@ -1353,6 +1353,8 @@ def run():
           out.co=cls('fgCoMax'); out.co2=cls('fgCo2Max'); out.co2min=cls('fgCo2Min'); out.ratio=cls('fgRatioMax'); out.inlet=cls('bpValue'); out.fan=cls('fpValue');
           ui.step=1; render(); await new Promise(r=>setTimeout(r,200)); document.querySelector('.f[data-f=model] .tolI').click(); out.sheet=(document.getElementById('btSheet')||{}).innerText||'';
           return out})()""")
+        wr = ev(pg, "(()=>{settings.qList=[{id:'w1',type:'Boiler',make:'Worcester Bosch',name:'Greenstar 24Ri',kind:'Combination',kw:'24',warranty:'',unit:'',cost:'',markup:'',price:''}]; delete settings.btWarr; BT.seed(); return settings.qList[0].warranty})()")
+        check('Greenstar 24Ri gets its 5-year warranty', wr == '5 years', wr)
         check('figures built in for the Greenstar 24Ri', r['seeded'], r)
         fr = ev(pg, "(()=>{const x=BT.BUILTIN[0]; return ['-3.1','-3.7','-10','-3','-2','0','-11','3.5'].map(v=>BT.judge('fan',v,x))})()")
         fr2 = ev(pg, """(async()=>{ const cu={id:'fx1',name:'Fan Fix',phone:'1',address:'1 A St'}; customers.push(cu); const rec=newRecord(cu,'service'); rec.make='Worcester Bosch'; rec.model='Greenstar 24Ri'; rec.fpTaken='YES'; ui.rec=rec; ui.view='form'; ui.step=4; render(); await new Promise(r=>setTimeout(r,300));

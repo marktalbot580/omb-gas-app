@@ -32,7 +32,7 @@ const BT = (() => {
   /* Boilers built into the app for every engineer. Add each new data sheet here. 'src' notes which sheet the figures came from.
      An engineer's own Price list entry for the same make and model (with figures) takes priority, so their edits are never overwritten. */
   const BUILTIN = [
-    { id: 'bt:wb-greenstar-24ri', type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar 24Ri', kind: 'Combination', kw: '24', src: 'Worcester Bosch data sheet (supplied by M. Talbot)',
+    { id: 'bt:wb-greenstar-24ri', type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar 24Ri', kind: 'Combination', kw: '24', warranty: '5 years', src: 'Worcester Bosch data sheet (supplied by M. Talbot)',
       t_gc: '41-311-65', t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: '24.62', t_co2Max: '9.8', t_co2Min: '9.2', t_co2Tol: '0.5', t_ratio: '0.0020', t_co: '200', t_fan: '3.1', t_inlet: '16.5', t_fanPF: '3.1', t_fanPT: '10', t_fanFF: '3', t_fanFT: '0' }
   ];
   const keyOf = x => norm(x.make) + '|' + norm(x.name);
@@ -214,7 +214,14 @@ const BT = (() => {
   });
 
   /* kept so older code that calls it still works: boilers are now built in, so nothing is copied into the Price list */
-  function seed() { if (typeof settings !== 'undefined' && !settings.btSeed) { settings.btSeed = 1; saveSettings(); } }
+  function seed() {
+    if (typeof settings === 'undefined') return;
+    let ch = false;
+    if (!settings.btSeed) { settings.btSeed = 1; ch = true; }
+    /* once: a copy already in the Price list gets the built-in warranty if it has none */
+    if (!settings.btWarr && settings.qList) { settings.btWarr = 1; ch = true; BUILTIN.forEach(b => settings.qList.forEach(x => { if (x.type === 'Boiler' && keyOf(x) === keyOf(b) && !x.warranty && b.warranty) x.warranty = b.warranty; })); }
+    if (ch) saveSettings();
+  }
 
 
   /* typing in the model box suggests boilers from the Price list; tapping one fills the model (and the GC number if it is empty) */
