@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v234', items: ['Fan pressure: the (i) button now explains the test in plain words and links to a fuller page. It shows on Worcester boilers even if you have not saved their figures.'] },
   { v: 'v233', items: ['When you type a boiler model that is saved in your Price list with its GC number, the GC number on the service or gas check fills in for you.'] },
   { v: 'v232', items: ['Manufacturer figures: when a reading is outside the boiler\'s figure, a pop-up says "Out of range" and on a service lets you choose Pass or Fail for that check.'] },
   { v: 'v231', items: ['Warning notices: when a check or service has a failure, the review step now asks "Create a warning notice?" with Yes and No buttons, instead of forcing one. You can still create one later.'] },

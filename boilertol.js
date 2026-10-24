@@ -43,12 +43,12 @@ const BT = (() => {
     const r = ui.rec, t = typeOf(r);
     if (t === 'service') {
       const make = r.make === 'Other' ? r.makeOther : r.make;
-      return { res: { fpValue: 'fpResult', bpValue: 'bpResult', fgCoMin: 'fgResult', fgCoMax: 'fgResult', fgCo2Min: 'fgResult', fgCo2Max: 'fgResult', fgRatioMin: 'fgResult', fgRatioMax: 'fgResult' }, boiler: find(make, r.model, r.gc), p: { fan: ['fpValue'], inlet: ['bpValue'], hi: ['grValue'], co: ['fgCoMin', 'fgCoMax'], co2Min: ['fgCo2Min'], co2Max: ['fgCo2Max'], ratio: ['fgRatioMin', 'fgRatioMax'] } };
+      return { worc: /worcester/i.test(make || ''), res: { fpValue: 'fpResult', bpValue: 'bpResult', fgCoMin: 'fgResult', fgCoMax: 'fgResult', fgCo2Min: 'fgResult', fgCo2Max: 'fgResult', fgRatioMin: 'fgResult', fgRatioMax: 'fgResult' }, boiler: find(make, r.model, r.gc), p: { model: ['model'], fan: ['fpValue'], inlet: ['bpValue'], hi: ['grValue'], co: ['fgCoMin', 'fgCoMax'], co2Min: ['fgCo2Min'], co2Max: ['fgCo2Max'], ratio: ['fgRatioMin', 'fgRatioMax'] } };
     }
     if (t === 'gas') {
       const i = Math.min(ui.appTab || 0, (+r.applianceCount || 1) - 1), a = (r.appliances || [])[i]; if (!a) return null;
       const P = k => 'appliances.' + i + '.' + k;
-      return { boiler: find(a.manufacturer, a.model, a.gc), p: { fan: [P('fanPress')], inlet: [P('op')], hi: [P('hi')], co: [P('coMin'), P('coMax')], co2Min: [P('co2Min')], co2Max: [P('co2Max')], ratio: [P('ratioMin'), P('ratioMax')] } };
+      return { worc: /worcester/i.test(a.manufacturer || ''), boiler: find(a.manufacturer, a.model, a.gc), p: { model: [P('model')], fan: [P('fanPress')], inlet: [P('op')], hi: [P('hi')], co: [P('coMin'), P('coMax')], co2Min: [P('co2Min')], co2Max: [P('co2Max')], ratio: [P('ratioMin'), P('ratioMax')] } };
     }
     return null;
   }
@@ -62,7 +62,7 @@ const BT = (() => {
     if (key === 'co2Max' || key === 'co2Min') { const l = lim(key), tol = lim('co2Tol'); return l === null || tol === null ? null : n >= l - tol - 1e-9 && n <= l + tol + 1e-9; }
     return null;   // heat input and fan pressure are shown only
   }
-  const LABEL = { fan: 'Fan pressure', inlet: 'Gas inlet working pressure', hi: 'Gas rate / heat input', co: 'CO', co2Min: 'CO2', co2Max: 'CO2', ratio: 'CO/CO2 ratio' };
+  const LABEL = { model: 'this boiler', fan: 'Fan pressure', inlet: 'Gas inlet working pressure', hi: 'Gas rate / heat input', co: 'CO', co2Min: 'CO2', co2Max: 'CO2', ratio: 'CO/CO2 ratio' };
   const infoKey = k => (k === 'co2Min' || k === 'co2Max') ? 'co2' : k;
 
   function lines(x) {
@@ -84,27 +84,32 @@ const BT = (() => {
     const c = context();
     document.querySelectorAll('.tolI').forEach(b => b.remove());
     document.querySelectorAll('.f.tolok,.f.tolbad').forEach(e => e.classList.remove('tolok', 'tolbad'));
-    if (!c || !c.boiler) return;
+    if (!c || (!c.boiler && !c.worc)) return;
     Object.keys(c.p).forEach(key => c.p[key].forEach(path => {
+      if (!c.boiler && key !== 'fan' && key !== 'model') return;
       const lab = document.querySelector('.f[data-f="' + path + '"]'); if (!lab) return;
       const sp = lab.querySelector('span'); if (sp) { const b = document.createElement('button'); b.type = 'button'; b.className = 'tolI'; b.setAttribute('aria-label', 'Manufacturer figures for ' + (LABEL[key] || 'this reading')); b.dataset.btk = infoKey(key); b.textContent = 'i'; sp.appendChild(b); }
-      const inp = lab.querySelector('input'), j = inp ? judge(key, inp.value, c.boiler) : null;
+      const inp = lab.querySelector('input'), j = inp && c.boiler ? judge(key, inp.value, c.boiler) : null;
       if (j === true) lab.classList.add('tolok'); else if (j === false) lab.classList.add('tolbad');
     }));
   }
 
+  const FAN_URL = 'https://certificates4uk.co.uk/worcester-greenstar-fan-pressure-test-jr-si-ri-ng/';
   function openInfo(focus) {
-    const c = context(); if (!c || !c.boiler) return;
+    const c = context(); if (!c || (!c.boiler && !c.worc)) return;
     const x = c.boiler, old = document.getElementById('btSheet'); if (old) old.remove();
-    const rows = lines(x).map(([k, v]) => `<div class="line"><span class="main"><b>${esc2(k)}</b><span>${esc2(v)}</span></span></div>`).join('');
+    const rows = x ? lines(x).map(([k, v]) => `<div class="line"><span class="main"><b>${esc2(k)}</b><span>${esc2(v)}</span></span></div>`).join('') : '';
+    const fan = (focus === 'fan' || focus === 'model') ? `<div class="card" style="margin:12px 0"><b>About the fan pressure test</b>
+      <p class="small" style="margin:6px 0">It measures how hard the boiler's fan is sucking, with a gauge on the fan test point while the boiler runs at full output. It always reads as a negative number. The test is used to spot a partly blocked heat exchanger.</p>
+      <p class="small muted" style="margin:0 0 8px">Check your reading against the Worcester figure for this boiler, and the manufacturer's instructions, before deciding the result.</p>
+      <a class="btn block" style="text-align:center;text-decoration:none" href="${FAN_URL}" target="_blank" rel="noopener">Read more about the test</a></div>` : '';
     const d = document.createElement('div'); d.id = 'btSheet'; d.className = 'sheetbg';
-    d.innerHTML = `<div class="sheet" role="dialog" aria-label="Manufacturer figures"><div class="grab"></div><h2>${esc2(((x.make || '') + ' ' + (x.name || '')).trim())}</h2>
-      <p class="small muted" style="margin-top:0">Manufacturer figures${val(x, 'gc') ? ' · GC ' + esc2(val(x, 'gc')) : ''}. Green or red on a reading is only a guide, so always check against the data sheet.</p>${rows}
+    d.innerHTML = `<div class="sheet" role="dialog" aria-label="Manufacturer figures"><div class="grab"></div><h2>${x ? esc2(((x.make || '') + ' ' + (x.name || '')).trim()) : 'Fan pressure'}</h2>
+      ${x ? `<p class="small muted" style="margin-top:0">Manufacturer figures${val(x, 'gc') ? ' · GC ' + esc2(val(x, 'gc')) : ''}. Green or red on a reading is only a guide, so always check against the data sheet.</p>` : '<p class="small muted" style="margin-top:0">No figures are saved for this boiler yet. You can add them in the Price list under Boiler.</p>'}${fan}${rows}
       <button type="button" class="btn block" id="btX" style="margin-top:10px">Close</button></div>`;
     document.body.appendChild(d);
     d.addEventListener('click', ev => { if (ev.target === d || ev.target.id === 'btX') d.remove(); });
   }
-
 
   /* a reading outside the manufacturer's figure asks what the engineer wants to record (service form: Pass or Fail for that check) */
   const said = {};

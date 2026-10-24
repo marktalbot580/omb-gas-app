@@ -1403,6 +1403,19 @@ def run():
         check('no page errors filling the GC number', not errs, errs)
         ctx.close()
 
+        # ---------- 12ai. fan pressure explainer ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(async()=>{ const out={}; const cu={id:'c6',name:'Fan Info',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
+          const rec=newRecord(cu,'service'); rec.make='Worcester Bosch'; rec.model='Unknown Model 1'; rec.fpTaken='YES'; rec.fgDone='YES'; ui.rec=rec; ui.view='form'; ui.step=4; render(); await new Promise(r=>setTimeout(r,200));
+          out.n=document.querySelectorAll('.tolI').length; const b=document.querySelector('.f[data-f=fpValue] .tolI'); out.fanBtn=!!b;
+          if(b) b.click(); const s=document.getElementById('btSheet'); out.text=s?s.innerText:''; out.link=!!(s&&s.querySelector('a[href*=certificates4uk]')); return out})()""")
+        check('Worcester fan pressure box has an info button even with no saved figures', r['n'] == 1 and r['fanBtn'], r)
+        check('fan pressure info explains the test and links to the full page', 'negative' in r['text'] and r['link'], r)
+        r = ev(pg, """(async()=>{ document.getElementById('btSheet').remove(); ui.step=1; render(); await new Promise(r=>setTimeout(r,200)); const b=document.querySelector('.f[data-f=model] .tolI'); if(!b) return 'none'; b.click(); return document.getElementById('btSheet').innerText })()""")
+        check('model box has an info button that opens the same panel', r != 'none' and 'negative' in r, r)
+        check('no page errors with the fan pressure info', not errs, errs)
+        ctx.close()
+
         # ---------- 12ac. v226 interface changes ----------
         ctx, pg, errs = fresh(b)
         r = ev(pg, """(async()=>{ const out={};
