@@ -616,16 +616,19 @@ const BT = (() => {
 
   /* typing in the model box suggests boilers from the Price list; tapping one fills the model (and the GC number if it is empty) */
   const modelPath = path => { const r = ui.rec; if (!r || ui.view !== 'form') return false; const t = typeOf(r); return (t === 'service' && path === 'model') || (t === 'gas' && /^appliances\.\d+\.model$/.test(path)); };
-  function suggest(inp) {
+  function suggest(inp, all) {
     const path = inp.dataset.k, lab = inp.closest('.f'); if (!lab) return;
     let box = document.getElementById('btSug'); if (box) box.remove();
-    const toks = norm(inp.value) ? String(inp.value).toLowerCase().split(/\s+/).map(norm).filter(Boolean) : [];
-    if (!toks.length) return;
+    const toks = !all && norm(inp.value) ? String(inp.value).toLowerCase().split(/\s+/).map(norm).filter(Boolean) : [];
+    if (!toks.length && !all) return;
     const r = ui.rec, mk = norm(typeOf(r) === 'service' ? (r.make === 'Other' ? r.makeOther : r.make) : ((r.appliances || [])[+path.split('.')[1]] || {}).manufacturer);
-    const gcQ = /^[\d\s\-]+$/.test(String(inp.value).trim()) && digits(inp.value).length >= 4 ? digits(inp.value) : '';   // a GC number typed in the model box
-    const hits = gcQ ? boilers().filter(x => x.name && digits(val(x, 'gc')).includes(gcQ)).slice(0, 6) : boilers().filter(x => x.name && (!mk || !norm(x.make) || norm(x.make).includes(mk) || mk.includes(norm(x.make))) && toks.every(t => norm((x.make || '') + ' ' + x.name).includes(t))).slice(0, 6);
-    if (!hits.length || (hits.length === 1 && norm(hits[0].name) === norm(inp.value))) return;
+    const gcQ = !all && /^[\d\s\-]+$/.test(String(inp.value).trim()) && digits(inp.value).length >= 4 ? digits(inp.value) : '';   // a GC number typed in the model box
+    const hits = gcQ ? boilers().filter(x => x.name && digits(val(x, 'gc')).includes(gcQ)).slice(0, 6) : boilers().filter(x => x.name && (!mk || !norm(x.make) || norm(x.make).includes(mk) || mk.includes(norm(x.make))) && toks.every(t => norm((x.make || '') + ' ' + x.name).includes(t))).slice(0, all ? 400 : 6);
+    if (all && !mk) { toast('Choose the make first'); return; }
+    if (all && !hits.length) { toast('No built-in or saved models for this make yet'); return; }
+    if (!hits.length || (!all && hits.length === 1 && norm(hits[0].name) === norm(inp.value))) return;
     box = document.createElement('div'); box.id = 'btSug'; box.style.margin = '-4px 0 12px';
+    if (all) box.style.cssText += ';max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line,#ccc);border-radius:10px';
     box.innerHTML = hits.map(x => `<button type="button" class="item cpick" data-bts="${esc2(x.id)}"><div class="t">${esc2(x.name)}</div><div class="s">${esc2([x.make, x.kind, x.t_gc ? 'GC ' + x.t_gc : ''].filter(Boolean).join(' · '))}</div></button>`).join('');
     lab.after(box);
     box.addEventListener('click', ev => {
@@ -643,8 +646,20 @@ const BT = (() => {
     });
   }
   document.addEventListener('input', e => { const t = e.target; if (t && t.tagName === 'INPUT' && t.dataset && t.dataset.k && modelPath(t.dataset.k)) suggest(t); });
+  /* a "Pick from list" button under the model box: shows every model for the chosen make in a scrolling list */
+  function listBtn() {
+    document.querySelectorAll('input[data-k]').forEach(inp => {
+      if (!modelPath(inp.dataset.k)) return;
+      const lab = inp.closest('.f'); if (!lab) return;
+      if (lab.dataset.btp) return; lab.dataset.btp = '1';
+      const row = document.createElement('div'); row.className = 'btPickRow'; row.style.margin = '-6px 0 10px';
+      row.innerHTML = '<button type="button" class="btn ghost" style="min-height:44px">Pick model from list ▾</button>';
+      row.firstChild.addEventListener('click', () => { inp.blur(); suggest(inp, true); const b = document.getElementById('btSug'); if (b) b.scrollIntoView({ block: 'nearest' }); });
+      lab.after(row);
+    });
+  }
 
-  let timer = 0; const later = () => { clearTimeout(timer); timer = setTimeout(paint, 30); };
+  let timer = 0; const later = () => { clearTimeout(timer); timer = setTimeout(() => { paint(); listBtn(); }, 30); };
   /* watch the screen for redraws; stop watching while painting, or painting itself would trigger another paint, forever, and the buttons would be rebuilt under a finger */
   let watcher = null;
   const watch = () => { const v = document.getElementById('view'); if (v && watcher) watcher.observe(v, { childList: true, subtree: true }); };

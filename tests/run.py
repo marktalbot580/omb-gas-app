@@ -1475,6 +1475,22 @@ def run():
         check('no page errors in the model search', not errs, errs)
         ctx.close()
 
+        # ---------- 12aj2. pick a model from a scrolling list ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(async()=>{ const out={}; qSeed(); const cu={id:'c5b',name:'List Pick',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
+          const rec=newRecord(cu,'service'); rec.make='Biasi'; ui.rec=rec; ui.view='form'; ui.step=1; render(); await new Promise(r=>setTimeout(r,300));
+          const btn=document.querySelector('.btPickRow button'); out.btn=!!btn; if(btn) btn.click(); await new Promise(r=>setTimeout(r,150));
+          const box=document.getElementById('btSug'); out.n=box?box.querySelectorAll('[data-bts]').length:0; out.scroll=box?getComputedStyle(box).overflowY:''; out.only=box?[...box.querySelectorAll('.s')].every(x=>/Biasi/.test(x.innerText)):false;
+          if(box) box.scrollIntoView({block:'start'}); await new Promise(r=>setTimeout(r,200)); window.__out=out; return out})()""")
+        pg.screenshot(path='/tmp/list_open.png')
+        r = ev(pg, """(async()=>{ const out=window.__out; const box=document.getElementById('btSug');
+          const g=box&&[...box.querySelectorAll('[data-bts]')].find(x=>/Inovia 25C ERP/.test(x.innerText)); if(g) g.click(); await new Promise(r=>setTimeout(r,250));
+          out.model=ui.rec.model; out.gc=ui.rec.gc; out.gone=!document.getElementById('btSug'); out.one=document.querySelectorAll('.btPickRow').length; return out})()""")
+        check('Pick model from list shows every model for the make, scrolls, and fills model and GC', r['btn'] and r['n'] >= 30 and r['scroll'] == 'auto' and r['only'] and r['model'] == 'Inovia 25C ERP' and r['gc'] == '47-583-38' and r['gone'] and r['one'] == 1, r)
+        check('no page errors with the model list', not errs, errs)
+        pg.screenshot(path='/tmp/list_done.png')
+        ctx.close()
+
         # ---------- 12ak. model search works before the Price list was ever opened ----------
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(async()=>{ const out={}; settings.qList=[{id:'q1',type:'Boiler',make:'Worcester Bosch',name:'Greenstar 4000',kind:'Combination',kw:'25',warranty:'',unit:'',cost:'',markup:'',price:''}]; settings.qStarterV=2; delete settings.btSeed; saveSettings();
