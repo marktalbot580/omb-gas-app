@@ -1391,6 +1391,18 @@ def run():
         check('no page errors with the out of range pop-up', not errs, errs)
         ctx.close()
 
+        # ---------- 12ah. GC number fills in from the saved boiler ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(async()=>{ const out={}; qSeed(); const cu={id:'c7',name:'Gc Fill',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
+          const rec=newRecord(cu,'service'); rec.make='Worcester Bosch'; ui.rec=rec; ui.view='form'; ui.step=1; render(); await new Promise(r=>setTimeout(r,150));
+          const put=(p,v)=>{const i=document.querySelector('.f[data-f="'+p+'"] input'); i.value=v; i.dispatchEvent(new Event('input',{bubbles:true})); i.dispatchEvent(new Event('change',{bubbles:true}))};
+          put('model','Greenstar 24Ri'); await new Promise(r=>setTimeout(r,250)); out.gc=ui.rec.gc; out.box=document.querySelector('.f[data-f=gc] input').value;
+          ui.rec.gc='99-999-99'; put('model','Greenstar 24Ri '); await new Promise(r=>setTimeout(r,250)); out.kept=ui.rec.gc; return out})()""")
+        check('GC number fills in when the model matches a saved boiler', r['gc'] == '41-311-65' and r['box'] == '41-311-65', r)
+        check('a GC number already entered is never overwritten', r['kept'] == '99-999-99', r)
+        check('no page errors filling the GC number', not errs, errs)
+        ctx.close()
+
         # ---------- 12ac. v226 interface changes ----------
         ctx, pg, errs = fresh(b)
         r = ev(pg, """(async()=>{ const out={};

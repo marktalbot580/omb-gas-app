@@ -136,6 +136,21 @@ const BT = (() => {
     });
   }
 
+
+  /* when the model typed on the form matches a saved boiler and the GC number is still empty, fill the GC number in */
+  function fillGc(path) {
+    if (typeof ui === 'undefined' || !ui.rec || ui.view !== 'form') return;
+    const r = ui.rec, t = typeOf(r); let make, model, gcPath;
+    if (t === 'service' && path === 'model') { make = r.make === 'Other' ? r.makeOther : r.make; model = r.model; gcPath = 'gc'; if (r.gc) return; }
+    else if (t === 'gas' && /^appliances\.\d+\.model$/.test(path)) { const i = path.split('.')[1], a = (r.appliances || [])[i]; if (!a || a.gc) return; make = a.manufacturer; model = a.model; gcPath = 'appliances.' + i + '.gc'; }
+    else return;
+    const x = find(make, model, ''), g = x && val(x, 'gc'); if (!g) return;
+    setP(r, gcPath, g); ui.pdf = null; persistRecSoon();
+    const inp = document.querySelector('.f[data-f="' + gcPath + '"] input'); if (inp) inp.value = g;
+    if (typeof toast === 'function') toast('GC number filled in');
+    later();
+  }
+
   /* the boxes shown on a boiler in the Price list */
   function editHtml(x) {
     const i = ([k, l, m]) => `<label class="f"><span>${l}</span><input data-pi="t_${k}" data-id="${x.id}" value="${esc2(x['t_' + k] || '')}" ${m ? `inputmode="${m}"` : ''} autocomplete="off"></label>`;
@@ -156,7 +171,7 @@ const BT = (() => {
   let timer = 0; const later = () => { clearTimeout(timer); timer = setTimeout(paint, 30); };
   const start = () => { const v = document.getElementById('view'); if (v) new MutationObserver(later).observe(v, { childList: true, subtree: true }); later(); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
-  document.addEventListener('change', e => { const t = e.target; if (t && t.dataset && t.dataset.k && t.tagName === 'INPUT') setTimeout(() => checkOut(t.dataset.k, t.value), 60); });
+  document.addEventListener('change', e => { const t = e.target; if (t && t.dataset && t.dataset.k && t.tagName === 'INPUT') setTimeout(() => { fillGc(t.dataset.k); checkOut(t.dataset.k, t.value); }, 60); });
   document.addEventListener('input', e => { if (e.target && e.target.dataset && e.target.dataset.k) later(); });
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('.tolI'); if (b) { e.preventDefault(); e.stopPropagation(); openInfo(b.dataset.btk); } }, true);
   return { find, judge, paint, editHtml, seed, FIELDS };

@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v233', items: ['When you type a boiler model that is saved in your Price list with its GC number, the GC number on the service or gas check fills in for you.'] },
   { v: 'v232', items: ['Manufacturer figures: when a reading is outside the boiler\'s figure, a pop-up says "Out of range" and on a service lets you choose Pass or Fail for that check.'] },
   { v: 'v231', items: ['Warning notices: when a check or service has a failure, the review step now asks "Create a warning notice?" with Yes and No buttons, instead of forcing one. You can still create one later.'] },
   { v: 'v230', items: ['Manufacturer figures for boilers. Save a boiler\'s data-sheet limits in the Price list (Boiler), and when you pick that boiler on a service or gas check, an (i) button beside each reading shows the figures. CO, CO2, ratio and gas inlet pressure turn green or red against them. It is a guide only and never changes a result.'] },
