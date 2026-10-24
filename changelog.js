@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v239', items: ['Adding boiler figures from a data sheet is quicker: the boxes use the sheet\'s own wording in the same order, and you can copy the figures from a similar boiler and change what differs.'] },
   { v: 'v238', items: ['Fix: a half-typed model (such as "gree") no longer fills in a GC number. The boiler is only matched once you pick it or type its full model name.', 'The (i) next to the model shows the boiler\'s full data sheet. The (i) next to a reading shows only the figures that test needs, for example operating pressure shows just the minimum inlet pressure. No (i) appears when there is no saved card for the model.', 'Fix: the (i) buttons no longer get rebuilt over and over, which could make a tap on your phone do nothing.'] },
   { v: 'v237', items: ['Fix: the model search box now finds the Greenstar 24Ri straight away, without opening the Price list first.'] },
   { v: 'v236', items: ['The GC number now follows the model: change the model and the GC number changes with it. A GC number you type yourself is never overwritten.'] },

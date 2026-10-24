@@ -1482,6 +1482,22 @@ def run():
         check('the info buttons are not rebuilt while nothing changes', r == 0, r)
         ctx.close()
 
+        # ---------- 12ao. a second boiler works the same way (template) ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(async()=>{ const out={}; qSeed(); const g=settings.qList.find(x=>x.name==='Greenstar 24Ri');
+          const n={id:'nb1',type:'Boiler',make:'Worcester Bosch',name:'Greenstar 30Ri',kind:'Combination',kw:'30',warranty:'',unit:'',cost:'',markup:'',price:''}; settings.qList.push(n); saveSettings();
+          ui.view='prices'; ui.pCat='Boiler'; ui.pMake='Worcester Bosch'; ui.pEdit='nb1'; render(); await new Promise(r=>setTimeout(r,150));
+          const sel=document.querySelector('[data-btcopy=nb1]'); out.hasCopy=!!sel; sel.value=g.id; sel.dispatchEvent(new Event('change',{bubbles:true})); await new Promise(r=>setTimeout(r,150));
+          out.copied=n.t_co==='200' && n.t_inlet==='16.5' && n.t_co2Tol==='0.5'; out.gcNotCopied=!n.t_gc;
+          n.t_gc='41-311-88'; n.t_inlet='17'; saveSettings();
+          const cu={id:'c0',name:'Second Model',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
+          const rec=newRecord(cu,'service'); rec.make='Worcester Bosch'; rec.model='Greenstar 30Ri'; rec.bpTaken='YES'; ui.rec=rec; ui.view='form'; ui.step=4; render(); await new Promise(r=>setTimeout(r,250));
+          document.querySelector('.f[data-f=bpValue] .tolI').click(); out.sheet=document.getElementById('btSheet').innerText; return out})()""")
+        check('figures can be copied from another boiler (not the GC number)', r['hasCopy'] and r['copied'] and r['gcNotCopied'], r)
+        check('a second boiler shows its own figures the same way', 'Greenstar 30Ri' in r['sheet'] and '17' in r['sheet'] and '16.5' not in r['sheet'], r['sheet'])
+        check('no page errors with a second boiler', not errs, errs)
+        ctx.close()
+
         # ---------- 12ac. v226 interface changes ----------
         ctx, pg, errs = fresh(b)
         r = ev(pg, """(async()=>{ const out={};

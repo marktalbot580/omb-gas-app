@@ -4,18 +4,19 @@
    it never changes safe / unsafe, a result or a warning notice. */
 'use strict';
 const BT = (() => {
+  /* same order and wording as a manufacturer data sheet, so a new boiler can be filled in line by line */
   const FIELDS = [
     ['gc', 'Gas Council (GC) number', ''],
-    ['flue', 'Flue type (e.g. Room Sealed)', ''],
-    ['hi', 'CH max heat input (kW net)', 'decimal'],
-    ['hiMin', 'CH min heat input (kW net), N/A if none', ''],
-    ['co2Max', 'CO2 % at maximum rate', 'decimal'],
-    ['co2Min', 'CO2 % at minimum rate', 'decimal'],
-    ['co2Tol', 'CO2 tolerance, plus or minus (%)', 'decimal'],
-    ['ratio', 'Max CO/CO2 ratio', 'decimal'],
-    ['co', 'Max CO (ppm)', 'decimal'],
-    ['fan', 'Fan pressure (mbar), as printed on the sheet', 'decimal'],
-    ['inlet', 'Min gas inlet working pressure (mbar)', 'decimal']
+    ['flue', 'Flue Type', ''],
+    ['hi', 'CH Max Heat Input (Kw Net)', 'decimal'],
+    ['hiMin', 'CH Min Heat Input (Kw Net), or N/A', ''],
+    ['co2Max', 'Max CO2 %', 'decimal'],
+    ['co2Min', 'Min CO2 %', 'decimal'],
+    ['co2Tol', 'CO2 tolerance, plus or minus (e.g. 0.5)', 'decimal'],
+    ['ratio', 'Maximum Ratio', 'decimal'],
+    ['co', 'Maximum CO (ppm)', 'decimal'],
+    ['fan', 'Fan Pressure (mb), as printed (e.g. 3.1)', 'decimal'],
+    ['inlet', 'Min Gas Inlet Working Pressure (mb)', 'decimal']
   ];
   const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   const digits = s => String(s || '').replace(/\D/g, '');
@@ -170,9 +171,17 @@ const BT = (() => {
   /* the boxes shown on a boiler in the Price list */
   function editHtml(x) {
     const i = ([k, l, m]) => `<label class="f"><span>${l}</span><input data-pi="t_${k}" data-id="${x.id}" value="${esc2(x['t_' + k] || '')}" ${m ? `inputmode="${m}"` : ''} autocomplete="off"></label>`;
-    return `<h3 style="margin:14px 0 4px">Manufacturer figures</h3><p class="small muted" style="margin:0 0 10px">From the boiler's data sheet. When this boiler is chosen on a service or check, the figures show beside each reading. Leave out any you don't have.</p>
-      ${FIELDS.map(i).join('')}`;
+    const others = ((typeof settings !== 'undefined' && settings.qList) || []).filter(y => y.id !== x.id && y.type === 'Boiler' && hasFigures(y));
+    const copy = others.length ? `<label class="f"><span>Copy the figures from another boiler</span><select data-btcopy="${esc2(x.id)}"><option value="">Choose a boiler to copy from…</option>${others.map(y => `<option value="${esc2(y.id)}">${esc2(((y.make || '') + ' ' + (y.name || '')).trim())}</option>`).join('')}</select><small>Copies the figures, then change whatever differs. The GC number is not copied.</small></label>` : '';
+    return `<h3 style="margin:14px 0 4px">Manufacturer figures</h3><p class="small muted" style="margin:0 0 10px">Copy these from the boiler's data sheet, line by line. Once saved, every boiler works the same way: the (i) next to the model shows the full card, and each reading shows its own figure. Leave out any you don't have.</p>
+      ${copy}${FIELDS.map(i).join('')}`;
   }
+  document.addEventListener('change', e => {
+    const sel = e.target && e.target.dataset && e.target.dataset.btcopy; if (!sel || !e.target.value) return;
+    const x = (settings.qList || []).find(y => y.id === sel), from = (settings.qList || []).find(y => y.id === e.target.value); if (!x || !from) return;
+    FIELDS.forEach(([k]) => { if (k !== 'gc') x['t_' + k] = from['t_' + k] || ''; });
+    saveSettings(); const y = window.scrollY; render(); window.scrollTo(0, y);
+  });
 
   /* the Greenstar 24Ri from the engineer's data sheet, added once so there is an example to copy */
   function seed() {
