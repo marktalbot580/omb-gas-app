@@ -1366,6 +1366,11 @@ def run():
         check('Greenstar CDi found by model and GC, CO2 tolerance 0.2', g6 == ['41-311-72', '9.6', False, True], g6)
         g7 = ev(pg, "(()=>{const a=BT.find('','x','47-800-26'), b=BT.find('','x','47-800-17'); return [a.t_gc, BT.judge('co2Max','10.5',a), BT.judge('co2Max','11.0',a), BT.judge('co2Min','8.0',a), BT.judge('co2Min','8.5',a), BT.judge('coLow','80',b), BT.judge('coLow','70',b), BT.judge('co','200',b), BT.judge('fan','-3.6',b), BT.find('','x','47-800-18').t_fan||'']})()")
         check('2000 and 8000 combi: CO2 range, separate CO at minimum, fan', g7 == ['47-800-26', True, False, False, True, False, True, True, True, ''], g7)
+        gq = ev(pg, """(async()=>{ const out={}; const cu={id:'gq1',name:'Gc Search',phone:'1',address:'1 A St'}; customers.push(cu); const rec=newRecord(cu,'service'); rec.make='Baxi'; ui.rec=rec; ui.view='form'; ui.step=1; render(); await new Promise(r=>setTimeout(r,250));
+          const inp=document.querySelector('.f[data-f=model] input'); inp.value='41-406-47'; inp.dispatchEvent(new Event('input',{bubbles:true})); await new Promise(r=>setTimeout(r,200));
+          const b=document.querySelector('#btSug [data-bts]'); out.n=document.querySelectorAll('#btSug [data-bts]').length; b.click(); await new Promise(r=>setTimeout(r,300));
+          out.make=ui.rec.make; out.model=ui.rec.model; out.gc=ui.rec.gc; return out})()""")
+        check('typing a GC number in the model box fixes make, model and GC', gq['n'] == 1 and gq['make'] == 'Worcester Bosch' and gq['model'] == 'Greenstar 24Ri ErP' and gq['gc'] == '41-406-47', gq)
         check('Greenstar 24Ri gets its 5-year warranty', wr == '5 years', wr)
         check('figures built in for the Greenstar 24Ri', r['seeded'], r)
         fr = ev(pg, "(()=>{const x=BT.BUILTIN[0]; return ['-3.1','-3.7','-10','-3','-2','0','-11','3.5'].map(v=>BT.judge('fan',v,x))})()")

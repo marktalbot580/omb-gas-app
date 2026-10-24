@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v250', items: ['Model search: type a GC number (for example 41-406-47) in the model box and tap the boiler. The make, model and GC number are all filled in, even if you had picked the wrong make.'] },
   { v: 'v249', items: ['Added the Worcester Greenstar 2000 (25, 30kW), 8000 Life (30, 35kW) and 8000 Style (30, 35, 40kW) combi boilers with their manufacturer figures. CO2 can now be shown as a range, as some manuals print it, and CO can have a separate limit at minimum rate.'] },
   { v: 'v248', items: ['Added the Worcester Greenstar 30CDi and 40CDi (conventional) with their manufacturer figures.'] },
   { v: 'v247', items: ['More Worcester boilers with figures: Greenstar Ri ErP (12, 15, 18, 24), Greenstar 4000 combi (25 and 30kW) and Greenstar R29 HE and R40 HE. The Greenstar 12, 15 and 18Ri now have fan pressure pass and fail ranges.'] },

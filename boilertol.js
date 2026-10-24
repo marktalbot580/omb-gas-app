@@ -303,7 +303,8 @@ const BT = (() => {
     const toks = norm(inp.value) ? String(inp.value).toLowerCase().split(/\s+/).map(norm).filter(Boolean) : [];
     if (!toks.length) return;
     const r = ui.rec, mk = norm(typeOf(r) === 'service' ? (r.make === 'Other' ? r.makeOther : r.make) : ((r.appliances || [])[+path.split('.')[1]] || {}).manufacturer);
-    const hits = boilers().filter(x => x.name && (!mk || !norm(x.make) || norm(x.make).includes(mk) || mk.includes(norm(x.make))) && toks.every(t => norm((x.make || '') + ' ' + x.name).includes(t))).slice(0, 6);
+    const gcQ = /^[\d\s\-]+$/.test(String(inp.value).trim()) && digits(inp.value).length >= 4 ? digits(inp.value) : '';   // a GC number typed in the model box
+    const hits = gcQ ? boilers().filter(x => x.name && digits(val(x, 'gc')).includes(gcQ)).slice(0, 6) : boilers().filter(x => x.name && (!mk || !norm(x.make) || norm(x.make).includes(mk) || mk.includes(norm(x.make))) && toks.every(t => norm((x.make || '') + ' ' + x.name).includes(t))).slice(0, 6);
     if (!hits.length || (hits.length === 1 && norm(hits[0].name) === norm(inp.value))) return;
     box = document.createElement('div'); box.id = 'btSug'; box.style.margin = '-4px 0 12px';
     box.innerHTML = hits.map(x => `<button type="button" class="item cpick" data-bts="${esc2(x.id)}"><div class="t">${esc2(x.name)}</div><div class="s">${esc2([x.make, x.kind, x.t_gc ? 'GC ' + x.t_gc : ''].filter(Boolean).join(' · '))}</div></button>`).join('');
@@ -311,6 +312,13 @@ const BT = (() => {
     box.addEventListener('click', ev => {
       const b = ev.target.closest('[data-bts]'); if (!b) return;
       const x = boilers().find(y => y.id === b.dataset.bts); if (!x) return;
+      if (gcQ) {   // found by GC number: take the right make and GC number as well, even if a different make was chosen
+        const rr = ui.rec, hold = typeOf(rr) === 'service' ? rr : (rr.appliances || [])[+path.split('.')[1]];
+        if (typeOf(rr) === 'service') { if (SVC.MAKE.includes(x.make)) { rr.make = x.make; rr.makeOther = ''; } else { rr.make = 'Other'; rr.makeOther = x.make || ''; } }
+        else if (hold) hold.manufacturer = x.make || '';
+        setP(rr, path, x.name); if (hold) { hold.gc = val(x, 'gc'); hold.gcAuto = hold.gc; }
+        ui.pdf = null; persistRecSoon(); box.remove(); render(); toast('Make, model and GC number filled in'); later(); return;
+      }
       setP(ui.rec, path, x.name); inp.value = x.name; ui.pdf = null; persistRecSoon(); box.remove();
       fillGc(path); later();
     });
