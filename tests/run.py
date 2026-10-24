@@ -1358,6 +1358,8 @@ def run():
         check('built-in boilers are added to the Price list once, and stay deleted', ad == [1, 0, '5 years', '200'], ad)
         gcs = ev(pg, "(()=>[['12','41-311-63'],['15','41-311-75'],['18','41-311-77'],['24','41-311-65']].map(([m,g])=>{const x=BT.find('','x',g); return x&&x.name==='Greenstar '+m+'Ri'&&x.kind==='Heat only'&&!!x.t_co2Max}))()")
         check('Greenstar 12, 15, 18 and 24 Ri are found by GC number', gcs == [True, True, True, True], gcs)
+        g4 = ev(pg, "(()=>{settings.qList=[]; delete settings.btAdded; qSeed(); const x=settings.qList.filter(y=>y.name==='Greenstar 4000 System 18kW'); const f=BT.find('Worcester Bosch','Greenstar 4000 System 24kW',''); return [x.length, x[0]&&x[0].t_gc, f&&f.t_fan, f&&BT.judge('fan','-3.6',f), f&&BT.judge('fan','-3.0',f), f&&BT.judge('co2Max','9.9',f), BT.find('','x','41-800-07').kw]})()")
+        check('Greenstar 4000 System figures: found, filled into the starter item, fan ranges work', g4 == [1, '41-800-11', '3.5', True, False, False, '12'], g4)
         check('Greenstar 24Ri gets its 5-year warranty', wr == '5 years', wr)
         check('figures built in for the Greenstar 24Ri', r['seeded'], r)
         fr = ev(pg, "(()=>{const x=BT.BUILTIN[0]; return ['-3.1','-3.7','-10','-3','-2','0','-11','3.5'].map(v=>BT.judge('fan',v,x))})()")

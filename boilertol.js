@@ -41,7 +41,11 @@ const BT = (() => {
       t_gc: '41-311-75', t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: '15.40', t_co2Max: '9.8', t_co2Min: '9.2', t_co2Tol: '0.5', t_ratio: '0.0020', t_co: '200', t_fan: '5.5', t_inlet: '16.5' },
     { id: 'bt:wb-greenstar-18ri', type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar 18Ri', kind: 'Heat only', kw: '18', warranty: '', src: 'Worcester Bosch Greenstar Ri installation manual',
       t_gc: '41-311-77', t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: '18.48', t_co2Max: '9.8', t_co2Min: '9.2', t_co2Tol: '0.5', t_ratio: '0.0020', t_co: '200', t_fan: '7.4', t_inlet: '16.5' }
-  ];
+  ].concat([
+    /* Greenstar 4000 System (GR4700iW 12 S to 24 S, natural gas): Worcester Bosch installation and maintenance manual 6 720 891 162 (2020/09). Names follow the starter Price list. */
+    ['12', '41-800-07', '12.2', '2.9', '2.8'], ['15', '41-800-09', '15.3', '4.3', '4.2'], ['18', '41-800-11', '18.4', '2.1', '2.0'], ['21', '41-800-13', '21.4', '2.8', '2.7'], ['24', '41-800-15', '24.6', '3.5', '3.4']
+  ].map(([kw, gc, hi, fan, failTo]) => ({ id: 'bt:wb-greenstar-4000-system-' + kw, type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar 4000 System ' + kw + 'kW', kind: 'System', kw, warranty: '', src: 'Worcester Bosch Greenstar 4000 manual 6 720 891 162 (2020/09)',
+    t_gc: gc, t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: hi, t_co2Max: '9.4', t_co2Min: '8.6', t_co2Tol: '0.4', t_ratio: '', t_co: '250', t_fan: fan, t_inlet: '16.5', t_fanPF: fan, t_fanPT: '12', t_fanFF: '0', t_fanFT: failTo })));
   const keyOf = x => norm(x.make) + '|' + norm(x.name);
   /* the engineer's own boilers plus the built-in ones they do not already have figures for */
   function boilers() {
@@ -234,7 +238,8 @@ const BT = (() => {
     BUILTIN.forEach(b => {
       if (added.includes(b.id)) return;
       added.push(b.id); ch = true;
-      if (settings.qList.some(x => x.type === 'Boiler' && keyOf(x) === keyOf(b))) return;
+      const same = settings.qList.find(x => x.type === 'Boiler' && keyOf(x) === keyOf(b));
+      if (same) { if (!hasFigures(same)) FIELDS.forEach(([k]) => { same['t_' + k] = b['t_' + k] || ''; }); if (!same.kind) same.kind = b.kind; if (!same.kw) same.kw = b.kw; if (!same.warranty) same.warranty = b.warranty || ''; return; }
       const c = Object.assign({}, b, { id: QUO.newId() }); delete c.src; settings.qList.push(c);
     });
     if (ch) saveSettings();
