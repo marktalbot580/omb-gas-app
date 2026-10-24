@@ -1360,6 +1360,8 @@ def run():
         check('Greenstar 12, 15, 18 and 24 Ri are found by GC number', gcs == [True, True, True, True], gcs)
         g4 = ev(pg, "(()=>{settings.qList=[]; delete settings.btAdded; qSeed(); const x=settings.qList.filter(y=>y.name==='Greenstar 4000 System 18kW'); const f=BT.find('Worcester Bosch','Greenstar 4000 System 24kW',''); return [x.length, x[0]&&x[0].t_gc, f&&f.t_fan, f&&BT.judge('fan','-3.6',f), f&&BT.judge('fan','-3.0',f), f&&BT.judge('co2Max','9.9',f), BT.find('','x','41-800-07').kw]})()")
         check('Greenstar 4000 System figures: found, filled into the starter item, fan ranges work', g4 == [1, '41-800-11', '3.5', True, False, False, '12'], g4)
+        g5 = ev(pg, "(()=>{const f=(m,g)=>{const x=BT.find('Worcester Bosch',m,g||''); return x&&x.name}; return [f('Greenstar 12Ri ErP'), f('Greenstar 12Ri'), f('x','41-406-47'), f('Greenstar 4000 30kW'), f('Greenstar R40 HE'), BT.judge('fan','-5.0',BT.find('','','47-800-32')), BT.judge('fan','-5.3',BT.find('','','47-800-32'))]})()")
+        check('Ri ErP, 4000 combi and R29/R40 HE are found, longest name first', g5 == ['Greenstar 12Ri ErP', 'Greenstar 12Ri', 'Greenstar 24Ri ErP', 'Greenstar 4000 30kW', 'Greenstar R40 HE', False, True], g5)
         check('Greenstar 24Ri gets its 5-year warranty', wr == '5 years', wr)
         check('figures built in for the Greenstar 24Ri', r['seeded'], r)
         fr = ev(pg, "(()=>{const x=BT.BUILTIN[0]; return ['-3.1','-3.7','-10','-3','-2','0','-11','3.5'].map(v=>BT.judge('fan',v,x))})()")

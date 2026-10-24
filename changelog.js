@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v247', items: ['More Worcester boilers with figures: Greenstar Ri ErP (12, 15, 18, 24), Greenstar 4000 combi (25 and 30kW) and Greenstar R29 HE and R40 HE. The Greenstar 12, 15 and 18Ri now have fan pressure pass and fail ranges.'] },
   { v: 'v246', items: ['Built-in boiler figures now include the Worcester Greenstar 4000 System (12, 15, 18, 21 and 24kW) with GC numbers, CO2, CO, heat input, gas pressure and fan pressure pass and fail ranges.'] },
   { v: 'v245', items: ['Built-in boilers now include the Worcester Greenstar 12Ri, 15Ri and 18Ri alongside the 24Ri, each with its GC number and manufacturer figures. These are regular (heat only) boilers, so the 24Ri is now listed as Heat only.'] },
   { v: 'v244', items: ['Boilers built into the app now also appear in everyone\'s Price list, so they can be used on quotes. Delete one and it stays deleted.'] },

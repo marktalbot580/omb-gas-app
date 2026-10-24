@@ -36,16 +36,32 @@ const BT = (() => {
       t_gc: '41-311-65', t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: '24.62', t_co2Max: '9.8', t_co2Min: '9.2', t_co2Tol: '0.5', t_ratio: '0.0020', t_co: '200', t_fan: '3.1', t_inlet: '16.5', t_fanPF: '3.1', t_fanPT: '10', t_fanFF: '3', t_fanFT: '0' },
     /* the Ri 12, 15 and 18 figures are from Worcester Bosch's Greenstar Ri installation manual (heat input, CO2, CO, gas pressure) and a published fan-suction table; pass / fail ranges for fan pressure are left for the engineer to set */
     { id: 'bt:wb-greenstar-12ri', type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar 12Ri', kind: 'Heat only', kw: '12', warranty: '', src: 'Worcester Bosch Greenstar Ri installation manual',
-      t_gc: '41-311-63', t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: '12.32', t_co2Max: '9.65', t_co2Min: '8.65', t_co2Tol: '0.5', t_ratio: '0.0020', t_co: '200', t_fan: '3.6', t_inlet: '16.5' },
+      t_gc: '41-311-63', t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: '12.32', t_co2Max: '9.65', t_co2Min: '8.65', t_co2Tol: '0.5', t_ratio: '0.0020', t_co: '200', t_fan: '3.6', t_inlet: '16.5', t_fanPF: '3.6', t_fanPT: '10', t_fanFF: '0', t_fanFT: '3.5' },
     { id: 'bt:wb-greenstar-15ri', type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar 15Ri', kind: 'Heat only', kw: '15', warranty: '', src: 'Worcester Bosch Greenstar Ri installation manual',
-      t_gc: '41-311-75', t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: '15.40', t_co2Max: '9.8', t_co2Min: '9.2', t_co2Tol: '0.5', t_ratio: '0.0020', t_co: '200', t_fan: '5.5', t_inlet: '16.5' },
+      t_gc: '41-311-75', t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: '15.40', t_co2Max: '9.8', t_co2Min: '9.2', t_co2Tol: '0.5', t_ratio: '0.0020', t_co: '200', t_fan: '5.5', t_inlet: '16.5', t_fanPF: '5.5', t_fanPT: '10', t_fanFF: '0', t_fanFT: '5.4' },
     { id: 'bt:wb-greenstar-18ri', type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar 18Ri', kind: 'Heat only', kw: '18', warranty: '', src: 'Worcester Bosch Greenstar Ri installation manual',
-      t_gc: '41-311-77', t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: '18.48', t_co2Max: '9.8', t_co2Min: '9.2', t_co2Tol: '0.5', t_ratio: '0.0020', t_co: '200', t_fan: '7.4', t_inlet: '16.5' }
+      t_gc: '41-311-77', t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: '18.48', t_co2Max: '9.8', t_co2Min: '9.2', t_co2Tol: '0.5', t_ratio: '0.0020', t_co: '200', t_fan: '7.4', t_inlet: '16.5', t_fanPF: '7.4', t_fanPT: '10', t_fanFF: '0', t_fanFT: '7.3' }
   ].concat([
     /* Greenstar 4000 System (GR4700iW 12 S to 24 S, natural gas): Worcester Bosch installation and maintenance manual 6 720 891 162 (2020/09). Names follow the starter Price list. */
     ['12', '41-800-07', '12.2', '2.9', '2.8'], ['15', '41-800-09', '15.3', '4.3', '4.2'], ['18', '41-800-11', '18.4', '2.1', '2.0'], ['21', '41-800-13', '21.4', '2.8', '2.7'], ['24', '41-800-15', '24.6', '3.5', '3.4']
   ].map(([kw, gc, hi, fan, failTo]) => ({ id: 'bt:wb-greenstar-4000-system-' + kw, type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar 4000 System ' + kw + 'kW', kind: 'System', kw, warranty: '', src: 'Worcester Bosch Greenstar 4000 manual 6 720 891 162 (2020/09)',
     t_gc: gc, t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: hi, t_co2Max: '9.4', t_co2Min: '8.6', t_co2Tol: '0.4', t_ratio: '', t_co: '250', t_fan: fan, t_inlet: '16.5', t_fanPF: fan, t_fanPT: '12', t_fanFF: '0', t_fanFT: failTo })));
+  /* more built-in boilers, from Worcester Bosch manuals supplied by Mark */
+  BUILTIN.push(...[
+    /* Greenstar Ri ErP (6 720 813 283, 2015/07): same figures as the Ri, new GC numbers. Fan: the manual's "clean the heat exchanger" / "heat exchanger ok" chart; the -10 upper end is the same rule as the 24Ri. */
+    ['12', '41-406-41', '12.32', '9.65', '8.65', '3.6', '3.5'], ['15', '41-406-43', '15.40', '9.8', '9.2', '5.5', '5.4'], ['18', '41-406-45', '18.48', '9.8', '9.2', '7.4', '7.3'], ['24', '41-406-47', '24.62', '9.8', '9.2', '3.1', '3.0']
+  ].map(([kw, gc, hi, c2a, c2b, fan, ft]) => ({ id: 'bt:wb-greenstar-ri-erp-' + kw, type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar ' + kw + 'Ri ErP', kind: 'Heat only', kw, warranty: '', src: 'Worcester Bosch Greenstar Ri ErP manual 6 720 813 283 (2015/07)',
+    t_gc: gc, t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: hi, t_co2Max: c2a, t_co2Min: c2b, t_co2Tol: '0.5', t_ratio: '0.0020', t_co: '200', t_fan: fan, t_inlet: '16.5', t_fanPF: fan, t_fanPT: '10', t_fanFF: '0', t_fanFT: ft })));
+  BUILTIN.push(...[
+    /* Greenstar 4000 combi (GR4700iW 25 C / 30 C): manual 6 720 813 283 (2015/07). Heat input is the central heating figure. */
+    ['25', '47-800-30', '3.9', '3.8'], ['30', '47-800-32', '5.2', '5.1']
+  ].map(([kw, gc, fan, failTo]) => ({ id: 'bt:wb-greenstar-4000-' + kw, type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar 4000 ' + kw + 'kW', kind: 'Combination', kw, warranty: '', src: 'Worcester Bosch Greenstar 4000 combi manual (GR4700iW 25 C / 30 C)',
+    t_gc: gc, t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: '24.6', t_co2Max: '9.4', t_co2Min: '8.6', t_co2Tol: '0.4', t_ratio: '', t_co: '250', t_fan: fan, t_inlet: '16.5', t_fanPF: fan, t_fanPT: '12', t_fanFF: '0', t_fanFT: failTo })));
+  BUILTIN.push(...[
+    /* Greenstar R29 HE / R40 HE conventional (manual 6 720 611 445 GB, 05.04): no CO2 tolerance, CO limit, ratio or fan pressure is given, so those are left blank. Gas inlet: must not be run below 18 mbar. */
+    ['29', '41-311-60', '27.7', '9.2', '8.8'], ['40', '41-311-61', '40', '9.2', '9.2']
+  ].map(([kw, gc, hi, c2a, c2b]) => ({ id: 'bt:wb-greenstar-r' + kw + 'he', type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar R' + kw + ' HE', kind: 'Heat only', kw, warranty: '', src: 'Worcester Bosch R29 & R40 HE conventional manual 6 720 611 445 GB (05.04)',
+    t_gc: gc, t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: hi, t_co2Max: c2a, t_co2Min: c2b, t_co2Tol: '', t_ratio: '', t_co: '', t_fan: '', t_inlet: '18' })));
   const keyOf = x => norm(x.make) + '|' + norm(x.name);
   /* the engineer's own boilers plus the built-in ones they do not already have figures for */
   function boilers() {
@@ -61,7 +77,7 @@ const BT = (() => {
     const g = digits(gc);
     if (g.length >= 6) { const hit = list.find(x => digits(val(x, 'gc')) === g); if (hit) return hit; }
     const m = norm(make), n = norm(model); if (n.length < 3) return null;
-    return list.find(x => {
+    return list.slice().sort((p, q) => norm(q.name).length - norm(p.name).length).find(x => {
       const xn = norm(x.name), xm = norm(x.make);
       return xn.length >= 3 && (!xm || !m || m.includes(xm) || xm.includes(m)) && n.includes(xn);
     }) || null;
