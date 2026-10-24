@@ -412,3 +412,5 @@ details.more>summary:focus-visible{outline:2px solid var(--gold2);outline-offset
 .dstable tr+tr{border-top:1px solid rgba(212,168,75,.25)}
 .dsfoot{margin:0;padding:10px 14px 12px;font-size:12px;color:var(--mut,#8a8576);border-top:1px solid var(--gold)}
 .dsmake{font-size:14px;font-weight:700;margin-top:6px;opacity:.85}
+
+.bt2>.f.grow{flex:1 1 0;min-width:0}.bt2>.f:not(.grow){flex:0 0 96px;min-width:0}

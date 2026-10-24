@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v242', items: ['Price list: the boiler type box is wide enough to read again, and the kW box is small.'] },
   { v: 'v241', items: ['The boiler card shows only the manufacturer\'s own figures again; the fan pressure line no longer has extra wording. Each boiler in the Price list now has fan pressure PASS from/to and FAIL from/to boxes you can edit; the fan reading turns green or red from them.'] },
   { v: 'v240', items: ['Boiler figures are now built into the app for everyone. The Greenstar 24Ri is there already, and more boilers will arrive in updates. Fan pressure now turns green from -3.1 down to -10 and red for -3 to 0 (you do not need to type the minus: it is added for you). Boilers you save yourself in the Price list still work, and yours are used first.'] },
   { v: 'v239', items: ['Adding boiler figures from a data sheet is quicker: the boxes use the sheet\'s own wording in the same order, and you can copy the figures from a similar boiler and change what differs.'] },
