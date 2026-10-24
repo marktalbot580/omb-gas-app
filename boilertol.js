@@ -218,48 +218,48 @@ const BT = (() => {
   BUILTIN.push(...[
     /* Glow-worm, Alpha, Ferroli and Viessmann boilers, from the manufacturers' manuals supplied by Mark. Each row: make, name, type, size, GC number, heat input (central heating, net where the manual gives it), manual, figures.
        Glow-worm: same printed checks as Vaillant (CO2 9.2 with the printed tolerance, CO 250 ppm, ratio as printed). Home c and Home s print the CO2 tolerance only. Alpha: CO2 asymmetric tolerances as printed (shown as from / to ranges), natural gas figures. Ferroli: printed acceptable combustion ranges. Viessmann: CO2 range printed as 7.5 to 10.5. A blank means the manual does not print it. */
-    ["Glow-worm", "Energy c 25kW", "Combination", "25", "47-019-24", "18.4", "Glow-worm Energy ErP combi manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Energy c 30kW", "Combination", "30", "47-019-25", "25.5", "Glow-worm Energy ErP combi manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Energy c 35kW", "Combination", "35", "47-019-26", "25.7", "Glow-worm Energy ErP combi manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Energy r 12kW", "Heat only", "12", "41-019-21", "12.3", "Glow-worm Energy r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Energy r 15kW", "Heat only", "15", "41-019-22", "15.3", "Glow-worm Energy r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Energy r 18kW", "Heat only", "18", "41-019-23", "18.4", "Glow-worm Energy r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Energy r 25kW", "Heat only", "25", "41-019-24", "25.5", "Glow-worm Energy r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Energy r 30kW", "Heat only", "30", "41-019-25", "30.6", "Glow-worm Energy r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Energy s 12kW", "System", "12", "41-019-16", "12.3", "Glow-worm Energy s manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
-    ["Glow-worm", "Energy s 15kW", "System", "15", "41-019-17", "15.3", "Glow-worm Energy s manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
-    ["Glow-worm", "Energy s 18kW", "System", "18", "41-019-18", "18.4", "Glow-worm Energy s manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
-    ["Glow-worm", "Energy s 25kW", "System", "25", "41-019-19", "25.5", "Glow-worm Energy s manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
-    ["Glow-worm", "Energy s 30kW", "System", "30", "41-019-20", "30.6", "Glow-worm Energy s manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
-    ["Glow-worm", "Home c 25kW", "Combination", "25", "47-019-29", "15.3", "Glow-worm Home c manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
-    ["Glow-worm", "Home c 30kW", "Combination", "30", "47-019-30", "15.3", "Glow-worm Home c manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
-    ["Glow-worm", "Home c 35kW", "Combination", "35", "47-019-31", "15.3", "Glow-worm Home c manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
-    ["Glow-worm", "Home s 12kW", "System", "12", "41-019-27", "12.2", "Glow-worm Home s manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
-    ["Glow-worm", "Home s 15kW", "System", "15", "41-019-28", "15.3", "Glow-worm Home s manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
-    ["Glow-worm", "Home s 18kW", "System", "18", "41-019-29", "18.4", "Glow-worm Home s manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
-    ["Glow-worm", "Home s 25kW", "System", "25", "41-019-30", "25.5", "Glow-worm Home s manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
-    ["Glow-worm", "Home r 12kW", "Heat only", "12", "41-019-31", "12.3", "Glow-worm Home r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Home r 15kW", "Heat only", "15", "41-019-32", "15.3", "Glow-worm Home r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Home r 18kW", "Heat only", "18", "41-019-33", "18.4", "Glow-worm Home r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Home r 25kW", "Heat only", "25", "41-019-34", "25.5", "Glow-worm Home r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Home r 30kW", "Heat only", "30", "41-019-35", "30.6", "Glow-worm Home r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Sustain c 25kW", "Combination", "25", "47-019-32", "18.4", "Glow-worm Sustain c manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Sustain c 30kW", "Combination", "30", "47-019-33", "18.4", "Glow-worm Sustain c manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Sustain c 35kW", "Combination", "35", "47-019-34", "18.4", "Glow-worm Sustain c manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Sustain s 12kW", "System", "12", "41-019-36", "12.3", "Glow-worm Sustain s manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Sustain s 15kW", "System", "15", "41-019-37", "15.3", "Glow-worm Sustain s manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Sustain s 18kW", "System", "18", "41-019-38", "18.4", "Glow-worm Sustain s manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Sustain r 12kW", "Heat only", "12", "41-019-39", "12.3", "Glow-worm Sustain r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Sustain r 15kW", "Heat only", "15", "41-019-40", "15.3", "Glow-worm Sustain r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Sustain r 18kW", "Heat only", "18", "41-019-41", "18.4", "Glow-worm Sustain r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow-worm", "Ultimate 3 c 30kW", "Combination", "30", "47-019-55", "25.5", "Glow-worm Ultimate 3 combi manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
-    ["Glow-worm", "Ultimate 3 c 35kW", "Combination", "35", "47-019-57", "25.5", "Glow-worm Ultimate 3 combi manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
-    ["Glow-worm", "Ultimate 3 s 25kW", "System", "25", "41-019-51", "25.5", "Glow-worm Ultimate 3 25s manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
-    ["Glow-worm", "Ultimate 3 r 25kW", "Heat only", "25", "41-019-52", "25.5", "Glow-worm Ultimate 3 25r manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
-    ["Glow-worm", "Easicom 3 c 24kW", "Combination", "24", "47-019-50", "20.4", "Glow-worm Easicom 3 combi manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
-    ["Glow-worm", "Easicom 3 c 28kW", "Combination", "28", "47-019-51", "24.7", "Glow-worm Easicom 3 combi manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
-    ["Glow-worm", "Easicom 3 s 25kW", "System", "25", "41-019-49", "25.5", "Glow-worm Easicom 3 25s manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "13"}],
-    ["Glow-worm", "Easicom 3 r 25kW", "Heat only", "25", "41-019-50", "25.5", "Glow-worm Easicom 3 25r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "13"}],
+    ["Glow Worm", "Energy c 25kW", "Combination", "25", "47-019-24", "18.4", "Glow-worm Energy ErP combi manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Energy c 30kW", "Combination", "30", "47-019-25", "25.5", "Glow-worm Energy ErP combi manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Energy c 35kW", "Combination", "35", "47-019-26", "25.7", "Glow-worm Energy ErP combi manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Energy r 12kW", "Heat only", "12", "41-019-21", "12.3", "Glow-worm Energy r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Energy r 15kW", "Heat only", "15", "41-019-22", "15.3", "Glow-worm Energy r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Energy r 18kW", "Heat only", "18", "41-019-23", "18.4", "Glow-worm Energy r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Energy r 25kW", "Heat only", "25", "41-019-24", "25.5", "Glow-worm Energy r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Energy r 30kW", "Heat only", "30", "41-019-25", "30.6", "Glow-worm Energy r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Energy s 12kW", "System", "12", "41-019-16", "12.3", "Glow-worm Energy s manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Glow Worm", "Energy s 15kW", "System", "15", "41-019-17", "15.3", "Glow-worm Energy s manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Glow Worm", "Energy s 18kW", "System", "18", "41-019-18", "18.4", "Glow-worm Energy s manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Glow Worm", "Energy s 25kW", "System", "25", "41-019-19", "25.5", "Glow-worm Energy s manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Glow Worm", "Energy s 30kW", "System", "30", "41-019-20", "30.6", "Glow-worm Energy s manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Glow Worm", "Home c 25kW", "Combination", "25", "47-019-29", "15.3", "Glow-worm Home c manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
+    ["Glow Worm", "Home c 30kW", "Combination", "30", "47-019-30", "15.3", "Glow-worm Home c manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
+    ["Glow Worm", "Home c 35kW", "Combination", "35", "47-019-31", "15.3", "Glow-worm Home c manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
+    ["Glow Worm", "Home s 12kW", "System", "12", "41-019-27", "12.2", "Glow-worm Home s manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
+    ["Glow Worm", "Home s 15kW", "System", "15", "41-019-28", "15.3", "Glow-worm Home s manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
+    ["Glow Worm", "Home s 18kW", "System", "18", "41-019-29", "18.4", "Glow-worm Home s manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
+    ["Glow Worm", "Home s 25kW", "System", "25", "41-019-30", "25.5", "Glow-worm Home s manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
+    ["Glow Worm", "Home r 12kW", "Heat only", "12", "41-019-31", "12.3", "Glow-worm Home r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Home r 15kW", "Heat only", "15", "41-019-32", "15.3", "Glow-worm Home r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Home r 18kW", "Heat only", "18", "41-019-33", "18.4", "Glow-worm Home r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Home r 25kW", "Heat only", "25", "41-019-34", "25.5", "Glow-worm Home r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Home r 30kW", "Heat only", "30", "41-019-35", "30.6", "Glow-worm Home r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Sustain c 25kW", "Combination", "25", "47-019-32", "18.4", "Glow-worm Sustain c manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Sustain c 30kW", "Combination", "30", "47-019-33", "18.4", "Glow-worm Sustain c manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Sustain c 35kW", "Combination", "35", "47-019-34", "18.4", "Glow-worm Sustain c manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Sustain s 12kW", "System", "12", "41-019-36", "12.3", "Glow-worm Sustain s manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Sustain s 15kW", "System", "15", "41-019-37", "15.3", "Glow-worm Sustain s manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Sustain s 18kW", "System", "18", "41-019-38", "18.4", "Glow-worm Sustain s manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Sustain r 12kW", "Heat only", "12", "41-019-39", "12.3", "Glow-worm Sustain r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Sustain r 15kW", "Heat only", "15", "41-019-40", "15.3", "Glow-worm Sustain r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Sustain r 18kW", "Heat only", "18", "41-019-41", "18.4", "Glow-worm Sustain r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Ultimate 3 c 30kW", "Combination", "30", "47-019-55", "25.5", "Glow-worm Ultimate 3 combi manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Glow Worm", "Ultimate 3 c 35kW", "Combination", "35", "47-019-57", "25.5", "Glow-worm Ultimate 3 combi manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Glow Worm", "Ultimate 3 s 25kW", "System", "25", "41-019-51", "25.5", "Glow-worm Ultimate 3 25s manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Glow Worm", "Ultimate 3 r 25kW", "Heat only", "25", "41-019-52", "25.5", "Glow-worm Ultimate 3 25r manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Glow Worm", "Easicom 3 c 24kW", "Combination", "24", "47-019-50", "20.4", "Glow-worm Easicom 3 combi manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Glow Worm", "Easicom 3 c 28kW", "Combination", "28", "47-019-51", "24.7", "Glow-worm Easicom 3 combi manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Glow Worm", "Easicom 3 s 25kW", "System", "25", "41-019-49", "25.5", "Glow-worm Easicom 3 25s manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "13"}],
+    ["Glow Worm", "Easicom 3 r 25kW", "Heat only", "25", "41-019-50", "25.5", "Glow-worm Easicom 3 25r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "13"}],
     ["Alpha", "E-Tec 28kW", "Combination", "28", "47-532-69", "24.6", "Alpha E-Tec 28/33 manual", {"ratio": "0.0040", "mxF": "9.5", "mxT": "10.2", "mnF": "8.5", "mnT": "9.0"}],
     ["Alpha", "E-Tec 33kW", "Combination", "33", "47-532-70", "28.6", "Alpha E-Tec 28/33 manual", {"ratio": "0.0040", "mxF": "9.3", "mxT": "9.7", "mnF": "8.3", "mnT": "8.8"}],
     ["Alpha", "E-Tec Plus 28kW", "Combination", "28", "47-532-77", "24.6", "Alpha E-Tec Plus manual", {"ratio": "0.0040", "mxF": "9.5", "mxT": "10.2", "mnF": "8.5", "mnT": "9.0"}],
@@ -492,12 +492,21 @@ const BT = (() => {
     /* once: a copy already in the Price list gets the built-in warranty if it has none */
     if (!settings.btWarr) { settings.btWarr = 1; ch = true; BUILTIN.forEach(b => settings.qList.forEach(x => { if (x.type === 'Boiler' && keyOf(x) === keyOf(b) && !x.warranty && b.warranty) x.warranty = b.warranty; })); }
     /* once: the Ri is a regular (heat only) boiler, so a copy saved earlier as Combination is corrected */
-    if (!settings.btKind) { settings.btKind = 1; ch = true; settings.qList.forEach(x => { if (x.type === 'Boiler' && x.kind === 'Combination' && BUILTIN.some(b => keyOf(b) === keyOf(x))) x.kind = 'Heat only'; }); }
+    if (!settings.btKind) { settings.btKind = 1; ch = true; settings.qList.forEach(x => { if (x.type === 'Boiler' && x.kind === 'Combination' && BUILTIN.some(b => keyOf(b) === keyOf(x) && b.kind === 'Heat only')) x.kind = 'Heat only'; }); }
     /* once: copies named "i-Mini2" are renamed I-Mini, to match the starter Price list (an existing I-Mini without figures takes the figures and the duplicate goes) */
     if (!settings.btMini) { settings.btMini = 1; ch = true;
       settings.qList.filter(x => x.type === 'Boiler' && norm(x.make) === 'ideal' && /^i-?mini2 /i.test(x.name || '')).forEach(x => {
         const nn = String(x.name).replace(/^i-?mini2 /i, 'I-Mini '), ex = settings.qList.find(y => y !== x && y.type === 'Boiler' && norm(y.make) === 'ideal' && norm(y.name) === norm(nn));
         if (!ex) { x.name = nn; return; }
+        if (!hasFigures(ex)) FIELDS.forEach(([k]) => { ex['t_' + k] = x['t_' + k] || ''; });
+        settings.qList.splice(settings.qList.indexOf(x), 1); }); }
+    /* once: a boiler type wrongly changed to Heat only by the earlier Ri correction is put back to the type its data sheet gives */
+    if (!settings.btKind2) { settings.btKind2 = 1; ch = true; settings.qList.forEach(x => { if (x.type === 'Boiler' && x.kind === 'Heat only') { const b = BUILTIN.find(b => keyOf(b) === keyOf(x)); if (b && b.kind !== 'Heat only') x.kind = b.kind; } }); }
+    /* once: "Glow-worm" is written Glow Worm (as on the service form); a copy of the same boiler already there takes the figures and the duplicate goes */
+    if (!settings.btGlow) { settings.btGlow = 1; ch = true;
+      settings.qList.filter(x => x.type === 'Boiler' && x.make === 'Glow-worm').forEach(x => {
+        const ex = settings.qList.find(y => y !== x && y.type === 'Boiler' && norm(y.make) === 'glowworm' && norm(y.name) === norm(x.name));
+        if (!ex) { x.make = 'Glow Worm'; return; }
         if (!hasFigures(ex)) FIELDS.forEach(([k]) => { ex['t_' + k] = x['t_' + k] || ''; });
         settings.qList.splice(settings.qList.indexOf(x), 1); }); }
     /* each built-in boiler is added to the engineer's Price list once (so it is there for quotes too). One they already have, or delete later, is left alone. */
