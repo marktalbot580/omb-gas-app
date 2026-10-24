@@ -1343,9 +1343,9 @@ def run():
         # ---------- 12ae. manufacturer figures (info button + green/red) ----------
         ctx, pg, errs = fresh(b)
         r = ev(pg, """(async()=>{ const out={};
-          qSeed(); const bx=settings.qList.find(x=>x.name==='Greenstar 24Ri'); out.seeded=!!bx && bx.t_co==='200';
+          const bx=BT.BUILTIN.find(x=>x.name==='Greenstar 24Ri'); out.seeded=!!bx && bx.t_co==='200';
           const cu={id:'c9',name:'Tol Test',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
-          const rec=newRecord(cu,'service'); rec.make='Worcester Bosch'; rec.model='Greenstar 24Ri'; rec.fpTaken='YES'; rec.fpValue='3.5'; rec.fgDone='YES';
+          const rec=newRecord(cu,'service'); rec.make='Worcester Bosch'; rec.model='Greenstar 24Ri'; rec.fpTaken='YES'; rec.fpValue='-3.5'; rec.fgDone='YES';
           rec.fgCoMax='250'; rec.fgCo2Max='9.9'; rec.fgCo2Min='11'; rec.fgRatioMax='0.001'; rec.bpTaken='YES'; rec.bpValue='15';
           ui.rec=rec; ui.view='form'; ui.step=4; render(); await new Promise(r=>setTimeout(r,200));
           const cls=p=>{const e=document.querySelector('.f[data-f="'+p+'"]'); return e?e.className:'missing'};
@@ -1353,12 +1353,14 @@ def run():
           out.co=cls('fgCoMax'); out.co2=cls('fgCo2Max'); out.co2min=cls('fgCo2Min'); out.ratio=cls('fgRatioMax'); out.inlet=cls('bpValue'); out.fan=cls('fpValue');
           ui.step=1; render(); await new Promise(r=>setTimeout(r,200)); document.querySelector('.f[data-f=model] .tolI').click(); out.sheet=(document.getElementById('btSheet')||{}).innerText||'';
           return out})()""")
-        check('figures saved for the Greenstar 24Ri', r['seeded'], r)
+        check('figures built in for the Greenstar 24Ri', r['seeded'], r)
+        fr = ev(pg, "(()=>{const x=BT.BUILTIN[0]; return ['-3.1','-3.7','-10','-3','-2','0','-11','3.5'].map(v=>BT.judge('fan',v,x))})()")
+        check('fan pressure: -3.1 to -10 passes, -3 to 0 fails', fr == [True, True, True, False, False, False, False, False], fr)
         check('info buttons appear beside the readings', r['i'] >= 8, r['i'])
         check('CO over the limit is red, CO2 inside is green, CO2 outside is red', 'tolbad' in r['co'] and 'tolok' in r['co2'] and 'tolbad' in r['co2min'] and 'tolok' in r['ratio'], r)
-        check('low gas inlet pressure is red and fan pressure is not coloured', 'tolbad' in r['inlet'] and 'tol' not in r['fan'], r)
+        check('low gas inlet pressure is red and fan pressure -3.5 is green', 'tolbad' in r['inlet'] and 'tolok' in r['fan'], r)
         check('info sheet shows every line of the data sheet', all(t in r['sheet'] for t in ['Room Sealed', '24.62', '9.8', '9.2', '0.0020', '200', '3.1', '16.5', '41-311-65']), r['sheet'])
-        r = ev(pg, "(()=>{ const x=settings.qList.find(x=>x.name==='Greenstar 24Ri'); return [!!BT.find('Worcester Bosch','Greenstar 24Ri',''), !!BT.find('','x','4131165'), !!BT.find('Vaillant','Greenstar 24Ri',''), !!BT.find('','','')] })()")
+        r = ev(pg, "(()=>{ const x=BT.BUILTIN[0]; return [!!BT.find('Worcester Bosch','Greenstar 24Ri',''), !!BT.find('','x','4131165'), !!BT.find('Vaillant','Greenstar 24Ri',''), !!BT.find('','','')] })()")
         check('boiler is matched by make and model or by GC number only', r == [True, True, False, False], r)
         check('no page errors with manufacturer figures', not errs, errs)
         ctx.close()
@@ -1401,7 +1403,7 @@ def run():
         check('GC number fills in when the model matches a saved boiler', r['gc'] == '41-311-65' and r['box'] == '41-311-65', r)
         check('a GC number already entered is never overwritten', r['kept'] == '99-999-99', r)
         r = ev(pg, """(async()=>{ const out={}; const put=(p,v)=>{const i=document.querySelector('.f[data-f="'+p+'"] input'); i.value=v; i.dispatchEvent(new Event('input',{bubbles:true})); i.dispatchEvent(new Event('change',{bubbles:true}))};
-          const x=settings.qList.find(y=>y.name==='Greenstar 24Ri'); const y=Object.assign({},x,{id:'zz1',name:'Greenstar 30Ri',t_gc:'41-311-88'}); settings.qList.push(y);
+          const x=BT.BUILTIN[0]; const y=Object.assign({},x,{id:'zz1',name:'Greenstar 30Ri',t_gc:'41-311-88'}); settings.qList.push(y);
           ui.rec.gc=''; ui.rec.gcAuto=''; ui.rec.model=''; render(); await new Promise(r=>setTimeout(r,100));
           put('model','Greenstar 24Ri'); await new Promise(r=>setTimeout(r,250)); out.a=ui.rec.gc;
           put('model','Greenstar 30Ri'); await new Promise(r=>setTimeout(r,250)); out.b=ui.rec.gc;
@@ -1484,7 +1486,7 @@ def run():
 
         # ---------- 12ao. a second boiler works the same way (template) ----------
         ctx, pg, errs = fresh(b, mobile=True)
-        r = ev(pg, """(async()=>{ const out={}; qSeed(); const g=settings.qList.find(x=>x.name==='Greenstar 24Ri');
+        r = ev(pg, """(async()=>{ const out={}; const g=BT.BUILTIN[0];
           const n={id:'nb1',type:'Boiler',make:'Worcester Bosch',name:'Greenstar 30Ri',kind:'Combination',kw:'30',warranty:'',unit:'',cost:'',markup:'',price:''}; settings.qList.push(n); saveSettings();
           ui.view='prices'; ui.pCat='Boiler'; ui.pMake='Worcester Bosch'; ui.pEdit='nb1'; render(); await new Promise(r=>setTimeout(r,150));
           const sel=document.querySelector('[data-btcopy=nb1]'); out.hasCopy=!!sel; sel.value=g.id; sel.dispatchEvent(new Event('change',{bubbles:true})); await new Promise(r=>setTimeout(r,150));
