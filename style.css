@@ -394,3 +394,7 @@ details.more>summary:focus-visible{outline:2px solid var(--gold2);outline-offset
 
 /* v226: friendlier empty screens */
 .empty{border:1.5px dashed var(--line);border-radius:16px;margin:10px 0;line-height:1.5}
+/* manufacturer figures: (i) button beside a reading and green / red guide colour */
+.tolI{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;margin-left:8px;padding:0;border-radius:50%;border:1.5px solid var(--gold);background:transparent;color:var(--gold2);font:italic 700 15px Georgia,serif;vertical-align:middle;cursor:pointer}
+.f.tolok input{border-color:var(--ok)}.f.tolok>span{color:var(--ok)}
+.f.tolbad input{border-color:var(--bad)}.f.tolbad>span{color:var(--bad)}

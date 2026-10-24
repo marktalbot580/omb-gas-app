@@ -1340,6 +1340,29 @@ def run():
         check('no page errors with sample reminders', not errs, errs)
         ctx.close()
 
+        # ---------- 12ae. manufacturer figures (info button + green/red) ----------
+        ctx, pg, errs = fresh(b)
+        r = ev(pg, """(async()=>{ const out={};
+          qSeed(); const bx=settings.qList.find(x=>x.name==='Greenstar 24Ri'); out.seeded=!!bx && bx.t_co==='200';
+          const cu={id:'c9',name:'Tol Test',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
+          const rec=newRecord(cu,'service'); rec.make='Worcester Bosch'; rec.model='Greenstar 24Ri'; rec.fpTaken='YES'; rec.fpValue='3.5'; rec.fgDone='YES';
+          rec.fgCoMax='250'; rec.fgCo2Max='9.9'; rec.fgCo2Min='11'; rec.fgRatioMax='0.001'; rec.bpTaken='YES'; rec.bpValue='15';
+          ui.rec=rec; ui.view='form'; ui.step=4; render(); await new Promise(r=>setTimeout(r,200));
+          const cls=p=>{const e=document.querySelector('.f[data-f="'+p+'"]'); return e?e.className:'missing'};
+          out.i=document.querySelectorAll('.tolI').length;
+          out.co=cls('fgCoMax'); out.co2=cls('fgCo2Max'); out.co2min=cls('fgCo2Min'); out.ratio=cls('fgRatioMax'); out.inlet=cls('bpValue'); out.fan=cls('fpValue');
+          document.querySelector('.tolI').click(); out.sheet=(document.getElementById('btSheet')||{}).innerText||'';
+          return out})()""")
+        check('figures saved for the Greenstar 24Ri', r['seeded'], r)
+        check('info buttons appear beside the readings', r['i'] >= 8, r['i'])
+        check('CO over the limit is red, CO2 inside is green, CO2 outside is red', 'tolbad' in r['co'] and 'tolok' in r['co2'] and 'tolbad' in r['co2min'] and 'tolok' in r['ratio'], r)
+        check('low gas inlet pressure is red and fan pressure is not coloured', 'tolbad' in r['inlet'] and 'tol' not in r['fan'], r)
+        check('info sheet shows every line of the data sheet', all(t in r['sheet'] for t in ['Room Sealed', '24.62', '9.8', '9.2', '0.0020', '200', '3.1', '16.5', '41-311-65']), r['sheet'])
+        r = ev(pg, "(()=>{ const x=settings.qList.find(x=>x.name==='Greenstar 24Ri'); return [!!BT.find('Worcester Bosch','Greenstar 24Ri',''), !!BT.find('','x','4131165'), !!BT.find('Vaillant','Greenstar 24Ri',''), !!BT.find('','','')] })()")
+        check('boiler is matched by make and model or by GC number only', r == [True, True, False, False], r)
+        check('no page errors with manufacturer figures', not errs, errs)
+        ctx.close()
+
         # ---------- 12ac. v226 interface changes ----------
         ctx, pg, errs = fresh(b)
         r = ev(pg, """(async()=>{ const out={};

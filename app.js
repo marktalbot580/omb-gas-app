@@ -923,7 +923,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v229';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v230';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1951,6 +1951,7 @@ function qSeed() {
   const old = QUO.parseItems(settings.qItemsText);
   if (old.length) { old.forEach(o => { if (!settings.qList.some(x => x.name.toLowerCase() === o.name.toLowerCase())) settings.qList.push({ id: QUO.newId(), type: 'Other', make: '', name: o.name, kind: '', kw: '', warranty: '', unit: '', cost: '', markup: '', price: String(o.price || '') }); }); settings.qItemsText = ''; saveSettings(); }
   let ch = false; settings.qList.forEach(x => { if (!x.id) { x.id = QUO.newId(); ch = true; } }); if (ch) saveSettings();
+  if (typeof BT !== 'undefined') BT.seed();
 }
 function renderPrices(v) {
   qSeed();
@@ -1971,6 +1972,7 @@ function renderPrices(v) {
       ${x.type === 'Labour' ? i('name', 'Rate name', { ph: 'For example: Hourly rate or Day rate' }) + i('unit', 'Charged per', { list: 'pUnits', ph: 'hour, day or job' }) : i('make', 'Make') + i('name', 'Model / item')}
       ${x.type === 'Boiler' ? `<div class="row"><label class="f grow"><span>Boiler type</span><select data-pi="kind" data-id="${x.id}"><option value=""></option>${QUO.KIND.map(k => `<option ${x.kind === k ? 'selected' : ''}>${k}</option>`).join('')}</select></label>${i('kw', 'kW', { mode: 'decimal' })}</div>
       <label class="f"><span>Manufacturer warranty</span><select data-pi="warranty" data-id="${x.id}"><option value=""></option>${QUO.WARRANTY.map(k => `<option ${x.warranty === k ? 'selected' : ''}>${k}</option>`).join('')}</select></label>` : ''}
+      ${x.type === 'Boiler' && typeof BT !== 'undefined' ? BT.editHtml(x) : ''}
       <div class="row">${i('cost', 'My cost (£)', { mode: 'decimal' })}${i('markup', 'Mark-up %', { mode: 'decimal', ph: mk + ' (' + (QUO.num(x.markup) === null ? 'standard' : 'own') + ')' })}</div>
       ${i('price', 'Fixed sale price (£), optional', { mode: 'decimal', ph: 'Leave empty to use cost + mark-up' })}
       ${x.type === 'Labour' ? '' : i('unit', 'Unit', { ph: 'each, metre, pack…' })}
