@@ -663,7 +663,7 @@ const BT = (() => {
   /* watch the screen for redraws; stop watching while painting, or painting itself would trigger another paint, forever, and the buttons would be rebuilt under a finger */
   let watcher = null;
   const watch = () => { const v = document.getElementById('view'); if (v && watcher) watcher.observe(v, { childList: true, subtree: true }); };
-  const start = () => { watcher = new MutationObserver(later); watch(); later(); };
+  const start = () => { watcher = new MutationObserver(m => { if (m.every(x => x.target.nodeType === 1 && x.target.closest && x.target.closest('[data-clock]'))) return; later(); }); watch(); later(); };   /* the running timer clock changes 20 times a second: that must not redraw the boiler markers each time */
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
   document.addEventListener('change', e => { const t = e.target; if (t && t.dataset && t.dataset.k && t.tagName === 'INPUT') setTimeout(() => { fillGc(t.dataset.k); fixFan(t.dataset.k, t); checkOut(t.dataset.k, t.value); }, 60); });
   document.addEventListener('input', e => { if (e.target && e.target.dataset && e.target.dataset.k) later(); });

@@ -1491,6 +1491,23 @@ def run():
         pg.screenshot(path='/tmp/list_done.png')
         ctx.close()
 
+        # ---------- 12aj3. gas rate calculator on the service form ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(async()=>{ const out={}; qSeed(); const cu={id:'c5c',name:'Gas Calc',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
+          const rec=newRecord(cu,'service'); rec.make='Worcester Bosch'; rec.model='Greenstar 24Ri'; rec.grTaken='YES'; ui.rec=rec; ui.view='form'; ui.step=4; render(); await new Promise(r=>setTimeout(r,300));
+          document.querySelector('[data-act=calcToggle]').click(); await new Promise(r=>setTimeout(r,100));
+          const set=(k,v)=>{const i=document.querySelector('input[data-calc$=".'+k+'"]'); i.value=v; i.dispatchEvent(new Event('input',{bubbles:true}))};
+          set('start','100'); set('end','100.1');
+          document.querySelector('[data-act=calcTimer]').click(); let mut=0; const mo=new MutationObserver(m=>{mut+=m.length}); mo.observe(document.getElementById('view'),{childList:true,subtree:true});
+          await new Promise(r=>setTimeout(r,1000)); mo.disconnect(); out.mut=mut;
+          document.querySelector('[data-act=calcTimer]').click(); await new Promise(r=>setTimeout(r,200));
+          out.res=document.querySelector('.calcres').innerText.replace(/\s+/g,' ');
+          document.querySelector('[data-act=calcUse]').click(); await new Promise(r=>setTimeout(r,200));
+          out.val=ui.rec.grValue; out.box=document.querySelector('.f[data-f=grValue] input').value; return out})()""")
+        check('service form gas rate calculator: times, works out the rate and fills the box; the form is not redrawn while timing', r['mut'] < 60 and float(r['val']) > 0 and r['box'] == r['val'] and 'H.I. net' in r['res'], r)
+        check('no page errors in the service form calculator', not errs, errs)
+        ctx.close()
+
         # ---------- 12ak. model search works before the Price list was ever opened ----------
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(async()=>{ const out={}; settings.qList=[{id:'q1',type:'Boiler',make:'Worcester Bosch',name:'Greenstar 4000',kind:'Combination',kw:'25',warranty:'',unit:'',cost:'',markup:'',price:''}]; settings.qStarterV=2; delete settings.btSeed; saveSettings();

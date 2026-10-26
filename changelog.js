@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v259', items: ['Gas rate calculator on the boiler service form: the screen no longer redraws parts of the form while the timer is running, so the buttons and readings stay put. The readings, timer and "Use" buttons are now covered by tests.'] },
   { v: 'v258', items: ['New "Pick model from list" button under the Model box: shows every model for the make you chose in a scrolling list. Tap one to fill the model and GC number. Typing to search still works.'] },
   { v: 'v257', items: ['Added Biasi boilers with their manufacturer figures: Advance Plus and Inovia (system and combi, including ERP), Advance OV, Riva Plus HE and Riva Advance. Search by GC number or model.'] },
   { v: 'v256', items: ['Added more Worcester Bosch boilers with their manufacturer figures: Greenstar 8000 Life and Style (system and regular), Greenstar 8000+ (regular, system and combi), CDi Classic, FS CDi, CDi Compact, Si Compact and 25i/30i ErP. Fan pressure is set where the manual gives a usable figure.'] },
