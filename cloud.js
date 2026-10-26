@@ -207,7 +207,8 @@ const CLOUD = (() => {
   }
 
   async function sync(manual) {
-    if (!on || !session || st.busy) return;
+    if (!on || !session) return;
+    if (st.busy) { st.again = true; return; }   // a change made while a sync is running is picked up by a second pass straight after
     st.busy = true; st.state = 'busy'; paint();
     try {
       await loadSub();
@@ -222,6 +223,7 @@ const CLOUD = (() => {
       console.warn(e); st.state = 'error'; st.msg = (navigator.onLine === false ? 'Offline – will sync when you are back online' : 'Sync failed: ' + e.message);
     }
     st.busy = false; paint();
+    if (st.again) { st.again = false; setTimeout(() => sync(), 300); }
   }
   function paint() {
     const d = document.querySelector('#syncDot'); if (d) d.className = 'dot ' + (!on || !session ? '' : st.state === 'busy' ? 'busy' : st.state === 'error' ? 'err' : 'ok');

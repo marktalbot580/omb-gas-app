@@ -923,7 +923,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v262';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v263';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -2551,6 +2551,7 @@ function persistInv(inv) {
   const k = invoices.findIndex(x => x.id === inv.id);
   if (k >= 0) invoices[k] = inv; else invoices.unshift(inv);
   saveInvoices();
+  clearTimeout(persistInv._t); persistInv._t = setTimeout(() => syncAll(), 2500);   // send it to the account soon, so another device sees it
 }
 let _ti; const persistInvSoon = () => { clearTimeout(_ti); _ti = setTimeout(() => ui.inv && persistInv(ui.inv), 400); };
 function invNumberFor(next) {
