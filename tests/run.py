@@ -1578,6 +1578,12 @@ def run():
         check('Greenstar 2000 combi heat input is the hot-water maximum (25.5 / 30)', r == ['25.5', '30'], r)
         ctx.close()
 
+        # ---------- 12am6. Baxi 600/800 combi heat input ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(()=>[BT.find('','','47-077-55').t_hi, BT.find('','','47-077-57').t_hi, BT.find('','','47-077-64').t_hi])()""")
+        check('Baxi 600/800 combi heat input is the hot-water maximum', r == ['24.7', '36.9', '30.9'], r)
+        ctx.close()
+
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(async()=>{ qSeed(); const cu={id:'c1',name:'Hold Still',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);

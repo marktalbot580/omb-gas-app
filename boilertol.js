@@ -270,12 +270,12 @@ const BT = (() => {
     ["Vaillant", "ecoTEC plus 32kW", "Combination", "32", "47-044-93", "", "Vaillant ecoTEC plus (2023 range) installation manual: gives an O2 reading, not CO2", {"co2": "", "tol": "", "co": "350", "ratio": "0.0040", "inlet": ""}],
     ["Vaillant", "ecoTEC plus 36kW", "Combination", "36", "47-044-94", "", "Vaillant ecoTEC plus (2023 range) installation manual: gives an O2 reading, not CO2", {"co2": "", "tol": "", "co": "350", "ratio": "0.0040", "inlet": ""}],
     ["Vaillant", "ecoTEC plus 40kW", "Combination", "40", "47-044-95", "", "Vaillant ecoTEC plus (2023 range) installation manual: gives an O2 reading, not CO2", {"co2": "", "tol": "", "co": "350", "ratio": "0.0040", "inlet": ""}],
-    ["Baxi", "600 Combi 24kW", "Combination", "24", "47-077-55", "", "Baxi 600 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Baxi", "600 Combi 30kW", "Combination", "30", "47-077-56", "", "Baxi 600 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Baxi", "600 Combi 36kW", "Combination", "36", "47-077-57", "", "Baxi 600 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Baxi", "800 Combi 24kW", "Combination", "24", "47-077-63", "", "Baxi 800 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Baxi", "800 Combi 30kW", "Combination", "30", "47-077-64", "", "Baxi 800 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Baxi", "800 Combi 36kW", "Combination", "36", "47-077-65", "", "Baxi 800 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Baxi", "600 Combi 24kW", "Combination", "24", "47-077-55", "24.7", "Baxi 600 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Baxi", "600 Combi 30kW", "Combination", "30", "47-077-56", "30.9", "Baxi 600 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Baxi", "600 Combi 36kW", "Combination", "36", "47-077-57", "36.9", "Baxi 600 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Baxi", "800 Combi 24kW", "Combination", "24", "47-077-63", "24.7", "Baxi 800 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Baxi", "800 Combi 30kW", "Combination", "30", "47-077-64", "30.9", "Baxi 800 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Baxi", "800 Combi 36kW", "Combination", "36", "47-077-65", "36.9", "Baxi 800 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
     ["Baxi", "400 Combi 24kW", "Combination", "24", "", "24.7", "Baxi 400 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
     ["Baxi", "400 Combi 30kW", "Combination", "30", "", "30.0", "Baxi 400 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
     ["Baxi", "200 Combi 24kW", "Combination", "24", "", "24.7", "Baxi 200 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
@@ -615,6 +615,9 @@ const BT = (() => {
     /* once more: the Greenstar 2000 combi's heat input is its hot-water maximum (25.5 / 30), not the central heating 20.4 */
     if (!settings.btHi2) { settings.btHi2 = 1; ch = true;
       [['bt:wb-greenstar-2000-25', '20.4'], ['bt:wb-greenstar-2000-30', '20.4']].forEach(([id, old]) => { const b = BUILTIN.find(y => y.id === id); if (b) settings.qList.forEach(x => { if (x.type === 'Boiler' && keyOf(x) === keyOf(b) && String(x.t_hi || '') === old) x.t_hi = b.t_hi; }); }); }
+    /* once more: Baxi 600 / 800 combi had no heat input; the manuals give the hot-water maximum. A copy with that box empty is filled in. */
+    if (!settings.btHi3) { settings.btHi3 = 1; ch = true;
+      ['600', '800'].forEach(r => ['24', '30', '36'].forEach(k => { const b = BUILTIN.find(y => y.id === 'bt:baxi-' + r + 'combi' + k + 'kw'); if (b) settings.qList.forEach(x => { if (x.type === 'Boiler' && keyOf(x) === keyOf(b) && !String(x.t_hi || '').trim()) x.t_hi = b.t_hi; }); })); }
     /* each built-in boiler is added to the engineer's Price list once (so it is there for quotes too). One they already have, or delete later, is left alone. */
     const added = settings.btAdded = settings.btAdded || [];
     BUILTIN.forEach(b => {
