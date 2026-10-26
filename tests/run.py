@@ -1564,6 +1564,14 @@ def run():
         check('warning notice prompt says why and jumps back to the Finish step', r == [True, True, 5], r)
         ctx.close()
 
+        # ---------- 12am4. Finish step banner names its reason ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(async()=>{ qSeed(); const cu={id:'cx',name:'Banner Test',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
+          const rec=newRecord(cu,'service'); rec.warning='YES'; records.push(rec); ui.rec=rec; ui.view='form'; ui.step=5; render(); await new Promise(r=>setTimeout(r,200));
+          const t=document.querySelector('.notice.err'); return [t&&t.innerText.includes('answered YES'), t&&t.innerText.includes('has failed')] })()""")
+        check('Finish banner says a YES answer (not a failure) triggered the notice', r == [True, False], r)
+        ctx.close()
+
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(async()=>{ qSeed(); const cu={id:'c1',name:'Hold Still',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
