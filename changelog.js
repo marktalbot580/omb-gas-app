@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v264', items: ['Greenstar 2000 combi (25kW and 30kW): the heat input now shows the maximum hot-water input from the manual (25.5 and 30 kW) instead of the central heating figure.'] },
   { v: 'v263', items: ['Sync fix: invoices made or changed while another sync was still running could be missed and not reach your other devices. The app now sends them straight after, and invoice changes are sent within a few seconds.'] },
   { v: 'v262', items: ['Boiler service, Finish step: the red warning box now says what triggered it (the failed checks, or that you answered YES to "Has a warning notice been issued?") instead of always saying something has failed.'] },
   { v: 'v261', items: ['Review screen: the "Create a warning notice?" box now says exactly why it appeared (for example a failed check, or "Has a warning notice been issued?" set to YES) and has a button to jump straight back to that section.'] },

@@ -1572,6 +1572,12 @@ def run():
         check('Finish banner says a YES answer (not a failure) triggered the notice', r == [True, False], r)
         ctx.close()
 
+        # ---------- 12am5. Greenstar 2000 combi heat input ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(()=>[BT.find('','','47-800-26').t_hi, BT.find('','','47-800-28').t_hi])()""")
+        check('Greenstar 2000 combi heat input is the hot-water maximum (25.5 / 30)', r == ['25.5', '30'], r)
+        ctx.close()
+
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(async()=>{ qSeed(); const cu={id:'c1',name:'Hold Still',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
