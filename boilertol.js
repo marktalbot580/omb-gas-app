@@ -58,10 +58,10 @@ const BT = (() => {
   ].map(([kw, gc, hi, c2a, c2b, fan, ft]) => ({ id: 'bt:wb-greenstar-ri-erp-' + kw, type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar ' + kw + 'Ri ErP', kind: 'Heat only', kw, warranty: '', src: 'Worcester Bosch Greenstar Ri ErP manual 6 720 813 283 (2015/07)',
     t_gc: gc, t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: hi, t_co2Max: c2a, t_co2Min: c2b, t_co2Tol: '0.5', t_ratio: '0.0020', t_co: '200', t_fan: fan, t_inlet: '16.5', t_fanPF: fan, t_fanPT: '10', t_fanFF: '0', t_fanFT: ft })));
   BUILTIN.push(...[
-    /* Greenstar 4000 combi (GR4700iW 25 C / 30 C): manual 6 720 813 283 (2015/07). Heat input is the central heating figure. */
-    ['25', '47-800-30', '3.9', '3.8'], ['30', '47-800-32', '5.2', '5.1']
-  ].map(([kw, gc, fan, failTo]) => ({ id: 'bt:wb-greenstar-4000-' + kw, type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar 4000 ' + kw + 'kW', kind: 'Combination', kw, warranty: '', src: 'Worcester Bosch Greenstar 4000 combi manual (GR4700iW 25 C / 30 C)',
-    t_gc: gc, t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: '24.6', t_co2Max: '9.4', t_co2Min: '8.6', t_co2Tol: '0.4', t_ratio: '', t_co: '250', t_fan: fan, t_inlet: '16.5', t_fanPF: fan, t_fanPT: '12', t_fanFF: '0', t_fanFT: failTo })));
+    /* Greenstar 4000 combi (GR4700iW 25 C / 30 C): manual 6 720 813 283 (2015/07). Heat input is the maximum (hot water) rated input, which is what a gas rate test reads. */
+    ['25', '47-800-30', '3.9', '3.8', '24.5'], ['30', '47-800-32', '5.2', '5.1', '29.4']
+  ].map(([kw, gc, fan, failTo, hiW]) => ({ id: 'bt:wb-greenstar-4000-' + kw, type: 'Boiler', make: 'Worcester Bosch', name: 'Greenstar 4000 ' + kw + 'kW', kind: 'Combination', kw, warranty: '', src: 'Worcester Bosch Greenstar 4000 combi manual (GR4700iW 25 C / 30 C)',
+    t_gc: gc, t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: hiW, t_co2Max: '9.4', t_co2Min: '8.6', t_co2Tol: '0.4', t_ratio: '', t_co: '250', t_fan: fan, t_inlet: '16.5', t_fanPF: fan, t_fanPT: '12', t_fanFF: '0', t_fanFT: failTo })));
   BUILTIN.push(...[
     /* Greenstar R29 HE / R40 HE conventional (manual 6 720 611 445 GB, 05.04): no CO2 tolerance, CO limit, ratio or fan pressure is given, so those are left blank. Gas inlet: must not be run below 18 mbar. */
     ['29', '41-311-60', '27.7', '9.2', '8.8'], ['40', '41-311-61', '40', '9.2', '9.2']
@@ -79,9 +79,14 @@ const BT = (() => {
     /* Greenstar 8000 Life combi (GR8300iW C) and Style combi (GR8700iW C), manuals 6720883865 / 6720883864 (2019/02). The 30kW fan figure is printed as -10.0 in both, which cannot be right as a pass line, so it is left blank. */
     { n: 'Greenstar 8000 Life', kw: '30', gc: '47-800-18', hi: '30.2', src: 'Worcester Bosch Greenstar 8000 Life manual 6720883865 (2019/02)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' },
     { n: 'Greenstar 8000 Life', kw: '35', gc: '47-800-17', hi: '34.4', fan: '3.5', ft: '3.4', fanTo: '10', src: 'Worcester Bosch Greenstar 8000 Life manual 6720883865 (2019/02)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' },
+    { n: 'Greenstar 8000 Life', kw: '40', gc: '47-800-16', hi: '40.8', fan: '5.0', ft: '4.9', fanTo: '10', src: 'Worcester Bosch Greenstar 8000 Life combi manual (2019)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' },
+    { n: 'Greenstar 8000 Life', kw: '45', gc: '47-800-15', hi: '43.5', fan: '4.8', ft: '4.7', fanTo: '10', src: 'Worcester Bosch Greenstar 8000 Life combi manual (2019)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' },
+    { n: 'Greenstar 8000 Life', kw: '50', gc: '47-800-14', hi: '48.9', fan: '6.0', ft: '5.9', fanTo: '10', src: 'Worcester Bosch Greenstar 8000 Life combi manual (2019)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' },
+    { n: 'Greenstar 8000 Style', kw: '45', gc: '47-406-99', hi: '43.5', fan: '4.8', ft: '4.7', fanTo: '10', src: 'Worcester Bosch Greenstar 8000 Style combi manual (2019)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' },
+    { n: 'Greenstar 8000 Style', kw: '50', gc: '47-406-98', hi: '48.9', fan: '6.0', ft: '5.9', fanTo: '10', src: 'Worcester Bosch Greenstar 8000 Style combi manual (2019)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' },
     { n: 'Greenstar 8000 Style', kw: '30', gc: '47-800-03', hi: '30.2', src: 'Worcester Bosch Greenstar 8000 Style manual 6720883864 (2019/02)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' },
     { n: 'Greenstar 8000 Style', kw: '35', gc: '47-800-02', hi: '34.4', fan: '3.5', ft: '3.4', fanTo: '10', src: 'Worcester Bosch Greenstar 8000 Style manual 6720883864 (2019/02)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' },
-    { n: 'Greenstar 8000 Style', kw: '40', gc: '47-800-01', hi: '34.4', fan: '5.0', ft: '4.9', fanTo: '10', src: 'Worcester Bosch Greenstar 8000 Style manual 6720883864 (2019/02)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' }
+    { n: 'Greenstar 8000 Style', kw: '40', gc: '47-800-01', hi: '40.8', fan: '5.0', ft: '4.9', fanTo: '10', src: 'Worcester Bosch Greenstar 8000 Style manual 6720883864 (2019/02)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' }
   ].map(m => { const c = m.co2, o = { id: 'bt:wb-' + m.n.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + m.kw, type: 'Boiler', make: 'Worcester Bosch', name: m.n + ' ' + m.kw + 'kW', kind: 'Combination', kw: m.kw, warranty: '', src: m.src,
     t_gc: m.gc, t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: m.hi, t_co: m.co, t_coLow: m.coLow || '', t_ratio: '', t_inlet: '16.5' };
     ['Max', 'Min', 'Tol', 'MaxF', 'MaxT', 'MinF', 'MinT'].forEach(k => { if (c[k]) o['t_co2' + k] = c[k]; });
@@ -109,29 +114,29 @@ const BT = (() => {
     ['Greenstar 8000+ Regular', '50', 'Heat only', '41-800-33', '34.4', '6.0', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW R manual', WB8],
     ['Greenstar 8000+ System', '30', 'System', '41-800-27', '30.2', '', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW S manual', WB8],
     ['Greenstar 8000+ System', '35', 'System', '41-800-28', '34.4', '3.5', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW S manual', WB8],
-    ['Greenstar 8000+ Combi V2', '32', 'Combination', '47-800-44', '30.2', '8.0', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW C manual 6721108973 (2025/06)', WB8],
-    ['Greenstar 8000+ Combi', '36', 'Combination', '47-800-45', '34.4', '4.0', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW C manual 6721108973 (2025/06)', WB8],
-    ['Greenstar 8000+ Combi', '40', 'Combination', '47-800-46', '34.4', '5.0', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW C manual 6721108973 (2025/06)', WB8],
-    ['Greenstar 8000+ Combi', '45', 'Combination', '47-800-47', '34.4', '4.8', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW C manual 6721108973 (2025/06)', WB8],
-    ['Greenstar 8000+ Combi', '50', 'Combination', '47-800-48', '34.4', '6.0', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW C manual 6721108973 (2025/06)', WB8],
-    ['Greenstar 8000+ Style Combi V2', '32', 'Combination', '47-800-49', '30.2', '8.0', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW C manual 6721108973 (2025/06)', WB8],
+    ['Greenstar 8000+ Combi V2', '32', 'Combination', '47-800-44', '32.0', '8.0', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW C manual 6721108973 (2025/06)', WB8],
+    ['Greenstar 8000+ Combi', '36', 'Combination', '47-800-45', '36.0', '4.0', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW C manual 6721108973 (2025/06)', WB8],
+    ['Greenstar 8000+ Combi', '40', 'Combination', '47-800-46', '40.8', '5.0', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW C manual 6721108973 (2025/06)', WB8],
+    ['Greenstar 8000+ Combi', '45', 'Combination', '47-800-47', '43.5', '4.8', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW C manual 6721108973 (2025/06)', WB8],
+    ['Greenstar 8000+ Combi', '50', 'Combination', '47-800-48', '48.9', '6.0', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW C manual 6721108973 (2025/06)', WB8],
+    ['Greenstar 8000+ Style Combi V2', '32', 'Combination', '47-800-49', '32.0', '8.0', '12', 'Worcester Bosch Greenstar 8000+ GR8701iW C manual 6721108973 (2025/06)', WB8],
     /* older ErP Greenstar boilers: CO 200 ppm / ratio 0.002 as printed in the settings table (the flow chart also quotes 350 / 0.004, the stricter figure is used) */
     ['Greenstar 30CDi Classic Regular ErP', '30', 'Heat only', '41-406-33', '30.9', '4.1', '10', 'Worcester Bosch Greenstar CDi Classic Regular ErP manual 6720815723', { co2Max: '9.6', co2Min: '9.0', co2Tol: '0.4', co: '200', ratio: '0.0020' }],
     ['Greenstar 40CDi Classic Regular ErP', '40', 'Heat only', '41-406-35', '42.0', '5.2', '10', 'Worcester Bosch Greenstar CDi Classic Regular ErP manual 6720815723', { co2Max: '9.7', co2Min: '9.1', co2Tol: '0.4', co: '200', ratio: '0.0020' }],
     ['Greenstar FS 30CDi ErP Regular', '30', 'Heat only', '41-406-62', '30.9', '4.1', '10', 'Worcester Bosch Greenstar FS CDi ErP Regular manual 6720818079', { co2Max: '9.4', co2Min: '8.6', co2Tol: '0.2' }],
     ['Greenstar FS 42CDi ErP Regular', '42', 'Heat only', '41-406-64', '42.0', '5.2', '10', 'Worcester Bosch Greenstar FS CDi ErP Regular manual 6720818079', { co2Max: '9.4', co2Min: '9.0', co2Tol: '0.2' }],
     ['Greenstar 29CDi Classic ErP', '29', 'Combination', '47-406-65', '30.9', '3.9', '10', 'Worcester Bosch Greenstar CDi Classic ErP manual', { co2Max: '9.6', co2Min: '9.0', co2Tol: '0.4', co: '200', ratio: '0.0020' }],
-    ['Greenstar 34CDi Classic ErP', '34', 'Combination', '47-406-67', '30.9', '5.3', '10', 'Worcester Bosch Greenstar CDi Classic ErP manual', { co2Max: '9.6', co2Min: '9.0', co2Tol: '0.4', co: '200', ratio: '0.0020' }],
-    ['Greenstar 38CDi Classic ErP', '38', 'Combination', '47-406-69', '30.9', '4.4', '10', 'Worcester Bosch Greenstar CDi Classic ErP manual', { co2Max: '9.7', co2Min: '9.1', co2Tol: '0.4', co: '200', ratio: '0.0020' }],
-    ['Greenstar 42CDi Classic ErP', '42', 'Combination', '47-406-71', '30.9', '4.8', '10', 'Worcester Bosch Greenstar CDi Classic ErP manual', { co2Max: '9.7', co2Min: '9.1', co2Tol: '0.4', co: '200', ratio: '0.0020' }],
+    ['Greenstar 34CDi Classic ErP', '34', 'Combination', '47-406-67', '35.0', '5.3', '10', 'Worcester Bosch Greenstar CDi Classic ErP manual', { co2Max: '9.6', co2Min: '9.0', co2Tol: '0.4', co: '200', ratio: '0.0020' }],
+    ['Greenstar 38CDi Classic ErP', '38', 'Combination', '47-406-69', '40.0', '4.4', '10', 'Worcester Bosch Greenstar CDi Classic ErP manual', { co2Max: '9.7', co2Min: '9.1', co2Tol: '0.4', co: '200', ratio: '0.0020' }],
+    ['Greenstar 42CDi Classic ErP', '42', 'Combination', '47-406-71', '42.0', '4.8', '10', 'Worcester Bosch Greenstar CDi Classic ErP manual', { co2Max: '9.7', co2Min: '9.1', co2Tol: '0.4', co: '200', ratio: '0.0020' }],
     /* Compact ErP combis: the manual gives CO2 at maximum as "between 8.5 and 10.1" (CO under 200 ppm); the minimum is only "0.2 lower than the maximum reading", so it is left blank */
-    ['Greenstar 28CDi Compact ErP', '28', 'Combination', '47-406-77', '24.34', '3.5', '10', 'Worcester Bosch Greenstar CDi Compact ErP manual', { co2MaxF: '8.5', co2MaxT: '10.1', co: '200' }],
-    ['Greenstar 32CDi Compact ErP', '32', 'Combination', '47-406-79', '24.34', '4.4', '10', 'Worcester Bosch Greenstar CDi Compact ErP manual', { co2MaxF: '8.5', co2MaxT: '10.1', co: '200' }],
-    ['Greenstar 36CDi Compact ErP', '36', 'Combination', '47-406-81', '24.34', '5.4', '10', 'Worcester Bosch Greenstar CDi Compact ErP manual', { co2MaxF: '8.5', co2MaxT: '10.1', co: '200' }],
-    ['Greenstar 25Si Compact ErP', '25', 'Combination', '47-406-73', '24.34', '2.7', '10', 'Worcester Bosch Greenstar Si Compact ErP manual', { co2MaxF: '8.5', co2MaxT: '10.1', co: '200' }],
-    ['Greenstar 30Si Compact ErP', '30', 'Combination', '47-406-75', '24.34', '3.8', '10', 'Worcester Bosch Greenstar Si Compact ErP manual', { co2MaxF: '8.5', co2MaxT: '10.1', co: '200' }],
-    ['Greenstar 25i ErP', '25', 'Combination', '47-406-60', '24.64', '4.5', '10', 'Worcester Bosch Greenstar i ErP combi manual', { co2MaxF: '9.0', co2MaxT: '10.8', co2MinF: '8.0', co2MinT: '10.6', co: '200' }],
-    ['Greenstar 30i ErP', '30', 'Combination', '47-406-62', '24.64', '6.2', '10', 'Worcester Bosch Greenstar i ErP combi manual', { co2MaxF: '9.0', co2MaxT: '10.8', co2MinF: '8.0', co2MinT: '10.6', co: '200' }]
+    ['Greenstar 28CDi Compact ErP', '28', 'Combination', '47-406-77', '28.57', '3.5', '10', 'Worcester Bosch Greenstar CDi Compact ErP manual', { co2MaxF: '8.5', co2MaxT: '10.1', co: '200' }],
+    ['Greenstar 32CDi Compact ErP', '32', 'Combination', '47-406-79', '32.65', '4.4', '10', 'Worcester Bosch Greenstar CDi Compact ErP manual', { co2MaxF: '8.5', co2MaxT: '10.1', co: '200' }],
+    ['Greenstar 36CDi Compact ErP', '36', 'Combination', '47-406-81', '36.7', '5.4', '10', 'Worcester Bosch Greenstar CDi Compact ErP manual', { co2MaxF: '8.5', co2MaxT: '10.1', co: '200' }],
+    ['Greenstar 25Si Compact ErP', '25', 'Combination', '47-406-73', '25.5', '2.7', '10', 'Worcester Bosch Greenstar Si Compact ErP manual', { co2MaxF: '8.5', co2MaxT: '10.1', co: '200' }],
+    ['Greenstar 30Si Compact ErP', '30', 'Combination', '47-406-75', '30.61', '3.8', '10', 'Worcester Bosch Greenstar Si Compact ErP manual', { co2MaxF: '8.5', co2MaxT: '10.1', co: '200' }],
+    ['Greenstar 25i ErP', '25', 'Combination', '47-406-60', '25.51', '4.5', '10', 'Worcester Bosch Greenstar i ErP combi manual', { co2MaxF: '9.0', co2MaxT: '10.8', co2MinF: '8.0', co2MinT: '10.6', co: '200' }],
+    ['Greenstar 30i ErP', '30', 'Combination', '47-406-62', '30.61', '6.2', '10', 'Worcester Bosch Greenstar i ErP combi manual', { co2MaxF: '9.0', co2MaxT: '10.8', co2MinF: '8.0', co2MinT: '10.6', co: '200' }]
   ].map(([n, kw, kind, gc, hi, fan, to, src, f]) => {
     const o = { id: 'bt:wb-' + n.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + kw, type: 'Boiler', make: 'Worcester Bosch', name: /ErP$|ErP Regular$/.test(n) ? n : n.replace(' V2', '') + ' ' + kw + 'kW' + (/ V2$/.test(n) ? ' V2' : ''), kind, kw, warranty: '', src,
       t_gc: gc, t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: hi, t_ratio: f.ratio || '', t_co: f.co || '', t_coLow: f.coLow || '', t_inlet: /8000/.test(n) ? '16.5' : '' };
@@ -151,18 +156,18 @@ const BT = (() => {
     ['Inovia 16S', '16', 'System', '41-583-25', '16.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Inovia 16S/25S manual'],
     ['Inovia 25S', '25', 'System', '41-583-26', '25.0', '9.0', '9.8', '8.7', '9.5', 'Biasi Inovia 16S/25S manual'],
     ['Inovia 25S ERP', '25', 'System', '41-583-30', '25.0', '9.0', '9.8', '8.7', '9.5', 'Biasi Inovia 25S ERP manual'],
-    ['Advance Plus 25C', '25', 'Combination', '47-583-29', '20.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Advance Plus 25C/30C/35C manual'],
-    ['Advance Plus 30C', '30', 'Combination', '47-583-30', '25.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Advance Plus 25C/30C/35C manual'],
-    ['Advance Plus 35C', '35', 'Combination', '47-583-31', '30.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Advance Plus 25C/30C/35C manual'],
-    ['Inovia 25C', '25', 'Combination', '47-583-32', '20.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Inovia combi manual'],
-    ['Inovia 30C', '30', 'Combination', '47-583-33', '25.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Inovia combi manual'],
-    ['Inovia 35C', '35', 'Combination', '47-583-34', '30.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Inovia combi manual'],
-    ['Advance Plus 25C ERP', '25', 'Combination', '47-583-35', '20.0', '9.2', '9.8', '8.5', '9.1', 'Biasi Advance Plus ERP combi manual (2019)'],
-    ['Advance Plus 30C ERP', '30', 'Combination', '47-583-36', '25.0', '9.1', '9.7', '8.3', '8.9', 'Biasi Advance Plus ERP combi manual (2019)'],
-    ['Advance Plus 35C ERP', '35', 'Combination', '47-583-37', '30.0', '9.2', '9.8', '8.3', '8.9', 'Biasi Advance Plus ERP combi manual (2019)'],
-    ['Inovia 25C ERP', '25', 'Combination', '47-583-38', '20.0', '9.2', '9.8', '8.5', '9.1', 'Biasi Inovia ERP combi manual (2020)'],
-    ['Inovia 30C ERP', '30', 'Combination', '47-583-39', '25.0', '9.1', '9.7', '8.3', '8.9', 'Biasi Inovia ERP combi manual (2020)'],
-    ['Inovia 35C ERP', '35', 'Combination', '47-583-40', '30.0', '9.2', '9.8', '8.3', '8.9', 'Biasi Inovia ERP combi manual (2020)'],
+    ['Advance Plus 25C', '25', 'Combination', '47-583-29', '25.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Advance Plus 25C/30C/35C manual'],
+    ['Advance Plus 30C', '30', 'Combination', '47-583-30', '30.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Advance Plus 25C/30C/35C manual'],
+    ['Advance Plus 35C', '35', 'Combination', '47-583-31', '34.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Advance Plus 25C/30C/35C manual'],
+    ['Inovia 25C', '25', 'Combination', '47-583-32', '25.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Inovia combi manual'],
+    ['Inovia 30C', '30', 'Combination', '47-583-33', '30.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Inovia combi manual'],
+    ['Inovia 35C', '35', 'Combination', '47-583-34', '34.0', '9.2', '9.8', '8.7', '9.3', 'Biasi Inovia combi manual'],
+    ['Advance Plus 25C ERP', '25', 'Combination', '47-583-35', '25.0', '9.2', '9.8', '8.5', '9.1', 'Biasi Advance Plus ERP combi manual (2019)'],
+    ['Advance Plus 30C ERP', '30', 'Combination', '47-583-36', '30.0', '9.1', '9.7', '8.3', '8.9', 'Biasi Advance Plus ERP combi manual (2019)'],
+    ['Advance Plus 35C ERP', '35', 'Combination', '47-583-37', '34.0', '9.2', '9.8', '8.3', '8.9', 'Biasi Advance Plus ERP combi manual (2019)'],
+    ['Inovia 25C ERP', '25', 'Combination', '47-583-38', '25.0', '9.2', '9.8', '8.5', '9.1', 'Biasi Inovia ERP combi manual (2020)'],
+    ['Inovia 30C ERP', '30', 'Combination', '47-583-39', '30.0', '9.1', '9.7', '8.3', '8.9', 'Biasi Inovia ERP combi manual (2020)'],
+    ['Inovia 35C ERP', '35', 'Combination', '47-583-40', '34.0', '9.2', '9.8', '8.3', '8.9', 'Biasi Inovia ERP combi manual (2020)'],
     ['Advance 15OV', '15', 'Heat only', '41-583-35', '17.0', '9.0', '9.6', '8.2', '8.8', 'Biasi Advance OV manual'],
     ['Advance 18OV', '18', 'Heat only', '41-583-36', '21.0', '9.1', '9.7', '8.2', '8.8', 'Biasi Advance OV manual'],
     ['Advance 24OV', '24', 'Heat only', '41-583-37', '25.0', '9.0', '9.6', '8.2', '8.8', 'Biasi Advance OV manual'],
@@ -191,9 +196,9 @@ const BT = (() => {
     ['I-Mini','Combination','24','47-387-15','24.3','4.9','9.2','8.5','i-mini2 C'],
     ['I-Mini','Combination','30','47-387-16','30.4','6.1','9.3','8.5','i-mini2 C'],
     ['I-Mini','Combination','35','47-387-17','35.4','7.1','9.7','8.8','i-mini2 C'],
-    ['Vogue Max','Combination','26','47-349-59','18.1','3.7','9.4','8.0','Vogue Max Combi'],
-    ['Vogue Max','Combination','32','47-349-60','26.1','4.6','9.8','8.5','Vogue Max Combi'],
-    ['Vogue Max','Combination','40','47-349-61','32.1','5.7','9.6','8.1','Vogue Max Combi'],
+    ['Vogue Max','Combination','26','47-349-59','26.1','3.7','9.4','8.0','Vogue Max Combi'],
+    ['Vogue Max','Combination','32','47-349-60','32.1','4.6','9.8','8.5','Vogue Max Combi'],
+    ['Vogue Max','Combination','40','47-349-61','40.2','5.7','9.6','8.1','Vogue Max Combi'],
     ['Logic Max System','System','15','41-796-13','15.1','4.9','9.3','8.8','Logic Max System'],
     ['Logic Max System','System','18','41-796-14','18.1','4.9','9.5','8.9','Logic Max System'],
     ['Logic Max System','System','24','41-796-15','24.3','4.9','9.5','8.8','Logic Max System'],
@@ -223,24 +228,24 @@ const BT = (() => {
        Vaillant: CO2 check tolerance is the printed one (+/-1.0 with the casing on, or +/-0.2 where only the setting is given). The 2023 ecoTEC plus range gives an O2 chart instead of CO2, so CO2 is left blank (CO 350 ppm, ratio 0.004 from Vaillant's combustion flowchart).
        Baxi: CO2 as ranges (8.8 to 9.4 at maximum, 8.1 to 8.6 at minimum); CO 350 ppm and ratio 0.004 from the combustion flowchart; at least 18 mbar at the boiler.
        Vokera: CO2 printed tolerance is +0.6 / -1 where given (shown as a from / to range); CO 350 ppm and ratio 0.004 from the combustion flowchart; 18 mbar dynamic at the boiler. Fan pressure is a Worcester Bosch check only. */
-    ["Vaillant", "ecoFIT sustain 25kW", "Combination", "25", "47-044-71", "18.4", "Vaillant ecoFIT sustain installation manual", {"co2": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "13"}],
-    ["Vaillant", "ecoFIT sustain 30kW", "Combination", "30", "47-044-72", "18.4", "Vaillant ecoFIT sustain installation manual", {"co2": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "13"}],
-    ["Vaillant", "ecoFIT sustain 35kW", "Combination", "35", "47-044-73", "18.4", "Vaillant ecoFIT sustain installation manual", {"co2": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "13"}],
+    ["Vaillant", "ecoFIT sustain 25kW", "Combination", "25", "47-044-71", "25.7", "Vaillant ecoFIT sustain installation manual", {"co2": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "13"}],
+    ["Vaillant", "ecoFIT sustain 30kW", "Combination", "30", "47-044-72", "30.6", "Vaillant ecoFIT sustain installation manual", {"co2": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "13"}],
+    ["Vaillant", "ecoFIT sustain 35kW", "Combination", "35", "47-044-73", "35.7", "Vaillant ecoFIT sustain installation manual", {"co2": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "13"}],
     ["Vaillant", "ecoFIT sustain System 15kW", "System", "15", "41-694-30", "15.3", "Vaillant ecoFIT sustain installation manual", {"co2": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
     ["Vaillant", "ecoFIT sustain System 18kW", "System", "18", "41-694-31", "18.4", "Vaillant ecoFIT sustain installation manual", {"co2": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
     ["Vaillant", "ecoFIT sustain System 30kW", "System", "30", "41-694-32", "30.6", "Vaillant ecoFIT sustain installation manual", {"co2": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
     ["Vaillant", "ecoFIT sustain Regular 15kW", "Heat only", "15", "41-694-33", "15.3", "Vaillant ecoFIT sustain installation manual", {"co2": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "13"}],
     ["Vaillant", "ecoFIT sustain Regular 18kW", "Heat only", "18", "41-694-34", "18.4", "Vaillant ecoFIT sustain installation manual", {"co2": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "13"}],
     ["Vaillant", "ecoFIT sustain Regular 30kW", "Heat only", "30", "41-694-35", "30.6", "Vaillant ecoFIT sustain installation manual", {"co2": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "13"}],
-    ["Vaillant", "ecoFIT pure 25kW", "Combination", "25", "47-044-68", "18.4", "Vaillant ecoFIT pure combi installation manual 876620", {"co2": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
-    ["Vaillant", "ecoFIT pure 30kW", "Combination", "30", "47-044-74", "25.5", "Vaillant ecoFIT pure combi installation manual 876620", {"co2": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
-    ["Vaillant", "ecoFIT pure 35kW", "Combination", "35", "47-044-70", "25.7", "Vaillant ecoFIT pure combi installation manual 876620", {"co2": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
-    ["Vaillant", "ecoTEC sustain 24kW", "Combination", "24", "47-044-79", "18.7", "Vaillant ecoTEC sustain VUW 7-2 installation manual", {"co2": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "15"}],
-    ["Vaillant", "ecoTEC sustain 28kW", "Combination", "28", "47-044-80", "18.7", "Vaillant ecoTEC sustain VUW 7-2 installation manual", {"co2": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "15"}],
-    ["Vaillant", "ecoTEC sustain 34kW", "Combination", "34", "47-044-81", "18.7", "Vaillant ecoTEC sustain VUW 7-2 installation manual", {"co2": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "15"}],
-    ["Vaillant", "Home Combi 25kW", "Combination", "25", "47-044-62", "15.3", "Vaillant Home Combi installation manual 0020224355", {"co2": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
-    ["Vaillant", "Home Combi 30kW", "Combination", "30", "47-044-63", "15.3", "Vaillant Home Combi installation manual 0020224355", {"co2": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
-    ["Vaillant", "Home Combi 35kW", "Combination", "35", "47-044-64", "15.3", "Vaillant Home Combi installation manual 0020224355", {"co2": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Vaillant", "ecoFIT pure 25kW", "Combination", "25", "47-044-68", "25.7", "Vaillant ecoFIT pure combi installation manual 876620", {"co2": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Vaillant", "ecoFIT pure 30kW", "Combination", "30", "47-044-74", "30.6", "Vaillant ecoFIT pure combi installation manual 876620", {"co2": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Vaillant", "ecoFIT pure 35kW", "Combination", "35", "47-044-70", "35.7", "Vaillant ecoFIT pure combi installation manual 876620", {"co2": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Vaillant", "ecoTEC sustain 24kW", "Combination", "24", "47-044-79", "24.4", "Vaillant ecoTEC sustain VUW 7-2 installation manual", {"co2": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "15"}],
+    ["Vaillant", "ecoTEC sustain 28kW", "Combination", "28", "47-044-80", "28.5", "Vaillant ecoTEC sustain VUW 7-2 installation manual", {"co2": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "15"}],
+    ["Vaillant", "ecoTEC sustain 34kW", "Combination", "34", "47-044-81", "34.6", "Vaillant ecoTEC sustain VUW 7-2 installation manual", {"co2": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "15"}],
+    ["Vaillant", "Home Combi 25kW", "Combination", "25", "47-044-62", "25.7", "Vaillant Home Combi installation manual 0020224355", {"co2": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Vaillant", "Home Combi 30kW", "Combination", "30", "47-044-63", "30.6", "Vaillant Home Combi installation manual 0020224355", {"co2": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Vaillant", "Home Combi 35kW", "Combination", "35", "47-044-64", "35.7", "Vaillant Home Combi installation manual 0020224355", {"co2": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
     ["Vaillant", "Home System 12kW", "System", "12", "41-044-94", "12.2", "Vaillant Home System installation manual 658413", {"co2": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
     ["Vaillant", "Home System 15kW", "System", "15", "41-044-95", "15.3", "Vaillant Home System installation manual 658413", {"co2": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
     ["Vaillant", "Home System 18kW", "System", "18", "41-044-96", "18.4", "Vaillant Home System installation manual 658413", {"co2": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
@@ -271,36 +276,36 @@ const BT = (() => {
     ["Baxi", "800 Combi 24kW", "Combination", "24", "47-077-63", "", "Baxi 800 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
     ["Baxi", "800 Combi 30kW", "Combination", "30", "47-077-64", "", "Baxi 800 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
     ["Baxi", "800 Combi 36kW", "Combination", "36", "47-077-65", "", "Baxi 800 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Baxi", "400 Combi 24kW", "Combination", "24", "", "20.6", "Baxi 400 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Baxi", "400 Combi 30kW", "Combination", "30", "", "20.6", "Baxi 400 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Baxi", "200 Combi 24kW", "Combination", "24", "", "20.6", "Baxi 200 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Baxi", "200 Combi 28kW", "Combination", "28", "", "20.6", "Baxi 200 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Baxi", "400 Combi 24kW", "Combination", "24", "", "24.7", "Baxi 400 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Baxi", "400 Combi 30kW", "Combination", "30", "", "30.0", "Baxi 400 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Baxi", "200 Combi 24kW", "Combination", "24", "", "24.7", "Baxi 200 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Baxi", "200 Combi 28kW", "Combination", "28", "", "28.9", "Baxi 200 Combi 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
     ["Baxi", "600 System 15kW", "System", "15", "41-884-01", "", "Baxi 600 System 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
     ["Baxi", "600 System 18kW", "System", "18", "41-884-02", "", "Baxi 600 System 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
     ["Baxi", "600 System 24kW", "System", "24", "41-884-03", "", "Baxi 600 System 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
     ["Baxi", "800 System 18kW", "System", "18", "41-470-99", "", "Baxi 800 System 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
     ["Baxi", "800 System 24kW", "System", "24", "41-884-09", "", "Baxi 800 System 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
     ["Baxi", "800 System 30kW", "System", "30", "41-884-08", "", "Baxi 800 System 2 installation manual", {"rng": 1, "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Vokera", "Evolve 24C", "Combination", "24", "47-364-37", "18", "Vokera evolve C installation manual", {"vk": ["9.2", "9.1", true], "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Vokera", "Evolve 28C", "Combination", "28", "47-364-38", "24", "Vokera evolve C installation manual", {"vk": ["9.0", "8.9", true], "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Vokera", "Evolve 32C", "Combination", "32", "47-364-39", "30", "Vokera evolve C installation manual", {"vk": ["9.0", "9.1", true], "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Vokera", "Evolve 36C", "Combination", "36", "47-364-40", "32", "Vokera evolve C installation manual", {"vk": ["9.0", "8.8", true], "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Vokera", "Evolve 42C", "Combination", "42", "47-364-41", "35", "Vokera evolve C installation manual", {"vk": ["9.0", "9.1", true], "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Vokera", "Evolve 24C", "Combination", "24", "47-364-37", "26", "Vokera evolve C installation manual", {"vk": ["9.2", "9.1", true], "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Vokera", "Evolve 28C", "Combination", "28", "47-364-38", "30", "Vokera evolve C installation manual", {"vk": ["9.0", "8.9", true], "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Vokera", "Evolve 32C", "Combination", "32", "47-364-39", "34.6", "Vokera evolve C installation manual", {"vk": ["9.0", "9.1", true], "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Vokera", "Evolve 36C", "Combination", "36", "47-364-40", "36", "Vokera evolve C installation manual", {"vk": ["9.0", "8.8", true], "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Vokera", "Evolve 42C", "Combination", "42", "47-364-41", "42", "Vokera evolve C installation manual", {"vk": ["9.0", "9.1", true], "co": "350", "ratio": "0.0040", "inlet": "18"}],
     ["Vokera", "Evolve 18S", "System", "18", "41-094-98", "18", "Vokera evolve S installation manual", {"vk": ["9.2", "9.1", true], "co": "350", "ratio": "0.0040", "inlet": "18"}],
     ["Vokera", "Evolve 24S", "System", "24", "41-094-99", "24", "Vokera evolve S installation manual", {"vk": ["9.0", "8.9", true], "co": "350", "ratio": "0.0040", "inlet": "18"}],
     ["Vokera", "Evolve 30S", "System", "30", "41-364-01", "32", "Vokera evolve S installation manual", {"vk": ["9.0", "8.8", true], "co": "350", "ratio": "0.0040", "inlet": "18"}],
     ["Vokera", "Evolve 35S", "System", "35", "41-364-02", "35", "Vokera evolve S installation manual", {"vk": ["9.0", "9.1", true], "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Vokera", "Unica Max 30C", "Combination", "30", "47-364-75", "25", "Vokera Unica Max installation manual", {"vk": ["9.0", "9.0", true], "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Vokera", "Unica Max 35C", "Combination", "35", "47-364-61", "32", "Vokera Unica Max installation manual", {"vk": ["9.0", "9.0", true], "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Vokera", "Unica Max 40C", "Combination", "40", "47-364-62", "32", "Vokera Unica Max installation manual", {"vk": ["9.0", "9.0", true], "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Vokera", "Vibe Max 26C", "Combination", "26", "47-364-69", "20", "Vokera Vibe Max C installation manual", {"vk": ["9.0", "9.0", false], "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Vokera", "Vibe Max 30C", "Combination", "30", "47-364-70", "25", "Vokera Vibe Max C installation manual", {"vk": ["9.0", "9.0", false], "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Vokera", "Unica Max 30C", "Combination", "30", "47-364-75", "30", "Vokera Unica Max installation manual", {"vk": ["9.0", "9.0", true], "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Vokera", "Unica Max 35C", "Combination", "35", "47-364-61", "34.6", "Vokera Unica Max installation manual", {"vk": ["9.0", "9.0", true], "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Vokera", "Unica Max 40C", "Combination", "40", "47-364-62", "40", "Vokera Unica Max installation manual", {"vk": ["9.0", "9.0", true], "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Vokera", "Vibe Max 26C", "Combination", "26", "47-364-69", "25", "Vokera Vibe Max C installation manual", {"vk": ["9.0", "9.0", false], "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Vokera", "Vibe Max 30C", "Combination", "30", "47-364-70", "30", "Vokera Vibe Max C installation manual", {"vk": ["9.0", "9.0", false], "co": "350", "ratio": "0.0040", "inlet": "18"}],
     ["Vokera", "Vibe Max 20S", "System", "20", "41-364-19", "20", "Vokera Vibe Max S installation manual", {"vk": ["9.0", "9.0", false], "co": "350", "ratio": "0.0040", "inlet": "18"}],
     ["Vokera", "Vibe Max 25S", "System", "25", "41-364-20", "25", "Vokera Vibe Max S installation manual", {"vk": ["9.0", "9.0", false], "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Vokera", "Easi-Heat Plus 25C", "Combination", "25", "47-364-29", "20", "Vokera Easi-Heat Plus installation manual (2017)", {"vk": ["9.0", "9.5", false], "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Vokera", "Easi-Heat Plus 29C", "Combination", "29", "47-364-30", "25", "Vokera Easi-Heat Plus installation manual (2017)", {"vk": ["9.0", "9.5", false], "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Vokera", "Easi-Heat i 25C", "Combination", "25", "47-364-71", "20", "Vokera Easi-Heat i installation manual", {"vk": ["9.0", "9.0", false], "co": "350", "ratio": "0.0040", "inlet": "18"}],
-    ["Vokera", "Easi-Heat i 29C", "Combination", "29", "47-364-72", "25", "Vokera Easi-Heat i installation manual", {"vk": ["9.0", "9.0", false], "co": "350", "ratio": "0.0040", "inlet": "18"}]
+    ["Vokera", "Easi-Heat Plus 25C", "Combination", "25", "47-364-29", "25", "Vokera Easi-Heat Plus installation manual (2017)", {"vk": ["9.0", "9.5", false], "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Vokera", "Easi-Heat Plus 29C", "Combination", "29", "47-364-30", "29", "Vokera Easi-Heat Plus installation manual (2017)", {"vk": ["9.0", "9.5", false], "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Vokera", "Easi-Heat i 25C", "Combination", "25", "47-364-71", "25", "Vokera Easi-Heat i installation manual", {"vk": ["9.0", "9.0", false], "co": "350", "ratio": "0.0040", "inlet": "18"}],
+    ["Vokera", "Easi-Heat i 29C", "Combination", "29", "47-364-72", "30", "Vokera Easi-Heat i installation manual", {"vk": ["9.0", "9.0", false], "co": "350", "ratio": "0.0040", "inlet": "18"}]
   ].map(([make, name, kind, kw, gc, hi, src, g]) => {
     const o = { id: 'bt:' + norm(make).slice(0, 12) + '-' + norm(name), type: 'Boiler', make, name, kind, kw, warranty: '', src, t_gc: gc, t_flue: 'Room Sealed', t_hiMin: '', t_hi: hi, t_co: g.co, t_ratio: g.ratio, t_inlet: g.inlet };
     if (g.rng) { o.t_co2MaxF = '8.8'; o.t_co2MaxT = '9.4'; o.t_co2MinF = '8.1'; o.t_co2MinT = '8.6'; }
@@ -310,9 +315,9 @@ const BT = (() => {
   BUILTIN.push(...[
     /* Glow-worm, Alpha, Ferroli and Viessmann boilers, from the manufacturers' manuals supplied by Mark. Each row: make, name, type, size, GC number, heat input (central heating, net where the manual gives it), manual, figures.
        Glow-worm: same printed checks as Vaillant (CO2 9.2 with the printed tolerance, CO 250 ppm, ratio as printed). Home c and Home s print the CO2 tolerance only. Alpha: CO2 asymmetric tolerances as printed (shown as from / to ranges), natural gas figures. Ferroli: printed acceptable combustion ranges. Viessmann: CO2 range printed as 7.5 to 10.5. A blank means the manual does not print it. */
-    ["Glow Worm", "Energy c 25kW", "Combination", "25", "47-019-24", "18.4", "Glow-worm Energy ErP combi manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow Worm", "Energy c 30kW", "Combination", "30", "47-019-25", "25.5", "Glow-worm Energy ErP combi manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow Worm", "Energy c 35kW", "Combination", "35", "47-019-26", "25.7", "Glow-worm Energy ErP combi manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Energy c 25kW", "Combination", "25", "47-019-24", "25.7", "Glow-worm Energy ErP combi manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Energy c 30kW", "Combination", "30", "47-019-25", "30.6", "Glow-worm Energy ErP combi manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Energy c 35kW", "Combination", "35", "47-019-26", "35.7", "Glow-worm Energy ErP combi manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
     ["Glow Worm", "Energy r 12kW", "Heat only", "12", "41-019-21", "12.3", "Glow-worm Energy r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
     ["Glow Worm", "Energy r 15kW", "Heat only", "15", "41-019-22", "15.3", "Glow-worm Energy r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
     ["Glow Worm", "Energy r 18kW", "Heat only", "18", "41-019-23", "18.4", "Glow-worm Energy r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
@@ -323,9 +328,9 @@ const BT = (() => {
     ["Glow Worm", "Energy s 18kW", "System", "18", "41-019-18", "18.4", "Glow-worm Energy s manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
     ["Glow Worm", "Energy s 25kW", "System", "25", "41-019-19", "25.5", "Glow-worm Energy s manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
     ["Glow Worm", "Energy s 30kW", "System", "30", "41-019-20", "30.6", "Glow-worm Energy s manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
-    ["Glow Worm", "Home c 25kW", "Combination", "25", "47-019-29", "15.3", "Glow-worm Home c manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
-    ["Glow Worm", "Home c 30kW", "Combination", "30", "47-019-30", "15.3", "Glow-worm Home c manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
-    ["Glow Worm", "Home c 35kW", "Combination", "35", "47-019-31", "15.3", "Glow-worm Home c manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
+    ["Glow Worm", "Home c 25kW", "Combination", "25", "47-019-29", "25.7", "Glow-worm Home c manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
+    ["Glow Worm", "Home c 30kW", "Combination", "30", "47-019-30", "30.6", "Glow-worm Home c manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
+    ["Glow Worm", "Home c 35kW", "Combination", "35", "47-019-31", "35.7", "Glow-worm Home c manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
     ["Glow Worm", "Home s 12kW", "System", "12", "41-019-27", "12.2", "Glow-worm Home s manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
     ["Glow Worm", "Home s 15kW", "System", "15", "41-019-28", "15.3", "Glow-worm Home s manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
     ["Glow Worm", "Home s 18kW", "System", "18", "41-019-29", "18.4", "Glow-worm Home s manual", {"mx": "9.2", "tol": "0.4", "inlet": "17"}],
@@ -335,43 +340,43 @@ const BT = (() => {
     ["Glow Worm", "Home r 18kW", "Heat only", "18", "41-019-33", "18.4", "Glow-worm Home r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
     ["Glow Worm", "Home r 25kW", "Heat only", "25", "41-019-34", "25.5", "Glow-worm Home r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
     ["Glow Worm", "Home r 30kW", "Heat only", "30", "41-019-35", "30.6", "Glow-worm Home r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow Worm", "Sustain c 25kW", "Combination", "25", "47-019-32", "18.4", "Glow-worm Sustain c manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow Worm", "Sustain c 30kW", "Combination", "30", "47-019-33", "18.4", "Glow-worm Sustain c manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow Worm", "Sustain c 35kW", "Combination", "35", "47-019-34", "18.4", "Glow-worm Sustain c manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Sustain c 25kW", "Combination", "25", "47-019-32", "25.7", "Glow-worm Sustain c manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Sustain c 30kW", "Combination", "30", "47-019-33", "30.6", "Glow-worm Sustain c manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
+    ["Glow Worm", "Sustain c 35kW", "Combination", "35", "47-019-34", "35.7", "Glow-worm Sustain c manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
     ["Glow Worm", "Sustain s 12kW", "System", "12", "41-019-36", "12.3", "Glow-worm Sustain s manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
     ["Glow Worm", "Sustain s 15kW", "System", "15", "41-019-37", "15.3", "Glow-worm Sustain s manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
     ["Glow Worm", "Sustain s 18kW", "System", "18", "41-019-38", "18.4", "Glow-worm Sustain s manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
     ["Glow Worm", "Sustain r 12kW", "Heat only", "12", "41-019-39", "12.3", "Glow-worm Sustain r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
     ["Glow Worm", "Sustain r 15kW", "Heat only", "15", "41-019-40", "15.3", "Glow-worm Sustain r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
     ["Glow Worm", "Sustain r 18kW", "Heat only", "18", "41-019-41", "18.4", "Glow-worm Sustain r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "17"}],
-    ["Glow Worm", "Ultimate 3 c 30kW", "Combination", "30", "47-019-55", "25.5", "Glow-worm Ultimate 3 combi manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
-    ["Glow Worm", "Ultimate 3 c 35kW", "Combination", "35", "47-019-57", "25.5", "Glow-worm Ultimate 3 combi manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Glow Worm", "Ultimate 3 c 30kW", "Combination", "30", "47-019-55", "30.6", "Glow-worm Ultimate 3 combi manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Glow Worm", "Ultimate 3 c 35kW", "Combination", "35", "47-019-57", "35.7", "Glow-worm Ultimate 3 combi manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
     ["Glow Worm", "Ultimate 3 s 25kW", "System", "25", "41-019-51", "25.5", "Glow-worm Ultimate 3 25s manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
     ["Glow Worm", "Ultimate 3 r 25kW", "Heat only", "25", "41-019-52", "25.5", "Glow-worm Ultimate 3 25r manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
-    ["Glow Worm", "Easicom 3 c 24kW", "Combination", "24", "47-019-50", "20.4", "Glow-worm Easicom 3 combi manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
-    ["Glow Worm", "Easicom 3 c 28kW", "Combination", "28", "47-019-51", "24.7", "Glow-worm Easicom 3 combi manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Glow Worm", "Easicom 3 c 24kW", "Combination", "24", "47-019-50", "24.7", "Glow-worm Easicom 3 combi manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
+    ["Glow Worm", "Easicom 3 c 28kW", "Combination", "28", "47-019-51", "28.6", "Glow-worm Easicom 3 combi manual", {"mx": "9.2", "tol": "0.2", "co": "250", "ratio": "0.0027", "inlet": "17"}],
     ["Glow Worm", "Easicom 3 s 25kW", "System", "25", "41-019-49", "25.5", "Glow-worm Easicom 3 25s manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "13"}],
     ["Glow Worm", "Easicom 3 r 25kW", "Heat only", "25", "41-019-50", "25.5", "Glow-worm Easicom 3 25r manual", {"mx": "9.2", "tol": "1.0", "co": "250", "ratio": "0.0031", "inlet": "13"}],
-    ["Alpha", "E-Tec 28kW", "Combination", "28", "47-532-69", "24.6", "Alpha E-Tec 28/33 manual", {"ratio": "0.0040", "mxF": "9.5", "mxT": "10.2", "mnF": "8.5", "mnT": "9.0"}],
-    ["Alpha", "E-Tec 33kW", "Combination", "33", "47-532-70", "28.6", "Alpha E-Tec 28/33 manual", {"ratio": "0.0040", "mxF": "9.3", "mxT": "9.7", "mnF": "8.3", "mnT": "8.8"}],
-    ["Alpha", "E-Tec Plus 28kW", "Combination", "28", "47-532-77", "24.6", "Alpha E-Tec Plus manual", {"ratio": "0.0040", "mxF": "9.5", "mxT": "10.2", "mnF": "8.5", "mnT": "9.0"}],
-    ["Alpha", "E-Tec Plus 33kW", "Combination", "33", "47-532-78", "28.6", "Alpha E-Tec Plus manual", {"ratio": "0.0040", "mxF": "9.3", "mxT": "9.7", "mnF": "8.3", "mnT": "8.8"}],
-    ["Alpha", "E-Tec Plus 38kW", "Combination", "38", "47-532-79", "32.7", "Alpha E-Tec Plus manual", {"ratio": "0.0040", "mxF": "9.0", "mxT": "9.6", "mnF": "8.2", "mnT": "8.6"}],
+    ["Alpha", "E-Tec 28kW", "Combination", "28", "47-532-69", "28.8", "Alpha E-Tec 28/33 manual", {"ratio": "0.0040", "mxF": "9.5", "mxT": "10.2", "mnF": "8.5", "mnT": "9.0"}],
+    ["Alpha", "E-Tec 33kW", "Combination", "33", "47-532-70", "32.6", "Alpha E-Tec 28/33 manual", {"ratio": "0.0040", "mxF": "9.3", "mxT": "9.7", "mnF": "8.3", "mnT": "8.8"}],
+    ["Alpha", "E-Tec Plus 28kW", "Combination", "28", "47-532-77", "28.8", "Alpha E-Tec Plus manual", {"ratio": "0.0040", "mxF": "9.5", "mxT": "10.2", "mnF": "8.5", "mnT": "9.0"}],
+    ["Alpha", "E-Tec Plus 33kW", "Combination", "33", "47-532-78", "32.6", "Alpha E-Tec Plus manual", {"ratio": "0.0040", "mxF": "9.3", "mxT": "9.7", "mnF": "8.3", "mnT": "8.8"}],
+    ["Alpha", "E-Tec Plus 38kW", "Combination", "38", "47-532-79", "39", "Alpha E-Tec Plus manual", {"ratio": "0.0040", "mxF": "9.0", "mxT": "9.6", "mnF": "8.2", "mnT": "8.6"}],
     ["Alpha", "E-Tec S 20kW", "System", "20", "41-532-47", "", "Alpha E-Tec S manual", {"ratio": "0.0040", "mxF": "9.5", "mxT": "10.2", "mnF": "8.5", "mnT": "9.0"}],
     ["Alpha", "E-Tec S 30kW", "System", "30", "41-532-48", "", "Alpha E-Tec S manual", {"ratio": "0.0040", "mxF": "9.3", "mxT": "9.7", "mnF": "8.3", "mnT": "8.8"}],
     ["Alpha", "E-Tec S 35kW", "System", "35", "41-532-52", "", "Alpha E-Tec S manual", {"ratio": "0.0040", "mxF": "9.0", "mxT": "9.6", "mnF": "8.2", "mnT": "8.6"}],
     ["Alpha", "E-Tec R 15kW", "Heat only", "15", "41-532-49", "15.4", "Alpha E-Tec R manual", {"ratio": "0.0040", "mxF": "9.5", "mxT": "10.2", "mnF": "8.5", "mnT": "9.0"}],
     ["Alpha", "E-Tec R 20kW", "Heat only", "20", "41-532-50", "20.6", "Alpha E-Tec R manual", {"ratio": "0.0040", "mxF": "9.5", "mxT": "10.2", "mnF": "8.5", "mnT": "9.0"}],
     ["Alpha", "E-Tec R 25kW", "Heat only", "25", "41-532-51", "24.6", "Alpha E-Tec R manual", {"ratio": "0.0040", "mxF": "9.5", "mxT": "10.2", "mnF": "8.5", "mnT": "9.0"}],
-    ["Alpha", "Evoke 28kW", "Combination", "28", "47-532-71", "24.6", "Alpha Evoke manual", {"ratio": "0.0040", "mxF": "9.5", "mxT": "10.2", "mnF": "8.5", "mnT": "9.0"}],
-    ["Alpha", "Evoke 33kW", "Combination", "33", "47-532-72", "28.6", "Alpha Evoke manual", {"ratio": "0.0040", "mxF": "9.3", "mxT": "9.7", "mnF": "8.3", "mnT": "8.8"}],
-    ["Alpha", "InTec2 26CE", "Combination", "26", "47-532-66", "20.5", "Alpha InTec2 CE manual", {"mx": "9.2", "mn": "9.0", "tol": "0.8", "co": "200", "ratio": "0.0030"}],
-    ["Alpha", "InTec2 30CE", "Combination", "30", "47-532-67", "24.6", "Alpha InTec2 CE manual", {"mx": "9.2", "mn": "9.0", "tol": "0.8", "co": "200", "ratio": "0.0030"}],
-    ["Alpha", "InTec2 35CE", "Combination", "35", "47-532-68", "28.7", "Alpha InTec2 CE manual", {"mx": "9.5", "mn": "9.0", "tol": "0.8", "co": "200", "ratio": "0.0030"}],
-    ["Alpha", "InTec 30C", "Combination", "30", "47-532-48", "24.4", "Alpha InTec ErP manual", {"mx": "9.5", "mn": "8.6", "tol": "0.25", "co": "200", "ratio": "0.0030"}],
-    ["Alpha", "InTec 34C", "Combination", "34", "47-532-49", "28.0", "Alpha InTec ErP manual", {"mx": "9.5", "mn": "8.7", "tol": "0.25", "co": "200", "ratio": "0.0030"}],
-    ["Ferroli", "T-One 25C", "Combination", "25", "47-267-59", "25.0", "Ferroli T-One C manual", {"mxF": "8.7", "mxT": "9.2", "mnF": "8.2", "mnT": "8.7", "ratio": "0.0040"}],
-    ["Ferroli", "T-One 30C", "Combination", "30", "47-267-60", "29.5", "Ferroli T-One C manual", {"mxF": "8.7", "mxT": "9.2", "mnF": "8.2", "mnT": "8.7", "ratio": "0.0040"}],
+    ["Alpha", "Evoke 28kW", "Combination", "28", "47-532-71", "28.8", "Alpha Evoke manual", {"ratio": "0.0040", "mxF": "9.5", "mxT": "10.2", "mnF": "8.5", "mnT": "9.0"}],
+    ["Alpha", "Evoke 33kW", "Combination", "33", "47-532-72", "32.6", "Alpha Evoke manual", {"ratio": "0.0040", "mxF": "9.3", "mxT": "9.7", "mnF": "8.3", "mnT": "8.8"}],
+    ["Alpha", "InTec2 26CE", "Combination", "26", "47-532-66", "26.7", "Alpha InTec2 CE manual", {"mx": "9.2", "mn": "9.0", "tol": "0.8", "co": "200", "ratio": "0.0030"}],
+    ["Alpha", "InTec2 30CE", "Combination", "30", "47-532-67", "28.7", "Alpha InTec2 CE manual", {"mx": "9.2", "mn": "9.0", "tol": "0.8", "co": "200", "ratio": "0.0030"}],
+    ["Alpha", "InTec2 35CE", "Combination", "35", "47-532-68", "34.9", "Alpha InTec2 CE manual", {"mx": "9.5", "mn": "9.0", "tol": "0.8", "co": "200", "ratio": "0.0030"}],
+    ["Alpha", "InTec 30C", "Combination", "30", "47-532-48", "29.5", "Alpha InTec ErP manual", {"mx": "9.5", "mn": "8.6", "tol": "0.25", "co": "200", "ratio": "0.0030"}],
+    ["Alpha", "InTec 34C", "Combination", "34", "47-532-49", "33.7", "Alpha InTec ErP manual", {"mx": "9.5", "mn": "8.7", "tol": "0.25", "co": "200", "ratio": "0.0030"}],
+    ["Ferroli", "T-One 25C", "Combination", "25", "47-267-59", "27.0", "Ferroli T-One C manual", {"mxF": "8.7", "mxT": "9.2", "mnF": "8.2", "mnT": "8.7", "ratio": "0.0040"}],
+    ["Ferroli", "T-One 30C", "Combination", "30", "47-267-60", "32.0", "Ferroli T-One C manual", {"mxF": "8.7", "mxT": "9.2", "mnF": "8.2", "mnT": "8.7", "ratio": "0.0040"}],
     ["Ferroli", "Optimax HE Plus 18S", "System", "18", "41-267-27", "18.0", "Ferroli Optimax HE Plus S manual", {"mx": "9.0", "mn": "8.5", "ratio": "0.0040"}],
     ["Ferroli", "Optimax HE Plus 25S", "System", "25", "41-267-32", "25.2", "Ferroli Optimax HE Plus S manual", {"mx": "9.0", "mn": "8.5", "ratio": "0.0040"}],
     ["Ferroli", "Optimax HE Plus 35S", "System", "35", "41-267-33", "34.8", "Ferroli Optimax HE Plus S manual", {"mx": "9.0", "mn": "8.5", "ratio": "0.0040"}],
@@ -417,7 +422,7 @@ const BT = (() => {
     const r = ui.rec, t = typeOf(r);
     if (t === 'service') {
       const make = r.make === 'Other' ? r.makeOther : r.make;
-      return { mp: 'model', make, worc: /worcester/i.test(make || ''), res: { fpValue: 'fpResult', bpValue: 'bpResult', fgCoMin: 'fgResult', fgCoMax: 'fgResult', fgCo2Min: 'fgResult', fgCo2Max: 'fgResult', fgRatioMin: 'fgResult', fgRatioMax: 'fgResult' }, boiler: find(make, r.model, r.gc), p: { model: ['model'], fan: ['fpValue'], inlet: ['bpValue'], hi: ['grValue'], co: ['fgCoMax'], coLow: ['fgCoMin'], co2Min: ['fgCo2Min'], co2Max: ['fgCo2Max'], ratio: ['fgRatioMin', 'fgRatioMax'] } };
+      return { mp: 'model', make, worc: /worcester/i.test(make || ''), res: { fpValue: 'fpResult', bpValue: 'bpResult', fgCoMin: 'fgResult', fgCoMax: 'fgResult', fgCo2Min: 'fgResult', fgCo2Max: 'fgResult', fgRatioMin: 'fgResult', fgRatioMax: 'fgResult', grValue: 'grResult' }, boiler: find(make, r.model, r.gc), p: { model: ['model'], fan: ['fpValue'], inlet: ['bpValue'], hi: ['grValue'], co: ['fgCoMax'], coLow: ['fgCoMin'], co2Min: ['fgCo2Min'], co2Max: ['fgCo2Max'], ratio: ['fgRatioMin', 'fgRatioMax'] } };
     }
     if (t === 'gas') {
       const i = Math.min(ui.appTab || 0, (+r.applianceCount || 1) - 1), a = (r.appliances || [])[i]; if (!a) return null;
@@ -444,7 +449,8 @@ const BT = (() => {
       if (fail) return inR(fail) ? false : null;
       const l = lim('fan'); return l === null ? null : m >= Math.abs(l) - 1e-9 && m <= 10 + 1e-9;
     }
-    return null;   // heat input is shown only
+    if (key === 'hi') { const l = lim('hi'); return l === null || l <= 0 ? null : n >= l * 0.9 - 1e-9 && n <= l * 1.05 + 1e-9; }   // gas rate: 10% under to 5% over the maximum rated input
+    return null;
   }
   const LABEL = { model: 'this boiler', fan: 'Fan pressure', inlet: 'Gas inlet working pressure', hi: 'Gas rate / heat input', co: 'CO', coLow: 'CO', co2Min: 'CO2', co2Max: 'CO2', ratio: 'CO/CO2 ratio' };
   const infoKey = k => (k === 'co2Min' || k === 'co2Max') ? 'co2' : k === 'coLow' ? 'co' : k;
@@ -453,7 +459,7 @@ const BT = (() => {
   function lines(x) {
     const f = k => val(x, k), out = [], tol = f('co2Tol') ? ' ( +/- ' + f('co2Tol') + ' )' : '';
     if (f('flue')) out.push(['Flue Type', f('flue'), 'model']);
-    if (f('hi')) out.push(['CH Max Heat Input (Kw Net)', f('hi'), 'hi']);
+    if (f('hi')) out.push([x && /combi/i.test(x.kind || '') ? 'Max Heat Input (Kw Net)' : 'CH Max Heat Input (Kw Net)', f('hi'), 'hi']);
     out.push(['CH Min Heat Input (Kw Net)', f('hiMin') || 'N/A', 'hi']);
     const rng = k => f(k + 'F') && f(k + 'T') ? 'Between ' + f(k + 'F') + ' and ' + f(k + 'T') : f(k + 'F') ? 'Above ' + f(k + 'F') : f(k + 'T') ? 'Up to ' + f(k + 'T') : '';
     if (rng('co2Max')) out.push(['Max CO2 %', rng('co2Max'), 'co2']); else if (f('co2Max')) out.push(['Max CO2 %', f('co2Max') + tol, 'co2']);
@@ -509,6 +515,7 @@ const BT = (() => {
     if (key === 'co') return 'CO reading ' + n + ' ppm is over the manufacturer\'s maximum of ' + f('co') + ' ppm.';
     if (key === 'ratio') return 'CO/CO2 ratio ' + n + ' is over the manufacturer\'s maximum of ' + f('ratio') + '.';
     if (key === 'fan') { const pf = f('fanPF') || f('fan'), pt = f('fanPT') || '10', d = v => '-' + String(v).replace(/^[-−]\s*/, ''); return 'Fan pressure ' + n + ' mb is outside the pass range of ' + d(pf) + ' to ' + d(pt) + ' mb.'; }
+    if (key === 'hi') { const l = num(f('hi')); return 'Gas rate ' + n + ' kW is outside the usual range for this boiler: ' + (Math.round(l * 90) / 100) + ' to ' + (Math.round(l * 105) / 100) + ' kW (10% under to 5% over the maximum input of ' + f('hi') + ' kW).'; }
     if (key === 'inlet') return 'Gas inlet working pressure ' + n + ' mbar is below the manufacturer\'s minimum of ' + f('inlet') + ' mbar.';
     const k2 = key === 'co2Max' ? 'co2Max' : 'co2Min';
     if (f(k2 + 'F') || f(k2 + 'T')) return 'CO2 reading ' + n + ' % is outside the manufacturer\'s range (' + (f(k2 + 'F') && f(k2 + 'T') ? 'between ' + f(k2 + 'F') + ' and ' + f(k2 + 'T') : f(k2 + 'F') ? 'above ' + f(k2 + 'F') : 'up to ' + f(k2 + 'T')) + ' %).';
@@ -601,6 +608,10 @@ const BT = (() => {
         if (!ex) { x.make = 'Glow Worm'; return; }
         if (!hasFigures(ex)) FIELDS.forEach(([k]) => { ex['t_' + k] = x['t_' + k] || ''; });
         settings.qList.splice(settings.qList.indexOf(x), 1); }); }
+    /* once: a combi's heat input is its maximum hot-water input. A copy in the Price list that still holds the old figure takes the corrected one; a figure the engineer typed themselves is left alone. */
+    if (!settings.btHi) { settings.btHi = 1; ch = true;
+      const OLD = {"bt:wb-greenstar-4000-25":"24.6","bt:wb-greenstar-4000-30":"24.6","bt:wb-greenstar-8000-style-40":"34.4","bt:wb-greenstar-8000-combi-v2-32":"30.2","bt:wb-greenstar-8000-combi-36":"34.4","bt:wb-greenstar-8000-combi-40":"34.4","bt:wb-greenstar-8000-combi-45":"34.4","bt:wb-greenstar-8000-combi-50":"34.4","bt:wb-greenstar-8000-style-combi-v2-32":"30.2","bt:wb-greenstar-34cdi-classic-erp-34":"30.9","bt:wb-greenstar-38cdi-classic-erp-38":"30.9","bt:wb-greenstar-42cdi-classic-erp-42":"30.9","bt:wb-greenstar-28cdi-compact-erp-28":"24.34","bt:wb-greenstar-32cdi-compact-erp-32":"24.34","bt:wb-greenstar-36cdi-compact-erp-36":"24.34","bt:wb-greenstar-25si-compact-erp-25":"24.34","bt:wb-greenstar-30si-compact-erp-30":"24.34","bt:wb-greenstar-25i-erp-25":"24.64","bt:wb-greenstar-30i-erp-30":"24.64","bt:biasi-advance-plus-25c":"20.0","bt:biasi-advance-plus-30c":"25.0","bt:biasi-advance-plus-35c":"30.0","bt:biasi-inovia-25c":"20.0","bt:biasi-inovia-30c":"25.0","bt:biasi-inovia-35c":"30.0","bt:biasi-advance-plus-25c-erp":"20.0","bt:biasi-advance-plus-30c-erp":"25.0","bt:biasi-advance-plus-35c-erp":"30.0","bt:biasi-inovia-25c-erp":"20.0","bt:biasi-inovia-30c-erp":"25.0","bt:biasi-inovia-35c-erp":"30.0","bt:ideal-vogue-max-26":"18.1","bt:ideal-vogue-max-32":"26.1","bt:ideal-vogue-max-40":"32.1","bt:vaillant-ecofitsustain25kw":"18.4","bt:vaillant-ecofitsustain30kw":"18.4","bt:vaillant-ecofitsustain35kw":"18.4","bt:vaillant-ecofitpure25kw":"18.4","bt:vaillant-ecofitpure30kw":"25.5","bt:vaillant-ecofitpure35kw":"25.7","bt:vaillant-ecotecsustain24kw":"18.7","bt:vaillant-ecotecsustain28kw":"18.7","bt:vaillant-ecotecsustain34kw":"18.7","bt:vaillant-homecombi25kw":"15.3","bt:vaillant-homecombi30kw":"15.3","bt:vaillant-homecombi35kw":"15.3","bt:baxi-400combi24kw":"20.6","bt:baxi-400combi30kw":"20.6","bt:baxi-200combi24kw":"20.6","bt:baxi-200combi28kw":"20.6","bt:vokera-evolve24c":"18","bt:vokera-evolve28c":"24","bt:vokera-evolve32c":"30","bt:vokera-evolve36c":"32","bt:vokera-evolve42c":"35","bt:vokera-unicamax30c":"25","bt:vokera-unicamax35c":"32","bt:vokera-unicamax40c":"32","bt:vokera-vibemax26c":"20","bt:vokera-vibemax30c":"25","bt:vokera-easiheatplus25c":"20","bt:vokera-easiheatplus29c":"25","bt:vokera-easiheati25c":"20","bt:vokera-easiheati29c":"25","bt:glowworm-energyc25kw":"18.4","bt:glowworm-energyc30kw":"25.5","bt:glowworm-energyc35kw":"25.7","bt:glowworm-homec25kw":"15.3","bt:glowworm-homec30kw":"15.3","bt:glowworm-homec35kw":"15.3","bt:glowworm-sustainc25kw":"18.4","bt:glowworm-sustainc30kw":"18.4","bt:glowworm-sustainc35kw":"18.4","bt:glowworm-ultimate3c30kw":"25.5","bt:glowworm-ultimate3c35kw":"25.5","bt:glowworm-easicom3c24kw":"20.4","bt:glowworm-easicom3c28kw":"24.7","bt:alpha-etec28kw":"24.6","bt:alpha-etec33kw":"28.6","bt:alpha-etecplus28kw":"24.6","bt:alpha-etecplus33kw":"28.6","bt:alpha-etecplus38kw":"32.7","bt:alpha-evoke28kw":"24.6","bt:alpha-evoke33kw":"28.6","bt:alpha-intec226ce":"20.5","bt:alpha-intec230ce":"24.6","bt:alpha-intec235ce":"28.7","bt:alpha-intec30c":"24.4","bt:alpha-intec34c":"28.0","bt:ferroli-tone25c":"25.0","bt:ferroli-tone30c":"29.5"};
+      Object.keys(OLD).forEach(id => { const b = BUILTIN.find(y => y.id === id); if (b) settings.qList.forEach(x => { if (x.type === 'Boiler' && keyOf(x) === keyOf(b) && String(x.t_hi || '') === OLD[id]) x.t_hi = b.t_hi; }); }); }
     /* each built-in boiler is added to the engineer's Price list once (so it is there for quotes too). One they already have, or delete later, is left alone. */
     const added = settings.btAdded = settings.btAdded || [];
     BUILTIN.forEach(b => {

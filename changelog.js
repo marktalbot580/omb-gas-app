@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v260', items: ['Combi boilers now show their maximum hot-water heat input (for example the Greenstar 4000 30kW is 29.4 kW, not 24.6), across Worcester Bosch, Vaillant, Glow Worm, Alpha, Baxi, Vokera, Ideal, Ferroli and Biasi. Boilers already in your Price list with the old figure are corrected for you.','The gas rate box now turns green when the reading is within 10% under to 5% over the manufacturer\'s figure, and asks you to confirm Pass or Fail when it is outside.'] },
   { v: 'v259', items: ['Gas rate calculator on the boiler service form: the screen no longer redraws parts of the form while the timer is running, so the buttons and readings stay put. The readings, timer and "Use" buttons are now covered by tests.'] },
   { v: 'v258', items: ['New "Pick model from list" button under the Model box: shows every model for the make you chose in a scrolling list. Tap one to fill the model and GC number. Typing to search still works.'] },
   { v: 'v257', items: ['Added Biasi boilers with their manufacturer figures: Advance Plus and Inovia (system and combi, including ERP), Advance OV, Riva Plus HE and Riva Advance. Search by GC number or model.'] },

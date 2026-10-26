@@ -1371,7 +1371,7 @@ def run():
         gw = ev(pg, "(()=>{const f=(g)=>BT.find('','x',g); const a=f('41-406-90'), b=f('41-406-94'), c=f('47-800-44'), d=f('47-406-65'), e=f('47-406-77'); const dup={}; BT.BUILTIN.forEach(x=>{dup[x.id]=(dup[x.id]||0)+1}); return [a.name, a.t_hi, a.t_fan, b.name, b.t_hi, b.t_fan, c.name, c.t_fan, d.name, d.t_co2Tol, e.t_co2MaxF, e.t_co2MaxT, BT.judge('co2Max','9.9',a), BT.judge('co2Max','10.0',a), Object.values(dup).some(n=>n>1)]})()")
         check('More Worcester: Life/Style/8000+/CDi/Compact GC lookups and figures', gw == ['Greenstar 8000 Life System 35kW', '34.4', '3.5', 'Greenstar 8000 Life Regular 50kW', '48.9', '6.0', 'Greenstar 8000+ Combi 32kW V2', '8.0', 'Greenstar 29CDi Classic ErP', '0.4', '8.5', '10.1', True, False, False], gw)
         gb = ev(pg, "(()=>{const a=BT.find('','x','47-583-36'), b=BT.find('Biasi','Advance Plus 25S ERP',''); const ids={}; BT.BUILTIN.forEach(x=>{ids[x.id]=(ids[x.id]||0)+1}); return [a.make, a.name, a.t_gc, a.t_hi, BT.judge('co2Max','9.5',a), BT.judge('co2Max','9.9',a), b.t_gc, b.t_inlet, BT.BUILTIN.filter(x=>x.make==='Biasi').length, Object.values(ids).some(n=>n>1)]})()")
-        check('Biasi: GC lookup, CO2 ranges, no duplicates', gb == ['Biasi', 'Advance Plus 30C ERP', '47-583-36', '25.0', True, False, '41-583-28', '17', 32, False], gb)
+        check('Biasi: GC lookup, CO2 ranges, no duplicates', gb == ['Biasi', 'Advance Plus 30C ERP', '47-583-36', '30.0', True, False, '41-583-28', '17', 32, False], gb)
         g9 = ev(pg, "(()=>{const a=BT.find('','x','47-077-56'), b=BT.find('','x','47-364-38'), c=BT.find('','x','47-044-71'), d=BT.find('','x','41-694-47'); return [a.name, BT.judge('co2Max','9.0',a), BT.judge('co2Max','9.6',a), BT.judge('co2Min','8.7',a), b.name, BT.judge('co2Max','8.1',b), BT.judge('co2Max','9.7',b), c.name, BT.judge('co2Max','9.9',c), BT.judge('co2Max','10.4',c), BT.judge('ratio','0.0030',c), BT.judge('ratio','0.0032',c), d.name, d.t_co2Max||'']})()")
         check('Baxi, Vaillant and Vokera boilers: GC lookup and CO2 ranges', g9 == ['600 Combi 30kW', True, False, False, 'Evolve 28C', True, False, 'ecoFIT sustain 25kW', True, False, True, False, 'ecoTEC plus System 20kW', ''], g9)
         g10 = ev(pg, "(()=>{const a=BT.find('','x','47-532-69'), b=BT.find('','x','47-267-59'), c=BT.find('','x','41-019-21'); return [a.name, BT.judge('co2Max','9.4',a), BT.judge('co2Max','10.3',a), b.name, BT.judge('co2Max','9.3',b), BT.judge('co2Min','8.0',b), c.name, BT.judge('ratio','0.0030',c), BT.BUILTIN.filter(x=>['Alpha','Ferroli','Glow Worm','Viessmann'].includes(x.make)).length]})()")
@@ -1546,6 +1546,13 @@ def run():
         check('gas rate shows only the heat input figures', 'CH Max Heat Input' in r['gr'] and '24.62' in r['gr'] and 'CH Min Heat Input' in r['gr'] and 'Min Gas Inlet' not in r['gr'], r['gr'])
         check('fan, CO, CO2 and ratio each show only their own figure', 'Fan Pressure' in r['fan'] and 'Maximum CO (ppm)' not in r['fan'] and 'Maximum CO (ppm)' in r['co'] and 'Max CO2' not in r['co'] and 'Max CO2 %' in r['co2'] and 'Min CO2 %' in r['co2'] and 'Maximum Ratio' in r['ratio'] and 'Maximum CO (ppm)' not in r['ratio'], r)
         check('no page errors with the card tests', not errs, errs)
+        ctx.close()
+
+        # ---------- 12am2. combi heat input is the hot-water maximum; gas rate passes 10% under to 5% over ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(()=>{ const f=(m,g)=>BT.find(m,'',g); const a=f('','47-800-32'), v=BT.find('Vaillant','Home Combi 30kW',''), g=BT.find('Glow Worm','Energy c 35kW','');
+          return [a.t_hi, v.t_hi, g.t_hi, BT.judge('hi','29.4',a), BT.judge('hi','26.46',a), BT.judge('hi','26.4',a), BT.judge('hi','30.87',a), BT.judge('hi','30.9',a), BT.judge('hi','',a)] })()""")
+        check('4000 30kW heat input is 29.4 and the gas rate band is -10% / +5%', r == ['29.4', '30.6', '35.7', True, True, False, True, False, None], r)
         ctx.close()
 
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
