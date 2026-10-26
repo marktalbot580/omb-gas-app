@@ -621,6 +621,9 @@ const BT = (() => {
     /* once: a Price list that lost built-in boilers (for example when an older copy of the app on another device saved over it) gets any that are missing back. Prices and your own edits are untouched. */
     if (!settings.btRestore) { settings.btRestore = 1; ch = true;
       BUILTIN.forEach(b => { if (!settings.qList.some(x => x.type === 'Boiler' && keyOf(x) === keyOf(b))) { const c = Object.assign({}, b, { id: QUO.newId() }); delete c.src; settings.qList.push(c); if (!(settings.btAdded || []).includes(b.id)) (settings.btAdded = settings.btAdded || []).push(b.id); } }); }
+    /* once: a boiler already in the Price list gets any empty figure box filled from the built-in data sheet. Figures you have typed are never changed. */
+    if (!settings.btFill) { settings.btFill = 1; ch = true;
+      BUILTIN.forEach(b => settings.qList.forEach(x => { if (x.type === 'Boiler' && keyOf(x) === keyOf(b)) FIELDS.forEach(([k]) => { if (!String(x['t_' + k] || '').trim() && b['t_' + k]) x['t_' + k] = b['t_' + k]; }); })); }
     /* each built-in boiler is added to the engineer's Price list once (so it is there for quotes too). One they already have, or delete later, is left alone. */
     const added = settings.btAdded = settings.btAdded || [];
     BUILTIN.forEach(b => {

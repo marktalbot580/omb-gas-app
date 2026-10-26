@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v267', items: ['Every built-in boiler is in your Price list with all its figures (GC number, CO2, CO, fan pressure, heat input and so on), where you can edit any of them. Boilers already in your list get any empty figure boxes filled in; anything you typed yourself is left alone.'] },
   { v: 'v266', items: ['Price list fix: if built-in boilers had gone missing from your Price list (for example after an older copy of the app on another device saved over it), they are put back once. Your prices and edits are not changed.'] },
   { v: 'v265', items: ['Baxi 600 and 800 combi (24, 30 and 36kW) now show their maximum hot-water heat input from the manual (24.7, 30.9 and 36.9 kW), so the gas rate box can be checked green or red.'] },
   { v: 'v264', items: ['Greenstar 2000 combi (25kW and 30kW): the heat input now shows the maximum hot-water input from the manual (25.5 and 30 kW) instead of the central heating figure.'] },

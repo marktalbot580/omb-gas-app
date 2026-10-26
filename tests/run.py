@@ -1591,6 +1591,13 @@ def run():
         check('missing built-in boilers come back once; an existing one keeps its price; no duplicates', r == [True, '999', True], r)
         ctx.close()
 
+        # ---------- 12am8. empty figure boxes filled from the built-in data, typed figures kept ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(()=>{ settings.qList=[{id:'k2',type:'Boiler',make:'Worcester Bosch',name:'Greenstar 4000 30kW',kind:'Combination',kw:'30',t_gc:'',t_co:'123',t_hi:''}]; ['btSeed','btWarr','btKind','btMini','btKind2','btGlow','btHi','btHi2','btHi3','btRestore'].forEach(k=>settings[k]=1); settings.btAdded=BT.BUILTIN.map(b=>b.id); delete settings.btFill; BT.seed();
+          const k=settings.qList.find(x=>x.id==='k2'); return [k.t_gc, k.t_co, k.t_hi] })()""")
+        check('empty figure boxes are filled from the built-in data; a typed figure is kept', r == ['47-800-32', '123', '29.4'], r)
+        ctx.close()
+
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(async()=>{ qSeed(); const cu={id:'c1',name:'Hold Still',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
