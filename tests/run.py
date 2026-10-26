@@ -1584,6 +1584,13 @@ def run():
         check('Baxi 600/800 combi heat input is the hot-water maximum', r == ['24.7', '36.9', '30.9'], r)
         ctx.close()
 
+        # ---------- 12am7. missing built-in boilers are restored once, edits kept ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(()=>{ settings.qList=[{id:'k1',type:'Boiler',make:'Worcester Bosch',name:'Greenstar 24Ri',kind:'Heat only',kw:'24',price:'999'}]; delete settings.btRestore; settings.btAdded=BT.BUILTIN.map(b=>b.id); settings.btSeed=1; settings.btWarr=1; settings.btKind=1; settings.btMini=1; settings.btKind2=1; settings.btGlow=1; settings.btHi=1; settings.btHi2=1; settings.btHi3=1; BT.seed();
+          const w=settings.qList.filter(x=>x.type==='Boiler'&&x.make==='Worcester Bosch'), k=settings.qList.find(x=>x.id==='k1'); return [w.length>=70, k&&k.price, w.length===new Set(w.map(x=>x.name)).size] })()""")
+        check('missing built-in boilers come back once; an existing one keeps its price; no duplicates', r == [True, '999', True], r)
+        ctx.close()
+
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(async()=>{ qSeed(); const cu={id:'c1',name:'Hold Still',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);

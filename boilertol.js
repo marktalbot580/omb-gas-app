@@ -618,6 +618,9 @@ const BT = (() => {
     /* once more: Baxi 600 / 800 combi had no heat input; the manuals give the hot-water maximum. A copy with that box empty is filled in. */
     if (!settings.btHi3) { settings.btHi3 = 1; ch = true;
       ['600', '800'].forEach(r => ['24', '30', '36'].forEach(k => { const b = BUILTIN.find(y => y.id === 'bt:baxi-' + r + 'combi' + k + 'kw'); if (b) settings.qList.forEach(x => { if (x.type === 'Boiler' && keyOf(x) === keyOf(b) && !String(x.t_hi || '').trim()) x.t_hi = b.t_hi; }); })); }
+    /* once: a Price list that lost built-in boilers (for example when an older copy of the app on another device saved over it) gets any that are missing back. Prices and your own edits are untouched. */
+    if (!settings.btRestore) { settings.btRestore = 1; ch = true;
+      BUILTIN.forEach(b => { if (!settings.qList.some(x => x.type === 'Boiler' && keyOf(x) === keyOf(b))) { const c = Object.assign({}, b, { id: QUO.newId() }); delete c.src; settings.qList.push(c); if (!(settings.btAdded || []).includes(b.id)) (settings.btAdded = settings.btAdded || []).push(b.id); } }); }
     /* each built-in boiler is added to the engineer's Price list once (so it is there for quotes too). One they already have, or delete later, is left alone. */
     const added = settings.btAdded = settings.btAdded || [];
     BUILTIN.forEach(b => {
