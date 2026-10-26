@@ -1555,6 +1555,15 @@ def run():
         check('4000 30kW heat input is 29.4 and the gas rate band is -10% / +5%', r == ['29.4', '30.6', '35.7', True, True, False, True, False, None], r)
         ctx.close()
 
+        # ---------- 12am3. review screen: warning notice prompt gives the reason and a way back ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(async()=>{ qSeed(); const cu={id:'cw',name:'Warn Test',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
+          const rec=newRecord(cu,'service'); rec.warning='YES'; records.push(rec); ui.rec=rec; ui.view='form'; ui.step=7; render(); await new Promise(r=>setTimeout(r,200));
+          const t=document.getElementById('view').innerText; const bt=document.querySelector('[data-act=warnGoto]'); bt&&bt.click(); await new Promise(r=>setTimeout(r,200));
+          return [t.includes('set to YES on the Finish step'), !!bt, ui.step] })()""")
+        check('warning notice prompt says why and jumps back to the Finish step', r == [True, True, 5], r)
+        ctx.close()
+
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(async()=>{ qSeed(); const cu={id:'c1',name:'Hold Still',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);

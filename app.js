@@ -923,7 +923,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v260';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v261';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1836,8 +1836,9 @@ function stepReview() {
   const warnAll = m.filter(x => WARN.neededFor(x) && !m.some(y => isWarn(y) && y.warnFor === x.id)), needWarn = warnAll.filter(x => !x.warnNo), noWarn = warnAll.filter(x => x.warnNo);
   return `
     ${needWarn.map(x => `<div class="card" style="border-color:#5a2a26"><div class="t" style="color:#ff9b92;font-weight:700;margin-bottom:6px">Create a warning notice?</div>
-      <p class="small muted" style="margin-top:0">This ${isSvc(x) ? 'boiler service' : 'gas safety check'} has ${esc(WARN.reasonsFor(x).join('; ') || 'a warning notice marked as issued')}. Would you like to create a Danger / Do Not Use Warning Notice${m.length > 1 ? '' : ' to give to the customer'}?</p>
-      <div class="row"><button class="btn gold grow" data-act="addWarn" data-id="${x.id}">Yes, create one</button><button class="btn grow" data-act="warnNo" data-id="${x.id}">No, not needed</button></div></div>`).join('')}
+      <p class="small muted" style="margin-top:0">This ${isSvc(x) ? 'boiler service' : 'gas safety check'} ${WARN.reasonsFor(x).length ? 'these problems: ' + esc(WARN.reasonsFor(x).join('; ')) : 'nothing failed, but "Has a warning notice been issued?" is set to YES on the Finish step'}. Would you like to create a Danger / Do Not Use Warning Notice${m.length > 1 ? '' : ' to give to the customer'}?</p>
+      <div class="row"><button class="btn gold grow" data-act="addWarn" data-id="${x.id}">Yes, create one</button><button class="btn grow" data-act="warnNo" data-id="${x.id}">No, not needed</button></div>
+      <button class="btn ghost block" style="margin-top:8px" data-act="warnGoto" data-id="${x.id}">Go back to ${WARN.reasonsFor(x).length ? 'the failed section' : 'that answer'}</button></div>`).join('')}
     ${noWarn.map(x => `<div class="card"><p class="small muted" style="margin:0 0 8px">No warning notice is being created for this ${isSvc(x) ? 'boiler service' : 'gas safety check'}.</p><button class="btn block" data-act="addWarn" data-id="${x.id}">Create one after all</button></div>`).join('')}
     ${m.filter(x => oilWarnSrc(x) && !m.some(y => typeOf(y) === 'oilwarn' && y.warnFor === x.id)).map(x => `<div class="card" style="border-color:#5a2a26"><div class="t" style="color:#ff9b92;font-weight:700;margin-bottom:6px">Warning notice needed</div>
       <p class="small muted" style="margin-top:0">This ${typeOf(x) === 'oil' ? 'oil boiler service' : 'oil tank check'} has a defect classed as ${esc(x.defectClass.toLowerCase())}. An oil warning and advice notice should be given to the customer.</p>
@@ -3051,6 +3052,14 @@ document.addEventListener('click', async e => {
       if (done && !reviewIssues(m).length) makePdf(true);
       break;
     }
+    case 'warnGoto': {   // jump to the step holding the first thing that triggered the notice
+      const x = records.find(y => y.id === b.dataset.id); if (!x) break;
+      let st = 1;
+      if (isSvc(x)) {
+        const bad = k => (x.chk && x.chk[k] === 'FAIL');
+        st = SVC.APP.some(c => bad(c.k)) ? 2 : SVC.SAFE.some(c => bad(c.k)) ? 3 : (x.bpResult === 'FAIL' || x.grResult === 'FAIL' || x.fgResult === 'FAIL') ? 4 : 5;
+      }
+      goTo(x, st); break; }
     case 'warnNo': { const x = records.find(y => y.id === b.dataset.id); if (x) { x.warnNo = true; persistRec(x); } render(); break; }
     case 'addWarn': {
       const svc = records.find(x => x.id === b.dataset.id); if (!svc) break; svc.warnNo = false;
