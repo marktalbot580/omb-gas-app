@@ -1604,6 +1604,12 @@ def run():
         check('Greenstar 1000 combi: GC lookup, hot-water input, CO2 range, gas rate band', r == ['Greenstar 1000 24kW', '24.6', '30', '16.0', '0.004', True, False, False, True, True, False], r)
         ctx.close()
 
+        # ---------- 12am10. Worcester Greenstar 8000 F floor-standing ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(()=>{ const a=BT.find('','','47-800-56'), z=BT.find('','','41-800-43'); return [a.name, a.t_hi, a.t_fan, a.t_inlet, a.t_ratio, a.t_co2Tol, z.name, z.t_hi, z.t_fan, BT.judge('hi','34.4',a), BT.judge('hi','40',a)] })()""")
+        check('Greenstar 8000 F: GC lookup, heat input, fan pressure, inlet', r == ['Greenstar 8000 F Combi 35kW', '34.4', '3.5', '17.5', '0.004', '0.2', 'Greenstar 8000 F Regular 50kW', '48.9', '6.0', True, False], r)
+        ctx.close()
+
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(async()=>{ qSeed(); const cu={id:'c1',name:'Hold Still',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
