@@ -923,7 +923,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v272';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v273';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -2723,6 +2723,7 @@ function renderInvEdit(v) {
     <button type="button" class="btn block" data-act="invOpenNow" style="margin:6px 0 12px">View invoice (PDF)</button>
     <button type="button" class="item tog ${i.paid ? 'on' : ''}" data-act="invPaid"><span class="box"></span><span><span class="t">Paid</span><span class="s" style="display:block">${i.paid ? 'Paid on ' + ukDate(i.paidDate) + ' – a PAID stamp is shown on the invoice' : 'Tick once paid – a PAID stamp is then shown on the invoice'}</span></span></button>
     ${methodSeg(i)}
+    <button class="btn ghost block" data-act="invBack" style="margin:0 0 12px">${ui.invFrom === 'visit' ? 'Back to the visit' : 'Back to invoices'}</button>
     ${numOf(i.vatRate) > 0 && !String(i.vatNumber || '').trim() ? `<div class="notice">No VAT number on this invoice. Add it in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a> or type it in the VAT box below.</div>` : ''}
     ${blankPrice ? `<div class="notice">A line has no price. Type it below, or set standard prices in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a>.</div>` : ''}
     <h2>Customer</h2>

@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v273', items: ['Invoices: there is now a "Back to invoices" button just under Paid and Paid by, so you do not have to scroll to the bottom after marking an invoice paid. The one at the bottom is still there.'] },
   { v: 'v272', items: ['Administrator functions updated.'] },
   { v: 'v271', items: ['Price list: when you open a boiler make there is now a search box, so you can find a model by name, size or GC number instead of scrolling.'] },
   { v: 'v270', items: ['Added the Worcester Bosch Greenstar 8000 F floor-standing boilers (combi 35 and 50kW, regular 35 and 50kW) with their manufacturer figures. Search by name or GC number (47-800-56, 47-800-58, 41-800-41, 41-800-43).'] },

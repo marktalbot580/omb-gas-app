@@ -1624,6 +1624,12 @@ def run():
         check('Admin graphs say how to switch on when the SQL has not been run', 'v272-daily.sql' in ev(pg, "document.querySelector('#view').innerText"))
         ctx.close()
 
+        # ---------- 12am13. invoice: back button under Paid ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(()=>{ const i=newInvoice(null); i.customer.name='Bob'; i.paid=true; i.payMethod='Card'; invoices.push(i); ui.inv=i; ui.invFrom=''; ui.view='invEdit'; render(); const bs=[...document.querySelectorAll('#view button[data-act=invBack]')]; const h=[...document.querySelectorAll('#view h2')].find(x=>x.textContent==='Customer'); return [bs.length, !!(bs[0].compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING), bs[0].textContent] })()""")
+        check('Invoice has a Back button under Paid and another at the bottom', r == [2, True, 'Back to invoices'], r)
+        ctx.close()
+
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(async()=>{ qSeed(); const cu={id:'c1',name:'Hold Still',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
