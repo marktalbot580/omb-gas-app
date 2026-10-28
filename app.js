@@ -923,7 +923,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v270';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v271';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1955,6 +1955,11 @@ function qSeed() {
   let ch = false; settings.qList.forEach(x => { if (!x.id) { x.id = QUO.newId(); ch = true; } }); if (ch) saveSettings();
   if (typeof BT !== 'undefined') BT.seed();
 }
+function pModelFilter() {
+  const q = String(ui.pQ || '').toLowerCase().split(/\s+/).filter(Boolean); let n = 0;
+  document.querySelectorAll('#pItems > .card').forEach(c => { const ok = q.every(w => (c.dataset.q || '').includes(w)) || c.querySelector('[data-pi]:focus'); c.hidden = !ok; if (ok) n++; });
+  const none = document.getElementById('pNone'); if (none) none.hidden = n > 0 || !q.length;
+}
 function renderPrices(v) {
   qSeed();
   const list = settings.qList, mine = Array.isArray(settings.qCats) ? settings.qCats : [], cats = QUO.TYPES.concat(mine.concat(list.map(x => x.type)).filter((t, i, a) => !QUO.TYPES.includes(t) && a.indexOf(t) === i));
@@ -1968,7 +1973,7 @@ function renderPrices(v) {
     const sale = QUO.saleOf(x, settings), mk = QUO.markupOf(x, settings), open = ui.pEdit === x.id;
     const sub = (QUO.num(x.cost) !== null ? 'cost ' + money(QUO.num(x.cost)) + ' + ' + mk + '% = ' : '') + (sale !== null ? '<b>' + money(sale) + '</b>' : 'no price yet') + (x.unit ? ' / ' + esc(x.unit) : '') + (QUO.num(x.price) !== null ? ' (fixed)' : '') + (x.supplier ? ' · ' + esc(String(x.supplier).split('\n')[0].slice(0, 40)) : '');
     const i = (k, l, o = {}) => `<label class="f"><span>${l}</span><input data-pi="${k}" data-id="${x.id}" value="${esc(x[k] || '')}" ${o.mode ? `inputmode="${o.mode}"` : ''} ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} ${o.list ? `list="${o.list}"` : ''}></label>`;
-    return `<div class="card" style="margin-bottom:10px"><button type="button" class="item" data-act="pEdit" data-id="${x.id}" style="width:100%;text-align:left"><span><span class="t">${esc(((x.make ? x.make + ' ' : '') + (x.name || 'New item')) + (x.kw && x.type === 'Boiler' ? ' · ' + x.kw + ' kW' : '') + (x.warranty && x.type === 'Boiler' ? ' · ' + x.warranty : ''))}</span><span class="s" style="display:block">${sub}</span></span></button>
+    return `<div class="card" data-q="${esc([x.make, x.name, x.kw, x.t_gc].filter(Boolean).join(' ').toLowerCase())}" style="margin-bottom:10px"><button type="button" class="item" data-act="pEdit" data-id="${x.id}" style="width:100%;text-align:left"><span><span class="t">${esc(((x.make ? x.make + ' ' : '') + (x.name || 'New item')) + (x.kw && x.type === 'Boiler' ? ' · ' + x.kw + ' kW' : '') + (x.warranty && x.type === 'Boiler' ? ' · ' + x.warranty : ''))}</span><span class="s" style="display:block">${sub}</span></span></button>
     ${open ? `<div style="margin-top:12px">
       ${i('type', 'Category', { list: 'pCats' })}${x.type === 'Boiler' || x.make ? '' : ''}
       ${x.type === 'Labour' ? i('name', 'Rate name', { ph: 'For example: Hourly rate or Day rate' }) + i('unit', 'Charged per', { list: 'pUnits', ph: 'hour, day or job' }) : i('make', 'Make') + i('name', 'Model / item')}
@@ -1992,7 +1997,9 @@ function renderPrices(v) {
         <button type="button" class="btn block" data-act="pAdd" style="margin-bottom:12px">+ Add ${isB ? (pm && pm !== '__none' ? 'a new ' + esc(pm) + ' model' : 'a boiler') : 'to ' + esc(c)}</button>
         ${isB ? `<div class="chips" style="margin:0 0 12px">${makes.map(m => { const k = m || '__none'; return `<button type="button" class="chip ${pm === k ? 'on' : ''}" data-act="pMake" data-m="${esc(k)}">${esc(m || 'Other')} (${allB.filter(x => (x.make || '') === m).length})</button>`; }).join('')}<button type="button" class="chip" data-act="pNewMake">+ Add a make</button></div>
         ${ui.pNewMake ? `<div class="row" style="margin:0 0 12px;gap:8px"><input class="grow" id="pMakeIn" placeholder="Make, e.g. Vokera" autocomplete="off" autocapitalize="words" style="min-width:0"><button type="button" class="btn gold" data-act="pMakeAdd" style="flex:none">Add</button></div>` : ''}` : ''}
-        ${items.length ? items.map(row).join('') : `<p class="muted">${isB && !pm ? 'Tap a make above to see its models.' : 'Nothing here yet.'}</p>`}
+        ${isB && pm && items.length > 4 ? `<input class="search" id="pModelSearch" placeholder="Search ${pm === '__none' ? 'these' : esc(pm)} models – name, size or GC number" value="${esc(ui.pQ || '')}" autocomplete="off" style="margin:0 0 12px">` : ''}
+        ${items.length ? `<div id="pItems">` + items.map(row).join('') + `</div>` : `<p class="muted">${isB && !pm ? 'Tap a make above to see its models.' : 'Nothing here yet.'}</p>`}
+        <p class="muted" id="pNone" hidden>No model matches that.</p>
         ${mine.includes(c) && !n ? `<button type="button" class="btn ghost block" data-act="pCatDel" style="margin-bottom:12px">Delete the empty category ${esc(c)}</button>` : ''}</div>`;
       return `<div style="margin-bottom:10px"><button type="button" class="item" data-act="pCat" data-c="${esc(c)}" style="width:100%;text-align:left;margin:0${open ? ';border-color:var(--gold)' : ''}"><div class="row sp" style="width:100%"><span class="t">${esc(c)}</span><span class="s">${n} item${n === 1 ? '' : 's'} ${open ? '▲' : '▼'}</span></div></button>${open ? `<div class="card" style="margin:8px 0 0">${panel}</div>` : ''}</div>`;
     }).join('')}
@@ -2005,6 +2012,7 @@ function renderPrices(v) {
       <label class="btn block ghost" style="display:block;text-align:center">Import price list<input type="file" id="qImport" accept=".xlsx,.xls,.csv" hidden></label><div style="height:8px"></div>
       <button type="button" class="btn block ghost" data-act="qClearList">Reset to the built-in list</button></div>
     <button class="btn block ghost" data-nav="settings" style="margin-top:14px">Back to settings</button>`;
+  pModelFilter();
 }
 /* make (or category) dropdown + search box + the matching items to tap */
 const QF_LIST = { boiler: () => qOf('Boiler'), extra: qExtraList };
@@ -2978,7 +2986,7 @@ document.addEventListener('click', async e => {
   if (a === 'qOpen') { ui.qOpen = ui.qOpen || {}; ui.qOpen[b.dataset.k] = !ui.qOpen[b.dataset.k]; if (ui.qf) ui.qf[b.dataset.k] = {}; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
   if (a === 'qFind') { qPick(b.dataset.kind, +b.dataset.i); return; }
   if (a === 'pricesOpen') { qSeed(); ui.pCat = ''; ui.pEdit = ''; ui.view = 'prices'; render(); return; }
-  if (a === 'pCat') { ui.pCat = ui.pCat === b.dataset.c ? '' : b.dataset.c; ui.pEdit = ''; ui.pMake = ''; ui.pNewMake = false; render(); return; }
+  if (a === 'pCat') { ui.pCat = ui.pCat === b.dataset.c ? '' : b.dataset.c; ui.pEdit = ''; ui.pQ = ''; ui.pMake = ''; ui.pNewMake = false; render(); return; }
   if (a === 'pNewCat') { ui.pNewCat = !ui.pNewCat; render(); const inp = document.getElementById('pCatIn'); if (inp) inp.focus(); return; }
   if (a === 'pCatAdd') {
     const inp = document.getElementById('pCatIn'), nm = (inp ? inp.value : '').trim().replace(/\s+/g, ' ');
@@ -2997,7 +3005,7 @@ document.addEventListener('click', async e => {
     const it = { id: QUO.newId(), type: 'Boiler', make: nm, name: '', kind: '', kw: '', warranty: '', unit: '', cost: '', markup: '', price: '' };
     settings.qList.unshift(it); saveSettings(); ui.pMake = nm; ui.pEdit = it.id; ui.pNewMake = false; render(); toast(nm + ' added – now fill in its first model'); return;
   }
-  if (a === 'pMake') { ui.pMake = ui.pMake === b.dataset.m ? '' : b.dataset.m; ui.pEdit = ''; render(); return; }
+  if (a === 'pMake') { ui.pMake = ui.pMake === b.dataset.m ? '' : b.dataset.m; ui.pEdit = ''; ui.pQ = ''; render(); return; }
   if (a === 'pEdit') { ui.pEdit = ui.pEdit === b.dataset.id ? '' : b.dataset.id; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
   if (a === 'pAdd') { const it = { id: QUO.newId(), type: ui.pCat || 'Other', make: (ui.pCat || 'Boiler') === 'Boiler' && ui.pMake && ui.pMake !== '__none' ? ui.pMake : '', name: '', kind: '', kw: '', warranty: '', unit: '', cost: '', markup: '', price: '' }; settings.qList.unshift(it); saveSettings(); ui.pEdit = it.id; if ((ui.pCat || 'Boiler') === 'Boiler' && !ui.pMake) ui.pMake = '__none'; render(); return; }
   if (a === 'pDel') { if (confirm('Delete this item?')) { settings.qList = settings.qList.filter(x => x.id !== b.dataset.id); saveSettings(); ui.pEdit = ''; render(); } return; }
@@ -3368,6 +3376,7 @@ document.addEventListener('input', e => {
   if (t.dataset.s === 'sortCode') t.value = fmtSort(t.value);
   if (t.dataset.s === 'routeStart') t.value = t.value.toUpperCase();
   if (t.id === 'fbText') { ui.fb = ui.fb || { kind: 'fault', text: '' }; ui.fb.text = t.value; return; }
+  if (t.id === 'pModelSearch') { ui.pQ = t.value; pModelFilter(); return; }
   if (t.id === 'helpSearch') { ui.helpQ = t.value; const hl = document.getElementById('helpList'); if (hl) hl.innerHTML = helpListHtml(t.value); return; }
   if (t.id === 'custSearch') { ui.search = t.value; paintCustList(); return; }
   if (t.id === 'invPropSearch') { const el = document.getElementById('invPropList'); if (el) el.innerHTML = sugHtml(ui.inv, t.value, 'invPickSug'); return; }

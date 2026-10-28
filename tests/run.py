@@ -1610,6 +1610,12 @@ def run():
         check('Greenstar 8000 F: GC lookup, heat input, fan pressure, inlet', r == ['Greenstar 8000 F Combi 35kW', '34.4', '3.5', '17.5', '0.004', '0.2', 'Greenstar 8000 F Regular 50kW', '48.9', '6.0', True, False], r)
         ctx.close()
 
+        # ---------- 12am11. Price list: search a make's models ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(()=>{ ui.view='prices'; ui.pCat='Boiler'; ui.pMake='Worcester Bosch'; ui.pQ=''; render(); const all=document.querySelectorAll('#pItems > .card').length; const s=document.getElementById('pModelSearch'); s.value='47-800-38'; s.dispatchEvent(new Event('input',{bubbles:true})); const one=[...document.querySelectorAll('#pItems > .card')].filter(c=>!c.hidden).length; s.value='zzzz'; s.dispatchEvent(new Event('input',{bubbles:true})); const none=[...document.querySelectorAll('#pItems > .card')].filter(c=>!c.hidden).length, msg=!document.getElementById('pNone').hidden; return [all>50, one, none, msg] })()""")
+        check('Price list model search: finds by GC number, shows a no-match note', r == [True, 1, 0, True], r)
+        ctx.close()
+
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(async()=>{ qSeed(); const cu={id:'c1',name:'Hold Still',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
