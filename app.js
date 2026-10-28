@@ -923,7 +923,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v271';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v272';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1301,6 +1301,7 @@ function renderAdmin(v) {
       <dt>Free passes</dt><dd>${cnt('free pass')}</dd><dt>Trial ended</dt><dd>${cnt('trial ended')}</dd><dt>Payment failed / cancelled</dt><dd>${cnt('payment failed') + cnt('cancelled')}</dd>
     </dl><button class="btn block" data-act="adminReload" style="margin-top:10px">Refresh</button></div>
     ${adminUsageHtml(A)}
+    ${adminChartsHtml(A)}
     <h2>Give someone a free pass</h2>
     <div class="card"><label class="f"><span>Their email address</span><input id="adminEmail" type="email" inputmode="email" autocapitalize="none" autocomplete="off" placeholder="kyle@example.com"><small>Works before or after they sign up. They get full access with no payment.</small></label>
       <button class="btn gold block" data-act="adminCompEmail">Give free pass</button></div>
@@ -1313,6 +1314,19 @@ function renderAdmin(v) {
     ${rows.map(r => `<div class="card"><div class="t" style="font-weight:700">${esc(r.email)}</div>
       <div class="small muted">${esc(state(r))}${r.confirmed ? '' : ' · email not confirmed'} · joined ${ukDate((r.created_at || '').slice(0, 10))}${r.last_active ? ' · last active ' + ukDate(r.last_active.slice(0, 10)) : ''}${r.last_sign_in ? ' · last sign-in ' + ukDate(r.last_sign_in.slice(0, 10)) : ''}${r.status === 'trialing' && !r.comped ? ' · trial ends ' + ukDate((r.trial_end || '').slice(0, 10)) : ''}</div>
       <button class="btn block ${r.comped ? 'ghost' : ''}" style="margin-top:8px" data-act="adminComp" data-id="${r.user_id}" data-v="${r.comped ? '' : '1'}">${r.comped ? 'Remove free pass' : 'Give free pass'}</button>${r.comped || r.status === 'active' ? '' : `<button class="btn block" style="margin-top:8px" data-act="adminExtend" data-id="${r.user_id}">Extend trial by 14 days</button>`}</div>`).join('') || '<p class="muted">Nobody yet.</p>'}`}`;
+}
+function adminChartsHtml(A) {
+  if (A.dailyErr) return `<h2>Graphs</h2><div class="notice">${esc(A.dailyErr)}</div>`;
+  const d = A.daily; if (!d || !d.length) return '';
+  const chart = (title, key, note) => {
+    const vals = d.map(x => Number(x[key]) || 0), mx = Math.max(1, ...vals), tot = vals.reduce((p, q) => p + q, 0), W = 300, H = 70, bw = W / vals.length;
+    const bars = vals.map((n, i) => `<rect x="${(i * bw + 1).toFixed(1)}" y="${(H - (n / mx) * H).toFixed(1)}" width="${(bw - 2).toFixed(1)}" height="${((n / mx) * H).toFixed(1)}" rx="1.5" fill="var(--gold2)"><title>${esc(ukDate(String(d[i].d).slice(0, 10)))}: ${n}</title></rect>`).join('');
+    return `<div class="card"><div class="row sp" style="align-items:baseline"><b>${title}</b><span class="small muted">${tot} in 30 days · busiest day ${mx === 1 && !tot ? 0 : Math.max(...vals)}</span></div>
+      <svg viewBox="0 0 ${W} ${H + 2}" width="100%" role="img" aria-label="${esc(title)}" style="display:block;margin-top:8px"><line x1="0" y1="${H + 1}" x2="${W}" y2="${H + 1}" stroke="var(--line, #d8d2c4)" stroke-width="1"/>${bars}</svg>
+      <div class="row sp small muted" style="margin-top:4px"><span>${esc(ukDate(String(d[0].d).slice(0, 10)))}</span><span>${esc(note)}</span><span>${esc(ukDate(String(d[d.length - 1].d).slice(0, 10)))}</span></div></div>`;
+  };
+  return `<h2>Graphs, last 30 days (counts only)</h2>${chart('People using the app each day', 'active', 'tap a bar for the day')}${chart('Documents saved each day', 'saved', 'invoices and forms')}${chart('New sign-ups each day', 'signups', '')}
+    <p class="small muted" style="margin:0 0 12px">A document counts on the day it was last saved, so older days can look a little lower than they really were.</p>`;
 }
 function adminUsageHtml(A) {
   if (A.usageErr) return `<h2>Usage</h2><div class="notice">${esc(A.usageErr)}</div>`;
@@ -1330,6 +1344,7 @@ async function adminLoad() {
   ui.admin = ui.admin || {}; ui.admin.err = '';
   try { ui.admin.fb = await CLOUD.rpc('admin_feedback'); } catch (e) { ui.admin.fb = ui.admin.fb || null; ui.admin.fbErr = /does not exist|schema cache|404/i.test(e.message) ? 'Feedback table not set up yet.' : ''; }
   try { ui.admin.usage = await CLOUD.rpc('admin_usage'); ui.admin.usageErr = ''; } catch (e) { ui.admin.usageErr = /does not exist|schema cache|404/i.test(e.message) ? 'Usage totals are not switched on yet. Run backend/v209-usage.sql once in Supabase.' : ''; }
+  try { ui.admin.daily = await CLOUD.rpc('admin_daily'); ui.admin.dailyErr = ''; } catch (e) { ui.admin.dailyErr = /does not exist|schema cache|404/i.test(e.message) ? 'Graphs are not switched on yet. Run backend/v272-daily.sql once in Supabase.' : ''; }
   try { ui.admin.rows = await CLOUD.rpc('admin_overview'); } catch (e) { ui.admin.err = /not allowed/i.test(e.message) ? 'This account is not an admin.' : 'Could not load: ' + e.message; ui.admin.rows = ui.admin.rows || []; }
   if (ui.view === 'admin') render();
 }
