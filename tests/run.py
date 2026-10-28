@@ -1598,6 +1598,12 @@ def run():
         check('empty figure boxes are filled from the built-in data; a typed figure is kept', r == ['47-800-32', '123', '29.4'], r)
         ctx.close()
 
+        # ---------- 12am9. Worcester Greenstar 1000 combi ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(()=>{ const a=BT.find('','','47-800-38'), z=BT.find('','','47-800-39'); return [a.name, a.t_hi, z.t_hi, a.t_inlet, a.t_ratio, BT.judge('co2Max','9.0',a), BT.judge('co2Max','9.6',a), BT.judge('co2Min','8.0',a), BT.judge('co2Min','8.3',a), BT.judge('hi','30.0',z), BT.judge('hi','33',z)] })()""")
+        check('Greenstar 1000 combi: GC lookup, hot-water input, CO2 range, gas rate band', r == ['Greenstar 1000 24kW', '24.6', '30', '16.0', '0.004', True, False, False, True, True, False], r)
+        ctx.close()
+
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(async()=>{ qSeed(); const cu={id:'c1',name:'Hold Still',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);

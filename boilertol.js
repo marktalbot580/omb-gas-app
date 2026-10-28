@@ -86,9 +86,12 @@ const BT = (() => {
     { n: 'Greenstar 8000 Style', kw: '50', gc: '47-406-98', hi: '48.9', fan: '6.0', ft: '5.9', fanTo: '10', src: 'Worcester Bosch Greenstar 8000 Style combi manual (2019)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' },
     { n: 'Greenstar 8000 Style', kw: '30', gc: '47-800-03', hi: '30.2', src: 'Worcester Bosch Greenstar 8000 Style manual 6720883864 (2019/02)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' },
     { n: 'Greenstar 8000 Style', kw: '35', gc: '47-800-02', hi: '34.4', fan: '3.5', ft: '3.4', fanTo: '10', src: 'Worcester Bosch Greenstar 8000 Style manual 6720883864 (2019/02)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' },
-    { n: 'Greenstar 8000 Style', kw: '40', gc: '47-800-01', hi: '40.8', fan: '5.0', ft: '4.9', fanTo: '10', src: 'Worcester Bosch Greenstar 8000 Style manual 6720883864 (2019/02)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' }
+    { n: 'Greenstar 8000 Style', kw: '40', gc: '47-800-01', hi: '40.8', fan: '5.0', ft: '4.9', fanTo: '10', src: 'Worcester Bosch Greenstar 8000 Style manual 6720883864 (2019/02)', co2: { Max: '9.5', Min: '8.6', Tol: '0.4' }, co: '250', coLow: '75' },
+    /* Greenstar 1000 combi (GR1000W 24 C / 30 C), manual 6721835943 (2023/08). Max rate CO2 8.6 to 9.4 %, CO under 250 ppm; at minimum rate CO2 is not more than 0.5 under the maximum reading and above 8.1 % (only the 8.1 floor is stored). CO / CO2 ratio under 0.004 (flow chart). The manual prints no fan pressure figure, so it is left blank. Gas inlet at the appliance test point 16.0 to 20.5 mbar, so 16.0 is the minimum. Heat input is the hot-water maximum (net). */
+    { n: 'Greenstar 1000', kw: '24', gc: '47-800-38', hi: '24.6', src: 'Worcester Bosch Greenstar 1000 manual 6721835943 (2023/08)', co2: { MaxF: '8.6', MaxT: '9.4', MinF: '8.1' }, co: '250', ratio: '0.004', inlet: '16.0' },
+    { n: 'Greenstar 1000', kw: '30', gc: '47-800-39', hi: '30', src: 'Worcester Bosch Greenstar 1000 manual 6721835943 (2023/08)', co2: { MaxF: '8.6', MaxT: '9.4', MinF: '8.1' }, co: '250', ratio: '0.004', inlet: '16.0' }
   ].map(m => { const c = m.co2, o = { id: 'bt:wb-' + m.n.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + m.kw, type: 'Boiler', make: 'Worcester Bosch', name: m.n + ' ' + m.kw + 'kW', kind: 'Combination', kw: m.kw, warranty: '', src: m.src,
-    t_gc: m.gc, t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: m.hi, t_co: m.co, t_coLow: m.coLow || '', t_ratio: '', t_inlet: '16.5' };
+    t_gc: m.gc, t_flue: 'Room Sealed', t_hiMin: 'N/A', t_hi: m.hi, t_co: m.co, t_coLow: m.coLow || '', t_ratio: m.ratio || '', t_inlet: m.inlet || '16.5' };
     ['Max', 'Min', 'Tol', 'MaxF', 'MaxT', 'MinF', 'MinT'].forEach(k => { if (c[k]) o['t_co2' + k] = c[k]; });
     if (m.fan) { o.t_fan = m.fan; o.t_fanPF = m.fan; o.t_fanPT = m.fanTo; o.t_fanFF = '0'; o.t_fanFT = m.ft; }
     return o; }));
