@@ -923,7 +923,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v273';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v274';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1318,14 +1318,17 @@ function renderAdmin(v) {
 function adminChartsHtml(A) {
   if (A.dailyErr) return `<h2>Graphs</h2><div class="notice">${esc(A.dailyErr)}</div>`;
   const d = A.daily; if (!d || !d.length) return '';
-  const chart = (title, key, note) => {
-    const vals = d.map(x => Number(x[key]) || 0), mx = Math.max(1, ...vals), tot = vals.reduce((p, q) => p + q, 0), W = 300, H = 70, bw = W / vals.length;
-    const bars = vals.map((n, i) => `<rect x="${(i * bw + 1).toFixed(1)}" y="${(H - (n / mx) * H).toFixed(1)}" width="${(bw - 2).toFixed(1)}" height="${((n / mx) * H).toFixed(1)}" rx="1.5" fill="var(--gold2)"><title>${esc(ukDate(String(d[i].d).slice(0, 10)))}: ${n}</title></rect>`).join('');
-    return `<div class="card"><div class="row sp" style="align-items:baseline"><b>${title}</b><span class="small muted">${tot} in 30 days · busiest day ${mx === 1 && !tot ? 0 : Math.max(...vals)}</span></div>
-      <svg viewBox="0 0 ${W} ${H + 2}" width="100%" role="img" aria-label="${esc(title)}" style="display:block;margin-top:8px"><line x1="0" y1="${H + 1}" x2="${W}" y2="${H + 1}" stroke="var(--line, #d8d2c4)" stroke-width="1"/>${bars}</svg>
-      <div class="row sp small muted" style="margin-top:4px"><span>${esc(ukDate(String(d[0].d).slice(0, 10)))}</span><span>${esc(note)}</span><span>${esc(ukDate(String(d[d.length - 1].d).slice(0, 10)))}</span></div></div>`;
+  const chart = (title, key) => {
+    const vals = d.map(x => Number(x[key]) || 0), mx = Math.max(1, ...vals), tot = vals.reduce((p, q) => p + q, 0), W = 300, TOP = 12, H = 70, bw = W / vals.length;
+    const wk = vals.slice(-7).reduce((p, q) => p + q, 0), today = vals[vals.length - 1], yest = vals.length > 1 ? vals[vals.length - 2] : 0;
+    const bars = vals.map((n, i) => { const h = (n / mx) * H, x = i * bw;
+      return `<rect x="${(x + 1).toFixed(1)}" y="${(TOP + H - h).toFixed(1)}" width="${(bw - 2).toFixed(1)}" height="${h.toFixed(1)}" rx="1.5" fill="var(--gold2)"><title>${esc(ukDate(String(d[i].d).slice(0, 10)))}: ${n}</title></rect>` + (n ? `<text x="${(x + bw / 2).toFixed(1)}" y="${(TOP + H - h - 2).toFixed(1)}" text-anchor="middle" font-size="7" fill="currentColor">${n}</text>` : ''); }).join('');
+    return `<div class="card"><b>${title}</b>
+      <dl class="kv" style="margin:8px 0"><dt>Today</dt><dd>${today}</dd><dt>Yesterday</dt><dd>${yest}</dd><dt>Last 7 days</dt><dd>${wk}</dd><dt>Last 30 days</dt><dd>${tot}</dd></dl>
+      <svg viewBox="0 0 ${W} ${TOP + H + 2}" width="100%" role="img" aria-label="${esc(title)}" style="display:block"><line x1="0" y1="${TOP + H + 1}" x2="${W}" y2="${TOP + H + 1}" stroke="var(--line, #d8d2c4)" stroke-width="1"/>${bars}</svg>
+      <div class="row sp small muted" style="margin-top:4px"><span>${esc(ukDate(String(d[0].d).slice(0, 10)))}</span><span>${esc(ukDate(String(d[d.length - 1].d).slice(0, 10)))}</span></div></div>`;
   };
-  return `<h2>Graphs, last 30 days (counts only)</h2>${chart('People using the app each day', 'active', 'tap a bar for the day')}${chart('Documents saved each day', 'saved', 'invoices and forms')}${chart('New sign-ups each day', 'signups', '')}
+  return `<h2>Graphs, last 30 days (counts only)</h2>${chart('People using the app each day', 'active')}${chart('Documents saved each day', 'saved')}${chart('New sign-ups each day', 'signups')}
     <p class="small muted" style="margin:0 0 12px">A document counts on the day it was last saved, so older days can look a little lower than they really were.</p>`;
 }
 function adminUsageHtml(A) {

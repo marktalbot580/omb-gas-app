@@ -1620,6 +1620,7 @@ def run():
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(()=>{ const d=[]; for(let i=0;i<30;i++) d.push({d:'2026-10-'+String(Math.min(i+1,28)).padStart(2,'0'),signups:i%5===0?1:0,active:i%7,saved:i}); ui.view='admin'; ui.admin={rows:[],err:'',daily:d}; render(); const v=document.querySelector('#view'); return [v.querySelectorAll('svg rect').length, v.innerText.includes('People using the app each day'), v.innerText.includes('Documents saved each day'), document.documentElement.scrollWidth<=window.innerWidth] })()""")
         check('Admin graphs: three charts of 30 bars, no sideways scroll', r == [90, True, True, True], r)
+        check('Admin graphs show the numbers (today, 7 days, 30 days)', all(x in ev(pg, "document.querySelector('#view').innerText") for x in ['Today', 'Last 7 days', 'Last 30 days']))
         ev(pg, "ui.admin={rows:[],err:'',dailyErr:'Graphs are not switched on yet. Run backend/v272-daily.sql once in Supabase.'}; render()")
         check('Admin graphs say how to switch on when the SQL has not been run', 'v272-daily.sql' in ev(pg, "document.querySelector('#view').innerText"))
         ctx.close()
