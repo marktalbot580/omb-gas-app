@@ -19,7 +19,6 @@ const otInp = (path, label, ph, val, mode = 'decimal') => `<div class="grow f"><
 const otSel = (path, label, val, opts) => `<label class="grow f"><span>${label}</span><select data-tl-sel="ot.${path}">${opts.map(([k, l]) => `<option value="${k}" ${k === val ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`;
 const otFuelSel = (tool, o) => otSel(tool + '.fuel', 'Fuel', o.fuel, Object.keys(OT_FUELS).map(k => [k, OT_FUELS[k][0]]));
 const otRow = (l, v, big) => `<div class="row sp" style="margin-bottom:6px"><span ${big ? '' : 'class="muted"'}>${l}</span>${big ? `<b>${v}</b>` : `<span>${v}</span>`}</div>`;
-const otHint = '<p class="small muted">A guide only, not a certificate. Check the figures against the standard and the manufacturer’s instructions.</p>';
 
 /* ---- 1. tank volume and bund ---- */
 function otTank() {
