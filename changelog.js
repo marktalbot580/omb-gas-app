@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v278', items: ['Legionella PDF: the text in the System details box now sits in the middle of each row instead of tight against the line above it.'] },
   { v: 'v277', items: ['Legionella risk assessment: "Showers fitted" now has choices for more than one shower (more than one electric, more than one mixer / other, or electric and mixer together).'] },
   { v: 'v276', items: ['Finish screen: tapping "Invoice not required" (or "Add an invoice after all") no longer closes the More options menu and shifts the page. A note now says when a job has no invoice.'] },
   { v: 'v275', items: ['Paid invoices now carry a "PAID – with thanks" stamp with the date, and a new "Send receipt (paid with thanks)" button under Paid by emails or shares the paid invoice to the customer with a short thank-you message.'] },

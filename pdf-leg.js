@@ -140,15 +140,17 @@ async function drawLegPdf(rec, s, lv) {
     const pad = 2.2, fs = 7.6 * F, vw = w * 0.4, kw = w - vw - 2 * pad - 2;
     const rows = pairs.map(([k, v]) => ({ k: wrap(k, kw, fs, 'normal'), v: wrap(v || '–', vw, fs, 'bold'), val: v }));
     const rh = r => Math.max(r.k.length, r.v.length) * lh(fs) * 1.1 + 1 * P;
-    const h = Math.max(minH || 0, BAR + pad * 2 + rows.reduce((a, r) => a + rh(r), 0));
+    const h = Math.max(minH || 0, BAR + pad * 2 - 4 + rows.reduce((a, r) => a + rh(r), 0));
     if (dry) return h;
     bar(title, x, w, yy); doc.setDrawColor(...LINE); doc.rect(x, yy + BAR, w, h - BAR);
-    let ty = yy + BAR + pad + 2;
+    let ty = yy + BAR + pad;
     rows.forEach(r => {
       doc.setFont('helvetica', 'normal'); doc.setFontSize(fs); doc.setTextColor(...INK);
-      r.k.forEach((t, i) => doc.text(t, x + pad, ty + i * lh(fs) * 1.1));
+      /* centre the text between the divider lines above and below the row */
+      const stp = lh(fs) * 1.1, n = Math.max(r.k.length, r.v.length), cap = fs * 0.3528 * 0.36, above = 1.9 * P + 0.1 - cap, below = rh(r) - 1.9 * P - 0.1 + cap - (n - 1) * stp / 2, off = (below - above) / 2;
+      r.k.forEach((t, i) => doc.text(t, x + pad, ty + off + i * stp));
       doc.setFont('helvetica', 'bold'); doc.setTextColor(...INK);
-      r.v.forEach((t, i) => doc.text(t, x + w - pad, ty + i * lh(fs) * 1.1, { align: 'right' }));
+      r.v.forEach((t, i) => doc.text(t, x + w - pad, ty + off + i * stp, { align: 'right' }));
       ty += rh(r); doc.setDrawColor(232, 232, 232); doc.line(x + pad, ty - 1.9 * P - 0.1, x + w - pad, ty - 1.9 * P - 0.1);
     });
     return h;
