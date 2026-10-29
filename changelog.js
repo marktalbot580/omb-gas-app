@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v275', items: ['Paid invoices now carry a "PAID – with thanks" stamp with the date, and a new "Send receipt (paid with thanks)" button under Paid by emails or shares the paid invoice to the customer with a short thank-you message.'] },
   { v: 'v274', items: ['Administrator functions updated.'] },
   { v: 'v273', items: ['Invoices: there is now a "Back to invoices" button just under Paid and Paid by, so you do not have to scroll to the bottom after marking an invoice paid. The one at the bottom is still there.'] },
   { v: 'v272', items: ['Administrator functions updated.'] },

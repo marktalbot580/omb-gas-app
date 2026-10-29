@@ -1631,6 +1631,12 @@ def run():
         check('Invoice has a Back button under Paid and another at the bottom', r == [2, True, 'Back to invoices'], r)
         ctx.close()
 
+        # ---------- 12am14. paid invoice: receipt button ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(()=>{ const i=newInvoice(null); i.customer.name='Bob'; i.lines=[{d:'Service',q:'1',p:'80'}]; invoices.push(i); ui.inv=i; ui.view='invEdit'; render(); const a=!!document.querySelector('[data-act=invReceipt]'); i.paid=true; i.paidDate='2026-10-29'; i.payMethod='Card'; render(); return [a, !!document.querySelector('[data-act=invReceipt]')] })()""")
+        check('Receipt button shows only once the invoice is paid', r == [False, True], r)
+        ctx.close()
+
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(async()=>{ qSeed(); const cu={id:'c1',name:'Hold Still',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);

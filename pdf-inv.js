@@ -157,8 +157,9 @@ async function buildInvPdf(inv, s, ext) {
     doc.setTextColor(...GREEN); doc.setDrawColor(...GREEN);
     doc.setLineWidth(1.1); doc.roundedRect(M, y - 27, 50, 20, 2.5, 2.5);
     doc.setLineWidth(0.3); doc.roundedRect(M + 1.6, y - 25.4, 46.8, 16.8, 1.8, 1.8);
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(27); doc.text('PAID', M + 25, y - 14.2, { align: 'center' });
-    if (inv.paidDate) { doc.setFontSize(7.5); doc.text(ukd(inv.paidDate), M + 25, y - 10.2, { align: 'center' }); }
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(24); doc.text('PAID', M + 25, y - 16.2, { align: 'center' });
+    doc.setFontSize(7.5); doc.text('WITH THANKS', M + 25, y - 12, { align: 'center' });
+    if (inv.paidDate) { doc.setFontSize(7); doc.text(ukd(inv.paidDate), M + 25, y - 9, { align: 'center' }); }
     doc.setLineWidth(0.25);
   }
   y += 8;

@@ -923,7 +923,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v274';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v275';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -2726,6 +2726,7 @@ function renderInvEdit(v) {
     <button type="button" class="btn block" data-act="invOpenNow" style="margin:6px 0 12px">View invoice (PDF)</button>
     <button type="button" class="item tog ${i.paid ? 'on' : ''}" data-act="invPaid"><span class="box"></span><span><span class="t">Paid</span><span class="s" style="display:block">${i.paid ? 'Paid on ' + ukDate(i.paidDate) + ' – a PAID stamp is shown on the invoice' : 'Tick once paid – a PAID stamp is then shown on the invoice'}</span></span></button>
     ${methodSeg(i)}
+    ${i.paid ? `<button type="button" class="btn gold block" data-act="invReceipt" style="margin:0 0 12px">Send receipt (paid with thanks)</button>` : ''}
     <button class="btn ghost block" data-act="invBack" style="margin:0 0 12px">${ui.invFrom === 'visit' ? 'Back to the visit' : 'Back to invoices'}</button>
     ${numOf(i.vatRate) > 0 && !String(i.vatNumber || '').trim() ? `<div class="notice">No VAT number on this invoice. Add it in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a> or type it in the VAT box below.</div>` : ''}
     ${blankPrice ? `<div class="notice">A line has no price. Type it below, or set standard prices in <a href="#" data-nav="settings" style="color:inherit;font-weight:700">Settings</a>.</div>` : ''}
@@ -2834,6 +2835,20 @@ function invAskShow(id, step) {
 function invAskNext() {
   const n = invOverdueAsk(); if (n.length) invAskShow(n[0].id, 'ask'); else { const o = document.getElementById('askBox'); if (o) o.remove(); }
   if (ui.view === 'home' || ui.view === 'invoices') render();
+}
+async function invReceipt() {
+  const i = ui.inv; if (!i || !i.paid) return;
+  let blob;
+  try { blob = await buildInvPdf(i, settings); ui.invPdf = { id: i.id, blob, name: invFileName(i) }; } catch (err) { toast('Could not create the PDF: ' + err.message); return; }
+  const name = invFileName(i), file = new File([blob], name, { type: 'application/pdf' });
+  copyEmail((i.customer || {}).email);
+  const first = greetName(i.customer.name), T = invTotals(i);
+  const subject = `Receipt – invoice ${i.number} – ${settings.businessName}`;
+  const text = `Hi ${first},\n\nThank you – I can confirm I have received your payment of ${money(T.total)}${i.paidDate ? ' on ' + ukDate(i.paidDate) : ''}${i.payMethod ? ' by ' + i.payMethod.toLowerCase() : ''} for invoice ${i.number}. I have attached the invoice marked as paid for your records.\n\nKind regards,\n${signOff()}`;
+  try { if (canShareFiles({ files: [file] })) { await navigator.share({ files: [file], title: subject, text }); return; } }
+  catch (err) { if (err.name === 'AbortError') return; console.warn(err); }
+  const l = document.createElement('a'); l.href = URL.createObjectURL(blob); l.download = name; document.body.appendChild(l); l.click(); l.remove();
+  openMail(`mailto:${mailAddr(i.customer.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text + '\n\n(Attach the downloaded PDF)')}`);
 }
 async function invShare() {
   copyEmail((ui.inv.customer || {}).email);
@@ -3380,6 +3395,7 @@ document.addEventListener('click', async e => {
     case 'invPaidVisit': { const inv = invForVisit(jobRecs() || [ui.rec]); inv.paid = !inv.paid; inv.paidDate = inv.paid ? todayISO() : ''; if (!inv.paid) inv.payMethod = ''; persistInv(inv); const y = window.scrollY; try { ui.invPdf = { id: inv.id, blob: await buildInvPdf(inv, settings), name: invFileName(inv) }; } catch (err) { console.error(err); ui.invPdf = null; } render(); window.scrollTo(0, y); toast(inv.paid ? 'Marked as paid' : 'Marked as unpaid'); break; }
     case 'invPrep': { const inv = invForVisit(jobRecs() || [ui.rec]); try { ui.invPdf = { id: inv.id, blob: await buildInvPdf(inv, settings), name: invFileName(inv) }; render(); } catch (err) { toast('Could not create the invoice PDF: ' + err.message); } break; }
     case 'invShare': await invShare(); break;
+    case 'invReceipt': await invReceipt(); break;
     case 'invDl': invDownload(); break;
     case 'invOpenVisit': await openInvPdf(invForVisit(jobRecs() || [ui.rec])); break;
     case 'invOpenNow': await openInvPdf(ui.inv); break;
