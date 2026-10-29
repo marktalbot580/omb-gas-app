@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v279', items: ['PDF tidy-up: the TOTAL and PRICE headings on quotes now line up with their figures and the total box stays inside the page margin. Also fixed a fault where an invoice could fail to make a PDF if no business name had been entered yet.'] },
   { v: 'v278', items: ['Legionella PDF: the text in the System details box now sits in the middle of each row instead of tight against the line above it.'] },
   { v: 'v277', items: ['Legionella risk assessment: "Showers fitted" now has choices for more than one shower (more than one electric, more than one mixer / other, or electric and mixer together).'] },
   { v: 'v276', items: ['Finish screen: tapping "Invoice not required" (or "Add an invoice after all") no longer closes the More options menu and shifts the page. A note now says when a job has no invoice.'] },

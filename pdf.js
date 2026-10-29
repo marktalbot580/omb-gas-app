@@ -4,7 +4,7 @@
 /* the business's own logo (uploaded in Settings), or a neutral initials tile until they add one */
 let _logoW = { k: '', v: '' };
 async function getLogo() {
-  if (!settings.logo) return placeholderLogo(settings.businessName);
+  if (!settings.logo) return placeholderLogo(settings.businessName, 'OMB');   // an initials tile always: a PDF cannot draw the .svg mark
   if (settings.logoBg === 'clear') return settings.logo;
   const bg = settings.logoBg === 'black' ? '#000' : '#fff';
   const k = settings.logo.length + '|' + bg; if (_logoW.k === k) return _logoW.v;   // white behind the logo: draw it onto white first

@@ -19,7 +19,7 @@ async function buildQuotePdf(rec, s) {
   const txt = (t, x, yy, o = {}) => { doc.setFont('helvetica', o.b ? 'bold' : o.i ? 'italic' : 'normal'); doc.setFontSize((o.fs || 9) * (o.raw ? 1 : SC)); doc.setTextColor(...(o.c || INK)); doc.text(String(t), x, yy, o.align ? { align: o.align } : undefined); };
   const wrap = (t, w, fs, b) => { doc.setFont('helvetica', b ? 'bold' : 'normal'); doc.setFontSize(fs * SC); return String(t ?? '').split('\n').flatMap(l => doc.splitTextToSize(l || ' ', w)); };
   const para = (t, x, yy, w, fs, o = {}) => { const lines = wrap(t, w, fs, o.b), lh = fs * SC * 0.43; lines.forEach((l, i) => txt(l, x, yy + i * lh, { ...o, fs })); return lines.length * lh; };
-  const label = (t, x, yy, c, align) => { doc.setCharSpace(0.6); txt(t, x, yy, { b: 1, fs: 6.8, c: c || GOLD, align, raw: 1 }); doc.setCharSpace(0); };
+  const label = (t, x, yy, c, align) => { doc.setCharSpace(0.6); txt(t, align === 'right' ? x - 0.6 * String(t).length : align === 'center' ? x - 0.3 * String(t).length : x, yy, { b: 1, fs: 6.8, c: c || GOLD, align, raw: 1 }); doc.setCharSpace(0); };
   const heading = (small, big) => { ensure(24); label(small, M, y); txt(big, M, y + 8, { b: 1, fs: 18, c: DARK, raw: 1 }); doc.setFillColor(...GOLD); doc.rect(M, y + 11, 12, 0.9, 'F'); y += 20; };
   function ensure(h) { if (y + h > H - 18) newPage(); }
   function newPage() {
@@ -108,7 +108,7 @@ async function buildQuotePdf(rec, s) {
     ensure(30); y += 3;
     const row = (l, v, b) => { txt(l, xp - 14, y, { fs: 9, c: GREY, b }); txt(v, xt, y, { fs: 9, c: DARK, b, align: 'right' }); y += 5 + SC; };
     row('Subtotal', money(T.sub)); if (T.rate) row('VAT at ' + T.rate + '%', money(T.vat));
-    doc.setFillColor(...DARK); doc.roundedRect(xp - 18, y - 4.5, xt - xp + 21, 6 + 4 * SC, 2, 2, 'F'); txt('TOTAL', xp - 14, y + 0.8 + SC, { b: 1, fs: 9, c: GOLD }); txt(money(T.total), xt, y + 0.8 + SC, { b: 1, fs: 11, c: [255, 255, 255], align: 'right' }); y += 10 + 6 * SC; }
+    doc.setFillColor(...DARK); doc.roundedRect(xp - 18, y - 4.5, xt - xp + 18, 6 + 4 * SC, 2, 2, 'F'); txt('TOTAL', xp - 14, y + 0.8 + SC, { b: 1, fs: 9, c: GOLD }); txt(money(T.total), xt - 3, y + 0.8 + SC, { b: 1, fs: 11, c: [255, 255, 255], align: 'right' }); y += 10 + 6 * SC; }
 
   if (String(rec.homeNotes || '').trim()) {
     const h = wrap(rec.homeNotes, CW - 14, 9).length * 3.9 * SC + 14; ensure(h + 4);
@@ -186,7 +186,7 @@ async function buildGeneralQuotePdf1(rec, s, extra, info) {
   const txt = (t, x, yy, o = {}) => { doc.setFont('helvetica', o.b ? 'bold' : 'normal'); doc.setFontSize((o.fs || 9) * (o.raw ? 1 : SC)); doc.setTextColor(...(o.c || INK)); doc.text(String(t), x, yy, o.align ? { align: o.align } : undefined); };
   const wrap = (t, w, fs, b) => { doc.setFont('helvetica', b ? 'bold' : 'normal'); doc.setFontSize(fs * SC); return String(t ?? '').split('\n').flatMap(l => doc.splitTextToSize(l || ' ', w)); };
   const para = (t, x, yy, w, fs, o = {}) => { const lines = wrap(t, w, fs, o.b), lh = fs * SC * 0.43; lines.forEach((l, i) => txt(l, x, yy + i * lh, { ...o, fs })); return lines.length * lh; };
-  const label = (t, x, yy, c, align) => { doc.setCharSpace(0.6); txt(t, x, yy, { b: 1, fs: 6.8, c: c || GOLD, align, raw: 1 }); doc.setCharSpace(0); };
+  const label = (t, x, yy, c, align) => { doc.setCharSpace(0.6); txt(t, align === 'right' ? x - 0.6 * String(t).length : align === 'center' ? x - 0.3 * String(t).length : x, yy, { b: 1, fs: 6.8, c: c || GOLD, align, raw: 1 }); doc.setCharSpace(0); };
   const ensure = h => { if (y + h > H - 18) newPage(); };
   const heading = (small, big) => { if (extra && doc.getNumberOfPages() === 1) y += extra; ensure(24); label(small, M, y); txt(big, M, y + 8, { b: 1, fs: 16, c: DARK, raw: 1 }); doc.setFillColor(...GOLD); doc.rect(M, y + 11, 12, 0.9, 'F'); y += 19; };
   function newPage() { doc.addPage(); doc.setFillColor(...DARK); doc.rect(0, 0, W, 11, 'F'); doc.setFillColor(...GOLD); doc.rect(0, 11, W, 0.7, 'F'); txt('QUOTATION', M, 7.2, { b: 1, fs: 7.5, c: [255, 255, 255], raw: 1 }); txt(rec.ref, W - M, 7.2, { fs: 7.5, c: GOLD, align: 'right', raw: 1 }); y = 24; }
@@ -233,7 +233,7 @@ async function buildGeneralQuotePdf1(rec, s, extra, info) {
     ensure(30); y += 3;
     const row = (l, v) => { txt(l, xp - 14, y, { fs: 9, c: GREY }); txt(v, xt, y, { fs: 9, c: DARK, align: 'right' }); y += 5 + SC; };
     row('Subtotal', money(T.sub)); if (T.rate) row('VAT at ' + T.rate + '%', money(T.vat));
-    doc.setFillColor(...DARK); doc.roundedRect(xp - 18, y - 4.5, xt - xp + 21, 6 + 4 * SC, 2, 2, 'F'); txt('TOTAL', xp - 14, y + 0.8 + SC, { b: 1, fs: 9, c: GOLD }); txt(money(T.total), xt, y + 0.8 + SC, { b: 1, fs: 11, c: [255, 255, 255], align: 'right' });
+    doc.setFillColor(...DARK); doc.roundedRect(xp - 18, y - 4.5, xt - xp + 18, 6 + 4 * SC, 2, 2, 'F'); txt('TOTAL', xp - 14, y + 0.8 + SC, { b: 1, fs: 9, c: GOLD }); txt(money(T.total), xt - 3, y + 0.8 + SC, { b: 1, fs: 11, c: [255, 255, 255], align: 'right' });
     y += 14 + 4 * SC; }
 
   if (String(rec.homeNotes || '').trim()) {

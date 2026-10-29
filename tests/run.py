@@ -1651,6 +1651,12 @@ def run():
         check('Legionella showers: options for more than one shower', r == [6, True, True, False], r)
         ctx.close()
 
+        # ---------- 12am17. PDF still builds with no business name ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(async()=>{ settings.businessName=''; const i=newInvoice(null); i.customer.name='Bob'; i.lines=[{d:'x',q:'1',p:'5'}]; try { const bl=await buildInvPdf(i,settings); return bl.size>1000 } catch(e){ return 'ERR '+e.message } })()""")
+        check('Invoice PDF builds even with no business name set', r is True, r)
+        ctx.close()
+
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(async()=>{ qSeed(); const cu={id:'c1',name:'Hold Still',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
