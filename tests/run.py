@@ -1637,6 +1637,20 @@ def run():
         check('Receipt button shows only once the invoice is paid', r == [False, True], r)
         ctx.close()
 
+        # ---------- 12am15. Invoice not required keeps More options open ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(()=>{ settings.priceLeg='60'; saveSettings(); const c={id:'cX',name:'Bob',email:'',phone:'',properties:[]}; customers.push(c); const r=newRecord(c,'legionella'); r.jobAddress={}; persistRec(r); ui.rec=r; ui.view='form'; ui.step=stepsOf(r).length-1; render(); document.querySelector('details.adv').open=true; document.querySelector('[data-act=invNoneVisit]').click(); return 1 })()""")
+        pg.wait_for_timeout(400)
+        r = ev(pg, """(()=>{ const d=document.querySelector('details.adv'); return [ui.step, d.open, !!document.querySelector('[data-act=invUndoNone]'), document.querySelector('#view').innerText.includes('No invoice for this job')] })()""")
+        check('Invoice not required: same page, menu stays open, note shown', r == [7, True, True, True], r)
+        ctx.close()
+
+        # ---------- 12am16. legionella: more than one shower ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(()=>[LEG.SHOWERS.length, LEG.SHOWERS.includes('Electric and mixer showers'), LEG.hasShower({showers:'More than one electric shower'}), LEG.hasShower({showers:'None'})])()""")
+        check('Legionella showers: options for more than one shower', r == [6, True, True, False], r)
+        ctx.close()
+
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(async()=>{ qSeed(); const cu={id:'c1',name:'Hold Still',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);

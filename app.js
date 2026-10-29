@@ -923,7 +923,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v275';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v277';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1865,11 +1865,12 @@ function stepReview() {
       ${issues.map(x => `<button class="issue" data-act="goIssue" data-id="${x.rec.id}" data-step="${x.step}" data-app="${x.app ?? ''}">${multi ? esc(FORM_SHORT[typeOf(x.rec)]) + ': ' : ''}${esc(x.label)}</button>`).join('')}</div>` : ''}
     ${w.map(x => `<div class="notice">${esc(x)}</div>`).join('')}
     ${m.map(r => `<div class="card">${multi ? `<div class="t" style="font-weight:700;color:var(--gold2);margin-bottom:8px">${esc(formName(r))}</div>` : ''}<dl class="kv">${recSummary(r)}</dl></div>`).join('')}
+    ${billable(m).length && noInv(m) ? `<div class="notice">No invoice for this job – it counts as complete. (Change this under More options.)</div>` : ''}
     ${made ? sendCard(m) : `<button class="btn gold block" data-act="makePdf" ${issues.length || needWarn.length ? 'disabled' : ''}>${ui.rec.status === 'draft' ? 'Create documents' : 'Open documents'}</button>
       <p class="small muted">${ui.rec.status === 'draft' ? `Makes the signed PDF${multi ? 's' : ''}${billable(m).length ? ' and the invoice' : ''}, ready to send.` : `Your finished document${multi ? 's are' : ' is'} already saved. This opens ${multi ? 'them' : 'it'} ready to view and send.`}</p>`}
     <div style="height:14px"></div>
     <button class="btn block" data-act="done">Done – ${backLabel(m)}</button>
-    <details class="adv"><summary>More options</summary>
+    <details class="adv" ${ui.advOpen && ui.advOpen === ui.rec.id ? 'open' : ''}><summary>More options</summary>
       ${made ? `<button class="btn block" data-act="dlSel">Download selected</button><div style="height:8px"></div>
       <button class="btn block" data-act="makePdf" ${issues.length || needWarn.length ? 'disabled' : ''}>Re-create documents</button><div style="height:8px"></div>` : ''}
       ${billable(m).length ? (noInv(m) ? `<button class="btn block" data-act="invUndoNone">Add an invoice after all</button>` : `<button class="btn block" data-act="invNoneVisit">Invoice not required</button>`) + `<div style="height:8px"></div>` : ''}
@@ -3352,10 +3353,10 @@ document.addEventListener('click', async e => {
     case 'invNoneVisit': {
       const m = jobRecs() || [ui.rec], ex = invForVisit(m);
       if (ex && !confirm(`Invoice not required? This deletes invoice ${ex.number}.`)) break;
-      const y = window.scrollY; setNoInvoice(m, true); render(); window.scrollTo(0, y); toast('Marked as no invoice needed'); break;
+      ui.advOpen = ui.rec.id; const y = window.scrollY; setNoInvoice(m, true); render(); window.scrollTo(0, y); toast('Marked as no invoice needed'); break;
     }
     case 'invUndoNone': {
-      const m = jobRecs() || [ui.rec], bm = billable(m); setNoInvoice(m, false);
+      ui.advOpen = ui.rec.id; const m = jobRecs() || [ui.rec], bm = billable(m); setNoInvoice(m, false);
       if (bm.length && !invForVisit(m) && bm.every(r => numOf(settings[SVC_PRICE[typeOf(r)]]) > 0)) persistInv(newInvoice(m));
       await ensureInvPdf(m); const y = window.scrollY; render(); window.scrollTo(0, y); break;
     }

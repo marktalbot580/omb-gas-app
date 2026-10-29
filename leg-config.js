@@ -13,7 +13,7 @@ const LEG = (() => {
   const HOT_TYPE = ['Combi boiler', 'Vented hot water cylinder', 'Unvented hot water cylinder', 'Instantaneous water heater'];
   /* how a cylinder is heated: an immersion heater can be fitted to a vented or an unvented cylinder */
   const CYL_HEAT = ['Boiler', 'Immersion heater', 'Boiler and immersion'];
-  const SHOWERS = ['None', 'Electric shower', 'Mixer / other shower'];
+  const SHOWERS = ['None', 'Electric shower', 'Mixer / other shower', 'More than one electric shower', 'More than one mixer / other shower', 'Electric and mixer showers'];
   const YN3 = ['Yes', 'No', 'NA'];
   const PRIORITY = ['Action required', 'Advisory'];
   const OVERALL = ['Low', 'Medium', 'High'];
