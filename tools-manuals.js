@@ -26,4 +26,16 @@ function mnView() {
 }
 document.addEventListener('input', e => { const t = e.target; if (!t.dataset || !t.dataset.mn || ui.view !== 'tools') return; const s = mnState(); if (t.dataset.mn === 'q') { s.q = t.value; const el = document.getElementById('mnRes'); if (el) el.innerHTML = mnResults(); } });
 document.addEventListener('change', e => { const t = e.target; if (!t.dataset || t.dataset.mn !== 'make' || ui.view !== 'tools') return; mnState().make = t.value; const el = document.getElementById('mnRes'); if (el) el.innerHTML = mnResults(); });
-document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('#mnRes a[data-gc]'); if (!a || !a.dataset.gc) return; try { navigator.clipboard.writeText(a.dataset.gc).then(() => toast('Copied ' + a.dataset.gc + '. Paste it into the search bar.'), () => toast('Could not copy. GC number is ' + a.dataset.gc)); } catch (x) { toast('GC number is ' + a.dataset.gc); } });
+function mnCopy(txt) {   // copy while the tap is still happening; the old way gets refused once the new tab takes over
+  let ok = false;
+  try { const t = document.createElement('textarea'); t.value = txt; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px'; document.body.appendChild(t); t.focus(); t.select(); t.setSelectionRange(0, txt.length); ok = document.execCommand('copy'); t.remove(); } catch (x) { }
+  try { if (navigator.clipboard) navigator.clipboard.writeText(txt).catch(() => { }); } catch (x) { }
+  return ok;
+}
+document.addEventListener('click', e => {
+  const a = e.target.closest && e.target.closest('#mnRes a[data-gc]'); if (!a || !a.dataset.gc) return;
+  e.preventDefault();
+  const gc = a.dataset.gc, ok = mnCopy(gc);
+  toast(ok ? 'Copied ' + gc + '. Paste it into the search bar.' : 'GC number is ' + gc + '. Copy it from here.');
+  setTimeout(() => { window.open(a.href, '_blank', 'noopener'); }, ok ? 600 : 2500);
+});
