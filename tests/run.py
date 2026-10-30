@@ -1659,8 +1659,8 @@ def run():
 
         # ---------- 12am18. boiler manual search opens boilermanuals.com ----------
         ctx, pg, errs = fresh(b, mobile=True)
-        r = ev(pg, """(async()=>{ ui.view='tools'; ui.tool='man'; render(); const s=document.querySelector('[data-mn=make]'); s.value='Worcester Bosch'; s.dispatchEvent(new Event('change',{bubbles:true})); const q=document.querySelector('[data-mn=q]'); q.value='47-800-56'; q.dispatchEvent(new Event('input',{bubbles:true})); const a=[...document.querySelectorAll('#mnRes a')].map(x=>x.href+'|'+x.target); return JSON.stringify(a) })()""")
-        check('Manual search finds a model by GC and links to boilermanuals.com in a new tab', 'boilermanuals.com/brands/worcester-bosch.html#:~:text=47-800-56|_blank' in r and 'Open all' not in 'x' and r.count('boilermanuals.com') >= 2, r)
+        r = ev(pg, """(async()=>{ ui.view='tools'; ui.tool='man'; render(); const s=document.querySelector('[data-mn=make]'); s.value='Worcester Bosch'; s.dispatchEvent(new Event('change',{bubbles:true})); const q=document.querySelector('[data-mn=q]'); q.value='47-800-56'; q.dispatchEvent(new Event('input',{bubbles:true})); const a=[...document.querySelectorAll('#mnRes a')].map(x=>x.href+'|'+x.target+'|'+(x.dataset.gc||'')); return JSON.stringify(a) })()""")
+        check('Manual search finds a model by GC and links to boilermanuals.com in a new tab', 'boilermanuals.com/|_blank' in r and 'worcester-bosch.html' in r, r)
         ctx.close()
 
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------

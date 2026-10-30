@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v282', items: ['Boiler manual search: tapping a boiler now copies its GC number and opens boilermanuals.com, so you can paste the number straight into their search bar.'] },
   { v: 'v281', items: ['Settings: the Help guide, What\u2019s new, Show the tour and Feedback buttons now sit in two rows, so Feedback is no longer pushed off the edge of the screen.'] },
   { v: 'v280', items: ['New Tools option: Boiler manual search. Pick the make, type the model or GC number and tap to find the manual. The manuals come from boilermanuals.com, which opens in a new tab.'] },
   { v: 'v279', items: ['PDF tidy-up: the TOTAL and PRICE headings on quotes now line up with their figures and the total box stays inside the page margin. Also fixed a fault where an invoice could fail to make a PDF if no business name had been entered yet.'] },
