@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v284', items: ['Tools: Boiler manual search now always sits at the top of the list.'] },
   { v: 'v283', items: ['Boiler manual search: fixed the GC number not copying when you tap a boiler. It now copies first, shows a message, then opens boilermanuals.com.'] },
   { v: 'v282', items: ['Boiler manual search: tapping a boiler now copies its GC number and opens boilermanuals.com, so you can paste the number straight into their search bar.'] },
   { v: 'v281', items: ['Settings: the Help guide, What\u2019s new, Show the tour and Feedback buttons now sit in two rows, so Feedback is no longer pushed off the edge of the screen.'] },
