@@ -281,7 +281,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 4px rgba(217,178,95,.14
 .stabs.grid{display:grid;grid-template-columns:repeat(3,1fr);overflow:visible;margin:0 0 14px;padding:0}
 .stabs.grid button{padding:10px 6px;text-align:center}
 .stabs.five{grid-template-columns:repeat(6,1fr)}.stabs.five button{grid-column:span 2}.stabs.five button:nth-child(n+4){grid-column:span 3}
-.sethelp{display:flex;gap:8px;margin:0 0 12px}.sethelp .btn{flex:1;min-height:40px;padding:0 6px;font-size:15px;white-space:nowrap}
+.sethelp{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 12px}.sethelp .btn{flex:1;min-height:40px;padding:0 6px;font-size:15px;white-space:nowrap}
 
 /* calendar */
 .calhd{display:flex;align-items:center;justify-content:space-between;margin:4px 0 10px}
