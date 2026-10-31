@@ -1669,6 +1669,14 @@ def run():
         check('Annual checks due shows one line, and the i button reveals the rest', r == 'false,true', r)
         ctx.close()
 
+        # ---------- 12am20. quote model box searches the price list ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(async()=>{ qSeed(); const cu={id:'cq',name:'Q Test',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu); const rec=newRecord(cu,'quote'); ui.rec=rec; ui.view='form'; for (let s=0;s<4;s++){ ui.step=s; render(); await new Promise(r=>setTimeout(r,150)); if(document.querySelector('input[data-k=model]')) break; }
+          const inp=document.querySelector('input[data-k=model]'); if(!inp) return 'no box'; inp.value='8000'; inp.dispatchEvent(new Event('input',{bubbles:true})); await new Promise(r=>setTimeout(r,200));
+          const bt=document.querySelector('#qModelSug button'); if(!bt) return 'no suggestions'; const label=bt.textContent; bt.click(); await new Promise(r=>setTimeout(r,200)); return [label.includes('8000'), ui.rec.model===label.split(' · ')[0].replace(ui.rec.make+' ',''), !!ui.rec.kw].join() })()""")
+        check('Quote model box suggests price list boilers and fills the quote when tapped', r == 'true,true,true', r)
+        ctx.close()
+
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(async()=>{ qSeed(); const cu={id:'c1',name:'Hold Still',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);

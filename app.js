@@ -923,7 +923,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v285';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v286';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1930,7 +1930,7 @@ function quoBoiler() {
     ${choice('kind', 'Boiler type', QUO.KIND, { req: 1, wrap: 1 })}
     <div class="f ${ui.showErr && !r.make ? 'bad' : ''}" data-f="make"><span>Boiler make <b>*</b></span><div class="seg wrap">${mk.map(x => `<button type="button" class="${r.make === x ? 'on' : ''}" data-k="make" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div></div>
     ${r.make === 'Other' ? txt('makeOther', 'Boiler make (other)', { req: 1 }) : ''}
-    ${txt('model', 'Boiler model', { req: 1 })}
+    ${txt('model', 'Boiler model', { req: 1, ph: 'Start typing to search your price list' })}<div id="qModelSug">${qModelSug()}</div>
     <div class="row">${txt('kw', 'Output (kW)', { mode: 'decimal' })}${txt('boilerPrice', 'Boiler price (£)', { req: 1, mode: 'decimal' })}</div>
     <div class="f" data-f="warranty"><span>Manufacturer warranty</span><div class="seg wrap">${QUO.WARRANTY.map(x => `<button type="button" class="${r.warranty === x ? 'on' : ''}" data-k="warranty" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div></div>
   </div>
@@ -2035,6 +2035,17 @@ function renderPrices(v) {
 }
 /* make (or category) dropdown + search box + the matching items to tap */
 const QF_LIST = { boiler: () => qOf('Boiler'), extra: qExtraList };
+/* typing in the quote's model box suggests boilers from the price list; tapping one fills make, model, kW, price and warranty */
+function qModelSug() {
+  const r = ui.rec; if (!r || r.general) return '';
+  const words = String(r.model || '').toLowerCase().split(/\s+/).filter(Boolean), mk = r.make === 'Other' ? (r.makeOther || '') : (r.make || '');
+  if (!words.length) return '';
+  const list = QF_LIST.boiler();
+  const hits = list.map((x, i) => [x, i]).filter(([x]) => (!mk || !x.make || x.make === mk || mk.toLowerCase() === String(x.make).toLowerCase()) && words.every(w => (x.make + ' ' + x.name + ' ' + x.kw + 'kw ' + x.kind + ' ' + (x.t_gc || '')).toLowerCase().includes(w)));
+  if (!hits.length || (hits.length === 1 && String(hits[0][0].name).toLowerCase() === String(r.model).trim().toLowerCase())) return '';
+  return '<div class="qres" style="margin:-4px 0 12px">' + hits.slice(0, 8).map(([x, i]) => `<button type="button" class="btn ghost" style="display:block;width:100%;text-align:left;margin-bottom:6px" data-act="qFind" data-kind="boiler" data-i="${i}">${esc(x.make + ' ' + x.name + (x.kw && !new RegExp('\\b' + x.kw + ' ?kw', 'i').test(x.name) ? ' · ' + x.kw + 'kW' : '') + (x.kind ? ' · ' + x.kind : ''))}</button>`).join('') + '</div>';
+}
+document.addEventListener('input', e => { const t = e.target; if (!t.dataset || t.dataset.k !== 'model' || !ui.rec || ui.rec.type !== 'quote' || ui.view !== 'form') return; setTimeout(() => { const el = document.getElementById('qModelSug'); if (el) el.innerHTML = qModelSug(); }, 0); });
 function qFindRes(kind) {
   const f = (ui.qf = ui.qf || {})[kind] || {}, list = QF_LIST[kind]();
   if (f.done) return '';
