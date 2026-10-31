@@ -923,7 +923,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v284';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v285';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -3050,6 +3050,7 @@ document.addEventListener('click', async e => {
   if (a === 'sampleOff') { if (confirm('Remove the sample customers and forms?')) { SAMPLE.remove(); render(); toast('Sample data removed'); } return; }
   if (a === 'remOpen') { ui.view = 'due'; render(); window.scrollTo(0, 0); return; }
   if (a === 'remSent') { const id = b.dataset.id; setTimeout(() => { const o = remGet(); o.s[id] = todayISO(); remSet(o); if (ui.view === 'due') { const y = window.scrollY; render(); window.scrollTo(0, y); } }, 600); return; }
+  if (a === 'remInfo') { ui.remInfo = !ui.remInfo; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
   if (a === 'remDone') { const rr = records.find(x => x.id === b.dataset.id); if (rr) remSetState(rr, b.dataset.v); toast(b.dataset.v === 'booked' ? 'Marked as booked in' : 'Removed from the list'); render(); return; }
   if (a === 'remStop') { if (confirm('Stop reminders for this property? You can still do its next check as normal.')) { const o = remGet(); o.stop[b.dataset.key] = 1; remSet(o); const rr = records.find(x => x.id === b.dataset.id); if (rr) remSetState(rr, 'stop'); render(); } return; }
   if (a === 'invAskPaidEarlier') { const i = invoices.find(x => x.id === b.dataset.id); const o = document.getElementById('askBox'); if (o) o.remove(); if (i) { i.paid = true; i.paidDate = todayISO(); persistInv(i); invGo(i, 'invoices'); toast('Marked as paid – set the date paid under Dates'); } return; }

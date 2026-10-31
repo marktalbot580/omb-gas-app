@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v285', items: ['Annual checks due: the long explanation is now hidden behind a small i button, so the screen starts with just one line.'] },
   { v: 'v284', items: ['Tools: Boiler manual search now always sits at the top of the list.'] },
   { v: 'v283', items: ['Boiler manual search: fixed the GC number not copying when you tap a boiler. It now copies first, shows a message, then opens boilermanuals.com.'] },
   { v: 'v282', items: ['Boiler manual search: tapping a boiler now copies its GC number and opens boilermanuals.com, so you can paste the number straight into their search bar.'] },

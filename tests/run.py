@@ -1663,6 +1663,12 @@ def run():
         check('Manual search finds a model by GC and links to boilermanuals.com in a new tab', 'boilermanuals.com/|_blank' in r and 'worcester-bosch.html' in r, r)
         ctx.close()
 
+        # ---------- 12am19. Annual checks due: explanation hides behind an i button ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(async()=>{ ui.view='due'; ui.remInfo=false; render(); const a=document.querySelectorAll('#view p.small.muted').length; const had=document.body.innerText.includes('Automatic emails'); document.querySelector('[data-act=remInfo]').click(); await new Promise(r=>setTimeout(r,200)); return [had, document.body.innerText.includes('Automatic emails')].join() })()""")
+        check('Annual checks due shows one line, and the i button reveals the rest', r == 'false,true', r)
+        ctx.close()
+
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(async()=>{ qSeed(); const cu={id:'c1',name:'Hold Still',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);
