@@ -1677,6 +1677,12 @@ def run():
         check('Quote model box suggests price list boilers and fills the quote when tapped', r == 'true,true,true', r)
         ctx.close()
 
+        # ---------- 12am21. boiler information cards ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(async()=>{ ui.view='tools'; ui.tool='binfo'; ui.bi=null; render(); const q=document.querySelector('[data-bi-q]'); q.value='47-800-46'; q.dispatchEvent(new Event('input',{bubbles:true})); const n=document.querySelectorAll('#biList [data-bi=open]').length; document.querySelector('#biList [data-bi=open]').click(); await new Promise(r=>setTimeout(r,150)); const t=document.body.innerText; return [n, t.includes('4.3 m'), t.includes('6721108973'), t.includes('8.2 m')].join() })()""")
+        check('Boiler information finds a card by GC number and shows figures and its source manual', r == '1,true,true,true', r)
+        ctx.close()
+
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(async()=>{ qSeed(); const cu={id:'c1',name:'Hold Still',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);

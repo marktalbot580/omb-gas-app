@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v287', items: ['New Tools option: Boiler information. Cards with the key figures from the manufacturer\u2019s manual (gas rate, pressures, CO\u2082, flue lengths, clearances, weights). The first ones are the Worcester Greenstar 8000+ Style combis, with more to follow.'] },
   { v: 'v286', items: ['Boiler quote: the Boiler model box now searches your price list as you type. Tap a suggestion and the make, model, output, price and warranty are filled in.'] },
   { v: 'v285', items: ['Annual checks due: the long explanation is now hidden behind a small i button, so the screen starts with just one line.'] },
   { v: 'v284', items: ['Tools: Boiler manual search now always sits at the top of the list.'] },
