@@ -1683,6 +1683,12 @@ def run():
         check('Boiler information finds a card by GC number and shows figures and its source manual', r == '1,true,true,true', r)
         ctx.close()
 
+        # ---------- 12am22. boiler information opens at the list after leaving a card ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(async()=>{ ui.view='tools'; ui.tool='binfo'; ui.bi={q:'',id:BI_LIST[0].id}; render(); document.querySelector('[data-tl=go][data-v=menu]').click(); await new Promise(r=>setTimeout(r,100)); document.querySelector('[data-tl=go][data-v=binfo]').click(); await new Promise(r=>setTimeout(r,100)); return !!document.querySelector('#biList') })()""")
+        check('Boiler information starts at the list again, not the last card', r is True, r)
+        ctx.close()
+
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(async()=>{ qSeed(); const cu={id:'c1',name:'Hold Still',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);

@@ -485,7 +485,7 @@ function tlRepaint() { const y = window.scrollY; render(); window.scrollTo(0, y)
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-tl]'); if (!b || ui.view !== 'tools') return;
   const a = b.dataset.tl, v = b.dataset.v;
-  if (a === 'go') { if (v !== 'menu') tlCount(v); ui.tool = v; render(); window.scrollTo(0, 0); }
+  if (a === 'go') { if (v !== 'menu') tlCount(v); if (ui.bi) ui.bi.id = ''; ui.tool = v; render(); window.scrollTo(0, 0); }
   else if (a === 'favTool') { const f = tlFav(); if (f[v]) delete f[v]; else f[v] = 1; try { localStorage.setItem('omb_toolfav', JSON.stringify(f)); } catch (e) { } tlRepaint(); }
   else if (a === 'addRun') { TL.iv.runs.push({ pipe: 'cu22', len: '', v: '' }); tlSave(); tlRepaint(); }
   else if (a === 'rmRun') { TL.iv.runs.splice(+v, 1); tlSave(); tlRepaint(); }
@@ -508,7 +508,7 @@ document.addEventListener('click', e => {
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act="toolsOpen"]'); if (!b) return;
   if (TL.prop.cid && ui.view !== 'tools') { TL = TL_DEFAULT(); ui.toolPdf = null; try { delete ui.calc['tool-gas']; } catch (x) { } tlSave(); }   // left over from a customer: start clean from the front page
-  ui.toolBack = ''; ui.tool = 'menu'; ui.view = 'tools'; render(); window.scrollTo(0, 0);
+  if (ui.bi) ui.bi.id = ''; ui.toolBack = ''; ui.tool = 'menu'; ui.view = 'tools'; render(); window.scrollTo(0, 0);
 });
 document.addEventListener('input', e => {
   if (e.target.dataset && e.target.dataset.calc && ui.view === 'tools') setTimeout(() => { const el = document.getElementById('tlGasWork'); if (el) el.innerHTML = TL.work ? gasWork() : ''; }, 0);
