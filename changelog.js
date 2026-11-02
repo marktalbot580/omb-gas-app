@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v299', items: ['Boiler information: added the Baxi 600 Combi (original), Assure Combi and 400 Combi 2.1. Corrected the Gas Council number on the Baxi 600 System 2 (24).'] },
   { v: 'v298', items: ['Boiler information: added the Baxi 400 Heat, 800 Heat, 600 System 2 and 800 System 2.'] },
   { v: 'v297', items: ['Boiler information: added the Baxi 200 Combi 2 (224 and 228).'] },
   { v: 'v296', items: ['Boiler information: added the Baxi 600 Combi 2 (24, 30, 36) and Baxi 400 Combi 2 (424 and 430).'] },
