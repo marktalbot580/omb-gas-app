@@ -829,6 +829,7 @@ function biState() { return ui.bi || (ui.bi = { q: '', id: '', m: '' }); }
 function biListHtml() {
   const q = biState().q.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const mk = biState().m;
+  if (!mk && !q.length) return '<p class="small muted">Tap a make above, or type in the search box, to see boilers.</p>';
   const hits = BI_LIST.filter(b => (!mk || b.make === mk) && q.every(w => (b.make + ' ' + b.range + ' ' + b.model + ' ' + b.gc + ' ' + b.type).toLowerCase().includes(w)));
   return hits.length ? hits.map(b => `<button type="button" class="item cpick" style="width:100%;text-align:left" data-bi="open" data-v="${esc(b.id)}"><div class="t">${esc(b.make)} ${esc(b.range)} ${esc(b.model)}</div><div class="s">${esc(b.type)} · GC ${esc(b.gc)}</div></button>`).join('') : '<p class="muted small">No boiler matches that yet. More are being added.</p>';
 }
