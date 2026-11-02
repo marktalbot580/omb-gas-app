@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v292', items: ['Boiler information: added the Worcester Greenstar 4000, 2000 and 1000 combis (24/25 and 30 kW).'] },
   { v: 'v291', items: ['Boiler information: added the Worcester Greenstar 8000+ Style and 8000 Life regular and system boilers, and the 8000 floor-standing boilers (combi, regular and system).'] },
   { v: 'v290', items: ['Boiler information: added the Ideal Logic Max Combi2 (C24, C30 and C35).'] },
   { v: 'v289', items: ['Boiler information: added the Worcester Greenstar 8000 Life combis (30, 35, 40, 45 and 50 C).'] },
