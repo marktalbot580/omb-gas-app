@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v301', items: ['Boiler information: added more Vaillant boilers (ecoFIT sustain system and regular, ecoTEC plus regular) and the first Glow-worm combis (Sustain, Energy, Home, Easicom 3, Ultimate 3).'] },
   { v: 'v300', items: ['Boiler information: added the first Vaillant combis: ecoTEC sustain (24, 28, 34) and ecoFIT sustain (825, 830, 835).'] },
   { v: 'v299', items: ['Boiler information: added the Baxi 600 Combi (original), Assure Combi and 400 Combi 2.1. Corrected the Gas Council number on the Baxi 600 System 2 (24).'] },
   { v: 'v298', items: ['Boiler information: added the Baxi 400 Heat, 800 Heat, 600 System 2 and 800 System 2.'] },

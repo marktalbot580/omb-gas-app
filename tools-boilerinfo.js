@@ -273,16 +273,16 @@ const CFG_BX21 = { key: 'baxi-400c21-', range: '400 Combi 2.1', src: 'Baxi 400 C
 /* Vaillant combis (natural gas figures; page numbers are PDF pages). */
 function biVai(c, model, gc, o) {
   return {
-    id: c.key + model.replace(/\W+/g, '').toLowerCase(), make: 'Vaillant', range: c.range, model, type: 'Combi', gc, src: c.src,
+    id: c.key + model.replace(/\W+/g, '').toLowerCase(), make: c.make || 'Vaillant', range: c.range, model, type: 'Combi', gc, src: c.src,
     sections: [
-      ['Gas', [['Gas rate, natural gas, hot water maximum', o.ng + ' m³/h'], ['Gas supply', c.gasSup], ['Gas category', c.cat]].concat(o.ngMin ? [['Gas rate, natural gas, minimum', o.ngMin + ' m³/h']] : [])],
+      ['Gas', [['Gas rate, natural gas, hot water maximum', o.ng + ' m³/h'], ['Gas supply', c.gasSup]].concat(c.cat ? [['Gas category', c.cat]] : []).concat(o.ngMin ? [['Gas rate, natural gas, minimum', o.ngMin + ' m³/h']] : [])],
       ['Heat', [['Heating input, maximum', o.chIn + ' kW'], ['Heating input, minimum', o.min + ' kW'], ['Heating output (80/60 °C)', o.out + ' kW'], ['Heating output (50/30 °C)', o.out2 + ' kW'], ['Hot water input, maximum', o.dhwIn + ' kW'], ['Hot water output', o.dhwOut + ' kW']]],
-      ['Combustion', [['NOx class', '6']]],
+      ['Combustion', [['NOx class', c.nox || '6']]],
       ['Hot water', [['Specific flow (D, 30 K rise)', o.d30 + ' l/min'], ['Flow at 35 K rise', o.d35 + ' l/min']].concat(c.dhwRows).concat([[c.limLabel || 'Cold water flow limiter', o.lim + ' l/min']])],
-      ['Heating circuit', c.chRows],
+      ['Heating circuit', c.chRows.concat(o.pump ? [['Pump head at 20 K rise', o.pump]] : [])],
       ['Clearances', [['Case size (W x H x D)', c.dims]].concat(c.clear)],
       ['Flue', [['Maximum flue lengths', 'Not given in this manual. See the separate flue guide supplied with the boiler']]],
-      ['Condensate and electrics', [['Condensate, at 50/30 °C', c.cond], ['Supply', '230 V a.c., 50 Hz'], ['Power', o.w + ' W'], ['Built-in fuse', 'T2/2A 250 V'], ['Protection rating', 'IPX4D']]],
+      ['Condensate and electrics', [['Condensate, at 50/30 °C', o.cond || c.cond], ['Supply', '230 V a.c., 50 Hz'], ['Power', o.w + ' W'], ['Built-in fuse', 'T2/2A 250 V'], ['Protection rating', 'IPX4D']]],
       ['Weight', [['Appliance', o.kg + ' kg'], ['Filled with water', o.kgw + ' kg']]]
     ]
   };
@@ -297,6 +297,52 @@ const CFG_VFIT = { key: 'vai-fitsus63-', range: 'ecoFIT sustain', src: 'Vaillant
   chRows: [['Maximum flow temperature adjustment', '10 to 80 °C (75 °C as supplied)'], ['Maximum operating pressure', '2.5 bar']],
   clear: [['Above (top air/flue connection)', '150 mm'], ['Above (rear air/flue connection)', '20 mm'], ['Below', '150 mm'], ['Either side', '5 mm (70 mm if the side sections have to be removed)'], ['In front', '500 mm']] };
 
+function biVaiR(c, model, type, gc, o) {
+  return {
+    id: c.key + model.replace(/\W+/g, '').toLowerCase(), make: 'Vaillant', range: c.range, model, type, gc, src: c.src,
+    sections: [
+      ['Gas', [['Gas rate, natural gas, heating maximum', o.ngH + ' m³/h'], ['Gas rate, natural gas, hot water (cylinder) maximum', o.ngW + ' m³/h'], ['Gas rate, natural gas, minimum', o.ngMin + ' m³/h'], ['Gas supply', '20 mbar natural gas'], ['Gas category', 'I2H']]],
+      ['Heat', [['Heating input, maximum', o.chIn + ' kW'], ['Heating input, minimum', o.min + ' kW'], ['Heating output (80/60 °C)', o.out + ' kW'], ['Heating output (50/30 °C)', o.out2 + ' kW'], ['Hot water (cylinder) input, maximum', o.dhwIn + ' kW'], ['Hot water (cylinder) output', o.dhwOut + ' kW']]],
+      ['Combustion', [['NOx class', c.nox]]],
+      ['Heating circuit', [['Maximum flow temperature adjustment', '10 to 80 °C (75 °C as supplied)'], ['Maximum permissible pressure', c.maxP], ['Nominal water flow, 20 K rise', o.fl20 + ' l/h'], ['Nominal water flow, 30 K rise', o.fl30 + ' l/h']].concat(c.pump ? [['Pump head at 20 K rise', c.pump]] : [])],
+      ['Clearances', [['Case size (W x H x D)', c.dims]].concat(c.clear)],
+      ['Flue', [['Maximum flue lengths', 'Not given in this manual. See the separate flue guide supplied with the boiler']]],
+      ['Condensate and electrics', [['Condensate, at 50/30 °C', o.cond + ' l/h'], ['Supply', '230 V a.c., 50 Hz'], ['Power', o.w + ' W'], ['Built-in fuse', 'T2/2A 250 V'], ['Protection rating', 'IPX4D']]],
+      ['Weight', [['Appliance', o.kg + ' kg'], ['Filled with water', o.kgw + ' kg']]]
+    ]
+  };
+}
+const CFG_VFSYS = { key: 'vai-fitsys63-', range: 'ecoFIT sustain', nox: '5', maxP: '3.0 bar', pump: '0.250 bar', src: 'Vaillant ecoFIT sustain VU 6-3 system boiler installation and maintenance instructions (0020277252_00): technical data pages 44 to 45, clearances page 8',
+  dims: '390 x 702 x 295 mm',
+  clear: [['Above (top air/flue connection)', '150 mm'], ['Above (rear air/flue connection)', '20 mm'], ['Below', '150 mm'], ['Either side', '5 mm (70 mm if the side sections have to be removed)'], ['In front', '600 mm']] };
+const CFG_VFOV = { key: 'vai-fitov63-', range: 'ecoFIT sustain', nox: '6', maxP: '2.5 bar', src: 'Vaillant ecoFIT sustain VU 6-3 OV open-vent boiler installation and maintenance instructions (0020277262_03): technical data pages 6 to 8, clearances page 12',
+  dims: '375 x 602 x 295 mm',
+  clear: [['Above (top air/flue connection)', '150 mm'], ['Above (rear air/flue connection)', '75 mm'], ['Below', '150 mm'], ['Either side', '5 mm'], ['In front', '500 mm']] };
+
+const CFG_VEPOV = { key: 'vai-epov56-', range: 'ecoTEC plus', nox: '5', maxP: '3.0 bar', src: 'Vaillant ecoTEC plus VU 5-6 OV open-vent boiler installation and maintenance instructions (0020200871_00): technical data pages 39 to 42, clearances page 8',
+  dims: '375 x 600 x 280 mm',
+  clear: [['Above', '150 mm'], ['Below', '150 mm'], ['Either side', '5 mm'], ['In front', '600 mm']] };
+const CFG_GWSUS = { key: 'gw-sus-', make: 'Glow-worm', range: 'Sustain', nox: '5', src: 'Glow-worm Sustain 25c/30c/35c installation and maintenance instructions (0020200954_00): technical data pages 44 to 46, clearances page 10',
+  gasSup: '20 mbar natural gas', cat: 'I2H', dims: '390 x 700 x 280 mm', cond: '1.84 l/h',
+  dhwRows: [['Minimum pressure', '0.3 bar'], ['Recommended pressure', '2.0 bar'], ['Maximum pressure', '10 bar'], ['Hot water temperature range', '35 to 60 °C']],
+  chRows: [['Maximum flow temperature adjustment', '10 to 80 °C (75 °C as supplied)'], ['Maximum permissible pressure', '3.0 bar']],
+  clear: [['Above', '150 mm'], ['Below', '150 mm'], ['Either side', '5 mm'], ['In front', '600 mm']] };
+const CFG_GWEN = { key: 'gw-en-', make: 'Glow-worm', range: 'Energy', nox: '5', src: 'Glow-worm Energy 25c/30c/35c installation and maintenance instructions (0020177746_00): technical data pages 44 to 45, clearances in section 4.5',
+  gasSup: '20 mbar natural gas', cat: 'I2H', dims: '390 x 700 x 280 mm',
+  dhwRows: CFG_GWSUS.dhwRows, chRows: CFG_GWSUS.chRows, clear: CFG_GWSUS.clear };
+const CFG_GWHOME = { key: 'gw-home-', make: 'Glow-worm', range: 'Home', nox: '5', src: 'Glow-worm Home 25c/30c/35c installation and maintenance instructions (0020206379_02): technical data pages 47 to 49',
+  gasSup: '20 mbar natural gas', cat: 'II2H3P', dims: '418 x 740 x 300 mm', cond: '1.53 l/h',
+  dhwRows: [['Minimum pressure', '0.3 bar'], ['Maximum pressure', '10 bar'], ['Hot water temperature range', '35 to 60 °C']],
+  chRows: [['Maximum flow temperature adjustment', '10 to 80 °C (75 °C as supplied)'], ['Maximum permissible pressure', '3.0 bar']],
+  clear: [['Clearances', 'Not shown here. See the clearances drawing in section 4.5 of the manual']] };
+const CFG_GWEASI = { key: 'gw-easi3-', make: 'Glow-worm', range: 'Easicom 3', nox: '5', src: 'Glow-worm Easicom 3 24c/28c installation and maintenance instructions (0020239562_02): technical data pages 45 to 46, clearances page 9',
+  gasSup: '20 mbar natural gas', dims: '418 x 740 x 300 mm',
+  dhwRows: [['Minimum pressure', '0.3 bar'], ['Maximum pressure', '10 bar'], ['Hot water temperature range', '35 to 60 °C']],
+  chRows: [['Maximum flow temperature adjustment', '10 to 80 °C (75 °C as supplied)'], ['Maximum operating pressure', '2.5 bar'], ['Expansion relief valve opens at', '3.0 bar']],
+  clear: [['Above and below', '150 mm each'], ['Either side', '0 mm (50 mm needed to remove the side section)'], ['In front', '600 mm (5 mm for a cabinet-type casing)']] };
+const CFG_GWULT = { key: 'gw-ult3-', make: 'Glow-worm', range: 'Ultimate 3', nox: '5', src: 'Glow-worm Ultimate 3 30c/35c installation and maintenance instructions (0020239566_01): technical data pages 46 to 48, clearances page 9',
+  gasSup: '20 mbar natural gas (natural gas only)', dims: '418 x 740 x 300 mm', cond: '2.55 l/h',
+  dhwRows: CFG_GWEASI.dhwRows, chRows: CFG_GWEASI.chRows, clear: CFG_GWEASI.clear };
 const BI_LIST = [
   bi8000('GR8701iW 32 C V2', '47-800-44', { ng: '3.4', lpg: '2.4', mod: '4.3 to 30.2', adj: '8.4 to 30.2', out: '8.2 to 29.1', dhwIn: '32.0', dhw: '12.0', mp: '1.2', h1: '15', h2: '15', h3: '12.2', v1: '19', h4: '25', v2: '25', cond: '3.5', kg: '49', lift: '43' }),
   bi8000('GR8701iW 36 C', '47-800-45', { ng: '3.8', lpg: '2.8', mod: '5.1 to 34.4', adj: '17.2 to 34.4', out: '16.9 to 33.7', dhwIn: '36.0', dhw: '13.5', mp: '1.4', h1: '10', h2: '10', h3: '7.2', v1: '13', h4: '29', v2: '29', cond: '4.1', kg: '49', lift: '43' }),
@@ -409,6 +455,38 @@ const BI_LIST = [
   biVai(CFG_VFIT, 'VUW 256/6-3 (ecoFIT sustain 825)', '47-044-71', { ng: '2.7', ngMin: '0.540', chIn: '18.4', min: '5.1', out: '5.1 to 18.3', out2: '5.3 to 19.1', dhwIn: '25.7', dhwOut: '5.0 to 25.2', d30: '12.1', d35: '10.4', lim: '8.0', w: '87', kg: '32', kgw: '36' }),
   biVai(CFG_VFIT, 'VUW 306/6-3 (ecoFIT sustain 830)', '47-044-72', { ng: '3.2', ngMin: '0.646', chIn: '18.4', min: '6.1', out: '6.1 to 18.3', out2: '6.3 to 19.1', dhwIn: '30.6', dhwOut: '6.0 to 30.0', d30: '14.2', d35: '12.2', lim: '10.0', w: '87', kg: '33', kgw: '37' }),
   biVai(CFG_VFIT, 'VUW 356/6-3 (ecoFIT sustain 835)', '47-044-73', { ng: '3.8', ngMin: '0.762', chIn: '18.4', min: '7.2', out: '7.2 to 18.3', out2: '7.5 to 19.1', dhwIn: '35.7', dhwOut: '7.1 to 35.0', d30: '16.5', d35: '14.1', lim: '12.0', w: '98', kg: '33', kgw: '37' })
+  ,
+  biVaiR(CFG_VFSYS, 'VU 156/6-3 (ecoFIT sustain 615)', 'System', '41-694-30', { ngH: '1.6', ngW: '1.9', ngMin: '0.480', chIn: '15.3', min: '4.5', out: '4.5 to 15.2', out2: '4.7 to 15.9', dhwIn: '18.4', dhwOut: '4.4 to 18.0', fl20: '655', fl30: '436', cond: '1.53', w: '81', kg: '31', kgw: '35' }),
+  biVaiR(CFG_VFSYS, 'VU 186/6-3 (ecoFIT sustain 618)', 'System', '41-694-31', { ngH: '1.9', ngW: '2.7', ngMin: '0.533', chIn: '18.4', min: '5.0', out: '5.0 to 18.3', out2: '5.2 to 19.1', dhwIn: '25.7', dhwOut: '4.9 to 25.2', fl20: '788', fl30: '525', cond: '1.84', w: '87', kg: '31', kgw: '35' }),
+  biVaiR(CFG_VFSYS, 'VU 306/6-3 (ecoFIT sustain 630)', 'System', '41-694-32', { ngH: '3.2', ngW: '3.8', ngMin: '0.762', chIn: '30.6', min: '7.2', out: '7.2 to 30.5', out2: '7.5 to 31.8', dhwIn: '35.7', dhwOut: '7.1 to 35.0', fl20: '1,102', fl30: '876', cond: '3.06', w: '104', kg: '32', kgw: '36' }),
+  biVaiR(CFG_VFOV, 'VU 156/6-3 OV (ecoFIT sustain 415)', 'Regular (open vent)', '41-694-33', { ngH: '1.6', ngW: '1.9', ngMin: '0.480', chIn: '15.3', min: '4.5', out: '4.5 to 15.2', out2: '4.7 to 15.9', dhwIn: '18.4', dhwOut: '4.4 to 18.0', fl20: '655', fl30: '436', cond: '1.53', w: '29', kg: '22', kgw: '26' }),
+  biVaiR(CFG_VFOV, 'VU 186/6-3 OV (ecoFIT sustain 418)', 'Regular (open vent)', '41-694-34', { ngH: '1.9', ngW: '2.7', ngMin: '0.533', chIn: '18.4', min: '5.0', out: '5.0 to 18.3', out2: '5.2 to 19.1', dhwIn: '25.7', dhwOut: '4.9 to 25.2', fl20: '788', fl30: '525', cond: '1.84', w: '35', kg: '22', kgw: '26' }),
+  biVaiR(CFG_VFOV, 'VU 306/6-3 OV (ecoFIT sustain 430)', 'Regular (open vent)', '41-694-35', { ngH: '3.2', ngW: '3.8', ngMin: '0.756', chIn: '30.6', min: '7.1', out: '7.1 to 30.2', out2: '7.4 to 31.8', dhwIn: '35.7', dhwOut: '7.0 to 35.0', fl20: '1,313', fl30: '876', cond: '3.06', w: '44', kg: '22', kgw: '27' })
+  ,
+  biVaiR(CFG_VEPOV, 'VU 126/6-5 OV (ecoTEC plus 12)', 'Regular (open vent)', '41-044-71', { ngH: '1.3', ngW: '1.9', ngMin: '0.480', chIn: '12.3', min: '5.0', out: '4.5 to 12.3', out2: '4.7 to 12.8', dhwIn: '18.4', dhwOut: '4.4 to 18.0', fl20: '530', fl30: '353', cond: '1.23', w: '65', kg: '23', kgw: '27' })
+  ,
+  biVaiR(CFG_VEPOV, 'VU 156/6-5 OV (ecoTEC plus 15)', 'Regular (open vent)', '41-044-72', { ngH: '1.6', ngW: '1.9', ngMin: '0.480', chIn: '15.3', min: '4.5', out: '4.5 to 15.2', out2: '4.7 to 15.9', dhwIn: '18.4', dhwOut: '4.4 to 18.0', fl20: '655', fl30: '436', cond: '1.53', w: '65', kg: '23', kgw: '27' })
+  ,
+  biVaiR(CFG_VEPOV, 'VU 186/6-5 OV (ecoTEC plus 18)', 'Regular (open vent)', '41-044-73', { ngH: '1.9', ngW: '2.7', ngMin: '0.533', chIn: '18.4', min: '5.0', out: '5.0 to 18.3', out2: '5.2 to 19.1', dhwIn: '25.7', dhwOut: '5.0 to 25.2', fl20: '788', fl30: '525', cond: '1.84', w: '66', kg: '23', kgw: '27' })
+  ,
+  biVaiR(CFG_VEPOV, 'VU 246/6-5 OV (ecoTEC plus 24)', 'Regular (open vent)', '41-044-74', { ngH: '2.6', ngW: '3.2', ngMin: '0.646', chIn: '24.7', min: '6.1', out: '6.1 to 24.6', out2: '6.3 to 25.7', dhwIn: '30.6', dhwOut: '6.0 to 30.0', fl20: '1,059', fl30: '706', cond: '2.47', w: '75', kg: '23', kgw: '28' })
+  ,
+  biVaiR(CFG_VEPOV, 'VU 306/6-5 OV (ecoTEC plus 30)', 'Regular (open vent)', '41-044-75', { ngH: '3.2', ngW: '3.8', ngMin: '0.762', chIn: '30.6', min: '7.2', out: '7.2 to 30.5', out2: '7.5 to 31.8', dhwIn: '35.7', dhwOut: '7.1 to 35.0', fl20: '1,313', fl30: '876', cond: '3.06', w: '60', kg: '23', kgw: '28' })
+  ,
+  biVai(CFG_GWSUS, 'Sustain 25c', '47-019-32', { ng: '2.7', ngMin: '0.540', chIn: '18.4', min: '5.1', out: '5.1 to 18.3', out2: '5.3 to 19.1', dhwIn: '25.7', dhwOut: '5.0 to 25.2', d30: '12.1', d35: '10.4', lim: '8.0', w: '75', kg: '32', kgw: '36', pump: '0.250 bar' }),
+  biVai(CFG_GWSUS, 'Sustain 30c', '47-019-33', { ng: '3.2', ngMin: '0.646', chIn: '18.4', min: '6.1', out: '6.1 to 18.3', out2: '6.3 to 19.1', dhwIn: '30.6', dhwOut: '6.0 to 30.0', d30: '14.2', d35: '12.2', lim: '10.0', w: '75', kg: '33', kgw: '37', pump: '0.250 bar' }),
+  biVai(CFG_GWSUS, 'Sustain 35c', '47-019-34', { ng: '3.8', ngMin: '0.762', chIn: '18.4', min: '7.2', out: '7.2 to 18.3', out2: '7.5 to 19.1', dhwIn: '35.7', dhwOut: '7.1 to 35.0', d30: '16.5', d35: '14.1', lim: '12.0', w: '38', kg: '33', kgw: '37', pump: '0.180 bar' })
+  ,
+  biVai(CFG_GWEN, 'Energy 25c', '47-019-24', { ng: '2.7', ngMin: '0.540', chIn: '18.4', min: '5.1', out: '5.0 to 18.3', out2: '5.3 to 19.1', dhwIn: '25.7', dhwOut: '5.0 to 25.2', d30: '12.1', d35: '10.4', lim: '8.0', w: '66', kg: '32', kgw: '36', pump: '0.250 bar', cond: '1.84 l/h' }),
+  biVai(CFG_GWEN, 'Energy 30c', '47-019-25', { ng: '3.2', ngMin: '0.646', chIn: '25.5', min: '6.1', out: '6.1 to 25.4', out2: '6.3 to 26.5', dhwIn: '30.6', dhwOut: '6.0 to 30.0', d30: '14.2', d35: '12.2', lim: '10.0', w: '75', kg: '33', kgw: '38', pump: '0.250 bar', cond: '2.55 l/h' }),
+  biVai(CFG_GWEN, 'Energy 35c', '47-019-26', { ng: '3.8', ngMin: '0.762', chIn: '25.7', min: '7.2', out: '7.2 to 25.6', out2: '7.5 to 26.7', dhwIn: '35.7', dhwOut: '7.1 to 35.0', d30: '16.5', d35: '14.1', lim: '12.0', w: '60', kg: '33', kgw: '38', pump: '0.180 bar', cond: '2.57 l/h' }),
+  biVai(CFG_GWHOME, 'Home 25c', '47-019-29', { ng: '2.7', chIn: '15.3', min: '5.1', out: '5.1 to 15.2', out2: '5.3 to 15.9', dhwIn: '25.7', dhwOut: '5.0 to 25.2', d30: '12.1', d35: '10.4', lim: '8', w: '105', kg: '32', kgw: '36', pump: '0.410 bar' }),
+  biVai(CFG_GWHOME, 'Home 30c', '47-019-30', { ng: '3.2', chIn: '15.3', min: '6.1', out: '6.1 to 15.2', out2: '6.3 to 15.9', dhwIn: '30.6', dhwOut: '6.0 to 30.0', d30: '14.2', d35: '12.2', lim: '10', w: '110', kg: '32.6', kgw: '37', pump: '0.390 bar' }),
+  biVai(CFG_GWHOME, 'Home 35c', '47-019-31', { ng: '3.8', chIn: '15.3', min: '7.2', out: '7.2 to 15.2', out2: '7.5 to 15.9', dhwIn: '35.7', dhwOut: '7.1 to 35.0', d30: '16.5', d35: '14.1', lim: '12', w: '120', kg: '32.7', kgw: '37.2', pump: '0.420 bar' }),
+  biVai(CFG_GWEASI, 'Easicom 3 24c', '47-019-50', { ng: '2.6', chIn: '20.4', min: '5.1', out: '5.0 to 20.2', out2: '5.3 to 21.2', dhwIn: '24.7', dhwOut: '5.0 to 24.2', d30: '11.7', d35: '10.0', lim: '8', w: '105', kg: '32', kgw: '36', pump: '0.250 bar', cond: '2.04 l/h' }),
+  biVai(CFG_GWEASI, 'Easicom 3 28c', '47-019-51', { ng: '3.0', chIn: '24.7', min: '6.1', out: '6.1 to 24.4', out2: '6.3 to 25.7', dhwIn: '28.6', dhwOut: '6.0 to 28.0', d30: '13.6', d35: '11.7', lim: '10', w: '110', kg: '32.6', kgw: '37.1', pump: '0.250 bar', cond: '2.47 l/h' }),
+  biVai(CFG_GWULT, 'Ultimate 3 30c', '47-019-55', { ng: '3.2', chIn: '25.5', min: '6.1', out: '6.0 to 25.2', out2: '6.3 to 26.5', dhwIn: '30.6', dhwOut: '6.0 to 30.0', d30: '14.5', d35: '12.4', lim: '10', w: '110', kg: '32.6', kgw: '37.1', pump: '0.220 bar' }),
+  biVai(CFG_GWULT, 'Ultimate 3 35c', '47-019-57', { ng: '3.8', chIn: '25.5', min: '7.1', out: '7.0 to 25.3', out2: '7.4 to 26.5', dhwIn: '35.7', dhwOut: '7.0 to 35.0', d30: '16.8', d35: '14.4', lim: '12', w: '120', kg: '32.7', kgw: '37.2', pump: '0.250 bar' })
 ];
 function biState() { return ui.bi || (ui.bi = { q: '', id: '' }); }
 function biListHtml() {
