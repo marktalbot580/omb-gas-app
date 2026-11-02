@@ -124,6 +124,25 @@ const CFG_G2 = { key: 'wb-2300-', range: 'Greenstar 2000', dims: '400 x 724 x 30
 const CFG_G1 = { key: 'wb-1000-', range: 'Greenstar 1000', dims: '395 x 655 x 285 mm', src: 'Worcester Greenstar 1000, manual 6721835943 (2023/08): clearances page 15, flue page 17, technical data page 97. Natural gas models',
   clear: [['In front', '600 mm'], ['Either side', '2.5 mm'], ['Below', '200 mm'], CLEAR_ABOVE, ['Compartment depth', '300 mm (clearance to combustible material)'], ['Space to removable door', '15 mm']] };
 
+/* Ideal Logic Max System2 and Heat2 (natural gas only). Flue lengths are not shown: the manual's length table is headed 24/30/35 kW (the combi sizes), so check the manual. */
+function biIdealRS(kind, kw, gc, o) {
+  const sys = kind === 'S';
+  return {
+    id: 'ideal-lm' + kind.toLowerCase() + '2-' + kw, make: 'Ideal', range: sys ? 'Logic Max System2' : 'Logic Max Heat2', model: (sys ? 'S' : 'H') + kw, type: sys ? 'System' : 'Regular', gc,
+    src: 'Ideal Logic Max ' + (sys ? 'System2' : 'Heat2') + ' installation and servicing guide: tables 1 and 2 page 6, clearances page 11',
+    sections: [
+      ['Gas', [['Gas rate, natural gas (at maximum)', o.rate + ' m³/h'], ['Gas supply', 'Natural gas only, 20 mbar'], ['Injector size', (kw === '30' ? '4.65' : '4.15') + ' mm'], ['Gas connection', '15 mm copper compression']]],
+      ['Heat', [['Heat input (net), maximum', o.max + ' kW'], ['Heat input (net), minimum', (kw === '30' ? '6.1' : '4.9') + ' kW'], ['Heating output, maximum (70 °C mean)', o.out + ' kW'], ['Heating output, minimum (70 °C mean)', (kw === '30' ? '6.1' : '4.8') + ' kW']]],
+      ['Combustion', [['CO₂ at maximum, ±0.7', o.co2a + ' %'], ['CO₂ at minimum, ±0.7', o.co2b + ' %'], ['NOx class', '6']]],
+      ['Heating circuit', [['Maximum working pressure', '2.5 bar'], ['Heating water content', '1.2 litres'], ['Flow and return', '22 mm copper compression']]],
+      ['Flue (100 mm concentric)', [['Each 45° elbow counts as', '0.6 m'], ['Each 90° elbow counts as', '1.0 m'], ['Maximum flue lengths', 'See the flue section of the manual']]],
+      ['Clearances', [['Case size (W x H x D)', '395 x 700 x 278 mm'], ['Below, for servicing', '100 mm (15 mm after installation, with an easily removable panel)'], ['In front, in a cupboard', '5 mm from the door, but 450 mm overall with the door open'], ['Other clearances', 'See the clearance diagram, page 11']]],
+      ['Electrics', [['Supply', '230 V a.c., 50 Hz'], ['Power', o.w + ' W'], ['Fuses', 'External 3 A, internal T4A HRC L250 V']]],
+      ['Weight', [['Packaged', (sys ? '33.2' : '27.0') + ' kg'], ['Lift weight', (sys ? '27.3' : '21.9') + ' kg']]]
+    ]
+  };
+}
+
 const BI_LIST = [
   bi8000('GR8701iW 32 C V2', '47-800-44', { ng: '3.4', lpg: '2.4', mod: '4.3 to 30.2', adj: '8.4 to 30.2', out: '8.2 to 29.1', dhwIn: '32.0', dhw: '12.0', mp: '1.2', h1: '15', h2: '15', h3: '12.2', v1: '19', h4: '25', v2: '25', cond: '3.5', kg: '49', lift: '43' }),
   bi8000('GR8701iW 36 C', '47-800-45', { ng: '3.8', lpg: '2.8', mod: '5.1 to 34.4', adj: '17.2 to 34.4', out: '16.9 to 33.7', dhwIn: '36.0', dhw: '13.5', mp: '1.4', h1: '10', h2: '10', h3: '7.2', v1: '13', h4: '29', v2: '29', cond: '4.1', kg: '49', lift: '43' }),
@@ -165,7 +184,16 @@ const BI_LIST = [
   biG(CFG_G2, 'GR2300iW 25 C', '47-800-26', { ng: '2.60', gcl: '47-800-27', mod: '4.9 to 20.4', out: '4.8 to 20.0', dhwIn: '25.5', co2a: '9.4', co2b: '8.6', d40: '9', d35: '10', mp: '1.5', mpmin: '0.3', start: '2.5', maxop: '3.0', h60: '9', v60: '12', h80: '12', v80: '15', cond: '1.7', ph: '4.8', kg: '36', lift: '33.4' }),
   biG(CFG_G2, 'GR2300iW 30 C', '47-800-28', { ng: '3.05', gcl: '47-800-29', mod: '4.9 to 20.4', out: '4.8 to 20.0', dhwIn: '30', co2a: '9.4', co2b: '8.6', d40: '10.8', d35: '12', mp: '1.5', mpmin: '0.3', start: '2.5', maxop: '3.0', h60: '9', v60: '12', h80: '12', v80: '15', cond: '1.7', ph: '4.8', kg: '36', lift: '33.4' }),
   biG(CFG_G1, 'GR1000W 24 C', '47-800-38', { ng: '2.47', mod: '5.4 to 24.6', out: '5.2 to 24.0', dhwIn: '24.6', co2a: '9.0', co2b: '8.5', d40: '8.5', d35: '9.8', mp: '1.5', mpmin: '0.3', start: '2.5', maxop: '3.0', h60: '9', v60: '9', h80: '12', v80: '12', cond: '3', ph: '3.15', kg: '27.7', lift: '26' }),
-  biG(CFG_G1, 'GR1000W 30 C', '47-800-39', { ng: '3.02', mod: '6.6 to 24.6', out: '6.4 to 24.0', dhwIn: '30', co2a: '9.0', co2b: '8.5', d40: '10.7', d35: '12.2', mp: '1.5', mpmin: '0.3', start: '2.5', maxop: '3.0', h60: '9', v60: '9', h80: '12', v80: '12', cond: '3', ph: '3.15', kg: '27.7', lift: '26' })
+  biG(CFG_G1, 'GR1000W 30 C', '47-800-39', { ng: '3.02', mod: '6.6 to 24.6', out: '6.4 to 24.0', dhwIn: '30', co2a: '9.0', co2b: '8.5', d40: '10.7', d35: '12.2', mp: '1.5', mpmin: '0.3', start: '2.5', maxop: '3.0', h60: '9', v60: '9', h80: '12', v80: '12', cond: '3', ph: '3.15', kg: '27.7', lift: '26' })  ,
+  biIdealRS('S', '15', '41-796-97', { rate: '1.537', max: '15.1', out: '15.0', co2a: '9.5', co2b: '8.9', w: '70' }),
+  biIdealRS('S', '18', '41-796-98', { rate: '1.872', max: '18.1', out: '18.0', co2a: '9.3', co2b: '8.3', w: '75' }),
+  biIdealRS('S', '24', '41-796-99', { rate: '2.512', max: '24.3', out: '24.2', co2a: '9.2', co2b: '8.5', w: '94' }),
+  biIdealRS('S', '30', '41-860-01', { rate: '3.136', max: '30.4', out: '30.3', co2a: '9.6', co2b: '8.7', w: '102' }),
+  biIdealRS('H', '12', '41-860-25', { rate: '1.246', max: '12.1', out: '12.0', co2a: '9.1', co2b: '8.5', w: '17' }),
+  biIdealRS('H', '15', '41-860-26', { rate: '1.537', max: '15.1', out: '15.0', co2a: '9.4', co2b: '8.8', w: '20' }),
+  biIdealRS('H', '18', '41-860-27', { rate: '1.872', max: '18.1', out: '18.0', co2a: '9.3', co2b: '8.7', w: '25' }),
+  biIdealRS('H', '24', '41-860-28', { rate: '2.512', max: '24.3', out: '24.2', co2a: '9.3', co2b: '8.4', w: '44' }),
+  biIdealRS('H', '30', '41-860-29', { rate: '3.136', max: '30.4', out: '30.3', co2a: '9.7', co2b: '8.8', w: '52' })
 ];
 function biState() { return ui.bi || (ui.bi = { q: '', id: '' }); }
 function biListHtml() {
