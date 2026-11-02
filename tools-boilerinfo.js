@@ -211,6 +211,44 @@ const CFG_BX400 = { key: 'baxi-400c2-', range: '400 Combi 2', cat: 'I2H / II2H3P
   clear: [['In front', '1000 mm for servicing, 6 mm in operation'], ['Either side', '2.5 mm'], ['Above', '240 mm minimum'], ['Below', '250 mm minimum']] };
 const CFG_BX200 = { key: 'baxi-200c2-', range: '200 Combi 2', cat: 'I2H / II2H3P', src: 'Baxi 200 Combi 2 installation and servicing manual: technical data pages 12 to 15, clearances page 29, flue page 31. The manual does not give a Gas Council number',
   clear: [['In front', '1000 mm for servicing, 6 mm in operation'], ['Either side', '2.5 mm'], ['Below', '250 mm minimum']] };
+/* Baxi 400 and 800 Heat (regular, natural gas). Figures from the manual text. */
+function biBaxiH(c, model, gc, o) {
+  return {
+    id: c.key + model, make: 'Baxi', range: c.range, model: model + ' Heat', type: 'Regular', gc, src: c.src,
+    sections: [
+      ['Gas', [['Gas rate, natural gas (after 10 min)', o.ng + ' m³/h'], ['Gas inlet pressure', '20 mbar natural gas'], ['Gas category', 'CAT I 2H'], ['Gas connection', '22 mm']]],
+      ['Heat', [['Heat input (gross), maximum', o.inMax + ' kW'], ['Heat input (gross), minimum', '8.59 kW'], ['Heating output (70 °C mean), maximum', o.out + ' kW'], ['Heating output (70 °C mean), minimum', '7.5 kW']]],
+      ['Combustion', [['NOx class', c.nox], ['CO/CO₂ ratio', 'Up to a maximum of 0.004']]],
+      ['Heating circuit', [['Flow temperature', '30 to 80 °C (±5 °C)'], ['Water content', o.wc + ' litres'], ['Maximum static head', '25 m'], ['Minimum static head', '0.4 m'], ['Flow and return', '22 mm compression']]],
+      ['Flue', [['Horizontal concentric 60/100, maximum', '6 m'], ['Horizontal concentric 80/125, maximum', '12 m'], ['Each 135° bend counts as', '0.5 m'], ['Each 93° bend counts as', '1.0 m'], ['Elbow supplied with the flue kit', 'Not counted'], ['Vertical flues', 'See the Flue Installation Guide supplied with the boiler']]],
+      ['Clearances', [['Case size (W x H x D)', '370 x 625 x 270 mm (790 mm high with the flue elbow)'], ['Either side', '5 mm'], ['Above (top flue)', '190 mm'], ['Above (rear flue)', '35 mm'], ['Below', '120 mm (35 mm in a cupboard)'], ['In front', '500 mm for servicing, 5 mm in operation']]],
+      ['Electrics', [['Supply', '230 V a.c., 50 Hz'], ['Power', o.w + ' W'], ['External fuse', '3 A'], ['Protection rating', 'IPX4D']]],
+      ['Weight', [['Packaged', o.pkg + ' kg'], ['Lift weight', o.lift + ' kg']]]
+    ]
+  };
+}
+const CFG_BH4 = { key: 'baxi-400h-', range: '400 Heat', nox: '5', src: 'Baxi 400 Heat ErP installation and servicing manual (7684223-01, 06/17): technical data page 14, flue page 32. Heat inputs are gross' };
+const CFG_BH8 = { key: 'baxi-800h-', range: '800 Heat', nox: '6', src: 'Baxi 800 Heat installation and servicing manual (7749898-01, 3/20): technical data page 14, flue page 32. Heat inputs are gross' };
+
+/* Baxi 600 and 800 System 2. Read from the page images. */
+function biBaxiS(c, kw, gc, o) {
+  return {
+    id: c.key + kw, make: 'Baxi', range: c.range, model: kw + ' System 2', type: 'System', gc, src: c.src,
+    sections: [
+      ['Gas', [['Gas rate, natural gas, maximum', o.ng + ' m³/h'], ['Gas rate, natural gas, minimum', '0.52 m³/h'], ['Gas rate, LPG, maximum', o.lpg + ' kg/h'], ['Gas rate, LPG, minimum', '0.38 kg/h'], ['Gas supply', '20 mbar natural gas, 37 mbar LPG'], ['Gas category', 'I2H / I3P']]],
+      ['Heat', [['Heat input, maximum', o.inp + ' kW'], ['Heat input, minimum (80/60 °C)', o.minIn + ' kW'], ['Heating output, maximum (80/60 °C)', kw + ' kW'], ['Heating output, maximum (50/30 °C)', o.out2 + ' kW'], ['Heating output, minimum (80/60 °C)', o.minOut + ' kW'], ['Heating output, minimum (50/30 °C)', o.minOut2 + ' kW']]],
+      ['Combustion', [['NOx class', '6']]],
+      ['Heating circuit', [['Maximum pressure', '2.5 bar'], ['Minimum pressure', '0.5 bar'], ['Expansion vessel', '7 litres']]],
+      ['Flue', [['Horizontal concentric 60/100, maximum', '10 m'], ['Horizontal concentric 80/125, maximum', '20 m'], ['Each 135° bend counts as', '0.5 m'], ['Each 93° bend counts as', '1.0 m'], ['Elbow supplied with the flue kit', 'Not counted'], ['Vertical flues', 'See the Flue Installation Guide supplied with the boiler']]],
+      ['Clearances', [['Case size (W x H x D)', '395 x 700 x 285 mm'], ['In front', '450 mm for servicing, 5 mm in operation'], ['Either side', '2.5 mm'], ['Below', '150 mm']]],
+      ['Electrics', [['Supply', '230 V a.c., 50 Hz'], ['Power', o.w + ' W'], ['Protection rating', 'IPX5D']]],
+      ['Weight', [['Empty / filled with water', o.kg + ' kg']]]
+    ]
+  };
+}
+const CFG_BS6 = { key: 'baxi-600s2-', range: '600 System 2', src: 'Baxi 600 System 2 installation and servicing manual: technical data pages 12 to 15, clearances page 29, flue page 31. The manual lists these as 615-2, 618-2 and 624-2' };
+const CFG_BS8 = { key: 'baxi-800s2-', range: '800 System 2', src: 'Baxi 800 System 2 installation and servicing manual: technical data pages 12 to 15, clearances page 29, flue page 31. The manual lists these as 818-2, 824-2 and 830-2' };
+
 const BI_LIST = [
   bi8000('GR8701iW 32 C V2', '47-800-44', { ng: '3.4', lpg: '2.4', mod: '4.3 to 30.2', adj: '8.4 to 30.2', out: '8.2 to 29.1', dhwIn: '32.0', dhw: '12.0', mp: '1.2', h1: '15', h2: '15', h3: '12.2', v1: '19', h4: '25', v2: '25', cond: '3.5', kg: '49', lift: '43' }),
   bi8000('GR8701iW 36 C', '47-800-45', { ng: '3.8', lpg: '2.8', mod: '5.1 to 34.4', adj: '17.2 to 34.4', out: '16.9 to 33.7', dhwIn: '36.0', dhw: '13.5', mp: '1.4', h1: '10', h2: '10', h3: '7.2', v1: '13', h4: '29', v2: '29', cond: '4.1', kg: '49', lift: '43' }),
@@ -293,7 +331,21 @@ const BI_LIST = [
   biBaxiC(CFG_BX400, '24', 'not in the manual', { model: '424 Combi 2', ng: '2.61', ngMin: '0.52', lpg: '1.92', lpgMin: '0.38', chIn: '20.6', minIn: '4.9', chOut: '20', chOut2: '21.8', minOut: '4.8', dhwIn: '24.7', dhwOut: '24', d25: '13.8', d35: '9.8', spec: '11.5', w: '90', kg: '28 / 30' }),
   biBaxiC(CFG_BX400, '30', 'not in the manual', { model: '430 Combi 2', ng: '3.17', ngMin: '0.63', lpg: '2.33', lpgMin: '0.47', chIn: '20.6', minIn: '6.0', chOut: '20', chOut2: '21.8', minOut: '5.8', dhwIn: '30', dhwOut: '29.1', d25: '16.7', d35: '11.9', spec: '14', w: '90', kg: '29 / 31' })  ,
   biBaxiC(CFG_BX200, '24', 'not in the manual', { model: '224 Combi 2', ng: '2.61', ngMin: '0.52', lpg: '1.92', lpgMin: '0.38', chIn: '20.6', minIn: '4.9', chOut: '20', chOut2: '21.8', minOut: '4.8', dhwIn: '24.7', dhwOut: '24', d25: '13.8', d35: '9.8', spec: '11.1', w: '90', kg: '26.5 / 28.5' }),
-  biBaxiC(CFG_BX200, '28', 'not in the manual', { model: '228 Combi 2', ng: '3.06', ngMin: '0.63', lpg: '2.24', lpgMin: '0.47', chIn: '20.6', minIn: '6.0', chOut: '20', chOut2: '21.8', minOut: '5.8', dhwIn: '28.9', dhwOut: '28.0', d25: '16.0', d35: '11.4', spec: '13.4', w: '85', kg: '27.5 / 29.5' })
+  biBaxiC(CFG_BX200, '28', 'not in the manual', { model: '228 Combi 2', ng: '3.06', ngMin: '0.63', lpg: '2.24', lpgMin: '0.47', chIn: '20.6', minIn: '6.0', chOut: '20', chOut2: '21.8', minOut: '5.8', dhwIn: '28.9', dhwOut: '28.0', d25: '16.0', d35: '11.4', spec: '13.4', w: '85', kg: '27.5 / 29.5' })  ,
+  biBaxiH(CFG_BH4, '412', '41-470-50', { ng: '1.42', inMax: '14.88', out: '13', w: '17', wc: '1.7', pkg: '21.5', lift: '19.5' }),
+  biBaxiH(CFG_BH4, '415', '41-470-51', { ng: '1.75', inMax: '18.32', out: '16', w: '20', wc: '1.7', pkg: '21.5', lift: '19.5' }),
+  biBaxiH(CFG_BH4, '418', '41-470-52', { ng: '2.07', inMax: '21.75', out: '19', w: '23', wc: '1.7', pkg: '21.5', lift: '19.5' }),
+  biBaxiH(CFG_BH4, '424', '41-470-53', { ng: '2.73', inMax: '28.62', out: '25', w: '33', wc: '1.7', pkg: '21.5', lift: '19.5' }),
+  biBaxiH(CFG_BH4, '430', '41-470-54', { ng: '3.27', inMax: '34.35', out: '30', w: '44', wc: '1.7', pkg: '21.5', lift: '19.5' }),
+  biBaxiH(CFG_BH8, '816', '41-470-77', { ng: '1.75', inMax: '18.32', out: '16', w: '20', wc: '1.4', pkg: '21.3', lift: '17.4' }),
+  biBaxiH(CFG_BH8, '825', '41-470-78', { ng: '2.73', inMax: '28.62', out: '25', w: '33', wc: '1.4', pkg: '21.3', lift: '17.4' }),
+  biBaxiH(CFG_BH8, '830', '41-470-79', { ng: '3.27', inMax: '34.35', out: '30', w: '44', wc: '1.7', pkg: '23.4', lift: '19.5' })  ,
+  biBaxiS(CFG_BS6, '15', '41-884-01', { ng: '1.64', lpg: '1.2', inp: '15.5', minIn: '4.9', out2: '16.3', minOut: '4.8', minOut2: '5.2', w: '85', kg: '28 / 30' }),
+  biBaxiS(CFG_BS6, '18', '41-884-02', { ng: '1.97', lpg: '1.44', inp: '18.6', minIn: '4.9', out2: '19.9', minOut: '4.8', minOut2: '5.2', w: '88', kg: '29 / 31' }),
+  biBaxiS(CFG_BS6, '24', '41-484-03', { ng: '2.61', lpg: '1.92', inp: '24.7', minIn: '4.9', out2: '26.3', minOut: '4.8', minOut2: '5.2', w: '91', kg: '30 / 31' }),
+  biBaxiS(CFG_BS8, '18', '41-470-99', { ng: '1.97', lpg: '1.44', inp: '18.6', minIn: '4.9', out2: '19.9', minOut: '4.8', minOut2: '5.2', w: '88', kg: '29 / 31' }),
+  biBaxiS(CFG_BS8, '24', '41-884-09', { ng: '2.61', lpg: '1.92', inp: '24.7', minIn: '4.9', out2: '26.3', minOut: '4.8', minOut2: '5.2', w: '91', kg: '30 / 31' }),
+  biBaxiS(CFG_BS8, '30', '41-884-08', { ng: '3.26', lpg: '2.4', inp: '30.9', minIn: '6.0', out2: '32.4', minOut: '5.8', minOut2: '6.4', w: '92', kg: '30 / 31' })
 ];
 function biState() { return ui.bi || (ui.bi = { q: '', id: '' }); }
 function biListHtml() {
