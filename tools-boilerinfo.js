@@ -437,8 +437,8 @@ function biBia(c, model, type, gc, d) {
       sec('Combustion', [r('NOx class', d.nox), r('CO₂, natural gas, at maximum', d.co2max, '%'), r('CO₂, natural gas, at minimum', d.co2min, '%')]),
       sec('Hot water', [r('Temperature setting range', d.dhwT, '°C'), r('Flow at 35 K rise', d.flow35, 'l/min'), r('Flow at 30 K rise', d.flow30, 'l/min'), r('Maximum mains pressure', d.dhwMaxP, 'bar'), r('Minimum mains pressure', d.dhwMinP, 'bar')]),
       sec('Heating circuit', [r('Flow temperature setting range', d.chT, '°C'), r('Maximum system pressure', d.maxP, 'bar'), r('Minimum system pressure', d.minP, 'bar'), r('Expansion vessel', d.vessel, 'litres'), r('Vessel charge pressure', d.charge, 'bar'), r('Largest system water volume with this vessel', d.sysVol, 'litres')]),
-      sec('Clearances', [['Case size (W x H x D)', d.w + ' x ' + d.h + ' x ' + d.dp + ' mm'], r('Above', d.top, 'mm'), r('Either side', d.sides, 'mm'), r('Below', d.bottom, 'mm')]),
-      sec('Flue', [r('Coaxial 60/100 mm, maximum length', d.fCoax, 'm'), r('Split 80 mm, maximum length (air + flue added together)', d.fSplit, 'm'), ['Coaxial bends: each 45° / 90°', 'Take off 0.5 m / 1 m'], ['80 mm bends: each 45° / 90°', 'Take off 0.9 m / 1.65 m'], ['Other kits (roof, pluming)', 'See the flue section of the manual']]),
+      sec('Clearances', [['Case size (W x H x D)', d.w + ' x ' + d.h + ' x ' + d.dp + ' mm'], r('Above', d.top, 'mm'), r('Either side', d.sides, 'mm'), r('Left side', d.left, 'mm'), r('Right side', d.right, 'mm'), r('Below', d.bottom, 'mm')]),
+      sec('Flue', d.flue || [r('Coaxial 60/100 mm, maximum length', d.fCoax, 'm'), r('Split 80 mm, maximum length (air + flue added together)', d.fSplit, 'm'), ['Coaxial bends: each 45° / 90°', 'Take off 0.5 m / 1 m'], ['80 mm bends: each 45° / 90°', 'Take off 0.9 m / 1.65 m'], ['Other kits (roof, pluming)', 'See the flue section of the manual']]),
       sec('Electrics', [r('Power, maximum', d.pw, 'W'), ['Supply', '230 V a.c., 50 Hz']]),
       sec('Weight', [r('Appliance (dry)', d.kg, 'kg')])
     ].filter(x => x[1].length)
@@ -460,6 +460,18 @@ const BIA_SYS = { chT: '25 to 85', maxP: '2.5', minP: '0.3', vessel: '7', charge
 const BIA_16 = { inCH: '16.0', inMin: '6.0', outMax: '15.6', outCond: '17.1', outMin: '5.8', gasCH: '1.69' };
 const BIA_25 = { inCH: '25.0', inMin: '6.0', outMax: '24.4', outCond: '26.6', outMin: '5.8', gasCH: '2.67' };
 const BIA_30 = { inCH: '30.0', inMin: '8.5', outMax: '29.5', outCond: '32.1', outMin: '8.3', gasCH: '3.17' };
+const CFG_BIRC = { key: 'birc-', range: 'Riva Plus HE', src: 'Biasi Riva Plus HE 24C and 28C ERP installation instructions: Technical data (4.3 and 4.4) and Installation (section 6)' };
+const CFG_BIRS = { key: 'birs-', range: 'Riva Plus HE', src: 'Biasi Riva Plus HE 24S and 28S ERP installation instructions: Technical data (4.3 and 4.4) and Installation (section 6)' };
+const BIA_RIVA = { nox: '2', chT: '50 to 85', maxP: '2.5', minP: '0.3', vessel: '8', charge: '1.0', sysVol: '124', h: '803', w: '400', dp: '350', top: '250', left: '25', right: '50', bottom: '200',
+  flue: [['Coaxial 60/100 mm, straight horizontal, maximum', '2.5 m'], ['Coaxial 60/100 mm with 90° kit, maximum', '2.7 m'], ['Roof kit, maximum height', '8.5 m'], ['Split 80 mm, longest length in the restrictor table (air + flue added together)', '30 m'], ['Split 80 mm: restrictor needed', 'Ø 50 mm for 1 to 15 m; Ø 55 mm for over 15 m up to 30 m'], ['Coaxial bends: each 45° / 90°', 'Take off 0.5 m / 1 m'], ['80 mm bends: each 45° / 90°', 'Take off 0.9 m / 1.65 m'], ['Other kits (pluming)', 'See the flue section of the manual']] };
+const CFG_BIM296 = { key: 'bim296-', range: 'Riva Plus HE (M296)', src: 'Biasi Riva Plus HE M296.24SM/C and M296.28SM/C installation instructions: Technical data (4.3 and 4.4) and Installation (section 6)' };
+const BIA_M296 = { ...BIA_RIVA, vessel: '6', sysVol: '94', left: undefined, right: undefined, sides: '25',
+  flue: [['Coaxial 60/100 mm, longest equivalent length (with extensions)', '2.7 m'], ['Roof kit, maximum height', '8.5 m'], ['Split 80 mm, longest length in the restrictor table (air + flue added together)', '30 m'], ['Split 80 mm: restrictor needed', 'Ø 50 mm for 1 to 15 m; Ø 55 mm for over 15 m up to 30 m'], ['Coaxial bends: each 45° / 90°', 'Take off 0.5 m / 1 m'], ['80 mm bends: each 45° / 90°', 'Take off 0.9 m / 1.65 m'], ['Other kits (pluming)', 'See the flue section of the manual']] };
+const CFG_BIOV = { key: 'biov-', range: 'Advance (open vent)', src: 'Biasi Advance 15OV, 18OV and 24OV installation instructions: Technical data (4.3 to 4.5) and Installation (section 6)' };
+const CFG_BIM110 = { key: 'bim110-', range: 'Riva Advance HE', src: 'Biasi Riva Advance HE M110B.24SM/C and M110B.32SM/C installation instructions: Technical data (4.3 and 4.4) and Installation (section 6)' };
+const BIA_OV = { nox: '6', chT: '25 to 80', maxP: '2.5', minP: '0.3', h: '700', w: '400', dp: '290', fCoax: '10', fSplit: '40', ...CLR_BIA };
+const BIA_M110 = { dhwT: '35 to 55', dhwMaxP: '10', dhwMinP: '0.3', chT: '25 to 85', maxP: '2.5', minP: '0.3', vessel: '7', charge: '1.0', sysVol: '109', h: '803', w: '400', dp: '350', ...CLR_BIA,
+  flue: [['Coaxial 60/100 mm, longest equivalent length (with extensions)', '10 m'], ['Roof kit 80/125 mm, maximum height', '10 m'], ['Coaxial bends: each 45° / 90°', 'Take off 0.5 m / 1 m'], ['80 mm bends: each 45° / 90°', 'Take off 0.9 m / 1.65 m'], ['Split 80 mm and pluming kits', 'See the flue section of the manual']] };
 const BI_LIST = [
   bi8000('GR8701iW 32 C V2', '47-800-44', { ng: '3.4', lpg: '2.4', mod: '4.3 to 30.2', adj: '8.4 to 30.2', out: '8.2 to 29.1', dhwIn: '32.0', dhw: '12.0', mp: '1.2', h1: '15', h2: '15', h3: '12.2', v1: '19', h4: '25', v2: '25', cond: '3.5', kg: '49', lift: '43' }),
   bi8000('GR8701iW 36 C', '47-800-45', { ng: '3.8', lpg: '2.8', mod: '5.1 to 34.4', adj: '17.2 to 34.4', out: '16.9 to 33.7', dhwIn: '36.0', dhw: '13.5', mp: '1.4', h1: '10', h2: '10', h3: '7.2', v1: '13', h4: '29', v2: '29', cond: '4.1', kg: '49', lift: '43' }),
@@ -704,7 +716,18 @@ const BI_LIST = [
   biBia(CFG_BIAPS, '30S', 'System', '41-583-24', { ...BIA_SYS, ...BIA_30, nox: '5', pw: '135', kg: '32.5' }),
   biBia(CFG_BIINS, '16S', 'System', '41-583-25', { ...BIA_SYS, ...BIA_16, nox: '5', pw: '94', kg: '30' }),
   biBia(CFG_BIINS, '25S', 'System', '41-583-26', { ...BIA_SYS, ...BIA_25, nox: '5', pw: '102', kg: '30' }),
-  biBia(CFG_BIINSE, '25S ERP', 'System', '41-583-30', { ...BIA_SYS, ...BIA_25, nox: '5', gasMin: '0.64', pw: '95', kg: '31' })
+  biBia(CFG_BIINSE, '25S ERP', 'System', '41-583-30', { ...BIA_SYS, ...BIA_25, nox: '5', gasMin: '0.64', pw: '95', kg: '31' }),
+  biBia(CFG_BIRC, '24C ERP', 'Combi', '47-583-41', { ...BIA_RIVA, dhwT: '35 to 55', dhwMaxP: '10', dhwMinP: '0.3', inCH: '25.0', inDHW: '25.0', inMin: '7.5', outMax: '24.4', outCond: '26.3', outMin: '7.3', flow35: '10.0', flow30: '11.6', gasCH: '2.65', gasMin: '0.79', pw: '79', kg: '36.8' }),
+  biBia(CFG_BIRC, '28C ERP', 'Combi', '47-583-42', { ...BIA_RIVA, dhwT: '35 to 55', dhwMaxP: '10', dhwMinP: '0.3', inCH: '29.0', inDHW: '29.0', inMin: '8.7', outMax: '28.3', outCond: '30.6', outMin: '8.4', flow35: '11.6', flow30: '13.6', gasCH: '3.07', gasMin: '0.92', pw: '90', kg: '37.7' }),
+  biBia(CFG_BIRS, '24S ERP', 'System', '41-583-31', { ...BIA_RIVA, inCH: '25.0', inMin: '7.5', outMax: '24.4', outCond: '26.3', outMin: '7.3', gasCH: '2.65', gasMin: '0.79', pw: '79', kg: '35.5' }),
+  biBia(CFG_BIRS, '28S ERP', 'System', '41-583-32', { ...BIA_RIVA, inCH: '29.0', inMin: '8.7', outMax: '28.3', outCond: '30.6', outMin: '8.4', gasCH: '3.07', gasMin: '0.92', pw: '90', kg: '36.7' }),
+  biBia(CFG_BIM296, 'M296.24SM/C', 'Combi', '47-583-24', { ...BIA_M296, dhwT: '35 to 55', dhwMaxP: '10', dhwMinP: '0.3', inCH: '25.0', inDHW: '25.0', inMin: '7.5', outMax: '24.4', outCond: '26.3', outMin: '7.3', flow30: '11.6', gasCH: '2.65', gasMin: '0.79', pw: '140', kg: '42.5' }),
+  biBia(CFG_BIM296, 'M296.28SM/C', 'Combi', '47-583-25', { ...BIA_M296, dhwT: '35 to 55', dhwMaxP: '10', dhwMinP: '0.3', inCH: '29.0', inDHW: '29.0', inMin: '8.7', outMax: '28.3', outCond: '30.6', outMin: '8.4', flow35: '11.6', flow30: '13.6', gasCH: '3.07', gasMin: '0.92', pw: '150', kg: '44' }),
+  biBia(CFG_BIOV, '15OV', 'Regular (open vent)', '41-583-35', { ...BIA_OV, inCH: '17.0', inMin: '5.1', outMax: '16.5', outCond: '18.1', outMin: '4.8', gasCH: '1.80', gasMin: '0.54', pw: '24', kg: '30' }),
+  biBia(CFG_BIOV, '18OV', 'Regular (open vent)', '41-583-36', { ...BIA_OV, inCH: '21.0', inMin: '5.1', outMax: '20.3', outCond: '22.4', outMin: '4.8', gasCH: '2.22', pw: '36', kg: '30' }),
+  biBia(CFG_BIOV, '24OV', 'Regular (open vent)', '41-583-37', { ...BIA_OV, inCH: '25.0', inMin: '7.5', outMax: '24.4', outCond: '26.8', outMin: '7.0', gasCH: '2.65', pw: '40', kg: '33.5' }),
+  biBia(CFG_BIM110, 'M110B.24SM/C', 'Combi', '47-583-11', { ...BIA_M110, inCH: '25.7', inDHW: '25.7', inMin: '6.0', outMax: '25.1', outCond: '27.3', outMin: '5.8', flow35: '10.7', flow30: '12.7', gasCH: '2.72', gasMin: '0.63', pw: '108', kg: '44.5' }),
+  biBia(CFG_BIM110, 'M110B.32SM/C', 'Combi', '47-583-12', { ...BIA_M110, inCH: '34.0', inDHW: '34.0', inMin: '8.5', outMax: '33.1', outCond: '35.7', outMin: '8.2', flow35: '14.2', flow30: '16.7', gasCH: '3.60', gasMin: '0.90', pw: '125', kg: '45' })
 ];
 function biState() { return ui.bi || (ui.bi = { q: '', id: '' }); }
 function biListHtml() {
