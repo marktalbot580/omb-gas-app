@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v307', items: ['Boiler information: added the Ferroli boilers (Bluehelix, T-One, Optimax HE Plus, Modena), including their maximum flue lengths.'] },
   { v: 'v306', items: ['Boiler information: added more Biasi boilers (Riva Plus HE, M296, Riva Advance HE M110B and the Advance open-vent range), including their maximum flue lengths.'] },
   { v: 'v305', items: ['Boiler information: added the first Biasi boilers (Advance Plus and Inovia combis and system boilers), including their maximum flue lengths.'] },
   { v: 'v304', items: ['Boiler information: added the Alpha boilers (InTec, InTec2, E-Tec, E-Tec Plus, Evoke), including their maximum flue lengths.'] },
