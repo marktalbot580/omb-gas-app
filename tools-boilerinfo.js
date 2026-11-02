@@ -825,11 +825,16 @@ const BI_LIST = [
   biBaxiC(CFG_BX800S, '30', '47-077-39', { model: '830 Combi', ng: '3.26', ngMin: '0.67', chIn: '20.6', minIn: '6.2', chOut: '20', chOut2: '21.2', minOut: '6.1', dhwIn: '30.9', d25: '14.3', d35: '12.2', spec: '12.2', w: '80', kg: '29.2 / 30.2' }),
   biBaxiC(CFG_BX800S, '36', '47-077-40', { model: '836 Combi', ng: '3.81', ngMin: '0.71', chIn: '25.8', minIn: '6.7', chOut: '25', chOut2: '26.4', minOut: '6.7', dhwIn: '36.8', d25: '16.5', d35: '15.0', spec: '15.0', w: '110', kg: '30.5 / 31.5' })
 ];
-function biState() { return ui.bi || (ui.bi = { q: '', id: '' }); }
+function biState() { return ui.bi || (ui.bi = { q: '', id: '', m: '' }); }
 function biListHtml() {
   const q = biState().q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const hits = BI_LIST.filter(b => q.every(w => (b.make + ' ' + b.range + ' ' + b.model + ' ' + b.gc + ' ' + b.type).toLowerCase().includes(w)));
+  const mk = biState().m;
+  const hits = BI_LIST.filter(b => (!mk || b.make === mk) && q.every(w => (b.make + ' ' + b.range + ' ' + b.model + ' ' + b.gc + ' ' + b.type).toLowerCase().includes(w)));
   return hits.length ? hits.map(b => `<button type="button" class="item cpick" style="width:100%;text-align:left" data-bi="open" data-v="${esc(b.id)}"><div class="t">${esc(b.make)} ${esc(b.range)} ${esc(b.model)}</div><div class="s">${esc(b.type)} · GC ${esc(b.gc)}</div></button>`).join('') : '<p class="muted small">No boiler matches that yet. More are being added.</p>';
+}
+function biChipsHtml() {
+  const m = biState().m, makes = [...new Set(BI_LIST.map(b => b.make))].sort();
+  return makes.map(k => `<button type="button" class="chip${k === m ? ' on' : ''}" style="padding:10px 14px${k === m ? ';color:var(--txt);font-weight:700' : ''}" data-bi-make="${esc(k)}">${esc(k)}</button>`).join('');
 }
 function biView() {
   const s = biState(), b = BI_LIST.find(x => x.id === s.id);
@@ -838,7 +843,9 @@ function biView() {
     <p class="small muted">From: ${esc(b.src)}. Check the manual for your exact boiler before you rely on a figure.</p>
     <button class="btn ghost block" data-bi="list">Back to boiler list</button>`;
   return `<h1>Boiler information</h1><p class="small muted" style="margin-top:0">Key figures from the manufacturer's manual. Search by model or GC number.</p>
-    <div class="f"><input class="search" type="search" data-bi-q value="${esc(s.q)}" placeholder="e.g. 8000 40 or 47-800-46" autocomplete="off"></div><div id="biList">${biListHtml()}</div>`;
+    <div class="f"><input class="search" type="search" data-bi-q value="${esc(s.q)}" placeholder="e.g. 8000 40 or 47-800-46" autocomplete="off"></div><div class="chips" id="biChips" style="margin-top:0">${biChipsHtml()}</div><div id="biList">${biListHtml()}</div>`;
 }
 document.addEventListener('input', e => { const t = e.target; if (!t.hasAttribute || !t.hasAttribute('data-bi-q') || ui.view !== 'tools') return; biState().q = t.value; const el = document.getElementById('biList'); if (el) el.innerHTML = biListHtml(); });
 document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-bi]'); if (!b || ui.view !== 'tools') return; const s = biState(); s.id = b.dataset.bi === 'open' ? b.dataset.v : ''; render(); window.scrollTo(0, 0); });
+
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-bi-make]'); if (!b || ui.view !== 'tools') return; const s = biState(); s.m = s.m === b.dataset.biMake ? '' : b.dataset.biMake; const c = document.getElementById('biChips'), l = document.getElementById('biList'); if (c) c.innerHTML = biChipsHtml(); if (l) l.innerHTML = biListHtml(); });

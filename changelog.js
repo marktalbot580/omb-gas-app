@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v310', items: ['Boiler information: tap a make (Baxi, Ideal, Worcester and so on) under the search bar to show only that make. Tap it again to show all.'] },
   { v: 'v309', items: ['Boiler information: added the Baxi 800 Combi 825, 830 and 836, with Gas Council numbers, flue lengths and clearances.'] },
   { v: 'v308', items: ['Boiler information: added the first Viessmann boilers (Vitodens 050-W, 100-W WB1A and 200-W WB2B).'] },
   { v: 'v307', items: ['Boiler information: added the Ferroli boilers (Bluehelix, T-One, Optimax HE Plus, Modena), including their maximum flue lengths.'] },
