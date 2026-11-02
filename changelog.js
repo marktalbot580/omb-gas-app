@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v295', items: ['Boiler information: added the Baxi 800 Combi 2 (24, 30 and 36).'] },
   { v: 'v294', items: ['Boiler information: added the rest of the Ideal range: i-mini2, Vogue Max (combi and system), and the original Logic Max combi, system and heat.'] },
   { v: 'v293', items: ['Boiler information: added the Ideal Logic Max System2 (15 to 30 kW) and Heat2 (12 to 30 kW).'] },
   { v: 'v292', items: ['Boiler information: added the Worcester Greenstar 4000, 2000 and 1000 combis (24/25 and 30 kW).'] },
