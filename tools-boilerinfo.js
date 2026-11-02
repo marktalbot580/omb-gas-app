@@ -270,6 +270,33 @@ const CFG_BOA = { key: 'baxi-assure-', range: 'Assure Combi', suffix: 'Assure Co
 
 const CFG_BX21 = { key: 'baxi-400c21-', range: '400 Combi 2.1', src: 'Baxi 400 Combi 2.1 installation and service manual (7875578-02): technical data pages 8 to 10, clearances page 18. Listed in the manual as 424-2.1, 430-2.1 and 436-2.1',
   flue: [['Flue lengths', 'Not given in this manual. See the Flue Installation Guide supplied with the boiler']] };
+/* Vaillant combis (natural gas figures; page numbers are PDF pages). */
+function biVai(c, model, gc, o) {
+  return {
+    id: c.key + model.replace(/\W+/g, '').toLowerCase(), make: 'Vaillant', range: c.range, model, type: 'Combi', gc, src: c.src,
+    sections: [
+      ['Gas', [['Gas rate, natural gas, hot water maximum', o.ng + ' m³/h'], ['Gas supply', c.gasSup], ['Gas category', c.cat]].concat(o.ngMin ? [['Gas rate, natural gas, minimum', o.ngMin + ' m³/h']] : [])],
+      ['Heat', [['Heating input, maximum', o.chIn + ' kW'], ['Heating input, minimum', o.min + ' kW'], ['Heating output (80/60 °C)', o.out + ' kW'], ['Heating output (50/30 °C)', o.out2 + ' kW'], ['Hot water input, maximum', o.dhwIn + ' kW'], ['Hot water output', o.dhwOut + ' kW']]],
+      ['Combustion', [['NOx class', '6']]],
+      ['Hot water', [['Specific flow (D, 30 K rise)', o.d30 + ' l/min'], ['Flow at 35 K rise', o.d35 + ' l/min']].concat(c.dhwRows).concat([[c.limLabel || 'Cold water flow limiter', o.lim + ' l/min']])],
+      ['Heating circuit', c.chRows],
+      ['Clearances', [['Case size (W x H x D)', c.dims]].concat(c.clear)],
+      ['Flue', [['Maximum flue lengths', 'Not given in this manual. See the separate flue guide supplied with the boiler']]],
+      ['Condensate and electrics', [['Condensate, at 50/30 °C', c.cond], ['Supply', '230 V a.c., 50 Hz'], ['Power', o.w + ' W'], ['Built-in fuse', 'T2/2A 250 V'], ['Protection rating', 'IPX4D']]],
+      ['Weight', [['Appliance', o.kg + ' kg'], ['Filled with water', o.kgw + ' kg']]]
+    ]
+  };
+}
+const CFG_VSUS = { key: 'vai-sus72-', range: 'ecoTEC sustain', src: 'Vaillant ecoTEC sustain VUW 7-2 installation and maintenance instructions (0020253094_06): technical data pages 8 to 10, clearances page 14',
+  gasSup: '20 mbar natural gas, 37 mbar LPG', cat: 'II2H3P', dims: '440 x 720 x 338 mm', cond: '1.87 l/h',
+  dhwRows: [['Minimum flow', '1.7 l/min'], ['Minimum pressure', '0.3 bar'], ['Maximum pressure', '10 bar']],
+  chRows: [['Maximum flow temperature', '85 °C (adjustable 30 to 80 °C)'], ['Maximum operating pressure', '2.5 bar'], ['Expansion vessel', '8 litres'], ['Pump head at 20 K rise, bypass in factory position', '0.250 bar'], ['Safety valve opens at', '3.0 bar']],
+  clear: [['Above', '165 mm (60/100 flue) or 275 mm (80/125 flue)'], ['Below', '180 mm (about 250 mm best)'], ['Either side', '5 mm (about 50 mm best)'], ['In front', '500 mm for maintenance, 5 mm behind a removable door or panel']] };
+const CFG_VFIT = { key: 'vai-fitsus63-', range: 'ecoFIT sustain', src: 'Vaillant ecoFIT sustain VUW 6-3 installation and maintenance instructions (0020230529_06): technical data pages 6 to 8, clearances page 12', limLabel: 'Maximum water flow rate', gasSup: '20 mbar natural gas', cat: 'I2H', dims: '390 x 702 x 295 mm', cond: '1.84 l/h',
+  dhwRows: [['Minimum pressure', '0.3 bar'], ['Recommended pressure', '2.0 bar'], ['Maximum pressure', '10 bar']],
+  chRows: [['Maximum flow temperature adjustment', '10 to 80 °C (75 °C as supplied)'], ['Maximum operating pressure', '2.5 bar']],
+  clear: [['Above (top air/flue connection)', '150 mm'], ['Above (rear air/flue connection)', '20 mm'], ['Below', '150 mm'], ['Either side', '5 mm (70 mm if the side sections have to be removed)'], ['In front', '500 mm']] };
+
 const BI_LIST = [
   bi8000('GR8701iW 32 C V2', '47-800-44', { ng: '3.4', lpg: '2.4', mod: '4.3 to 30.2', adj: '8.4 to 30.2', out: '8.2 to 29.1', dhwIn: '32.0', dhw: '12.0', mp: '1.2', h1: '15', h2: '15', h3: '12.2', v1: '19', h4: '25', v2: '25', cond: '3.5', kg: '49', lift: '43' }),
   bi8000('GR8701iW 36 C', '47-800-45', { ng: '3.8', lpg: '2.8', mod: '5.1 to 34.4', adj: '17.2 to 34.4', out: '16.9 to 33.7', dhwIn: '36.0', dhw: '13.5', mp: '1.4', h1: '10', h2: '10', h3: '7.2', v1: '13', h4: '29', v2: '29', cond: '4.1', kg: '49', lift: '43' }),
@@ -375,7 +402,13 @@ const BI_LIST = [
   biBaxiO(CFG_BOA, '36', '47-077-44', { ng: '3.81', ngMin: '0.71', lpg: '2.83', gcl: '47-077-47', dhwIn: '36.8', chIn: '25.8', minIn: '6.7', dhwOut: '36', chOut: '25', minOut: '6.7', out2: '26.4', d30: '16.5', spec: '15.0', w: '110', pkg: '33.5', lift: '30.5', inst: '31.5' })  ,
   biBaxiC(CFG_BX21, '24', '47-077-74', { ng: '2.61', ngMin: '0.52', chIn: '20.6', minIn: '4.9', chOut: '20', chOut2: '21.8', minOut: '4.8', dhwIn: '24.7', d25: '14.1', d35: '10.2', spec: '11.5', w: '85', kg: '28 / 30' }),
   biBaxiC(CFG_BX21, '30', '47-077-75', { ng: '3.26', ngMin: '0.63', chIn: '25.7', minIn: '6.0', chOut: '25', chOut2: '27.1', minOut: '5.8', dhwIn: '30.9', d25: '17.6', d35: '12.2', spec: '14.3', w: '88', kg: '29 / 31' }),
-  biBaxiC(CFG_BX21, '36', '47-077-76', { ng: '3.9', ngMin: '0.78', chIn: '25.7', minIn: '7.4', chOut: '25', chOut2: '27.1', minOut: '7.2', dhwIn: '36.9', d25: '21.0', d35: '15.0', spec: '17.2', w: '91', kg: '30 / 31' })
+  biBaxiC(CFG_BX21, '36', '47-077-76', { ng: '3.9', ngMin: '0.78', chIn: '25.7', minIn: '7.4', chOut: '25', chOut2: '27.1', minOut: '7.2', dhwIn: '36.9', d25: '21.0', d35: '15.0', spec: '17.2', w: '91', kg: '30 / 31' })  ,
+  biVai(CFG_VSUS, 'VUW 246/7-2 (ecoTEC sustain 24)', '47-044-79', { ng: '2.6', chIn: '18.7', min: '6.6', out: '6.4 to 18.5', out2: '7.0 to 20.1', dhwIn: '24.4', dhwOut: '6.6 to 24.3', d30: '11.5', d35: '9.9', lim: '8.0', w: '100', kg: '30.8', kgw: '33.5' }),
+  biVai(CFG_VSUS, 'VUW 286/7-2 (ecoTEC sustain 28)', '47-044-80', { ng: '3.0', chIn: '18.7', min: '7.6', out: '7.4 to 18.5', out2: '8.0 to 20.1', dhwIn: '28.5', dhwOut: '7.5 to 28.1', d30: '13.5', d35: '11.6', lim: '10.0', w: '110', kg: '30.8', kgw: '33.5' }),
+  biVai(CFG_VSUS, 'VUW 346/7-2 (ecoTEC sustain 34)', '47-044-81', { ng: '3.7', chIn: '18.7', min: '8.6', out: '8.4 to 18.5', out2: '9.1 to 19.9', dhwIn: '34.6', dhwOut: '8.4 to 34.0', d30: '16.5', d35: '14.1', lim: '12.0', w: '115', kg: '32.8', kgw: '35.9' })  ,
+  biVai(CFG_VFIT, 'VUW 256/6-3 (ecoFIT sustain 825)', '47-044-71', { ng: '2.7', ngMin: '0.540', chIn: '18.4', min: '5.1', out: '5.1 to 18.3', out2: '5.3 to 19.1', dhwIn: '25.7', dhwOut: '5.0 to 25.2', d30: '12.1', d35: '10.4', lim: '8.0', w: '87', kg: '32', kgw: '36' }),
+  biVai(CFG_VFIT, 'VUW 306/6-3 (ecoFIT sustain 830)', '47-044-72', { ng: '3.2', ngMin: '0.646', chIn: '18.4', min: '6.1', out: '6.1 to 18.3', out2: '6.3 to 19.1', dhwIn: '30.6', dhwOut: '6.0 to 30.0', d30: '14.2', d35: '12.2', lim: '10.0', w: '87', kg: '33', kgw: '37' }),
+  biVai(CFG_VFIT, 'VUW 356/6-3 (ecoFIT sustain 835)', '47-044-73', { ng: '3.8', ngMin: '0.762', chIn: '18.4', min: '7.2', out: '7.2 to 18.3', out2: '7.5 to 19.1', dhwIn: '35.7', dhwOut: '7.1 to 35.0', d30: '16.5', d35: '14.1', lim: '12.0', w: '98', kg: '33', kgw: '37' })
 ];
 function biState() { return ui.bi || (ui.bi = { q: '', id: '' }); }
 function biListHtml() {
