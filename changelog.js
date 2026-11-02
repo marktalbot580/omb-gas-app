@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v305', items: ['Boiler information: added the first Biasi boilers (Advance Plus and Inovia combis and system boilers), including their maximum flue lengths.'] },
   { v: 'v304', items: ['Boiler information: added the Alpha boilers (InTec, InTec2, E-Tec, E-Tec Plus, Evoke), including their maximum flue lengths.'] },
   { v: 'v303', items: ['Boiler information: added the Vokera boilers (evolve, Easi-Heat, Vibe, Vibe Max, Unica, Mynute, Linea ONE), including their maximum flue lengths.'] },
   { v: 'v302', items: ['Boiler information: added the Glow-worm regular and system boilers (Sustain, Energy, Home, Easicom 3, Ultimate 3).'] },

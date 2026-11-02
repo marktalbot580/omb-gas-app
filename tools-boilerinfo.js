@@ -425,6 +425,41 @@ const CFG_ALES = { key: 'ales-', range: 'E-Tec', src: 'Alpha E-Tec 20S, 30S and 
 const CFG_ALEC = { key: 'alec-', range: 'E-Tec', src: 'Alpha E-Tec 28 and 33 installation and servicing instructions: Technical data (section 3)' };
 const CFG_ALEP = { key: 'alep-', range: 'E-Tec Plus', src: 'Alpha E-Tec Plus 28, 33 and 38 installation and servicing instructions: Technical data (section 3)' };
 const CFG_ALEV = { key: 'alev-', range: 'Evoke', src: 'Alpha Evoke 28 and 33 installation and servicing instructions: Technical data (section 3)' };
+function biBia(c, model, type, gc, d) {
+  const r = (label, v, unit) => (v === undefined || v === null || v === '') ? null : [label, v + (unit ? ' ' + unit : '')];
+  const sec = (h, rows) => [h, rows.filter(Boolean)];
+  const hw = type === 'Combi' ? '' : ' (cylinder)';
+  return {
+    id: c.key + model.replace(/\W+/g, '').toLowerCase(), make: 'Biasi', range: c.range, model, type, gc, src: c.src,
+    sections: [
+      sec('Gas', [r('Gas rate, natural gas, heating, maximum', d.gasCH, 'm³/h'), r('Gas rate, natural gas, hot water, maximum', d.gasDHW, 'm³/h'), r('Gas rate, natural gas, minimum', d.gasMin, 'm³/h'), ['Gas supply', '20 mbar natural gas']]),
+      sec('Heat', [r('Heat input, heating (net)', d.inCH, 'kW'), r('Heat input, hot water' + hw + ' (net)', d.inDHW, 'kW'), r('Heat input, minimum (net)', d.inMin, 'kW'), r('Heating output, maximum (80/60 °C)', d.outMax, 'kW'), r('Heating output, maximum, condensing (50/30 °C)', d.outCond, 'kW'), r('Hot water output' + hw + ', maximum', d.outDHW, 'kW'), r('Output, minimum', d.outMin, 'kW')]),
+      sec('Combustion', [r('NOx class', d.nox), r('CO₂, natural gas, at maximum', d.co2max, '%'), r('CO₂, natural gas, at minimum', d.co2min, '%')]),
+      sec('Hot water', [r('Temperature setting range', d.dhwT, '°C'), r('Flow at 35 K rise', d.flow35, 'l/min'), r('Flow at 30 K rise', d.flow30, 'l/min'), r('Maximum mains pressure', d.dhwMaxP, 'bar'), r('Minimum mains pressure', d.dhwMinP, 'bar')]),
+      sec('Heating circuit', [r('Flow temperature setting range', d.chT, '°C'), r('Maximum system pressure', d.maxP, 'bar'), r('Minimum system pressure', d.minP, 'bar'), r('Expansion vessel', d.vessel, 'litres'), r('Vessel charge pressure', d.charge, 'bar'), r('Largest system water volume with this vessel', d.sysVol, 'litres')]),
+      sec('Clearances', [['Case size (W x H x D)', d.w + ' x ' + d.h + ' x ' + d.dp + ' mm'], r('Above', d.top, 'mm'), r('Either side', d.sides, 'mm'), r('Below', d.bottom, 'mm')]),
+      sec('Flue', [r('Coaxial 60/100 mm, maximum length', d.fCoax, 'm'), r('Split 80 mm, maximum length (air + flue added together)', d.fSplit, 'm'), ['Coaxial bends: each 45° / 90°', 'Take off 0.5 m / 1 m'], ['80 mm bends: each 45° / 90°', 'Take off 0.9 m / 1.65 m'], ['Other kits (roof, pluming)', 'See the flue section of the manual']]),
+      sec('Electrics', [r('Power, maximum', d.pw, 'W'), ['Supply', '230 V a.c., 50 Hz']]),
+      sec('Weight', [r('Appliance (dry)', d.kg, 'kg')])
+    ].filter(x => x[1].length)
+  };
+}
+const CLR_BIA = { top: '250', sides: '25', bottom: '200' };
+const CFG_BIAP = { key: 'biap-', range: 'Advance Plus', src: 'Biasi Advance Plus 25C, 30C and 35C ERP installation instructions (Aug 2019): Technical data (4.3 to 4.5) and Installation (section 6)' };
+const CFG_BIIN = { key: 'biin-', range: 'Inovia', src: 'Biasi Inovia 25C, 30C and 35C ERP installation instructions (March 2020): Technical data (4.5 to 4.7) and Installation (section 6)' };
+const BIA_COMBI = { nox: '6', dhwT: '35 to 55', chT: '25 to 85', maxP: '2.5', minP: '0.3', dhwMaxP: '10', dhwMinP: '0.3', vessel: '7', charge: '1.0', sysVol: '109', h: '700', w: '400', dp: '290', fCoax: '10', fSplit: '40', ...CLR_BIA };
+const CFG_BIAPO = { key: 'biapo-', range: 'Advance Plus', src: 'Biasi Advance Plus 25C, 30C and 35C installation instructions: Technical data (4.3 to 4.5) and Installation (section 6)' };
+const CFG_BIINO = { key: 'biino-', range: 'Inovia', src: 'Biasi Inovia 25C, 30C and 35C installation instructions: Technical data (4.3 to 4.5) and Installation (section 6)' };
+const BIA_COMBI_OLD = { ...BIA_COMBI, nox: '5' };
+const CFG_BIAPSE = { key: 'biapse-', range: 'Advance Plus', src: 'Biasi Advance Plus 25S and 30S ERP installation instructions: Technical data (4.3 and 4.4) and Installation (section 6)' };
+const CFG_BIAPS16 = { key: 'biaps16-', range: 'Advance Plus', src: 'Biasi Advance Plus 16S ERP installation instructions: Technical data (4.5) and Installation (section 6)' };
+const CFG_BIAPS = { key: 'biaps-', range: 'Advance Plus', src: 'Biasi Advance Plus 16S, 25S and 30S installation instructions: Technical data (4.5 to 4.7) and Installation (section 6)' };
+const CFG_BIINS = { key: 'biins-', range: 'Inovia', src: 'Biasi Inovia 16S and 25S installation instructions: Technical data (4.3 and 4.4) and Installation (section 6)' };
+const CFG_BIINSE = { key: 'biinse-', range: 'Inovia', src: 'Biasi Inovia 25S ERP installation instructions: Technical data (4.5) and Installation (section 6)' };
+const BIA_SYS = { chT: '25 to 85', maxP: '2.5', minP: '0.3', vessel: '7', charge: '1.0', sysVol: '109', h: '700', w: '400', dp: '290', fCoax: '10', fSplit: '40', ...CLR_BIA };
+const BIA_16 = { inCH: '16.0', inMin: '6.0', outMax: '15.6', outCond: '17.1', outMin: '5.8', gasCH: '1.69' };
+const BIA_25 = { inCH: '25.0', inMin: '6.0', outMax: '24.4', outCond: '26.6', outMin: '5.8', gasCH: '2.67' };
+const BIA_30 = { inCH: '30.0', inMin: '8.5', outMax: '29.5', outCond: '32.1', outMin: '8.3', gasCH: '3.17' };
 const BI_LIST = [
   bi8000('GR8701iW 32 C V2', '47-800-44', { ng: '3.4', lpg: '2.4', mod: '4.3 to 30.2', adj: '8.4 to 30.2', out: '8.2 to 29.1', dhwIn: '32.0', dhw: '12.0', mp: '1.2', h1: '15', h2: '15', h3: '12.2', v1: '19', h4: '25', v2: '25', cond: '3.5', kg: '49', lift: '43' }),
   bi8000('GR8701iW 36 C', '47-800-45', { ng: '3.8', lpg: '2.8', mod: '5.1 to 34.4', adj: '17.2 to 34.4', out: '16.9 to 33.7', dhwIn: '36.0', dhw: '13.5', mp: '1.4', h1: '10', h2: '10', h3: '7.2', v1: '13', h4: '29', v2: '29', cond: '4.1', kg: '49', lift: '43' }),
@@ -648,7 +683,28 @@ const BI_LIST = [
   biAlp(CFG_ALEP, 'E-Tec Plus 33', 'Combi', '47-532-78', {'inNetCH': '28.6', 'inNetDHW': '32.6', 'outCond': '29.7', 'outNon': '28', 'outMin': '4.9', 'outDHW': '32', 'gas': '3.45', 'flow35': '14.1', 'flow30': '16.5', 'nox': '6', 'maxT': '85', 'maxP': '2.5', 'minP': '0.5', 'recP': '1.0', 'prv': '3.0', 'vessel': '8.0', 'charge': '1.0', 'pw': '105', 'h': '712', 'w': '440', 'dp': '268', 'bottom': '150', 'topH': '235', 'topV': '150', 'sides': '5', 'front': '450', 'jig': '250', 'fH': '12', 'fV': '14', 'kg': '35.5', 'kgw': '37.9'}),
   biAlp(CFG_ALEP, 'E-Tec Plus 38', 'Combi', '47-532-79', {'inNetCH': '32.7', 'inNetDHW': '39', 'outCond': '34.4', 'outNon': '32', 'outMin': '6.1', 'outDHW': '37.9', 'gas': '4.13', 'flow35': '15.9', 'flow30': '18.6', 'nox': '6', 'maxT': '85', 'maxP': '2.5', 'minP': '0.5', 'recP': '1.0', 'prv': '3.0', 'vessel': '8.0', 'charge': '1.0', 'pw': '120', 'h': '712', 'w': '440', 'dp': '268', 'bottom': '150', 'topH': '235', 'topV': '150', 'sides': '5', 'front': '450', 'jig': '250', 'fH': '12', 'fV': '14', 'kg': '36.7', 'kgw': '40.5'}),
   biAlp(CFG_ALEV, 'Evoke 28', 'Combi', '47-532-71', {'inNetCH': '24.6', 'inNetDHW': '28.8', 'outCond': '26.1', 'outNon': '24.1', 'outMin': '4.3', 'outDHW': '28.3', 'gas': '3.05', 'flow35': '12.1', 'flow30': '14.1', 'nox': '6', 'maxT': '85', 'maxP': '2.5', 'minP': '0.5', 'recP': '1.0', 'prv': '3.0', 'vessel': '8.0', 'charge': '1.0', 'pw': '80', 'h': '712', 'w': '440', 'dp': '268', 'bottom': '150', 'topH': '235', 'topV': '150', 'sides': '5', 'front': '450', 'jig': '250', 'fH': '12', 'fV': '14', 'kg': '33.6', 'kgw': '35.8'}),
-  biAlp(CFG_ALEV, 'Evoke 33', 'Combi', '47-532-72', {'inNetCH': '28.6', 'inNetDHW': '32.6', 'outCond': '29.7', 'outNon': '28', 'outMin': '4.9', 'outDHW': '32', 'gas': '3.45', 'flow35': '14.1', 'flow30': '16.5', 'nox': '6', 'maxT': '85', 'maxP': '2.5', 'minP': '0.5', 'recP': '1.0', 'prv': '3.0', 'vessel': '8.0', 'charge': '1.0', 'pw': '105', 'h': '712', 'w': '440', 'dp': '268', 'bottom': '150', 'topH': '235', 'topV': '150', 'sides': '5', 'front': '450', 'jig': '250', 'fH': '12', 'fV': '14', 'kg': '35.5', 'kgw': '37.9'})
+  biAlp(CFG_ALEV, 'Evoke 33', 'Combi', '47-532-72', {'inNetCH': '28.6', 'inNetDHW': '32.6', 'outCond': '29.7', 'outNon': '28', 'outMin': '4.9', 'outDHW': '32', 'gas': '3.45', 'flow35': '14.1', 'flow30': '16.5', 'nox': '6', 'maxT': '85', 'maxP': '2.5', 'minP': '0.5', 'recP': '1.0', 'prv': '3.0', 'vessel': '8.0', 'charge': '1.0', 'pw': '105', 'h': '712', 'w': '440', 'dp': '268', 'bottom': '150', 'topH': '235', 'topV': '150', 'sides': '5', 'front': '450', 'jig': '250', 'fH': '12', 'fV': '14', 'kg': '35.5', 'kgw': '37.9'}),
+  biBia(CFG_BIAP, '25C ERP', 'Combi', '47-583-35', { ...BIA_COMBI, inCH: '20.0', inDHW: '25.0', inMin: '6.0', outMax: '19.5', outCond: '21.2', outDHW: '24.4', outMin: '5.8', flow35: '11.4', flow30: '13.3', gasCH: '2.15', gasDHW: '2.67', gasMin: '0.65', co2max: '9.3 to 9.9', co2min: '8.5 to 9.1', pw: '82', kg: '33' }),
+  biBia(CFG_BIAP, '30C ERP', 'Combi', '47-583-36', { ...BIA_COMBI, inCH: '25.0', inDHW: '30.0', inMin: '8.5', outMax: '24.4', outCond: '26.6', outDHW: '29.2', outMin: '8.3', flow35: '13.5', flow30: '16.2', gasCH: '2.65', gasDHW: '3.18', gasMin: '0.90', pw: '78', kg: '34.5' }),
+  biBia(CFG_BIAP, '35C ERP', 'Combi', '47-583-37', { ...BIA_COMBI, inCH: '30.0', inDHW: '34.0', inMin: '8.5', outMax: '29.5', outCond: '32.1', outDHW: '33.4', outMin: '8.3', flow35: '15.6', flow30: '19.2', gasCH: '3.17', gasDHW: '3.60', gasMin: '0.90', pw: '85', kg: '34.5' }),
+  biBia(CFG_BIIN, '25C ERP', 'Combi', '47-583-38', { ...BIA_COMBI, inCH: '20.0', inDHW: '25.0', inMin: '6.0', outMax: '19.5', outCond: '21.2', outDHW: '24.4', outMin: '5.8', flow35: '11.4', flow30: '13.3', gasCH: '2.15', gasDHW: '2.67', gasMin: '0.65', pw: '82', kg: '33' }),
+  biBia(CFG_BIIN, '30C ERP', 'Combi', '47-583-39', { ...BIA_COMBI, inCH: '25.0', inDHW: '30.0', inMin: '8.5', outMax: '24.4', outCond: '26.6', outDHW: '29.2', outMin: '8.3', flow35: '13.5', flow30: '16.2', gasCH: '2.65', gasDHW: '3.18', gasMin: '0.90', pw: '78', kg: '34.5' }),
+  biBia(CFG_BIIN, '35C ERP', 'Combi', '47-583-40', { ...BIA_COMBI, inCH: '30.0', inDHW: '34.0', inMin: '8.5', outMax: '29.5', outCond: '32.1', outDHW: '33.4', outMin: '8.3', flow35: '15.6', flow30: '19.2', gasCH: '3.17', gasDHW: '3.60', gasMin: '0.90', pw: '85', kg: '34.5' }),
+  biBia(CFG_BIAPO, '25C', 'Combi', '47-583-29', { ...BIA_COMBI_OLD, inCH: '20.0', inDHW: '25.0', inMin: '6.0', outMax: '19.5', outCond: '21.2', outDHW: '24.4', outMin: '5.9', flow35: '11.4', flow30: '13.3', gasCH: '2.15', gasDHW: '2.67', gasMin: '0.65', pw: '102', kg: '33' }),
+  biBia(CFG_BIAPO, '30C', 'Combi', '47-583-30', { ...BIA_COMBI_OLD, inCH: '25.0', inDHW: '30.0', inMin: '8.5', outMax: '24.4', outCond: '26.6', outDHW: '29.2', outMin: '8.3', flow35: '13.5', flow30: '16.2', gasCH: '2.65', gasDHW: '3.18', gasMin: '0.90', pw: '130', kg: '34.5' }),
+  biBia(CFG_BIAPO, '35C', 'Combi', '47-583-31', { ...BIA_COMBI_OLD, inCH: '30.0', inDHW: '34.0', inMin: '8.5', outMax: '29.5', outCond: '32.1', outDHW: '33.4', outMin: '8.3', flow35: '15.6', flow30: '19.2', gasCH: '3.17', gasDHW: '3.60', gasMin: '0.90', pw: '135', kg: '34.5' }),
+  biBia(CFG_BIINO, '25C', 'Combi', '47-583-32', { ...BIA_COMBI_OLD, inCH: '20.0', inDHW: '25.0', inMin: '6.0', outMax: '19.5', outCond: '21.2', outDHW: '24.4', outMin: '5.9', flow35: '11.4', flow30: '13.3', gasCH: '2.15', gasDHW: '2.67', gasMin: '0.65', pw: '102', kg: '31.5' }),
+  biBia(CFG_BIINO, '30C', 'Combi', '47-583-33', { ...BIA_COMBI_OLD, inCH: '25.0', inDHW: '30.0', inMin: '8.5', outMax: '24.4', outCond: '26.6', outDHW: '29.2', outMin: '8.3', flow35: '13.5', flow30: '16.2', gasCH: '2.65', gasDHW: '3.18', gasMin: '0.90', pw: '130', kg: '37' }),
+  biBia(CFG_BIINO, '35C', 'Combi', '47-583-34', { ...BIA_COMBI_OLD, inCH: '30.0', inDHW: '34.0', inMin: '8.5', outMax: '29.5', outCond: '32.1', outDHW: '33.4', outMin: '8.3', flow35: '15.6', flow30: '19.2', gasCH: '3.17', gasDHW: '3.60', gasMin: '0.90', pw: '135', kg: '37' }),
+  biBia(CFG_BIAPSE, '25S ERP', 'System', '41-583-28', { ...BIA_SYS, ...BIA_25, nox: '6', gasMin: '0.65', pw: '82', kg: '31' }),
+  biBia(CFG_BIAPSE, '30S ERP', 'System', '41-583-29', { ...BIA_SYS, ...BIA_30, nox: '6', gasMin: '0.90', pw: '78', kg: '32.5' }),
+  biBia(CFG_BIAPS16, '16S ERP', 'System', '41-583-27', { ...BIA_SYS, ...BIA_16, nox: '5', gasMin: '0.65', pw: '78', kg: '31' }),
+  biBia(CFG_BIAPS, '16S', 'System', '41-583-22', { ...BIA_SYS, ...BIA_16, nox: '5', pw: '94', kg: '31' }),
+  biBia(CFG_BIAPS, '25S', 'System', '41-583-23', { ...BIA_SYS, ...BIA_25, nox: '5', pw: '102', kg: '31' }),
+  biBia(CFG_BIAPS, '30S', 'System', '41-583-24', { ...BIA_SYS, ...BIA_30, nox: '5', pw: '135', kg: '32.5' }),
+  biBia(CFG_BIINS, '16S', 'System', '41-583-25', { ...BIA_SYS, ...BIA_16, nox: '5', pw: '94', kg: '30' }),
+  biBia(CFG_BIINS, '25S', 'System', '41-583-26', { ...BIA_SYS, ...BIA_25, nox: '5', pw: '102', kg: '30' }),
+  biBia(CFG_BIINSE, '25S ERP', 'System', '41-583-30', { ...BIA_SYS, ...BIA_25, nox: '5', gasMin: '0.64', pw: '95', kg: '31' })
 ];
 function biState() { return ui.bi || (ui.bi = { q: '', id: '' }); }
 function biListHtml() {
