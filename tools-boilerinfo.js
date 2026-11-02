@@ -190,15 +190,15 @@ function biLM1(kind, kw, gc, o) {
 /* Baxi combis. Baxi PDF text is scrambled, so these figures were read from the page images. */
 function biBaxiC(c, kw, gc, o) {
   return {
-    id: c.key + kw, make: 'Baxi', range: c.range, model: kw + ' Combi 2', type: 'Combi', gc, src: c.src,
+    id: c.key + kw, make: 'Baxi', range: c.range, model: o.model || (kw + ' Combi 2'), type: 'Combi', gc, src: c.src,
     sections: [
-      ['Gas', [['Gas rate, natural gas, maximum', o.ng + ' m³/h'], ['Gas rate, natural gas, minimum', o.ngMin + ' m³/h'], ['Gas rate, LPG, maximum', o.lpg + ' kg/h'], ['Gas rate, LPG, minimum', o.lpgMin + ' kg/h'], ['Gas supply', '20 mbar natural gas, 37 mbar LPG'], ['Gas category', 'I2H / I3P']]],
-      ['Heat', [['Heating input, maximum', o.chIn + ' kW'], ['Heating input, minimum (80/60 °C)', o.minIn + ' kW'], ['Heating output, maximum (80/60 °C)', o.chOut + ' kW'], ['Heating output, maximum (50/30 °C)', o.chOut2 + ' kW'], ['Heating output, minimum (80/60 °C)', o.minOut + ' kW'], ['Hot water input', o.dhwIn + ' kW'], ['Hot water output', kw + ' kW']]],
+      ['Gas', [['Gas rate, natural gas, maximum', o.ng + ' m³/h'], ['Gas rate, natural gas, minimum', o.ngMin + ' m³/h'], ['Gas rate, LPG, maximum', o.lpg + ' kg/h'], ['Gas rate, LPG, minimum', o.lpgMin + ' kg/h'], ['Gas supply', '20 mbar natural gas, 37 mbar LPG'], ['Gas category', c.cat || 'I2H / I3P']]],
+      ['Heat', [['Heating input, maximum', o.chIn + ' kW'], ['Heating input, minimum (80/60 °C)', o.minIn + ' kW'], ['Heating output, maximum (80/60 °C)', o.chOut + ' kW'], ['Heating output, maximum (50/30 °C)', o.chOut2 + ' kW'], ['Heating output, minimum (80/60 °C)', o.minOut + ' kW'], ['Hot water input', o.dhwIn + ' kW'], ['Hot water output', (o.dhwOut || kw) + ' kW']]],
       ['Combustion', [['NOx class', '6']]],
       ['Hot water', [['Flow at 25 °C rise', o.d25 + ' l/min'], ['Flow at 35 °C rise', o.d35 + ' l/min'], ['Specific flow (D)', o.spec + ' l/min'], ['Minimum mains pressure', '0.8 bar'], ['Maximum mains pressure', '8 bar'], ['Minimum dynamic pressure', '0.15 bar'], ['Minimum flow', '2 l/min']]],
       ['Heating circuit', [['Maximum pressure', '2.5 bar'], ['Minimum pressure', '0.5 bar'], ['Expansion vessel', '7 litres']]],
       ['Flue', [['Horizontal concentric 60/100, maximum', '10 m'], ['Horizontal concentric 80/125, maximum', '20 m'], ['Each 135° bend counts as', '0.5 m'], ['Each 93° bend counts as', '1.0 m'], ['Elbow supplied with the flue kit', 'Not counted'], ['Vertical flues', 'See the Flue Installation Guide supplied with the boiler']]],
-      ['Clearances', [['Case size (W x H x D)', '395 x 700 x 285 mm'], ['In front', '450 mm for servicing, 5 mm in operation'], ['Either side', '2.5 mm'], ['Below', '150 mm']]],
+      ['Clearances', [['Case size (W x H x D)', '395 x 700 x 285 mm']].concat(c.clear || [['In front', '450 mm for servicing, 5 mm in operation'], ['Either side', '2.5 mm'], ['Below', '150 mm']])],
       ['Electrics', [['Supply', '230 V a.c., 50 Hz'], ['Power', o.w + ' W'], ['Protection rating', 'IPX5D']]],
       ['Weight', [['Empty / filled with water', o.kg + ' kg']]]
     ]
@@ -206,6 +206,9 @@ function biBaxiC(c, kw, gc, o) {
 }
 const CFG_BX800 = { key: 'baxi-800c2-', range: '800 Combi 2', src: 'Baxi 800 Combi 2 installation and servicing manual: technical data pages 12 to 15, clearances page 29, flue page 31. The manual lists these as 824-2, 830-2 and 836-2' };
 
+const CFG_BX600 = { key: 'baxi-600c2-', range: '600 Combi 2', src: 'Baxi 600 Combi 2 installation and servicing manual: technical data pages 12 to 15, clearances page 29, flue page 31. The manual lists these as 624-2, 630-2 and 636-2' };
+const CFG_BX400 = { key: 'baxi-400c2-', range: '400 Combi 2', cat: 'I2H / II2H3P', src: 'Baxi 400 Combi 2 installation and servicing manual: technical data pages 12 to 15, clearances page 29, flue page 31. The manual does not give a Gas Council number',
+  clear: [['In front', '1000 mm for servicing, 6 mm in operation'], ['Either side', '2.5 mm'], ['Above', '240 mm minimum'], ['Below', '250 mm minimum']] };
 const BI_LIST = [
   bi8000('GR8701iW 32 C V2', '47-800-44', { ng: '3.4', lpg: '2.4', mod: '4.3 to 30.2', adj: '8.4 to 30.2', out: '8.2 to 29.1', dhwIn: '32.0', dhw: '12.0', mp: '1.2', h1: '15', h2: '15', h3: '12.2', v1: '19', h4: '25', v2: '25', cond: '3.5', kg: '49', lift: '43' }),
   bi8000('GR8701iW 36 C', '47-800-45', { ng: '3.8', lpg: '2.8', mod: '5.1 to 34.4', adj: '17.2 to 34.4', out: '16.9 to 33.7', dhwIn: '36.0', dhw: '13.5', mp: '1.4', h1: '10', h2: '10', h3: '7.2', v1: '13', h4: '29', v2: '29', cond: '4.1', kg: '49', lift: '43' }),
@@ -281,7 +284,12 @@ const BI_LIST = [
   biLM1('H', '30', '41-796-21', { rate: '3.135', inj: '4.65', max: '30.4', min: '6.1', out: '30.3', minOut: '6.1', co2a: '9.3', co2b: '8.8', hf: '8', w: '47', pkg: '28.7', inst: '22.7' })  ,
   biBaxiC(CFG_BX800, '24', '47-077-63', { ng: '2.61', ngMin: '0.52', lpg: '1.92', lpgMin: '0.38', chIn: '20.6', minIn: '4.9', chOut: '20', chOut2: '21.8', minOut: '4.8', dhwIn: '24.7', d25: '14.1', d35: '10.2', spec: '11.5', w: '85', kg: '28 / 30' }),
   biBaxiC(CFG_BX800, '30', '47-077-64', { ng: '3.26', ngMin: '0.63', lpg: '2.4', lpgMin: '0.47', chIn: '25.7', minIn: '6.0', chOut: '25', chOut2: '27.1', minOut: '5.8', dhwIn: '30.9', d25: '17.6', d35: '12.2', spec: '14.3', w: '88', kg: '29 / 31' }),
-  biBaxiC(CFG_BX800, '36', '47-077-65', { ng: '3.9', ngMin: '0.78', lpg: '2.86', lpgMin: '0.58', chIn: '25.7', minIn: '7.4', chOut: '25', chOut2: '27.1', minOut: '7.2', dhwIn: '36.9', d25: '21.0', d35: '15.0', spec: '17.2', w: '91', kg: '30 / 31' })
+  biBaxiC(CFG_BX800, '36', '47-077-65', { ng: '3.9', ngMin: '0.78', lpg: '2.86', lpgMin: '0.58', chIn: '25.7', minIn: '7.4', chOut: '25', chOut2: '27.1', minOut: '7.2', dhwIn: '36.9', d25: '21.0', d35: '15.0', spec: '17.2', w: '91', kg: '30 / 31' })  ,
+  biBaxiC(CFG_BX600, '24', '47-077-55', { ng: '2.61', ngMin: '0.52', lpg: '1.92', lpgMin: '0.38', chIn: '20.6', minIn: '4.9', chOut: '20', chOut2: '21.8', minOut: '4.8', dhwIn: '24.7', d25: '14.1', d35: '10.2', spec: '11.5', w: '85', kg: '28 / 30' }),
+  biBaxiC(CFG_BX600, '30', '47-077-56', { ng: '3.26', ngMin: '0.63', lpg: '2.4', lpgMin: '0.47', chIn: '25.7', minIn: '6.0', chOut: '25', chOut2: '27.1', minOut: '5.8', dhwIn: '30.9', d25: '17.6', d35: '12.2', spec: '14.3', w: '88', kg: '29 / 31' }),
+  biBaxiC(CFG_BX600, '36', '47-077-57', { ng: '3.9', ngMin: '0.78', lpg: '2.86', lpgMin: '0.58', chIn: '25.7', minIn: '7.2', chOut: '25', chOut2: '27.1', minOut: '7.2', dhwIn: '36.9', d25: '21.0', d35: '15.0', spec: '17.2', w: '91', kg: '30 / 31' }),
+  biBaxiC(CFG_BX400, '24', 'not in the manual', { model: '424 Combi 2', ng: '2.61', ngMin: '0.52', lpg: '1.92', lpgMin: '0.38', chIn: '20.6', minIn: '4.9', chOut: '20', chOut2: '21.8', minOut: '4.8', dhwIn: '24.7', dhwOut: '24', d25: '13.8', d35: '9.8', spec: '11.5', w: '90', kg: '28 / 30' }),
+  biBaxiC(CFG_BX400, '30', 'not in the manual', { model: '430 Combi 2', ng: '3.17', ngMin: '0.63', lpg: '2.33', lpgMin: '0.47', chIn: '20.6', minIn: '6.0', chOut: '20', chOut2: '21.8', minOut: '5.8', dhwIn: '30', dhwOut: '29.1', d25: '16.7', d35: '11.9', spec: '14', w: '90', kg: '29 / 31' })
 ];
 function biState() { return ui.bi || (ui.bi = { q: '', id: '' }); }
 function biListHtml() {
