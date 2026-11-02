@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v290', items: ['Boiler information: added the Ideal Logic Max Combi2 (C24, C30 and C35).'] },
   { v: 'v289', items: ['Boiler information: added the Worcester Greenstar 8000 Life combis (30, 35, 40, 45 and 50 C).'] },
   { v: 'v288', items: ['Boiler information: leaving a card and coming back through Tools now shows the boiler list, not the card you had open before.'] },
   { v: 'v287', items: ['New Tools option: Boiler information. Cards with the key figures from the manufacturer\u2019s manual (gas rate, pressures, CO\u2082, flue lengths, clearances, weights). The first ones are the Worcester Greenstar 8000+ Style combis, with more to follow.'] },

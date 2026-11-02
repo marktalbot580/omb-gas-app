@@ -24,6 +24,25 @@ function biCombi(c, model, gc, o) {
     ]
   };
 }
+
+/* Ideal Logic Max Combi2 (natural gas only). Figures from the Ideal installation and servicing guide, page numbers on each card. */
+const BI_SRC_LMC2 = 'Ideal Logic Max Combi2 installation and servicing guide: tables 1 to 3 page 6, clearances page 11, flue page 18, fault finding pages 55 and 56, combustion check page 67';
+function biIdealCombi(kw, gc, o) {
+  return {
+    id: 'ideal-lmc2-' + kw, make: 'Ideal', range: 'Logic Max Combi2', model: 'C' + kw, type: 'Combi', gc, src: BI_SRC_LMC2,
+    sections: [
+      ['Gas', [['Gas rate, natural gas (at maximum)', o.rate + ' m³/h'], ['Gas supply', 'Natural gas only, 20 mbar'], ['Gas pressure at the boiler inlet', 'Above 18 mbar (fault finding)'], ['Injector size', o.inj + ' mm'], ['Gas connection', '15 mm copper compression']]],
+      ['Heat', [['Heat input (net), maximum', o.max + ' kW'], ['Heat input (net), minimum', o.min + ' kW'], ['Hot water output, maximum', o.dhwOut + ' kW'], ['Heating output at minimum (70 °C mean)', o.minOut + ' kW']]],
+      ['Combustion', [['CO₂ at maximum (hot water), ±0.7', o.co2max + ' %'], ['CO₂ at minimum (heating), ±0.7', o.co2min + ' %'], ['Combustion check', 'CO under 350 ppm and CO/CO₂ ratio under 0.004'], ['NOx class', '6']]],
+      ['Hot water', [['Flow at 35 °C rise', o.flow + ' l/min'], ['Specific rate', o.spec + ' l/min'], ['Mains pressure for full flow', o.mp + ' bar'], ['Maximum mains pressure', '10 bar'], ['Runs down to', '2 l/min']]],
+      ['Heating circuit', [['Maximum working pressure', '2.5 bar'], ['PRV setting', '3.0 bar'], ['Expansion vessel charge', '0.5 to 0.75 bar'], ['Heating water content', '1.2 litres'], ['Flow and return', '22 mm copper compression']]],
+      ['Flue (100 mm concentric)', [['Horizontal, maximum effective length', o.hf + ' m'], ['Vertical, maximum effective length', '7.5 m'], ['Each 45° elbow counts as', '0.6 m'], ['Each 90° elbow counts as', '1.0 m']]],
+      ['Clearances', [['Case size (W x H x D)', '395 x 700 x 278 mm'], ['Either side', '2.5 mm from the case'], ['Below, for servicing', '100 mm (15 mm after installation, with an easily removable panel)'], ['In front, in a cupboard', '5 mm from the door, but 450 mm overall with the door open'], ['Above', 'See the clearance diagram, page 11']]],
+      ['Electrics', [['Supply', '230 V a.c., 50 Hz'], ['Power', o.w + ' W'], ['Fuses', 'External 3 A, internal T4A HRC L250 V']]],
+      ['Weight', [['Packaged', o.pkg + ' kg'], ['Lift weight', o.lift + ' kg']]]
+    ]
+  };
+}
 const BI_LIST = [
   bi8000('GR8701iW 32 C V2', '47-800-44', { ng: '3.4', lpg: '2.4', mod: '4.3 to 30.2', adj: '8.4 to 30.2', out: '8.2 to 29.1', dhwIn: '32.0', dhw: '12.0', mp: '1.2', h1: '15', h2: '15', h3: '12.2', v1: '19', h4: '25', v2: '25', cond: '3.5', kg: '49', lift: '43' }),
   bi8000('GR8701iW 36 C', '47-800-45', { ng: '3.8', lpg: '2.8', mod: '5.1 to 34.4', adj: '17.2 to 34.4', out: '16.9 to 33.7', dhwIn: '36.0', dhw: '13.5', mp: '1.4', h1: '10', h2: '10', h3: '7.2', v1: '13', h4: '29', v2: '29', cond: '4.1', kg: '49', lift: '43' }),
@@ -36,6 +55,10 @@ const BI_LIST = [
   biLife('GR8300iW 40 C', '47-800-16', { ng: '4.3', lpg: '3.2', mod: '5.1 to 34.4', out: '5.0 to 33.7', dhwIn: '40.8', dhw: '14', mp: '3.0', h1: '11', h2: '11', h3: '8.2', v1: '15', h4: '35', v2: '35', cond: '4.1', kg: '47', lift: '41' }),
   biLife('GR8300iW 45 C', '47-800-15', { ng: '4.6', lpg: '3.4', mod: '5.1 to 34.4', out: '5.0 to 33.8', dhwIn: '43.5', dhw: '15', mp: '3.4', h1: '8', h2: '8', h3: '5.2', v1: '12', h4: '35', v2: '35', cond: '4.1', kg: '49', lift: '43' }),
   biLife('GR8300iW 50 C', '47-800-14', { ng: '5.1', lpg: '3.8', mod: '5.1 to 34.4', out: '5.0 to 33.8', dhwIn: '48.9', dhw: '18', mp: '2.5', h1: '9', h2: '9', h3: '6.2', v1: '12', h4: '40', v2: '40', cond: '4.1', kg: '49', lift: '43' })
+  ,
+  biIdealCombi('24', '47-387-03', { rate: '2.512', inj: '4.15', max: '24.3', min: '4.9', dhwOut: '24.2', minOut: '4.8', co2max: '9.2', co2min: '8.5', flow: '9.9', spec: '11.5', mp: '0.8', hf: '9.0', w: '94', pkg: '34.8', lift: '28.5' }),
+  biIdealCombi('30', '47-387-04', { rate: '3.135', inj: '4.65', max: '30.4', min: '6.1', dhwOut: '30.3', minOut: '6.1', co2max: '9.3', co2min: '8.5', flow: '12.4', spec: '14.5', mp: '1.3', hf: '8.0', w: '93', pkg: '35', lift: '28.6' }),
+  biIdealCombi('35', '47-387-05', { rate: '3.657', inj: '4.9', max: '35.4', min: '7.1', dhwOut: '35.3', minOut: '7.1', co2max: '9.7', co2min: '8.8', flow: '14.5', spec: '16.9', mp: '1.3', hf: '6.0', w: '110', pkg: '35', lift: '28.6' })
 ];
 function biState() { return ui.bi || (ui.bi = { q: '', id: '' }); }
 function biListHtml() {
