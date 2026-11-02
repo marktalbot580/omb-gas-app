@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v303', items: ['Boiler information: added the Vokera boilers (evolve, Easi-Heat, Vibe, Vibe Max, Unica, Mynute, Linea ONE), including their maximum flue lengths.'] },
   { v: 'v302', items: ['Boiler information: added the Glow-worm regular and system boilers (Sustain, Energy, Home, Easicom 3, Ultimate 3).'] },
   { v: 'v301', items: ['Boiler information: added more Vaillant boilers (ecoFIT sustain system and regular, ecoTEC plus regular) and the first Glow-worm combis (Sustain, Energy, Home, Easicom 3, Ultimate 3).'] },
   { v: 'v300', items: ['Boiler information: added the first Vaillant combis: ecoTEC sustain (24, 28, 34) and ecoFIT sustain (825, 830, 835).'] },
