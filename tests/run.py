@@ -1689,6 +1689,12 @@ def run():
         check('Boiler information starts at the list again, not the last card', r is True, r)
         ctx.close()
 
+        # ---------- 12am23. every boiler card opens and has figures ----------
+        ctx, pg, errs = fresh(b, mobile=True)
+        r = ev(pg, """(async()=>{ ui.view='tools'; ui.tool='binfo'; const bad=[]; for(const c of BI_LIST){ ui.bi={q:'',id:c.id}; try{ render(); const t=document.body.innerText; if(!t.includes(c.gc)||t.length<400) bad.push(c.id) }catch(e){ bad.push(c.id+':'+e.message) } } return bad.length+':'+bad.slice(0,3).join('|')+':'+BI_LIST.length })()""")
+        check('Every boiler information card opens and shows its GC number', r.startswith('0:'), r)
+        ctx.close()
+
         # ---------- 12an. the (i) buttons hold still (not rebuilt over and over) ----------
         ctx, pg, errs = fresh(b, mobile=True)
         r = ev(pg, """(async()=>{ qSeed(); const cu={id:'c1',name:'Hold Still',phone:'',email:'',billing:'',properties:[],updated:1}; customers.push(cu);

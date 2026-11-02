@@ -2,7 +2,7 @@
    Anything not in the manual is left out, never guessed. Add a boiler by adding an entry to BI_LIST. */
 const BI_SRC_8000 = 'Worcester Greenstar 8000+ | 8000+ Style, manual 6721108973 (2025/06): flue pages 17, clearances page 14, technical data pages 83 to 84';
 const CFG_STYLE = { key: 'wb-8701-', range: 'Greenstar 8000+ Style', src: BI_SRC_8000, pre: '0.75', gasRows: [['Gas inlet pressure', '20 mbar natural gas, 37 mbar LPG'], ['Gas category', 'CAT II 2H/3P']],
-  clear: [['Space needed', '450 mm in front. 300 mm clear to the left or right. 200 mm to anything below. Bottom of the case 1000 to 1500 mm from the floor.']] };
+  clear: [['In front', '600 mm. Can be reduced to 450 mm if: case bottom 1000 to 1500 mm from the floor, 450 mm clear in front down to the floor, 200 mm clear below, and 300 mm clear to one side'], ['Either side', '5 mm'], ['Below', '200 mm'], ['Above', '170 or 210 mm, depending on flue size'], ['Compartment depth', '385 mm'], ['Space to removable door', '20 mm']] };
 const CFG_LIFE = { key: 'wb-8300-', range: 'Greenstar 8000 Life', src: 'Worcester Greenstar 8000 Life, manual 6720883865 (2019/02): clearances page 14, flue page 15, technical data pages 65 to 68', pre: '1.0', gasRows: [],
   clear: [['In front', '600 mm'], ['Either side', '5 mm'], ['Below', '200 mm'], ['Above', '170 or 210 mm, depending on flue size'], ['Compartment depth', '385 mm'], ['Space to removable door', '20 mm']] };
 const bi8000 = (model, gc, o) => biCombi(CFG_STYLE, model, gc, o);
@@ -43,6 +43,60 @@ function biIdealCombi(kw, gc, o) {
     ]
   };
 }
+
+/* Regular and system boilers (no hot water section). */
+const CLEAR_STD = [['In front', '600 mm'], ['Either side', '5 mm'], ['Below', '200 mm'], ['Above', '170 or 210 mm, depending on flue size'], ['Compartment depth', '385 mm'], ['Space to removable door', '20 mm']];
+const CLEAR_STYLE_RS = [['In front', '600 mm. Can be reduced to 450 mm if: case bottom 1000 to 1500 mm from the floor, 450 mm clear in front down to the floor, 200 mm clear below, and 300 mm clear to one side']].concat(CLEAR_STD.slice(1));
+const FLUE_8000 = { 30: [17, 17, 14.2, 21, 25, 25], 35: [10, 10, 7.2, 14, 29, 29], 40: [11, 11, 8.2, 15, 35, 35], 45: [8, 8, 5.2, 12, 35, 35], 50: [9, 9, 6.2, 12, 40, 40] };
+function biRS(c, size, gc, o) {
+  const f = FLUE_8000[size], rows = [];
+  return {
+    id: c.key + c.letter + size, make: 'Worcester Bosch', range: c.range, model: c.prefix + ' ' + size + ' ' + c.letter, type: c.type, gc, src: c.src,
+    sections: [
+      ['Gas', [['Gas rate, natural gas (10 min from lighting)', o.ng + ' m³/h'], ['Gas rate, LPG', o.lpg + ' kg/h']].concat(c.gasRows || [])],
+      ['Heat', [['Heat input range', o.mod + ' kW']].concat(o.adj ? [['Heating heat input, adjustable', o.adj + ' kW']] : []).concat([['Heating output (80/60 °C)' + (o.adj ? ', adjustable' : ''), o.out + ' kW']])],
+      ['Combustion', [['CO₂ at maximum', '9.5 %'], ['CO₂ at minimum', '8.6 %'], ['NOx class', '6']]],
+      ['Heating circuit', [['Maximum operating pressure', '2.5 bar']].concat(o.pump ? [['Pump head at 20 °C rise', o.pump + ' m']] : []).concat(c.vessel ? [['Expansion vessel', '10 litres, pre-charge ' + c.vessel + ' bar']] : [])],
+      ['Flue (60/100)', [['Horizontal, no plume management', f[0] + ' m'], ['Horizontal, with 500 mm of plume management', f[1] + ' m'], ['Horizontal, with 4500 mm of plume management', f[2] + ' m'], ['Vertical', f[3] + ' m'], ['Each 45° bend counts as', '0.5 m'], ['Each 90° bend counts as', '1.5 m']]],
+      ['Flue (80/125)', [['Horizontal (no plume management available)', f[4] + ' m'], ['Vertical', f[5] + ' m'], ['Each 45° bend counts as', '0.5 m'], ['Each 90° bend counts as', '1.5 m']]],
+      ['Clearances', [['Case size (W x H x D)', '440 x 780 x 365 mm']].concat(c.clear)],
+      ['Condensate and electrics', [['Maximum condensate', o.cond + ' l/h'], ['Condensate pH', 'about 4.5 to 5.0'], ['Supply', '230 V a.c., 50 Hz'], ['Protection rating', 'IPX4D']]],
+      ['Weight', [['Appliance', o.kg + ' kg'], ['Lift weight (panels removed)', o.lift + ' kg']]]
+    ]
+  };
+}
+const GAS_STYLE_ROWS = [['Gas inlet pressure', '20 mbar natural gas, 37 mbar LPG'], ['Gas category', 'CAT II 2H/3P']];
+const CFG_STYLE_R = { key: 'wb-8701-', letter: 'R', prefix: 'GR8701iW', type: 'Regular', range: 'Greenstar 8000+', gasRows: GAS_STYLE_ROWS, clear: CLEAR_STYLE_RS, vessel: '',
+  src: 'Worcester Greenstar 8000+ Regular, manual 6721891104 (2024/06): clearances page 16, flue page 19, technical data page 79' };
+const CFG_STYLE_S = { key: 'wb-8701-', letter: 'S', prefix: 'GR8701iW', type: 'System', range: 'Greenstar 8000+', gasRows: GAS_STYLE_ROWS, clear: CLEAR_STYLE_RS, vessel: '0.75',
+  src: 'Worcester Greenstar 8000+ System, manual 6721891100 (2024/06): clearances page 16, flue page 18, technical data page 84' };
+const CFG_LIFE_R = { key: 'wb-8300-', letter: 'R', prefix: 'GR8300iW', type: 'Regular', range: 'Greenstar 8000 Life', gasRows: [], clear: CLEAR_STD, vessel: '',
+  src: 'Worcester Greenstar 8000 Life Regular, manual 6720883866 (2019/04): clearances page 15, flue page 16, technical data pages 66 to 69' };
+const CFG_LIFE_S = { key: 'wb-8300-', letter: 'S', prefix: 'GR8300iW', type: 'System', range: 'Greenstar 8000 Life', gasRows: [], clear: CLEAR_STD, vessel: '1.0',
+  src: 'Worcester Greenstar 8000 Life System, manual 6720883858 (2019/02): clearances page 15, flue page 16, technical data pages 67 to 70' };
+
+/* Greenstar 8000 F floor-standing */
+function biF(kind, size, gc, o) {
+  const comb = kind === 'C';
+  const flue60 = [['Horizontal', '4 m'], ['Vertical', '6.4 m'], ['Each 45° bend counts as', '0.75 m'], ['Each 90° bend counts as', '1.5 m']];
+  return {
+    id: 'wb-8700if-' + kind + size, make: 'Worcester Bosch', range: 'Greenstar 8000 F', model: 'GR8700iF ' + size + ' ' + kind, type: comb ? 'Combi (floor-standing)' : 'Regular (floor-standing)', gc,
+    src: comb ? 'Worcester Greenstar 8000 F Combi, manual 6721106419 (2024/11): clearances page 16, flue page 17, technical data pages 93 to 94' : 'Worcester Greenstar 8000 F Regular, manual 6721106420 (2024/11): clearances page 16, flue page 17, technical data page 87',
+    sections: [
+      ['Gas', [['Gas rate, natural gas (10 min from lighting)', o.ng + ' m³/h'], ['Gas rate, LPG', o.lpg + ' kg/h'], ['Gas inlet pressure', '20 mbar natural gas, 37 mbar LPG'], ['Gas category', 'CAT II 2H/3P']]],
+      ['Heat', [['Heat input range', o.mod + ' kW'], ['Heating output (80/60 °C)', o.out + ' kW']].concat(comb ? [['Hot water output', o.dhwOut + ' kW']] : [])],
+      ['Combustion', [['CO₂ at maximum (natural gas)', '9.5 %'], ['CO₂ at minimum (natural gas)', '8.6 %'], ['O₂ at maximum', '4.0 %'], ['O₂ at minimum', '4.6 %'], ['NOx class', '6']]]
+    ].concat(comb ? [['Hot water', [['Flow at 40 °C rise', o.flow + ' l/min'], ['Mains pressure for full flow', '2.0 bar working'], ['Minimum mains pressure to run', '0.2 bar'], ['Maximum mains pressure', '10 bar'], ['Minimum flow to start', '1.9 l/min'], ['Temperature range', '35 to 55 °C']]]] : []).concat([
+      ['Heating circuit', [['Maximum operating pressure', '2.5 bar'], ['Maximum flow temperature', '60 °C set, up to ' + (comb ? '82' : '88') + ' °C possible']].concat(comb ? [['Pump head at 20 °C rise', '2 m' + (size === '50' ? ' (a low loss header or extra pump is needed for a 20 K differential)' : '')], ['Expansion vessel', '10 litres, pre-charge 0.75 bar']] : [])],
+      ['Flue 60/100', flue60],
+      ['Flue 80/125', [['Horizontal', '13 m'], ['Vertical', '15 m'], ['Each 45° bend counts as', '1.0 m'], ['Each 90° bend counts as', '2.0 m']]],
+      ['Clearances (unventilated compartment)', [['Case size (W x H x D)', (comb ? '600' : '400') + ' x 850 x 600 mm'], ['Overall height', '1450 mm installation, 865 mm maintenance'], ['Overall depth', '1200 mm'], ['Overall width', (comb ? '610' : '410') + ' mm'], ['In front', '600 mm clear standing space, kept clear down to the working surface'], ['Above', '600 mm installation, 15 mm maintenance'], ['Either side', '5 mm'], ['Compartment depth', '625 mm'], ['Space to removable door', '25 mm']]],
+      ['Condensate and electrics', [['Maximum condensate', '4.1 l/h'], ['Supply', '230 V a.c., 50 Hz'], ['Power (heating)', o.w + ' W'], ['Protection rating', 'IPX4D']]],
+      ['Weight', [['Appliance', o.kg + ' kg']]]
+    ])
+  };
+}
+
 const BI_LIST = [
   bi8000('GR8701iW 32 C V2', '47-800-44', { ng: '3.4', lpg: '2.4', mod: '4.3 to 30.2', adj: '8.4 to 30.2', out: '8.2 to 29.1', dhwIn: '32.0', dhw: '12.0', mp: '1.2', h1: '15', h2: '15', h3: '12.2', v1: '19', h4: '25', v2: '25', cond: '3.5', kg: '49', lift: '43' }),
   bi8000('GR8701iW 36 C', '47-800-45', { ng: '3.8', lpg: '2.8', mod: '5.1 to 34.4', adj: '17.2 to 34.4', out: '16.9 to 33.7', dhwIn: '36.0', dhw: '13.5', mp: '1.4', h1: '10', h2: '10', h3: '7.2', v1: '13', h4: '29', v2: '29', cond: '4.1', kg: '49', lift: '43' }),
@@ -59,6 +113,26 @@ const BI_LIST = [
   biIdealCombi('24', '47-387-03', { rate: '2.512', inj: '4.15', max: '24.3', min: '4.9', dhwOut: '24.2', minOut: '4.8', co2max: '9.2', co2min: '8.5', flow: '9.9', spec: '11.5', mp: '0.8', hf: '9.0', w: '94', pkg: '34.8', lift: '28.5' }),
   biIdealCombi('30', '47-387-04', { rate: '3.135', inj: '4.65', max: '30.4', min: '6.1', dhwOut: '30.3', minOut: '6.1', co2max: '9.3', co2min: '8.5', flow: '12.4', spec: '14.5', mp: '1.3', hf: '8.0', w: '93', pkg: '35', lift: '28.6' }),
   biIdealCombi('35', '47-387-05', { rate: '3.657', inj: '4.9', max: '35.4', min: '7.1', dhwOut: '35.3', minOut: '7.1', co2max: '9.7', co2min: '8.8', flow: '14.5', spec: '16.9', mp: '1.3', hf: '6.0', w: '110', pkg: '35', lift: '28.6' })
+  ,
+  biRS(CFG_STYLE_R, 30, '41-800-29', { ng: '3.2', lpg: '2.3', mod: '3.0 to 30.2', adj: '15.1 to 30.2', out: '14.8 to 29.6', pump: '7.0', cond: '3.5', kg: '47', lift: '41' }),
+  biRS(CFG_STYLE_R, 35, '41-800-30', { ng: '3.6', lpg: '2.7', mod: '5.1 to 34.4', adj: '17.2 to 34.4', out: '16.9 to 33.7', pump: '6.5', cond: '4.1', kg: '47', lift: '41' }),
+  biRS(CFG_STYLE_R, 40, '41-800-31', { ng: '4.3', lpg: '3.2', mod: '5.1 to 34.4', adj: '17.2 to 34.4', out: '16.9 to 33.7', pump: '6.5', cond: '4.1', kg: '47', lift: '41' }),
+  biRS(CFG_STYLE_R, 45, '41-800-32', { ng: '4.6', lpg: '3.4', mod: '6.3 to 34.4', adj: '17.2 to 34.4', out: '16.9 to 33.8', pump: '6.5', cond: '4.1', kg: '49', lift: '43' }),
+  biRS(CFG_STYLE_R, 50, '41-800-33', { ng: '5.1', lpg: '3.8', mod: '6.3 to 34.4', adj: '17.2 to 34.4', out: '16.9 to 33.8', pump: '6.5', cond: '4.1', kg: '49', lift: '43' }),
+  biRS(CFG_STYLE_S, 30, '41-800-27', { ng: '3.2', lpg: '2.3', mod: '3.0 to 30.2', adj: '15.1 to 30.2', out: '14.8 to 29.6', pump: '2.0', cond: '3.5', kg: '46', lift: '40' }),
+  biRS(CFG_STYLE_S, 35, '41-800-28', { ng: '3.6', lpg: '2.7', mod: '5.1 to 34.4', adj: '17.2 to 34.4', out: '16.9 to 33.7', pump: '2.0', cond: '4.1', kg: '46', lift: '40' }),
+  biRS(CFG_LIFE_R, 30, '41-406-98', { ng: '3.2', lpg: '2.3', mod: '3.0 to 30.2', out: '2.9 to 29.6', cond: '3.5', kg: '46', lift: '40' }),
+  biRS(CFG_LIFE_R, 35, '41-406-97', { ng: '3.6', lpg: '2.7', mod: '5.1 to 34.4', out: '5.0 to 33.7', cond: '4.1', kg: '46', lift: '40' }),
+  biRS(CFG_LIFE_R, 40, '41-406-96', { ng: '4.3', lpg: '3.2', mod: '5.1 to 40.8', out: '5.0 to 39.8', cond: '4.5', kg: '46', lift: '40' }),
+  biRS(CFG_LIFE_R, 45, '41-406-95', { ng: '4.6', lpg: '3.4', mod: '6.3 to 43.5', out: '6.2 to 42.6', cond: '4.7', kg: '48', lift: '42' }),
+  biRS(CFG_LIFE_R, 50, '41-406-94', { ng: '5.1', lpg: '3.8', mod: '6.3 to 48.9', out: '6.2 to 47.9', cond: '7.8', kg: '48', lift: '42' }),
+  biRS(CFG_LIFE_S, 30, '41-406-91', { ng: '3.2', lpg: '2.3', mod: '3.0 to 30.2', out: '2.9 to 29.6', pump: '2.0', cond: '3.5', kg: '46', lift: '40' }),
+  biRS(CFG_LIFE_S, 35, '41-406-90', { ng: '3.6', lpg: '2.7', mod: '5.1 to 34.4', out: '5.0 to 33.7', pump: '2.0', cond: '4.1', kg: '46', lift: '40' })
+  ,
+  biF('C', '35', '47-800-56', { ng: '3.7', lpg: '2.7', mod: '5.1 to 34.4', out: '33.8', dhwOut: '33.7', flow: '12', w: '116', kg: '73' }),
+  biF('C', '50', '47-800-58', { ng: '5.1', lpg: '3.8', mod: '6.3 to 48.9', out: '47.8', dhwOut: '47.9', flow: '17', w: '152', kg: '75' }),
+  biF('R', '35', '41-800-41', { ng: '3.7', lpg: '2.7', mod: '5.1 to 34.4', out: '33.8', w: '51', kg: '56' }),
+  biF('R', '50', '41-800-43', { ng: '5.1', lpg: '3.8', mod: '6.3 to 48.9', out: '47.8', w: '86', kg: '58' })
 ];
 function biState() { return ui.bi || (ui.bi = { q: '', id: '' }); }
 function biListHtml() {
