@@ -923,7 +923,7 @@ ${(c.properties || []).length && (c.properties || []).length <= 8 ? c.properties
 }
 
 document.addEventListener('error', e => { if (e.target && e.target.dataset && e.target.dataset.hideerr) e.target.style.display = 'none'; }, true);
-const APP_VERSION = 'v311';   // keep the same as CACHE in sw.js
+const APP_VERSION = 'v312';   // keep the same as CACHE in sw.js
 async function checkVersion() {
   const el = $('#verNew'); if (!el) return;
   try {
@@ -1674,7 +1674,7 @@ function stepDefects() {
   ${n ? `<p class="small muted"><b>ID</b> Immediately Dangerous · <b>AR</b> At Risk · <b>NCS</b> Not to Current Standards</p>` : ''}`;
 }
 function stepNext() {
-  return `${WARN.neededFor(ui.rec) ? '<div class="notice err">Something on this check has failed, so the record will be stamped FAIL – DO NOT USE. At the review step you will be asked whether to create a Danger / Do Not Use Warning Notice.</div>' : ''}<div class="card">
+  return `${WARN.neededFor(ui.rec) ? '<div class="notice err">Something on this check has failed. At the review step you will be asked whether to create a Danger / Do Not Use Warning Notice.</div>' : ''}<div class="card">
     ${txt('renewal', 'Next safety check due by', { type: 'date', req: 1, hint: 'Pre-filled as 12 months from today.' })}
     ${txt('notes', 'Engineer notes / other work carried out', { area: 1, rows: 5 })}
   </div>`;
@@ -2552,7 +2552,7 @@ function svcOperating() {
 }
 function svcFinish() {
   const r = ui.rec;
-  return `${svcTightness()}${WARN.needed(r) ? '<div class="notice err">' + (WARN.reasons(r).length ? 'Something on this service has failed (' + esc(WARN.reasons(r).join('; ')) + ')' : 'You have answered YES to "Has a warning notice been issued?" below') + ', so the review step will ask whether to create a Danger / Do Not Use Warning Notice' + (ui.rec.safe === 'NO' ? ', and the record will be stamped FAIL – DO NOT USE' : '') + '.</div>' : ''}<div class="card">
+  return `${svcTightness()}${WARN.needed(r) ? '<div class="notice err">' + (WARN.reasons(r).length ? 'Something on this service has failed (' + esc(WARN.reasons(r).join('; ')) + ')' : 'You have answered YES to "Has a warning notice been issued?" below') + ', so the review step will ask whether to create a Danger / Do Not Use Warning Notice' + '.</div>' : ''}<div class="card">
     ${choice('manufacturer', 'Does the installation meet the manufacturer’s instructions?', SVC.YN, { req: 1, yn: 1 })}
     ${choice('safe', 'Is the appliance / installation safe to use?', SVC.YN, { req: 1, yn: 1 })}
     ${choice('warning', 'Has a warning notice been issued?', SVC.YN, { req: 1 })}

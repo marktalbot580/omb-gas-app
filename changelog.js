@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v312', items: ['Gas safety records and service records no longer carry the big red FAIL – DO NOT USE banner, because they are checks, not certificates. Failed items are still shown in the record, and you are still asked about a Warning Notice.'] },
   { v: 'v311', items: ['Boiler information: the list now stays hidden until you tap a make or type in the search box.'] },
   { v: 'v310', items: ['Boiler information: tap a make (Baxi, Ideal, Worcester and so on) under the search bar to show only that make. Tap it again to show all.'] },
   { v: 'v309', items: ['Boiler information: added the Baxi 800 Combi 825, 830 and 836, with Gas Council numbers, flue lengths and clearances.'] },

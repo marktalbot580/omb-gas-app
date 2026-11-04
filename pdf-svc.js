@@ -129,18 +129,8 @@ async function drawSvcPdf(rec, s, lv) {
   const ynCol = v => v === 'YES' ? GREEN : v === 'NO' ? RED : INK;
 
 
-  /* red FAIL – DO NOT USE stamp, drawn straight under the header when the record has failed */
-  function stampBar(h) {
-    doc.setFillColor(...RED); doc.rect(M, y, CW, h, 'F');
-    doc.setDrawColor(255, 255, 255); doc.setLineWidth(0.5); doc.rect(M + 1.2, y + 1.2, CW - 2.4, h - 2.4);
-    doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255);
-    doc.setFontSize(h > 14 ? 28 : 24); doc.text('FAIL – DO NOT USE', M + CW / 2, y + h / 2 + (h > 14 ? 3.6 : 3.1), { align: 'center', charSpace: 1.2 });
-    doc.setLineWidth(0.25); y += h + GAP;
-  }
-
   /* ================= LAYOUT ================= */
   band(true);
-  if (WARN.stamp(rec)) stampBar(15);
   const g3 = 3, bw = (CW - 2 * g3) / 3;
   const biz = [{ t: s.businessName || 'Your business', b: 1, fs: 8.6 }];
   if (s.address) biz.push({ t: addrLine(s.address) });
