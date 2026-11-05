@@ -61,6 +61,14 @@ function hasAccess(s: any) {
   return false;
 }
 
+// Customer reminder emails go out only for paying (or free-pass) accounts, not for trials.
+function isPaying(s: any) {
+  if (!s) return false;
+  if (s.comped) return true;
+  if (s.status === 'active' || s.status === 'past_due') return (s.period_end ? Date.parse(s.period_end) : Date.now() + 864e5) > Date.now() - 3 * 864e5;
+  return false;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   const url = new URL(req.url), action = url.searchParams.get('action');
@@ -103,7 +111,7 @@ Deno.serve(async (req) => {
         if (sent >= cap) break;
         const uid = sd.user_id as string, settings = sd.data || {};
         const { data: sub } = await sb.from('subscriptions').select('status, trial_end, period_end, comped').eq('user_id', uid).maybeSingle();
-        if (!hasAccess(sub)) continue;
+        if (!isPaying(sub)) continue;   // trial accounts never send customer emails (stops free sign-ups being used to send spam)
         if (!okEmail(settings.email)) continue;   // replies need somewhere to go
         const windowDays = Math.min(120, Math.max(14, parseInt(String(settings.remDays || '56'), 10) || 56));
         const [{ data: custs }, { data: recs }, { data: logs }] = await Promise.all([
