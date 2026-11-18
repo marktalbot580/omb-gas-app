@@ -100,13 +100,16 @@ document.addEventListener('click', e => {
 /* ---------- chasing overdue invoices: one sheet, you pick Text, WhatsApp or Email, and nothing goes until you tap send ---------- */
 const invPhone = i => String((customers.find(c => c.id === i.customerId) || {}).phone || (i.customer || {}).phone || '').replace(/[^\d+]/g, '');
 function chaseMark(i) { i.chases = (i.chases || 0) + 1; i.remindedAt = todayISO(); i.snooze = addDays(todayISO(), 7); persistInv(i); if (ui.view === 'home' || ui.view === 'invoices') render(); }
+let chaseQ = [];   // the overdue invoices being worked through one after another
+function chaseAdvance(id) { const k = chaseQ.indexOf(id); if (k >= 0 && k < chaseQ.length - 1) { const nx = chaseQ[k + 1]; setTimeout(() => showChase(nx), 350); } else chaseQ = []; }
 function showChase(id) {
   const old = document.getElementById('chaseSheet'); if (old) old.remove();
   const i = invoices.find(x => x.id === id); if (!i) return;
   const ph = invPhone(i), em = (i.customer || {}).email, late = daysLate(i);
+  const qi = chaseQ.indexOf(id), more = qi >= 0 && qi < chaseQ.length - 1;
   const d = document.createElement('div'); d.id = 'chaseSheet'; d.className = 'sheetbg';
   d.innerHTML = `<div class="sheet" role="dialog" aria-label="Chase invoice"><div class="grab"></div>
-    <h2>${esc((i.customer || {}).name || 'Customer')} · ${money(invTotals(i).total)}</h2>
+    ${qi >= 0 && chaseQ.length > 1 ? `<p class="small muted" style="margin:0 0 4px">Invoice ${qi + 1} of ${chaseQ.length}</p>` : ''}<h2>${esc((i.customer || {}).name || 'Customer')} · ${money(invTotals(i).total)}</h2>
     <p class="muted" style="margin:0 0 10px">${esc(i.number)} · ${late} day${late === 1 ? '' : 's'} late${i.chases ? ' · chased ' + i.chases + '×' : ''}${i.remindedAt ? ', last ' + esc(ukDate(i.remindedAt)) : ''}</p>
     <div class="card small" style="white-space:pre-wrap;max-height:30vh;overflow:auto">${esc(invRemText(i))}</div>
     ${ph ? `<button type="button" class="btn gold block" data-act="chaseGo" data-how="sms" data-id="${i.id}">Text</button><div style="height:8px"></div><button type="button" class="btn block" data-act="chaseGo" data-how="wa" data-id="${i.id}">WhatsApp</button><div style="height:8px"></div>` : ''}
@@ -114,7 +117,8 @@ function showChase(id) {
     ${!ph && !em ? '<p class="small muted">No phone or email saved for this customer. Add one on their customer page.</p>' : ''}
     <button type="button" class="btn block" data-act="chaseGo" data-how="paid" data-id="${i.id}">Paid today</button><div style="height:8px"></div>
     <button type="button" class="btn block" data-act="chaseGo" data-how="paidEarlier" data-id="${i.id}">Paid earlier – choose the date</button>
-    <button type="button" class="btn block ghost" data-act="chaseClose" style="margin-top:6px">Close</button></div>`;
+    ${more ? `<button type="button" class="btn block" data-act="chaseSkip" data-id="${i.id}" style="margin-top:6px">Skip – next invoice</button>` : ''}
+    <button type="button" class="btn block ghost" data-act="chaseClose" style="margin-top:6px">${more ? 'Stop chasing' : 'Close'}</button></div>`;
   document.body.appendChild(d);
 }
 document.addEventListener('click', async e => {
@@ -122,18 +126,19 @@ document.addEventListener('click', async e => {
   if (bg && e.target === bg) { bg.remove(); return; }
   const b = e.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act;
-  if (a === 'chaseOpen') { if (CLOUD.locked()) { lockedMsg(); return; } showChase(b.dataset.id); return; }
-  if (a === 'chaseClose') { if (bg) bg.remove(); return; }
-  if (a === 'chaseAll') { const n = overdueInvs().filter(i => !(i.snooze && i.snooze > todayISO())); if (n.length) showChase(n[0].id); else toast('Everything overdue has been chased this week'); return; }
+  if (a === 'chaseOpen') { if (CLOUD.locked()) { lockedMsg(); return; } chaseQ = []; showChase(b.dataset.id); return; }
+  if (a === 'chaseClose') { chaseQ = []; if (bg) bg.remove(); return; }
+  if (a === 'chaseSkip') { if (bg) bg.remove(); chaseAdvance(b.dataset.id); return; }
+  if (a === 'chaseAll') { const n = overdueInvs().filter(i => !(i.snooze && i.snooze > todayISO())); if (n.length) { chaseQ = n.map(x => x.id); showChase(n[0].id); } else toast('Everything overdue has been chased this week'); return; }
   if (a !== 'chaseGo') return;
   const i = invoices.find(x => x.id === b.dataset.id); if (!i) return;
   const how = b.dataset.how, text = invRemText(i), ph = invPhone(i);
-  if (how === 'paidEarlier') { i.paid = true; i.paidDate = todayISO(); persistInv(i); if (bg) bg.remove(); if (typeof invGo === 'function') invGo(i, 'invoices'); toast('Marked as paid – set the date paid under Dates'); return; }
-  if (how === 'paid') { i.paid = true; i.paidDate = todayISO(); persistInv(i); if (bg) bg.remove(); toast('Marked as paid'); if (ui.view === 'home' || ui.view === 'invoices') render(); return; }
-  if (how === 'mail') { if (bg) bg.remove(); if (await invRemind(i)) { i.chases = (i.chases || 0) + 1; persistInv(i); if (ui.view === 'home' || ui.view === 'invoices') render(); } return; }
+  if (how === 'paidEarlier') { chaseQ = []; i.paid = true; i.paidDate = todayISO(); persistInv(i); if (bg) bg.remove(); if (typeof invGo === 'function') invGo(i, 'invoices'); toast('Marked as paid – set the date paid under Dates'); return; }
+  if (how === 'paid') { i.paid = true; i.paidDate = todayISO(); persistInv(i); if (bg) bg.remove(); toast('Marked as paid'); if (ui.view === 'home' || ui.view === 'invoices') render(); chaseAdvance(i.id); return; }
+  if (how === 'mail') { if (bg) bg.remove(); if (await invRemind(i)) { i.chases = (i.chases || 0) + 1; persistInv(i); if (ui.view === 'home' || ui.view === 'invoices') render(); chaseAdvance(i.id); } else chaseQ = []; return; }
   const url = how === 'sms' ? 'sms:' + ph + '?&body=' + encodeURIComponent(text) : 'https://wa.me/' + ph.replace(/^\+/, '').replace(/^0/, '44') + '?text=' + encodeURIComponent(text);
   chaseMark(i); if (bg) bg.remove();
-  const el = document.createElement('a'); el.href = url; if (how === 'wa') el.target = '_blank'; el.rel = 'noopener'; document.body.appendChild(el); el.click(); el.remove();
+  const el = document.createElement('a'); el.href = url; if (how === 'wa') el.target = '_blank'; el.rel = 'noopener'; document.body.appendChild(el); el.click(); el.remove(); chaseAdvance(i.id);
 }, true);
 
 /* an accepted quote becomes the invoice: same customer, address and priced lines, no retyping */
