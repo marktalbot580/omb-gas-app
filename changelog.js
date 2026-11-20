@@ -1,5 +1,6 @@
 /* What's new: plain-English notes, newest first. Add one entry per version. */
 const NEWS = [
+  { v: 'v314', items: ['Boiler manuals: there is now a Search button, and you no longer have to pick the make first. Type a model or GC number and it searches every make, then tap the result to copy the GC number and open that make’s manuals.'] },
   { v: 'v313', items: ['Chasing overdue invoices: tap Chase them and you now work down the list one invoice at a time. There is a Skip – next invoice button, it shows which invoice you are on (for example 2 of 4), and after you send or mark one paid the next one opens by itself. Stop chasing ends it.'] },
   { v: 'v312', items: ['Gas safety records and service records no longer carry the big red FAIL – DO NOT USE banner, because they are checks, not certificates. Failed items are still shown in the record, and you are still asked about a Warning Notice.'] },
   { v: 'v311', items: ['Boiler information: the list now stays hidden until you tap a make or type in the search box.'] },
